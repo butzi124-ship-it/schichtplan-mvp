@@ -20,6 +20,7 @@ const STORAGE_KEY = "schichtplan_mvp_v1";
 const state = loadState();
 let currentUser = null;
 let currentTab = "schichtplan";
+let statsViewPeriod = "week";
 
 const WEEK_TEMPLATES = [
   makeWeek("A", "B", "C", "A", "B"),
@@ -167,6 +168,11 @@ function labelTab(tab) {
 
 function setTab(tab) {
   currentTab = tab;
+  render();
+}
+
+function setStatsView(period) {
+  statsViewPeriod = period;
   render();
 }
 
@@ -709,7 +715,10 @@ function renderPlanning() {
 
   return `<div class='bg-white rounded-xl shadow p-4'>
     <h2 class='text-lg font-semibold mb-3'>Planung (Admin)</h2>
-    <p class='text-sm text-slate-500 mb-4'>Struktur: Abwesenheiten → Urlaube/Krankmeldungen → Vertretung und Tausch.</p>
+    <div class='flex items-center justify-between mb-4 gap-2'>
+      <p class='text-sm text-slate-500'>Struktur: Abwesenheiten → Urlaube/Krankmeldungen → Vertretung und Tausch.</p>
+      <button class='px-2 py-1 rounded bg-red-700 text-white text-sm' onclick='resetPlanCurrentFuture()'>Gesamtplan zurücksetzen (aktuelle+zukünftige)</button>
+    </div>
 
     <div class='grid md:grid-cols-2 gap-4 mb-6'>
       <div class='border rounded-lg p-3 bg-slate-50'>
@@ -889,7 +898,7 @@ function addSwap() {
   render();
 }
 
-function resetActiveSwaps() {
+function resetActiveSwaps(silent = false) {
   const today = todayIso();
   const y = new Date(`${today}T00:00:00`);
   y.setDate(y.getDate() - 1);
@@ -902,10 +911,10 @@ function resetActiveSwaps() {
     return [swap]; // rein historisch bleibt
   });
   persist();
-  render();
+  if (!silent) render();
 }
 
-function resetManualAssignments() {
+function resetManualAssignments(silent = false) {
   const assignments = { ...state.assignments };
   Object.keys(assignments).forEach((shiftId) => {
     const shift = getShiftById(shiftId);
@@ -915,6 +924,25 @@ function resetManualAssignments() {
       delete state.shiftCancellations[shiftId];
     }
   });
+  persist();
+  if (!silent) render();
+}
+
+function resetPlanCurrentFuture() {
+  resetManualAssignments(true);
+  resetActiveSwaps(true);
+  const now = new Date();
+  Object.keys(state.absences).forEach((key) => {
+    const [date] = key.split(":");
+    if (date >= isoDate(now)) delete state.absences[key];
+  });
+  Object.keys(state.saturdayEveningRequests).forEach((key) => {
+    const [shiftId] = key.split(":");
+    const shift = getShiftById(shiftId);
+    if (shift && isCurrentOrFutureShift(shift))
+      delete state.saturdayEveningRequests[key];
+  });
+  // Verfügbarkeiten (Kann/Kann nicht) bleiben bewusst erhalten für erneute Admin-Zuteilung.
   persist();
   render();
 }
@@ -1082,12 +1110,21 @@ function setConflictResolved(id, resolved) {
   render();
 }
 
-function getCurrentWeekRange() {
-  const monday = new Date();
-  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  return { from: isoDate(monday), to: isoDate(sunday) };
+function getPeriodRange(period) {
+  const now = new Date();
+  const start = new Date(now);
+  const end = new Date(now);
+  if (period === "week") {
+    start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+    end.setDate(start.getDate() + 6);
+  } else if (period === "month") {
+    start.setDate(1);
+    end.setMonth(start.getMonth() + 1, 0);
+  } else {
+    start.setMonth(0, 1);
+    end.setMonth(11, 31);
+  }
+  return { from: isoDate(start), to: isoDate(end), start, end };
 }
 
 function plannedMannedHoursForShift(shift) {
@@ -1144,9 +1181,17 @@ function maxUnmannedHoursForShift(shiftId) {
   return diffHours;
 }
 
-function computeWeekStats() {
-  const { from, to } = getCurrentWeekRange();
+function overlapHours(rangeStart, rangeEnd, shiftStart, shiftEnd) {
+  const start = Math.max(rangeStart.getTime(), shiftStart.getTime());
+  const end = Math.min(rangeEnd.getTime(), shiftEnd.getTime());
+  if (end <= start) return 0;
+  return (end - start) / (1000 * 60 * 60);
+}
+
+function computeStats(period = "week") {
+  const { from, to, start, end } = getPeriodRange(period);
   const target = 154;
+  const now = new Date();
   const shifts = generateThreeMonths().filter(
     (s) => s.date >= from && s.date <= to && s.assigned,
   );
@@ -1160,6 +1205,11 @@ function computeWeekStats() {
     0,
   );
   const plannedUnmanned = Math.max(0, plannedTotal - plannedManned);
+
+  const elapsedPlanned = shifts.reduce((acc, s) => {
+    const { start: sStart, end: sEnd } = shiftDateRange(s);
+    return acc + overlapHours(start, now < end ? now : end, sStart, sEnd);
+  }, 0);
 
   const recordedUnmanned = Object.entries(state.unmanned)
     .filter(([shiftId]) => {
@@ -1176,20 +1226,22 @@ function computeWeekStats() {
     Object.entries(state.machineDowntime)
       .filter(([k]) => {
         const date = k.split(":")[0];
-        return date >= from && date <= to;
+        return date >= from && date <= to && date <= isoDate(now);
       })
       .reduce((acc, [, v]) => acc + (v.minutes || 0), 0) / 60;
 
-  const istHours = Math.max(0, plannedTotal - downtime);
-  const deviationPct = plannedTotal
-    ? (Math.abs(plannedTotal - istHours) / plannedTotal) * 100
+  const istHours = Math.max(0, elapsedPlanned - downtime);
+  const deviationPct = elapsedPlanned
+    ? (Math.abs(elapsedPlanned - istHours) / elapsedPlanned) * 100
     : 0;
-  const downtimePct = plannedTotal ? (downtime / plannedTotal) * 100 : 0;
+  const downtimePct = elapsedPlanned ? (downtime / elapsedPlanned) * 100 : 0;
   const targetPct = target ? (istHours / target) * 100 : 0;
 
   return {
     target,
+    period,
     plannedTotal: round1(plannedTotal),
+    elapsedPlanned: round1(elapsedPlanned),
     plannedManned: round1(plannedManned),
     plannedUnmanned: round1(plannedUnmanned),
     recordedUnmanned: round1(recordedUnmanned),
@@ -1214,7 +1266,7 @@ function shiftHours(start, end) {
 }
 
 function renderStats() {
-  const stats = computeWeekStats();
+  const stats = computeStats(statsViewPeriod);
   const color =
     stats.deviationPct <= 8
       ? "text-emerald-600"
@@ -1235,11 +1287,18 @@ function renderStats() {
   );
 
   return `<div class='bg-white rounded-xl shadow p-4'>
-    <h2 class='text-lg font-semibold mb-3'>Laufzeitstatistik (Woche)</h2>
+    <div class='flex items-center justify-between mb-3'>
+      <h2 class='text-lg font-semibold'>Laufzeitstatistik (${stats.period === "week" ? "Woche" : stats.period === "month" ? "Monat" : "Jahr"})</h2>
+      <div class='flex gap-2'>
+        <button class='px-2 py-1 rounded ${statsViewPeriod === "week" ? "bg-slate-900 text-white" : "bg-slate-100"}' onclick="setStatsView('week')">Woche</button>
+        <button class='px-2 py-1 rounded ${statsViewPeriod === "month" ? "bg-slate-900 text-white" : "bg-slate-100"}' onclick="setStatsView('month')">Monat</button>
+        <button class='px-2 py-1 rounded ${statsViewPeriod === "year" ? "bg-slate-900 text-white" : "bg-slate-100"}' onclick="setStatsView('year')">Jahr</button>
+      </div>
+    </div>
     <div class='grid md:grid-cols-4 gap-3 text-center mb-4'>
       <div class='p-3 rounded bg-slate-100'><div class='text-sm'>Marker</div><div class='text-2xl font-bold'>${stats.target} h</div></div>
       <div class='p-3 rounded bg-blue-100'><div class='text-sm'>Geplante Stunden</div><div class='text-2xl font-bold'>${stats.plannedTotal} h</div><div class='text-xs text-slate-500'>${stats.targetPct}% vom Marker</div></div>
-      <div class='p-3 rounded bg-emerald-100'><div class='text-sm'>Ist-Stunden (Laufzeit)</div><div class='text-2xl font-bold'>${stats.istHours} h</div><div class='text-xs text-slate-500'>Stillstand ${stats.downtimePct}%</div></div>
+      <div class='p-3 rounded bg-emerald-100'><div class='text-sm'>Ist-Stunden (bis jetzt)</div><div class='text-2xl font-bold'>${stats.istHours} h</div><div class='text-xs text-slate-500'>Stillstand ${stats.downtimePct}%</div></div>
       <div class='p-3 rounded bg-white border'><div class='text-sm'>Abweichung Plan/Ist</div><div class='text-2xl font-bold ${color}'>${stats.deviationPct}%</div></div>
     </div>
     <div class='grid md:grid-cols-2 gap-4 mb-4'>
@@ -1500,6 +1559,7 @@ render();
 window.loginAs = loginAs;
 window.logout = logout;
 window.setTab = setTab;
+window.setStatsView = setStatsView;
 window.markAbsent = markAbsent;
 window.assignShift = assignShift;
 window.cancelShift = cancelShift;
@@ -1512,6 +1572,7 @@ window.addSickLeave = addSickLeave;
 window.addSwap = addSwap;
 window.resetActiveSwaps = resetActiveSwaps;
 window.resetManualAssignments = resetManualAssignments;
+window.resetPlanCurrentFuture = resetPlanCurrentFuture;
 window.updateSlotAssignment = updateSlotAssignment;
 window.requestSaturdayEvening = requestSaturdayEvening;
 window.setWeekendAvailability = setWeekendAvailability;
