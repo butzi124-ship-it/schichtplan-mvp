@@ -268,6 +268,10 @@ function isCoreEmployee(name) {
   return userByName(name)?.type === "core";
 }
 
+function isSpringer(name) {
+  return userByName(name)?.type === "springer";
+}
+
 function slotOfUser(name) {
   const mappedSlot = Object.entries(state.slotAssignments || {}).find(
     ([, assignedName]) => assignedName === name,
@@ -393,9 +397,11 @@ function renderOverviewPlan(weeksToShow = 12) {
     if (w === 0) {
       const startSunday = new Date(weekStart);
       startSunday.setDate(startSunday.getDate() - 1);
+      const prevTemplateIndex = (templateWeekIndex + 5) % 6;
+      const prevTemplate = WEEK_TEMPLATES[prevTemplateIndex];
       const startMeta = assignedMeta(
         `${isoDate(startSunday)}-su-1`,
-        template.sunday[1].options,
+        prevTemplate.sunday[1].options,
       );
       body += `<tr class="border-b bg-amber-50">
         <td class="p-2"></td>
@@ -520,6 +526,29 @@ function renderMyShifts() {
     })
     .join("");
 
+  const weekendRows = isSpringer(currentUser.name)
+    ? generateThreeMonths()
+        .filter((s) => s.id.includes("-sa-") || s.id.includes("-su-"))
+        .slice(0, 90)
+        .map((s) => {
+          const key = `${s.id}:${currentUser.name}`;
+          const val = state.availability[key] || "";
+          return `<tr class='border-b'>
+          <td class='p-2'>${s.date}</td>
+          <td class='p-2'>${s.label}</td>
+          <td class='p-2'>${s.start}–${s.end}</td>
+          <td class='p-2'>
+            <select class='border rounded p-1' onchange="setWeekendAvailability('${s.id}', this.value)">
+              <option value='' ${val === "" ? "selected" : ""}>-</option>
+              <option value='yes' ${val === "yes" ? "selected" : ""}>Kann</option>
+              <option value='no' ${val === "no" ? "selected" : ""}>Kann nicht</option>
+            </select>
+          </td>
+        </tr>`;
+        })
+        .join("")
+    : "";
+
   return `<div class='bg-white rounded-xl shadow p-4'>
     <h2 class='text-lg font-semibold mb-3'>Meine individuellen Schichten (90 Tage)</h2>
     <div class='overflow-auto max-h-[65vh] border rounded-lg'>
@@ -527,11 +556,26 @@ function renderMyShifts() {
         <th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Zeit</th><th class='p-2 text-left'>Status</th><th class='p-2 text-left'>Aktionen</th>
       </tr></thead><tbody>${rows || '<tr><td class=\"p-2\" colspan=\"5\">Keine Schichten gefunden.</td></tr>'}</tbody></table>
     </div>
+    ${
+      isSpringer(currentUser.name)
+        ? `<h3 class='font-semibold mt-4 mb-2'>Wochenende-Verfügbarkeit (Samstag/Sonntag)</h3>
+    <div class='overflow-auto max-h-[35vh] border rounded-lg'>
+      <table class='w-full text-sm'><thead class='sticky top-0 bg-slate-100'><tr><th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Zeit</th><th class='p-2 text-left'>Kannst du?</th></tr></thead>
+      <tbody>${weekendRows || '<tr><td class=\"p-2\" colspan=\"4\">Keine Wochenend-Schichten.</td></tr>'}</tbody></table>
+    </div>`
+        : ""
+    }
   </div>`;
 }
 
 function requestSaturdayEvening(shiftId) {
   state.saturdayEveningRequests[`${shiftId}:${currentUser.name}`] = true;
+  persist();
+  render();
+}
+
+function setWeekendAvailability(shiftId, value) {
+  state.availability[`${shiftId}:${currentUser.name}`] = value;
   persist();
   render();
 }
@@ -604,6 +648,29 @@ function renderPlanning() {
     })
     .join("");
 
+  const weekendAvailabilityRows = generateThreeMonths()
+    .filter((s) => s.id.includes("-sa-") || s.id.includes("-su-"))
+    .slice(0, 120)
+    .map((s) => {
+      const available = USERS.filter(
+        (u) =>
+          u.type === "springer" &&
+          state.availability[`${s.id}:${u.name}`] === "yes",
+      ).map((u) => u.name);
+      const unavailable = USERS.filter(
+        (u) =>
+          u.type === "springer" &&
+          state.availability[`${s.id}:${u.name}`] === "no",
+      ).map((u) => u.name);
+      return `<tr class='border-b'>
+        <td class='p-2'>${s.date}</td>
+        <td class='p-2'>${s.label}</td>
+        <td class='p-2 text-emerald-700'>${available.join(", ") || "-"}</td>
+        <td class='p-2 text-rose-700'>${unavailable.join(", ") || "-"}</td>
+      </tr>`;
+    })
+    .join("");
+
   const monthValue = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
   const personOptions = USERS.map(
     (u) => `<option value='${u.name}'>${u.name}</option>`,
@@ -661,6 +728,13 @@ function renderPlanning() {
         <div class='overflow-auto max-h-56'>
           <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Schicht</th><th class='p-2'></th></tr></thead>
           <tbody>${saturdayRequestRows || '<tr><td class=\"p-2\" colspan=\"4\">Keine Anfragen.</td></tr>'}</tbody></table>
+        </div>
+      </div>
+      <div class='border rounded-lg p-3 bg-slate-50'>
+        <h3 class='font-semibold mb-2'>Springer-Verfügbarkeit Wochenende</h3>
+        <div class='overflow-auto max-h-56'>
+          <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Kann</th><th class='p-2 text-left'>Kann nicht</th></tr></thead>
+          <tbody>${weekendAvailabilityRows || '<tr><td class=\"p-2\" colspan=\"4\">Keine Angaben.</td></tr>'}</tbody></table>
         </div>
       </div>
       <div class='border rounded-lg p-3 bg-slate-50 space-y-3'>
@@ -956,17 +1030,54 @@ function setConflictResolved(id, resolved) {
   render();
 }
 
-function getWeekHours() {
-  const shifts = generateThreeMonths();
+function getCurrentWeekRange() {
   const monday = new Date();
   monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
-  const from = isoDate(monday);
-  const to = isoDate(sunday);
-  const planned = shifts
-    .filter((s) => s.date >= from && s.date <= to && s.assigned)
-    .reduce((acc, s) => acc + shiftHours(s.start, s.end), 0);
+  return { from: isoDate(monday), to: isoDate(sunday) };
+}
+
+function plannedMannedHoursForShift(shift) {
+  if (shift.id.includes("-mf-")) return 6; // Mo-Fr Zeit 1/3/5 bemannt
+  if (shift.id.includes("-sa-0")) return 6; // Samstag Morgen
+  if (shift.id.includes("-sa-1")) return 6; // Samstag Abend
+  if (shift.id.includes("-su-0")) return 6; // Sonntag Morgen
+  if (shift.id.includes("-su-1")) return 6; // Sonntag Abend
+  return shiftHours(shift.start, shift.end);
+}
+
+function parseDurationHours(text) {
+  if (!text || !text.includes(":")) return 0;
+  const [h, m] = text.split(":").map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return 0;
+  return h + m / 60;
+}
+
+function computeWeekStats() {
+  const { from, to } = getCurrentWeekRange();
+  const target = 154;
+  const shifts = generateThreeMonths().filter(
+    (s) => s.date >= from && s.date <= to && s.assigned,
+  );
+
+  const plannedTotal = shifts.reduce(
+    (acc, s) => acc + shiftHours(s.start, s.end),
+    0,
+  );
+  const plannedManned = shifts.reduce(
+    (acc, s) => acc + plannedMannedHoursForShift(s),
+    0,
+  );
+  const plannedUnmanned = Math.max(0, plannedTotal - plannedManned);
+
+  const recordedUnmanned = Object.entries(state.unmanned)
+    .filter(([shiftId]) => {
+      const date = shiftId.slice(0, 10);
+      return date >= from && date <= to;
+    })
+    .reduce((acc, [, timeText]) => acc + parseDurationHours(timeText), 0);
+
   const downtime =
     Object.entries(state.machineDowntime)
       .filter(([k]) => {
@@ -974,10 +1085,30 @@ function getWeekHours() {
         return date >= from && date <= to;
       })
       .reduce((acc, [, v]) => acc + (v.minutes || 0), 0) / 60;
+
+  const istHours = Math.max(0, plannedTotal - downtime);
+  const deviationPct = plannedTotal
+    ? (Math.abs(plannedTotal - istHours) / plannedTotal) * 100
+    : 0;
+  const downtimePct = plannedTotal ? (downtime / plannedTotal) * 100 : 0;
+  const targetPct = target ? (istHours / target) * 100 : 0;
+
   return {
-    planned: Math.round(planned * 10) / 10,
-    downtime: Math.round(downtime * 10) / 10,
+    target,
+    plannedTotal: round1(plannedTotal),
+    plannedManned: round1(plannedManned),
+    plannedUnmanned: round1(plannedUnmanned),
+    recordedUnmanned: round1(recordedUnmanned),
+    downtime: round1(downtime),
+    istHours: round1(istHours),
+    deviationPct: round1(deviationPct),
+    downtimePct: round1(downtimePct),
+    targetPct: round1(targetPct),
   };
+}
+
+function round1(value) {
+  return Math.round(value * 10) / 10;
 }
 
 function shiftHours(start, end) {
@@ -989,22 +1120,50 @@ function shiftHours(start, end) {
 }
 
 function renderStats() {
-  const target = 154;
-  const { planned, downtime } = getWeekHours();
-  const deviation = planned ? (downtime / planned) * 100 : 0;
+  const stats = computeWeekStats();
   const color =
-    deviation <= 8
+    stats.deviationPct <= 8
       ? "text-emerald-600"
-      : deviation <= 12
+      : stats.deviationPct <= 12
         ? "text-orange-500"
         : "text-rose-600";
+  const barPlan = Math.min(
+    100,
+    stats.target ? (stats.plannedTotal / stats.target) * 100 : 0,
+  );
+  const barIst = Math.min(
+    100,
+    stats.target ? (stats.istHours / stats.target) * 100 : 0,
+  );
+  const barStillstand = Math.min(
+    100,
+    stats.target ? (stats.downtime / stats.target) * 100 : 0,
+  );
+
   return `<div class='bg-white rounded-xl shadow p-4'>
     <h2 class='text-lg font-semibold mb-3'>Laufzeitstatistik (Woche)</h2>
-    <div class='grid md:grid-cols-4 gap-3 text-center'>
-      <div class='p-3 rounded bg-slate-100'><div class='text-sm'>Marker</div><div class='text-2xl font-bold'>${target} h</div></div>
-      <div class='p-3 rounded bg-blue-100'><div class='text-sm'>Geplante Stunden</div><div class='text-2xl font-bold'>${planned} h</div></div>
-      <div class='p-3 rounded bg-rose-100'><div class='text-sm'>Ist-Stillstand</div><div class='text-2xl font-bold'>${downtime} h</div></div>
-      <div class='p-3 rounded bg-white border'><div class='text-sm'>Abweichung</div><div class='text-2xl font-bold ${color}'>${deviation.toFixed(1)}%</div></div>
+    <div class='grid md:grid-cols-4 gap-3 text-center mb-4'>
+      <div class='p-3 rounded bg-slate-100'><div class='text-sm'>Marker</div><div class='text-2xl font-bold'>${stats.target} h</div></div>
+      <div class='p-3 rounded bg-blue-100'><div class='text-sm'>Geplante Stunden</div><div class='text-2xl font-bold'>${stats.plannedTotal} h</div><div class='text-xs text-slate-500'>${stats.targetPct}% vom Marker</div></div>
+      <div class='p-3 rounded bg-emerald-100'><div class='text-sm'>Ist-Stunden (Laufzeit)</div><div class='text-2xl font-bold'>${stats.istHours} h</div><div class='text-xs text-slate-500'>Stillstand ${stats.downtimePct}%</div></div>
+      <div class='p-3 rounded bg-white border'><div class='text-sm'>Abweichung Plan/Ist</div><div class='text-2xl font-bold ${color}'>${stats.deviationPct}%</div></div>
+    </div>
+    <div class='grid md:grid-cols-2 gap-4 mb-4'>
+      <div class='p-3 rounded border bg-slate-50'>
+        <h3 class='font-semibold mb-2'>Bemannt / Mannlos</h3>
+        <div class='text-sm'>Bemannt (Plan): <b>${stats.plannedManned} h</b></div>
+        <div class='text-sm'>Mannlos (Plan): <b>${stats.plannedUnmanned} h</b></div>
+        <div class='text-sm'>Mannlos (eingetragen): <b>${stats.recordedUnmanned} h</b></div>
+      </div>
+      <div class='p-3 rounded border bg-slate-50'>
+        <h3 class='font-semibold mb-2'>Grafik (h / Marker 154h)</h3>
+        <div class='mb-2 text-xs'>Plan: ${stats.plannedTotal} h</div>
+        <div class='w-full bg-slate-200 rounded h-4 mb-2'><div class='bg-blue-500 h-4 rounded' style='width:${barPlan}%'></div></div>
+        <div class='mb-2 text-xs'>Ist: ${stats.istHours} h</div>
+        <div class='w-full bg-slate-200 rounded h-4 mb-2'><div class='bg-emerald-500 h-4 rounded' style='width:${barIst}%'></div></div>
+        <div class='mb-2 text-xs'>Stillstand: ${stats.downtime} h</div>
+        <div class='w-full bg-slate-200 rounded h-4'><div class='bg-rose-500 h-4 rounded' style='width:${barStillstand}%'></div></div>
+      </div>
     </div>
   </div>`;
 }
@@ -1259,6 +1418,7 @@ window.addSickLeave = addSickLeave;
 window.addSwap = addSwap;
 window.updateSlotAssignment = updateSlotAssignment;
 window.requestSaturdayEvening = requestSaturdayEvening;
+window.setWeekendAvailability = setWeekendAvailability;
 window.createTask = createTask;
 window.completeTask = completeTask;
 window.deleteTask = deleteTask;
