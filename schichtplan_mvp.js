@@ -15,6 +15,19 @@ const DEFAULT_SLOT_ASSIGNMENTS = {
   E: "Musa",
   F: "Ardian",
 };
+const DEFAULT_TOOL_LABELS = [
+  "Schaftfräser",
+  "Trochodialfräser",
+  "Radiusfräser",
+  "Kugelfräser",
+  "Bohrer",
+  "NC Anbohrer",
+  "Gewindebohrer",
+  "Gewindefräser",
+  "Gewindewirbler",
+  "Ausdrehkopf",
+];
+const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 
 const STORAGE_KEY = "schichtplan_mvp_v1";
 const state = loadState();
@@ -94,6 +107,10 @@ function loadState() {
     machinePromptSeen: {},
     extraUsers: [],
     inactiveUsers: {},
+    tools: [],
+    toolLabelsExtra: [],
+    toolManufacturersExtra: [],
+    toolJournal: [],
   };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -131,8 +148,8 @@ function render() {
   if (!currentUser) return;
   const tabs = ["schichtplan"];
   if (currentUser.role === "admin")
-    tabs.push("planung", "todo", "konflikte", "statistik");
-  if (currentUser.role === "employee") tabs.push("meine", "todo");
+    tabs.push("planung", "werkzeuge", "todo", "konflikte", "statistik");
+  if (currentUser.role === "employee") tabs.push("meine", "werkzeuge", "todo");
 
   const tabsEl = document.getElementById("tabs");
   tabsEl.className = "flex gap-2 flex-wrap";
@@ -156,6 +173,7 @@ function render() {
   if (currentTab === "schichtplan") view.innerHTML = renderSchedule();
   if (currentTab === "meine") view.innerHTML = renderMyShifts();
   if (currentTab === "planung") view.innerHTML = renderPlanning();
+  if (currentTab === "werkzeuge") view.innerHTML = renderTools();
   if (currentTab === "todo") view.innerHTML = renderTodo();
   if (currentTab === "konflikte") view.innerHTML = renderConflicts();
   if (currentTab === "statistik") view.innerHTML = renderStats();
@@ -170,6 +188,7 @@ function labelTab(tab) {
     schichtplan: "Schichtplan",
     meine: "Meine Schichten",
     planung: "Planung (Admin)",
+    werkzeuge: "Werkzeuge",
     todo: "To-Do",
     konflikte: "Konflikte",
     statistik: "Statistik",
@@ -189,6 +208,8 @@ function setStatsView(period) {
 function tabNeedsAttention(tab) {
   if (tab === "planung") return generateThreeMonths().some((s) => s.open);
   if (tab === "todo") return state.tasks.some((t) => t.status !== "done");
+  if (tab === "werkzeuge" && currentUser?.role === "admin")
+    return state.tools.some((t) => Number(t.stock) < Number(t.minStock));
   if (tab === "konflikte")
     return Object.values(state.conflicts).some((c) => c.resolved !== true);
   if (tab === "meine" && currentUser?.role === "employee")
@@ -785,7 +806,7 @@ function renderPlanning() {
     .reverse()
     .map(
       (v) =>
-        `<tr class='border-b'><td class='p-2'>${v.user}</td><td class='p-2'>${v.from}</td><td class='p-2'>${v.to}</td></tr>`,
+        `<tr class='border-b'><td class='p-2'>${v.user}</td><td class='p-2'>${v.from}</td><td class='p-2'>${v.to}</td><td class='p-2'><button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="deleteVacation('${v.id}')">Löschen</button></td></tr>`,
     )
     .join("");
   const sickRows = state.sickLeaves
@@ -793,7 +814,7 @@ function renderPlanning() {
     .reverse()
     .map(
       (v) =>
-        `<tr class='border-b'><td class='p-2'>${v.user}</td><td class='p-2'>${v.from}</td><td class='p-2'>${v.to}</td></tr>`,
+        `<tr class='border-b'><td class='p-2'>${v.user}</td><td class='p-2'>${v.from}</td><td class='p-2'>${v.to}</td><td class='p-2'><button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="deleteSickLeave('${v.id}')">Löschen</button></td></tr>`,
     )
     .join("");
 
@@ -865,15 +886,15 @@ function renderPlanning() {
       <div class='border rounded-lg p-3'>
         <h4 class='font-semibold mb-2'>Geplante Urlaube</h4>
         <div class='overflow-auto max-h-48'>
-          <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th></tr></thead>
-          <tbody>${vacationRows || '<tr><td class=\"p-2\" colspan=\"3\">Keine Einträge.</td></tr>'}</tbody></table>
+          <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th><th class='p-2'></th></tr></thead>
+          <tbody>${vacationRows || '<tr><td class=\"p-2\" colspan=\"4\">Keine Einträge.</td></tr>'}</tbody></table>
         </div>
       </div>
       <div class='border rounded-lg p-3'>
         <h4 class='font-semibold mb-2'>Krankmeldungen</h4>
         <div class='overflow-auto max-h-48'>
-          <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th></tr></thead>
-          <tbody>${sickRows || '<tr><td class=\"p-2\" colspan=\"3\">Keine Einträge.</td></tr>'}</tbody></table>
+          <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th><th class='p-2'></th></tr></thead>
+          <tbody>${sickRows || '<tr><td class=\"p-2\" colspan=\"4\">Keine Einträge.</td></tr>'}</tbody></table>
         </div>
       </div>
     </div>
@@ -973,7 +994,7 @@ function readAdminCalendarForm() {
 function addVacation() {
   const data = readAdminCalendarForm();
   if (!data) return;
-  state.vacations.push(data);
+  state.vacations.push({ id: `vac-${Date.now()}`, ...data });
   persist();
   render();
 }
@@ -981,7 +1002,19 @@ function addVacation() {
 function addSickLeave() {
   const data = readAdminCalendarForm();
   if (!data) return;
-  state.sickLeaves.push(data);
+  state.sickLeaves.push({ id: `sick-${Date.now()}`, ...data });
+  persist();
+  render();
+}
+
+function deleteVacation(id) {
+  state.vacations = state.vacations.filter((v) => v.id !== id);
+  persist();
+  render();
+}
+
+function deleteSickLeave(id) {
+  state.sickLeaves = state.sickLeaves.filter((s) => s.id !== id);
   persist();
   render();
 }
@@ -1118,6 +1151,241 @@ function activateEmployee(name) {
   delete state.inactiveUsers[name];
   persist();
   render();
+}
+
+function getToolLabels() {
+  return [...DEFAULT_TOOL_LABELS, ...(state.toolLabelsExtra || [])];
+}
+
+function getToolManufacturers() {
+  return [
+    ...DEFAULT_TOOL_MANUFACTURERS,
+    ...(state.toolManufacturersExtra || []),
+  ];
+}
+
+function addToolLabel() {
+  if (currentUser.role !== "admin") return;
+  const value = prompt("Neue Bezeichnung:");
+  if (!value) return;
+  if (!state.toolLabelsExtra.includes(value)) state.toolLabelsExtra.push(value);
+  persist();
+  render();
+}
+
+function addToolManufacturer() {
+  if (currentUser.role !== "admin") return;
+  const value = prompt("Neuer Hersteller:");
+  if (!value) return;
+  if (!state.toolManufacturersExtra.includes(value))
+    state.toolManufacturersExtra.push(value);
+  persist();
+  render();
+}
+
+function createTool() {
+  const tNumber = document.getElementById("toolTNumber")?.value?.trim();
+  const label = document.getElementById("toolLabel")?.value;
+  const diameter = document.getElementById("toolDiameter")?.value?.trim();
+  const shelf = document
+    .getElementById("toolShelf")
+    ?.value?.trim()
+    .toUpperCase();
+  const articleNo = document.getElementById("toolArticle")?.value?.trim();
+  const stock = Number(document.getElementById("toolStock")?.value || 0);
+  const minStock = Number(document.getElementById("toolMinStock")?.value || 0);
+  const manufacturer = document.getElementById("toolManufacturer")?.value;
+  if (
+    !tNumber ||
+    !label ||
+    !diameter ||
+    !/^[A-Z]\d{2}$/.test(shelf) ||
+    !articleNo
+  )
+    return alert(
+      "Bitte Felder korrekt ausfüllen (A-Z + 2-stellige Zahl für Fach).",
+    );
+  state.tools.push({
+    id: `tool-${Date.now()}`,
+    tNumber,
+    label,
+    diameter: Number(diameter),
+    shelf,
+    articleNo,
+    stock,
+    minStock,
+    manufacturer,
+    ordered: false,
+  });
+  persist();
+  render();
+}
+
+function markToolOrdered(toolId, ordered) {
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool || currentUser.role !== "admin") return;
+  tool.ordered = ordered;
+  persist();
+  render();
+}
+
+function restockTool(toolId) {
+  if (currentUser.role !== "admin") return;
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool) return;
+  const add = Number(prompt("Werkzeug einlagern (Anzahl):", "0"));
+  if (!Number.isFinite(add) || add <= 0) return;
+  tool.stock += add;
+  if (tool.stock >= tool.minStock) tool.ordered = false;
+  persist();
+  render();
+}
+
+function runToolChange() {
+  const tNumber = document.getElementById("changeTNumber")?.value?.trim();
+  const withdraw = document.getElementById("changeWithdraw")?.checked;
+  const qty = Number(document.getElementById("changeQty")?.value || 0);
+  const tool = state.tools.find((t) => String(t.tNumber) === String(tNumber));
+  if (!tool) return alert("T-Nummer nicht gefunden.");
+  if (withdraw) {
+    if (qty <= 0) return alert("Bitte Entnahmemenge angeben.");
+    tool.stock = Math.max(0, tool.stock - qty);
+  }
+  state.toolJournal.unshift({
+    id: `journal-${Date.now()}`,
+    user: currentUser.name,
+    at: new Date().toISOString().slice(0, 16).replace("T", " "),
+    tNumber: tool.tNumber,
+    action: withdraw
+      ? `Werkzeugwechsel + Entnahme ${qty}`
+      : "Werkzeugwechsel ohne Entnahme",
+  });
+  persist();
+  render();
+}
+
+function renderTools() {
+  const labels = getToolLabels();
+  const manufacturers = getToolManufacturers();
+  const labelOptions = labels
+    .map((l) => `<option value="${l}">${l}</option>`)
+    .join("");
+  const manufacturerOptions = manufacturers
+    .map((m) => `<option value="${m}">${m}</option>`)
+    .join("");
+
+  const search = (
+    document.getElementById("toolSearch")?.value || ""
+  ).toLowerCase();
+  const filterLabel = document.getElementById("toolFilterLabel")?.value || "";
+  const filterT = document.getElementById("toolFilterT")?.value || "";
+  const filterD = document.getElementById("toolFilterD")?.value || "";
+
+  const tools = state.tools.filter((t) => {
+    const bySearch =
+      !search ||
+      `${t.tNumber} ${t.label} ${t.diameter} ${t.articleNo}`
+        .toLowerCase()
+        .includes(search);
+    const byLabel = !filterLabel || t.label === filterLabel;
+    const byT = !filterT || String(t.tNumber).includes(filterT);
+    const byD = !filterD || String(t.diameter).includes(filterD);
+    return bySearch && byLabel && byT && byD;
+  });
+
+  const toolRows = tools
+    .map(
+      (t) => `<tr class='border-b'>
+      <td class='p-2'>T ${t.tNumber}</td><td class='p-2'>${t.label}</td><td class='p-2'>⌀ ${t.diameter}</td><td class='p-2'>${t.shelf}</td><td class='p-2'>${t.articleNo}</td>
+      <td class='p-2'>${t.stock}</td><td class='p-2'>${t.minStock}</td><td class='p-2'>${t.manufacturer}</td><td class='p-2'>${t.ordered ? "Bestellt" : "-"}</td>
+      <td class='p-2'>${currentUser.role === "admin" ? `<button class='px-2 py-1 rounded bg-blue-700 text-white mr-1' onclick="markToolOrdered('${t.id}', ${t.ordered ? "false" : "true"})">${t.ordered ? "Bestellt entfernen" : "Bestellt"}</button><button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick="restockTool('${t.id}')">Werkzeug einlagern</button>` : "-"}</td>
+    </tr>`,
+    )
+    .join("");
+
+  const todoTools = state.tools.filter(
+    (t) => t.stock < t.minStock && !t.ordered,
+  );
+  const orderedTools = state.tools.filter(
+    (t) => t.stock < t.minStock && t.ordered,
+  );
+
+  const todoRows = todoTools
+    .map(
+      (t) =>
+        `<tr class='border-b'><td class='p-2'>T ${t.tNumber}</td><td class='p-2'>${t.label}</td><td class='p-2'>${t.stock}/${t.minStock}</td><td class='p-2'><button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="markToolOrdered('${t.id}', true)">Bestellt markieren</button></td></tr>`,
+    )
+    .join("");
+  const orderedRows = orderedTools
+    .map(
+      (t) =>
+        `<tr class='border-b bg-emerald-50'><td class='p-2'>T ${t.tNumber}</td><td class='p-2'>${t.label}</td><td class='p-2'>${t.stock}/${t.minStock}</td><td class='p-2'>Bestellt</td></tr>`,
+    )
+    .join("");
+  const journalRows = state.toolJournal
+    .slice(0, 80)
+    .map(
+      (j) =>
+        `<tr class='border-b'><td class='p-2'>${j.at}</td><td class='p-2'>${j.user}</td><td class='p-2'>T ${j.tNumber}</td><td class='p-2'>${j.action}</td></tr>`,
+    )
+    .join("");
+
+  return `<div class='bg-white rounded-xl shadow p-4'>
+    <h2 class='text-lg font-semibold mb-3'>Werkzeugverwaltung</h2>
+    <div class='border rounded p-3 bg-slate-50 mb-4'>
+      <h3 class='font-semibold mb-2'>Neues Werkzeug anlegen</h3>
+      <div class='grid md:grid-cols-4 gap-2'>
+        <input id='toolTNumber' class='border rounded p-1' placeholder='T-Nummer (z.B. 134)' />
+        <select id='toolLabel' class='border rounded p-1'>${labelOptions}</select>
+        <input id='toolDiameter' class='border rounded p-1' placeholder='Durchmesser' />
+        <input id='toolShelf' class='border rounded p-1' placeholder='A00' />
+        <input id='toolArticle' class='border rounded p-1' placeholder='Artikel Nr.' />
+        <input id='toolStock' type='number' class='border rounded p-1' placeholder='Bestand' />
+        <input id='toolMinStock' type='number' class='border rounded p-1' placeholder='Mindestbestand' />
+        <select id='toolManufacturer' class='border rounded p-1'>${manufacturerOptions}</select>
+      </div>
+      <div class='flex gap-2 mt-2'>
+        <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick='createTool()'>Werkzeug speichern</button>
+        ${currentUser.role === "admin" ? `<button class='px-2 py-1 rounded bg-slate-700 text-white' onclick='addToolLabel()'>Bezeichnung hinzufügen</button><button class='px-2 py-1 rounded bg-slate-700 text-white' onclick='addToolManufacturer()'>Hersteller hinzufügen</button>` : ""}
+      </div>
+    </div>
+
+    <div class='grid md:grid-cols-4 gap-2 mb-2'>
+      <input id='toolSearch' class='border rounded p-1' placeholder='Suche...' oninput='render()' />
+      <select id='toolFilterLabel' class='border rounded p-1' onchange='render()'><option value=''>Alle Bezeichnungen</option>${labelOptions}</select>
+      <input id='toolFilterT' class='border rounded p-1' placeholder='Filter T-Nummer' oninput='render()' />
+      <input id='toolFilterD' class='border rounded p-1' placeholder='Filter Durchmesser' oninput='render()' />
+    </div>
+    <div class='overflow-auto max-h-[35vh] border rounded-lg mb-4'>
+      <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>T</th><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Ø</th><th class='p-2 text-left'>Fach</th><th class='p-2 text-left'>Artikel Nr.</th><th class='p-2 text-left'>Bestand</th><th class='p-2 text-left'>Min</th><th class='p-2 text-left'>Hersteller</th><th class='p-2 text-left'>Status</th><th class='p-2'></th></tr></thead><tbody>${toolRows || '<tr><td class=\"p-2\" colspan=\"10\">Keine Werkzeuge.</td></tr>'}</tbody></table>
+    </div>
+
+    ${
+      currentUser.role === "admin"
+        ? `<div class='grid md:grid-cols-2 gap-3 mb-4'>
+      <div class='border rounded p-3'><h3 class='font-semibold mb-2'>Werkzeug To-Do (unter Mindestbestand)</h3><table class='w-full text-sm'><tbody>${todoRows || '<tr><td class=\"p-2\" colspan=\"4\">Keine offenen To-Dos.</td></tr>'}</tbody></table></div>
+      <div class='border rounded p-3'><h3 class='font-semibold mb-2'>Bestellt</h3><table class='w-full text-sm'><tbody>${orderedRows || '<tr><td class=\"p-2\" colspan=\"4\">Keine bestellten Werkzeuge.</td></tr>'}</tbody></table></div>
+    </div>`
+        : ""
+    }
+
+    <div class='border rounded p-3 mb-4'>
+      <h3 class='font-semibold mb-2'>Werkzeugwechsel</h3>
+      <div class='grid md:grid-cols-4 gap-2'>
+        <input id='changeTNumber' class='border rounded p-1' placeholder='T-Nummer' />
+        <label class='flex items-center gap-2'><input id='changeWithdraw' type='checkbox' /> Bestand entnehmen</label>
+        <input id='changeQty' type='number' class='border rounded p-1' placeholder='Entnahmemenge' />
+        <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick='runToolChange()'>Werkzeugwechsel buchen</button>
+      </div>
+    </div>
+
+    <div class='border rounded p-3'>
+      <h3 class='font-semibold mb-2'>Schichtjournal – Werkzeugwechsel</h3>
+      <div class='overflow-auto max-h-[25vh]'>
+        <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Zeit</th><th class='p-2 text-left'>Wer</th><th class='p-2 text-left'>T-Nr</th><th class='p-2 text-left'>Was</th></tr></thead><tbody>${journalRows || '<tr><td class=\"p-2\" colspan=\"4\">Keine Einträge.</td></tr>'}</tbody></table>
+      </div>
+    </div>
+  </div>`;
 }
 
 function renderTodo() {
