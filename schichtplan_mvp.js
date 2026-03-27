@@ -32,6 +32,14 @@ const WEEK_TEMPLATES = [
 ];
 const ROTATION_ANCHOR_MONDAY = "2026-01-05";
 
+function allUsers() {
+  return [...USERS, ...(state.extraUsers || [])];
+}
+
+function activeUsers() {
+  return allUsers().filter((u) => !state.inactiveUsers?.[u.name]);
+}
+
 function makeWeek(early, late, night, satPrimary, satSecondary) {
   return {
     mondayToFriday: [
@@ -84,6 +92,8 @@ function loadState() {
     shiftStartChecks: {},
     machineDowntime: {},
     machinePromptSeen: {},
+    extraUsers: [],
+    inactiveUsers: {},
   };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -261,13 +271,13 @@ function chooseDefault(options) {
 function slotToName(slot) {
   return (
     state.slotAssignments?.[slot] ||
-    USERS.find((u) => u.slot === slot)?.name ||
+    allUsers().find((u) => u.slot === slot)?.name ||
     null
   );
 }
 
 function userByName(name) {
-  return USERS.find((u) => u.name === name);
+  return allUsers().find((u) => u.name === name);
 }
 
 function isCoreEmployee(name) {
@@ -282,7 +292,7 @@ function slotOfUser(name) {
   const mappedSlot = Object.entries(state.slotAssignments || {}).find(
     ([, assignedName]) => assignedName === name,
   )?.[0];
-  return mappedSlot || USERS.find((u) => u.name === name)?.slot || "-";
+  return mappedSlot || allUsers().find((u) => u.name === name)?.slot || "-";
 }
 
 const PERSON_COLORS = {
@@ -594,7 +604,8 @@ function renderPlanning() {
   );
   const rows = openShifts
     .map((s) => {
-      const choices = USERS.filter((u) => u.name !== s.assigned)
+      const choices = activeUsers()
+        .filter((u) => u.name !== s.assigned)
         .map((u) => `<option value="${u.name}">${u.name}</option>`)
         .join("");
       return `<tr class='border-b'>
@@ -614,10 +625,12 @@ function renderPlanning() {
   const optionalRows = optionalShifts
     .slice(0, 120)
     .map((s) => {
-      const canUsers = USERS.filter(
-        (u) => state.availability[`${s.id}:${u.name}`] === "yes",
-      ).map((u) => u.name);
-      const options = (canUsers.length ? canUsers : USERS.map((u) => u.name))
+      const canUsers = activeUsers()
+        .filter((u) => state.availability[`${s.id}:${u.name}`] === "yes")
+        .map((u) => u.name);
+      const options = (
+        canUsers.length ? canUsers : activeUsers().map((u) => u.name)
+      )
         .map((name) => `<option value="${name}">${name}</option>`)
         .join("");
       return `<tr class='border-b'>
@@ -659,16 +672,20 @@ function renderPlanning() {
     .filter((s) => s.id.includes("-sa-") || s.id.includes("-su-"))
     .slice(0, 120)
     .map((s) => {
-      const available = USERS.filter(
-        (u) =>
-          u.type === "springer" &&
-          state.availability[`${s.id}:${u.name}`] === "yes",
-      ).map((u) => u.name);
-      const unavailable = USERS.filter(
-        (u) =>
-          u.type === "springer" &&
-          state.availability[`${s.id}:${u.name}`] === "no",
-      ).map((u) => u.name);
+      const available = activeUsers()
+        .filter(
+          (u) =>
+            u.type === "springer" &&
+            state.availability[`${s.id}:${u.name}`] === "yes",
+        )
+        .map((u) => u.name);
+      const unavailable = activeUsers()
+        .filter(
+          (u) =>
+            u.type === "springer" &&
+            state.availability[`${s.id}:${u.name}`] === "no",
+        )
+        .map((u) => u.name);
       return `<tr class='border-b'>
         <td class='p-2'>${s.date}</td>
         <td class='p-2'>${s.label}</td>
@@ -679,17 +696,36 @@ function renderPlanning() {
     .join("");
 
   const monthValue = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
-  const personOptions = USERS.map(
-    (u) => `<option value='${u.name}'>${u.name}</option>`,
-  ).join("");
-  const corePersonOptions = USERS.filter((u) => u.type === "core")
+  const personOptions = activeUsers()
     .map((u) => `<option value='${u.name}'>${u.name}</option>`)
     .join("");
+  const corePersonOptions = activeUsers()
+    .filter((u) => u.type === "core")
+    .map((u) => `<option value='${u.name}'>${u.name}</option>`)
+    .join("");
+  const personnelRows = allUsers()
+    .map(
+      (u) => `<tr class='border-b'>
+      <td class='p-2'>${u.name}</td>
+      <td class='p-2'>${u.type === "core" ? "A/B/C" : "Springer"}</td>
+      <td class='p-2'>${state.inactiveUsers?.[u.name] ? "Inaktiv" : "Aktiv"}</td>
+      <td class='p-2'>
+        ${
+          state.inactiveUsers?.[u.name]
+            ? `<button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick="activateEmployee('${u.name}')">Reaktivieren</button>`
+            : `<button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="deactivateEmployee('${u.name}')">Löschen</button>`
+        }
+      </td>
+    </tr>`,
+    )
+    .join("");
   const slotAssignmentRows = SLOT_CODES.map((slot) => {
-    const options = USERS.map(
-      (u) =>
-        `<option value='${u.name}' ${state.slotAssignments?.[slot] === u.name ? "selected" : ""}>${u.name}</option>`,
-    ).join("");
+    const options = activeUsers()
+      .map(
+        (u) =>
+          `<option value='${u.name}' ${state.slotAssignments?.[slot] === u.name ? "selected" : ""}>${u.name}</option>`,
+      )
+      .join("");
     return `<tr class='border-b'>
       <td class='p-2 font-semibold'>${slot}</td>
       <td class='p-2'><select id='slot-${slot}' class='border rounded p-1 w-full'>${options}</select></td>
@@ -721,6 +757,18 @@ function renderPlanning() {
     </div>
 
     <div class='grid md:grid-cols-2 gap-4 mb-6'>
+      <div class='border rounded-lg p-3 bg-slate-50'>
+        <h3 class='font-semibold mb-2'>Personalverwaltung</h3>
+        <div class='grid grid-cols-3 gap-2 mb-2'>
+          <input id='newEmployeeName' class='border rounded p-1' placeholder='Neuer Name' />
+          <select id='newEmployeeType' class='border rounded p-1'><option value='springer'>Springer</option><option value='core'>A/B/C</option></select>
+          <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick='addEmployee()'>Mitarbeiter hinzufügen</button>
+        </div>
+        <div class='overflow-auto max-h-56'>
+          <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Name</th><th class='p-2 text-left'>Typ</th><th class='p-2 text-left'>Status</th><th class='p-2'></th></tr></thead>
+          <tbody>${personnelRows}</tbody></table>
+        </div>
+      </div>
       <div class='border rounded-lg p-3 bg-slate-50'>
         <h3 class='font-semibold mb-2'>Zuordnung Slots A–F</h3>
         <p class='text-sm text-slate-500 mb-2'>Admin kann festlegen, welcher Mitarbeiter aktuell A/B/C/D/E/F ist. Der Schichtplan passt sich danach direkt an.</p>
@@ -911,7 +959,10 @@ function resetActiveSwaps(silent = false) {
     return [swap]; // rein historisch bleibt
   });
   persist();
-  if (!silent) render();
+  if (!silent) {
+    render();
+    alert("Aktive/zukünftige Tausche wurden zurückgesetzt.");
+  }
 }
 
 function resetManualAssignments(silent = false) {
@@ -925,16 +976,30 @@ function resetManualAssignments(silent = false) {
     }
   });
   persist();
-  if (!silent) render();
+  if (!silent) {
+    render();
+    alert(
+      "Manuelle Zuordnungen (aktuelle/zukünftige Schichten) wurden zurückgesetzt.",
+    );
+  }
 }
 
 function resetPlanCurrentFuture() {
+  if (
+    !confirm(
+      "Gesamtplan wirklich für aktuelle und zukünftige Schichten auf Ursprung zurücksetzen?",
+    )
+  )
+    return;
+  const now = new Date();
+  const today = isoDate(now);
   resetManualAssignments(true);
   resetActiveSwaps(true);
-  const now = new Date();
+
+  // Abwesenheiten und Wochenend-Anfragen für Gegenwart/Zukunft löschen.
   Object.keys(state.absences).forEach((key) => {
     const [date] = key.split(":");
-    if (date >= isoDate(now)) delete state.absences[key];
+    if (date >= today) delete state.absences[key];
   });
   Object.keys(state.saturdayEveningRequests).forEach((key) => {
     const [shiftId] = key.split(":");
@@ -942,15 +1007,66 @@ function resetPlanCurrentFuture() {
     if (shift && isCurrentOrFutureShift(shift))
       delete state.saturdayEveningRequests[key];
   });
-  // Verfügbarkeiten (Kann/Kann nicht) bleiben bewusst erhalten für erneute Admin-Zuteilung.
+
+  // Slotzuordnung auf Standard zurücksetzen.
+  state.slotAssignments = { ...DEFAULT_SLOT_ASSIGNMENTS };
+
+  // Urlaube/Krankheit in Gegenwart/Zukunft entfernen.
+  state.vacations = state.vacations.filter((v) => v.to < today);
+  state.sickLeaves = state.sickLeaves.filter((s) => s.to < today);
+
+  // Eventuelle manuelle Marker für Gegenwart/Zukunft bereinigen.
+  Object.keys(state.unmanned).forEach((shiftId) => {
+    const shift = getShiftById(shiftId);
+    if (shift && isCurrentOrFutureShift(shift)) delete state.unmanned[shiftId];
+  });
+  Object.keys(state.shiftEndChecks).forEach((shiftId) => {
+    const shift = getShiftById(shiftId);
+    if (shift && isCurrentOrFutureShift(shift))
+      delete state.shiftEndChecks[shiftId];
+  });
+
   persist();
   render();
+  alert(
+    "Gesamtplan wurde für Gegenwart/Zukunft auf den Ursprungsplan zurückgesetzt.",
+  );
 }
 
 function updateSlotAssignment(slot) {
   const select = document.getElementById(`slot-${slot}`);
   if (!select) return;
   state.slotAssignments[slot] = select.value;
+  persist();
+  render();
+}
+
+function addEmployee() {
+  const name = document.getElementById("newEmployeeName")?.value?.trim();
+  const type = document.getElementById("newEmployeeType")?.value || "springer";
+  if (!name) return alert("Bitte Namen eingeben.");
+  if (allUsers().some((u) => u.name.toLowerCase() === name.toLowerCase()))
+    return alert("Mitarbeiter existiert bereits.");
+  const nextSlot = type === "core" ? "A" : "D";
+  state.extraUsers.push({ name, slot: nextSlot, type });
+  delete state.inactiveUsers[name];
+  persist();
+  render();
+}
+
+function deactivateEmployee(name) {
+  if (!confirm(`${name} wirklich als inaktiv markieren?`)) return;
+  state.inactiveUsers[name] = true;
+  Object.keys(state.slotAssignments).forEach((slot) => {
+    if (state.slotAssignments[slot] === name)
+      state.slotAssignments[slot] = DEFAULT_SLOT_ASSIGNMENTS[slot] || null;
+  });
+  persist();
+  render();
+}
+
+function activateEmployee(name) {
+  delete state.inactiveUsers[name];
   persist();
   render();
 }
@@ -1006,9 +1122,9 @@ function renderTodo() {
 }
 
 function renderTaskCreateBox() {
-  const options = USERS.map(
-    (u) => `<option value='${u.name}'>${u.name}</option>`,
-  ).join("");
+  const options = activeUsers()
+    .map((u) => `<option value='${u.name}'>${u.name}</option>`)
+    .join("");
   return `<div class='border rounded-lg p-3 bg-slate-50 mb-3'>
     <h3 class='font-semibold mb-2'>Neue Aufgabe erstellen</h3>
     <div class='grid md:grid-cols-4 gap-2'>
@@ -1574,6 +1690,9 @@ window.resetActiveSwaps = resetActiveSwaps;
 window.resetManualAssignments = resetManualAssignments;
 window.resetPlanCurrentFuture = resetPlanCurrentFuture;
 window.updateSlotAssignment = updateSlotAssignment;
+window.addEmployee = addEmployee;
+window.deactivateEmployee = deactivateEmployee;
+window.activateEmployee = activateEmployee;
 window.requestSaturdayEvening = requestSaturdayEvening;
 window.setWeekendAvailability = setWeekendAvailability;
 window.createTask = createTask;
