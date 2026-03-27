@@ -1070,6 +1070,34 @@ function parseDurationHours(text) {
   return h + m / 60;
 }
 
+function shiftDateRange(shift) {
+  const start = new Date(`${shift.date}T${shift.start}:00`);
+  const end = new Date(`${shift.date}T${shift.end}:00`);
+  if (end <= start) end.setDate(end.getDate() + 1);
+  return { start, end };
+}
+
+function maxUnmannedHoursForShift(shiftId) {
+  const all = generateThreeMonths()
+    .filter((s) => s.assigned)
+    .sort((a, b) => {
+      const ra = shiftDateRange(a).start;
+      const rb = shiftDateRange(b).start;
+      return ra - rb;
+    });
+  const current = all.find((s) => s.id === shiftId);
+  if (!current) return 0;
+  const currentEnd = shiftDateRange(current).end;
+  const next = all.find((s) => shiftDateRange(s).start > currentEnd);
+  if (!next) return 0;
+  const nextStart = shiftDateRange(next).start;
+  const diffHours = Math.max(
+    0,
+    (nextStart.getTime() - currentEnd.getTime()) / (1000 * 60 * 60),
+  );
+  return diffHours;
+}
+
 function computeWeekStats() {
   const { from, to } = getCurrentWeekRange();
   const target = 154;
@@ -1092,7 +1120,11 @@ function computeWeekStats() {
       const date = shiftId.slice(0, 10);
       return date >= from && date <= to;
     })
-    .reduce((acc, [, timeText]) => acc + parseDurationHours(timeText), 0);
+    .reduce((acc, [shiftId, timeText]) => {
+      const entered = parseDurationHours(timeText);
+      const allowed = maxUnmannedHoursForShift(shiftId);
+      return acc + Math.min(entered, allowed);
+    }, 0);
 
   const downtime =
     Object.entries(state.machineDowntime)
