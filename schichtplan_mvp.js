@@ -6,6 +6,15 @@ const USERS = [
   { name: "Musa", slot: "E", type: "springer" },
   { name: "Ardian", slot: "F", type: "springer" },
 ];
+const SLOT_CODES = ["A", "B", "C", "D", "E", "F"];
+const DEFAULT_SLOT_ASSIGNMENTS = {
+  A: "Lavdrim",
+  B: "Roger",
+  C: "Dashmir",
+  D: "Thomas",
+  E: "Musa",
+  F: "Ardian",
+};
 
 const STORAGE_KEY = "schichtplan_mvp_v1";
 const state = loadState();
@@ -66,6 +75,14 @@ function loadState() {
     sickLeaves: [],
     swaps: [],
     shiftCancellations: {},
+    slotAssignments: { ...DEFAULT_SLOT_ASSIGNMENTS },
+    saturdayEveningRequests: {},
+    tasks: [],
+    conflicts: {},
+    shiftEndChecks: {},
+    shiftStartChecks: {},
+    machineDowntime: {},
+    machinePromptSeen: {},
   };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -102,17 +119,21 @@ function logout() {
 function render() {
   if (!currentUser) return;
   const tabs = ["schichtplan"];
-  if (currentUser.role === "admin") tabs.push("planung");
-  if (currentUser.role === "employee") tabs.push("verfuegbarkeit", "abschluss");
+  if (currentUser.role === "admin")
+    tabs.push("meine", "planung", "todo", "konflikte", "statistik");
+  if (currentUser.role === "employee") tabs.push("meine", "todo");
 
   const tabsEl = document.getElementById("tabs");
   tabsEl.className = "flex gap-2 flex-wrap";
   tabsEl.innerHTML =
     tabs
-      .map(
-        (t) =>
-          `<button class="px-3 py-2 rounded ${currentTab === t ? "bg-slate-900 text-white" : "bg-white"}" onclick="setTab('${t}')">${labelTab(t)}</button>`,
-      )
+      .map((t) => {
+        const statusClass = tabNeedsAttention(t)
+          ? "bg-rose-100 border-rose-400"
+          : "bg-emerald-100 border-emerald-400";
+        const activeClass = currentTab === t ? "ring-2 ring-slate-900" : "";
+        return `<button class="px-3 py-2 rounded border ${statusClass} ${activeClass}" onclick="setTab('${t}')">${labelTab(t)}</button>`;
+      })
       .join("") +
     `<button class="px-3 py-2 rounded bg-red-100" onclick="logout()">Abmelden</button>`;
 
@@ -122,23 +143,43 @@ function render() {
   if (!tabs.includes(currentTab)) currentTab = tabs[0];
   const view = document.getElementById("view");
   if (currentTab === "schichtplan") view.innerHTML = renderSchedule();
+  if (currentTab === "meine") view.innerHTML = renderMyShifts();
   if (currentTab === "planung") view.innerHTML = renderPlanning();
-  if (currentTab === "verfuegbarkeit") view.innerHTML = renderAvailability();
-  if (currentTab === "abschluss") view.innerHTML = renderClosure();
+  if (currentTab === "todo") view.innerHTML = renderTodo();
+  if (currentTab === "konflikte") view.innerHTML = renderConflicts();
+  if (currentTab === "statistik") view.innerHTML = renderStats();
+  maybeShowMachinePrompt();
+  maybeTaskReminder();
+  maybeShowShiftStartChecklist();
+  maybeShowShiftEndChecklist();
 }
 
 function labelTab(tab) {
   return {
     schichtplan: "Schichtplan",
+    meine: "Meine Schichten",
     planung: "Planung (Admin)",
-    verfuegbarkeit: "Unklare Schichten",
-    abschluss: "Schichtabschluss",
+    todo: "To-Do",
+    konflikte: "Konflikte",
+    statistik: "Statistik",
   }[tab];
 }
 
 function setTab(tab) {
   currentTab = tab;
   render();
+}
+
+function tabNeedsAttention(tab) {
+  if (tab === "planung") return generateThreeMonths().some((s) => s.open);
+  if (tab === "todo") return state.tasks.some((t) => t.status !== "done");
+  if (tab === "konflikte")
+    return Object.values(state.conflicts).some((c) => c.resolved !== true);
+  if (tab === "meine" && currentUser?.role === "employee")
+    return generateThreeMonths().some(
+      (s) => s.assigned === currentUser.name && s.open,
+    );
+  return false;
 }
 
 function generateThreeMonths() {
@@ -212,7 +253,11 @@ function chooseDefault(options) {
 }
 
 function slotToName(slot) {
-  return USERS.find((u) => u.slot === slot)?.name || null;
+  return (
+    state.slotAssignments?.[slot] ||
+    USERS.find((u) => u.slot === slot)?.name ||
+    null
+  );
 }
 
 function userByName(name) {
@@ -224,7 +269,10 @@ function isCoreEmployee(name) {
 }
 
 function slotOfUser(name) {
-  return USERS.find((u) => u.name === name)?.slot || "-";
+  const mappedSlot = Object.entries(state.slotAssignments || {}).find(
+    ([, assignedName]) => assignedName === name,
+  )?.[0];
+  return mappedSlot || USERS.find((u) => u.name === name)?.slot || "-";
 }
 
 const PERSON_COLORS = {
@@ -390,10 +438,10 @@ function renderOverviewPlan(weeksToShow = 12) {
         body += `<tr class="border-b bg-amber-50">
           <td class="p-2 font-semibold">${weekLabel}</td>
           <td class="p-2 font-semibold">${dayName}<div class="text-[11px] text-slate-500">${dateIso}</div></td>
-          <td class="p-2 ${m1.cls} font-semibold text-center">${m1.label}</td>
-          <td class="p-2 font-semibold text-center bg-white">05:00-11:00</td>
+          <td class="p-2 ${m1.cls} font-semibold text-center ring-1 ring-amber-500"> ${m1.label}</td>
+          <td class="p-2 font-semibold text-center bg-amber-100">05:00-11:00 (Sa Morgen)</td>
           <td class="p-2 ${m2.cls} font-semibold text-center">${m2.label}</td>
-          <td class="p-2 font-semibold text-center bg-white">16:00-22:00</td>
+          <td class="p-2 font-semibold text-center bg-amber-200">16:00-22:00 (Sa Abend)</td>
           <td class="p-2 bg-slate-50" colspan="2"></td>
         </tr>`;
       } else {
@@ -405,8 +453,8 @@ function renderOverviewPlan(weeksToShow = 12) {
         body += `<tr class="border-b bg-amber-50">
           <td class="p-2 font-semibold">${weekLabel}</td>
           <td class="p-2 font-semibold">${dayName}<div class="text-[11px] text-slate-500">${dateIso}</div></td>
-          <td class="p-2 ${m1.cls} font-semibold text-center">${m1.label}</td>
-          <td class="p-2 font-semibold text-center bg-white">06:00-12:00</td>
+          <td class="p-2 ${m1.cls} font-semibold text-center ring-1 ring-blue-500">${m1.label}</td>
+          <td class="p-2 font-semibold text-center bg-blue-100">06:00-12:00 (So Morgen)</td>
           <td class="p-2 bg-slate-50" colspan="2"></td>
           <td class="p-2 ${m2.cls} font-semibold text-center">${m2.label}</td>
           <td class="p-2 font-semibold text-center bg-white">18:00-24:00</td>
@@ -435,41 +483,55 @@ function renderOverviewPlan(weeksToShow = 12) {
 }
 
 function renderSchedule() {
-  const shifts = generateThreeMonths();
-  const visibleShifts =
-    currentUser.role === "admin"
-      ? shifts
-      : isCoreEmployee(currentUser.name)
-        ? shifts
-        : shifts.filter((s) => s.assigned === currentUser.name);
-  const rows = visibleShifts
-    .slice(0, 20)
-    .map((s) => {
-      const canAbsent = currentUser.role === "employee";
-      const status = s.open
-        ? '<span class="text-red-600 font-semibold">OFFEN</span>'
-        : '<span class="text-emerald-700">Besetzt</span>';
-      return `<tr class="border-b">
-        <td class="p-2">${s.date}</td><td class="p-2">${s.label}</td><td class="p-2">${s.start}–${s.end}</td>
-        <td class="p-2">${s.assigned || "-"}</td><td class="p-2">${status}</td>
-        <td class="p-2">${canAbsent ? `<button class='px-2 py-1 bg-amber-200 rounded' onclick="markAbsent('${s.id}','${s.date}','${currentUser.name}')">Kann nicht kommen</button>` : ""}</td>
-      </tr>`;
-    })
-    .join("");
-
   return `<div class='bg-white rounded-xl shadow p-4'>
-    <h2 class='text-lg font-semibold mb-3'>Schichtplan (automatisch 90 Tage ab aktueller Woche)</h2>
+    <h2 class='text-lg font-semibold mb-3'>Gesamt-Schichtplan (90 Tage ab aktueller Woche)</h2>
     ${renderOverviewPlan(Math.ceil(90 / 7))}
-    <h3 class='text-md font-semibold mt-6 mb-2'>Meine nächsten Einsätze (Aktionen)</h3>
-    <div class='overflow-auto max-h-[40vh] border rounded-lg'>
-      <table class='w-full text-sm'><thead class='sticky top-0 bg-slate-100'><tr>
-      <th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Zeit</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Status</th><th class='p-2'></th>
-      </tr></thead><tbody>${rows}</tbody></table>
-    </div></div>`;
+  </div>`;
 }
 
 function markAbsent(shiftId, date, employeeName) {
   state.absences[`${date}:${employeeName}`] = true;
+  persist();
+  render();
+}
+
+function renderMyShifts() {
+  const shifts = generateThreeMonths()
+    .filter((s) => s.assigned === currentUser.name)
+    .slice(0, 90);
+  const rows = shifts
+    .map((s) => {
+      const status = s.open
+        ? '<span class="text-red-600 font-semibold">OFFEN</span>'
+        : '<span class="text-emerald-700">Besetzt</span>';
+      const saturdayEvening = s.id.includes("-sa-1");
+      const reqKey = `${s.id}:${currentUser.name}`;
+      const requested = !!state.saturdayEveningRequests[reqKey];
+      return `<tr class="border-b">
+      <td class="p-2">${s.date}</td>
+      <td class="p-2">${s.label}</td>
+      <td class="p-2">${s.start}–${s.end}</td>
+      <td class="p-2">${status}</td>
+      <td class="p-2">
+        <button class='px-2 py-1 bg-amber-200 rounded mr-2' onclick="markAbsent('${s.id}','${s.date}','${currentUser.name}')">Abwesenheit</button>
+        ${saturdayEvening ? `<button class='px-2 py-1 rounded ${requested ? "bg-emerald-200" : "bg-blue-200"}' onclick="requestSaturdayEvening('${s.id}')">${requested ? "Eingetragen" : "Sa-Abend eintragen"}</button>` : ""}
+      </td>
+    </tr>`;
+    })
+    .join("");
+
+  return `<div class='bg-white rounded-xl shadow p-4'>
+    <h2 class='text-lg font-semibold mb-3'>Meine individuellen Schichten (90 Tage)</h2>
+    <div class='overflow-auto max-h-[65vh] border rounded-lg'>
+      <table class='w-full text-sm'><thead class='sticky top-0 bg-slate-100'><tr>
+        <th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Zeit</th><th class='p-2 text-left'>Status</th><th class='p-2 text-left'>Aktionen</th>
+      </tr></thead><tbody>${rows || '<tr><td class=\"p-2\" colspan=\"5\">Keine Schichten gefunden.</td></tr>'}</tbody></table>
+    </div>
+  </div>`;
+}
+
+function requestSaturdayEvening(shiftId) {
+  state.saturdayEveningRequests[`${shiftId}:${currentUser.name}`] = true;
   persist();
   render();
 }
@@ -527,10 +589,36 @@ function renderPlanning() {
     })
     .join("");
 
+  const saturdayRequestRows = Object.entries(state.saturdayEveningRequests)
+    .filter(([, requested]) => requested)
+    .map(([key]) => {
+      const [shiftId, user] = key.split(":");
+      const shift = generateThreeMonths().find((s) => s.id === shiftId);
+      if (!shift) return "";
+      return `<tr class='border-b'>
+        <td class='p-2'>${shift.date}</td>
+        <td class='p-2'>${user}</td>
+        <td class='p-2'>${shift.label} (${shift.start}–${shift.end})</td>
+        <td class='p-2'><button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick="approveSaturdayRequest('${shiftId}','${user}')">Genehmigen</button></td>
+      </tr>`;
+    })
+    .join("");
+
   const monthValue = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
   const personOptions = USERS.map(
     (u) => `<option value='${u.name}'>${u.name}</option>`,
   ).join("");
+  const slotAssignmentRows = SLOT_CODES.map((slot) => {
+    const options = USERS.map(
+      (u) =>
+        `<option value='${u.name}' ${state.slotAssignments?.[slot] === u.name ? "selected" : ""}>${u.name}</option>`,
+    ).join("");
+    return `<tr class='border-b'>
+      <td class='p-2 font-semibold'>${slot}</td>
+      <td class='p-2'><select id='slot-${slot}' class='border rounded p-1 w-full'>${options}</select></td>
+      <td class='p-2'><button class='px-2 py-1 rounded bg-slate-900 text-white' onclick="updateSlotAssignment('${slot}')">Speichern</button></td>
+    </tr>`;
+  }).join("");
   const vacationRows = state.vacations
     .slice(-20)
     .reverse()
@@ -554,10 +642,25 @@ function renderPlanning() {
 
     <div class='grid md:grid-cols-2 gap-4 mb-6'>
       <div class='border rounded-lg p-3 bg-slate-50'>
+        <h3 class='font-semibold mb-2'>Zuordnung Slots A–F</h3>
+        <p class='text-sm text-slate-500 mb-2'>Admin kann festlegen, welcher Mitarbeiter aktuell A/B/C/D/E/F ist. Der Schichtplan passt sich danach direkt an.</p>
+        <div class='overflow-auto max-h-56'>
+          <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Slot</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2'></th></tr></thead>
+          <tbody>${slotAssignmentRows}</tbody></table>
+        </div>
+      </div>
+      <div class='border rounded-lg p-3 bg-slate-50'>
         <h3 class='font-semibold mb-2'>Meldungen „Kann nicht kommen“</h3>
         <div class='overflow-auto max-h-56'>
           <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Typ</th></tr></thead>
           <tbody>${absenceRows || '<tr><td class=\"p-2\" colspan=\"3\">Keine Meldungen.</td></tr>'}</tbody></table>
+        </div>
+      </div>
+      <div class='border rounded-lg p-3 bg-slate-50'>
+        <h3 class='font-semibold mb-2'>Samstag-Abend Eintragungen (Freigabe durch Admin)</h3>
+        <div class='overflow-auto max-h-56'>
+          <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Schicht</th><th class='p-2'></th></tr></thead>
+          <tbody>${saturdayRequestRows || '<tr><td class=\"p-2\" colspan=\"4\">Keine Anfragen.</td></tr>'}</tbody></table>
         </div>
       </div>
       <div class='border rounded-lg p-3 bg-slate-50 space-y-3'>
@@ -643,6 +746,13 @@ function assignOptionalShift(shiftId) {
   render();
 }
 
+function approveSaturdayRequest(shiftId, user) {
+  state.assignments[shiftId] = user;
+  delete state.saturdayEveningRequests[`${shiftId}:${user}`];
+  persist();
+  render();
+}
+
 function readAdminCalendarForm() {
   const user = document.getElementById("adminCalUser")?.value;
   const from = document.getElementById("adminFrom")?.value;
@@ -681,6 +791,222 @@ function addSwap() {
   state.swaps.push({ userA, userB, startDate });
   persist();
   render();
+}
+
+function updateSlotAssignment(slot) {
+  const select = document.getElementById(`slot-${slot}`);
+  if (!select) return;
+  state.slotAssignments[slot] = select.value;
+  persist();
+  render();
+}
+
+function renderTodo() {
+  const nowIso = new Date().toISOString();
+  const isAdmin = currentUser.role === "admin";
+  const relevantTasks = state.tasks.filter(
+    (t) => isAdmin || t.assignee === currentUser.name,
+  );
+  const openTasks = relevantTasks.filter((t) => t.status !== "done");
+  const doneTasks = relevantTasks.filter((t) => t.status === "done");
+
+  const openRows = openTasks
+    .map((t) => {
+      const overdue = t.deadline && nowIso > `${t.deadline}T23:59:59`;
+      return `<tr class='border-b ${overdue ? "bg-rose-50" : ""}'>
+      <td class='p-2'>${t.title}</td><td class='p-2'>${t.assignee}</td><td class='p-2'>${t.deadline || "-"}</td>
+      <td class='p-2'>${t.doneAt ? "Erledigt" : "Offen"}</td>
+      <td class='p-2'>
+        ${
+          isAdmin
+            ? `<button class='px-2 py-1 rounded bg-slate-900 text-white mr-1' onclick="deleteTask('${t.id}')">Löschen</button>
+          <button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="reassignTaskPrompt('${t.id}')">Neu zuweisen</button>`
+            : `<button class='px-2 py-1 rounded bg-emerald-600 text-white' onclick="completeTask('${t.id}')">Erledigt</button>`
+        }
+      </td>
+    </tr>`;
+    })
+    .join("");
+
+  const doneRows = doneTasks
+    .map(
+      (t) => `<tr class='border-b bg-emerald-50'>
+      <td class='p-2'>✅ ${t.title}</td><td class='p-2'>${t.assignee}</td><td class='p-2'>${t.deadline || "-"}</td><td class='p-2'>${t.doneAt || "-"}</td>
+      <td class='p-2'>${isAdmin ? `<button class='px-2 py-1 rounded bg-slate-900 text-white' onclick="deleteTask('${t.id}')">Löschen</button>` : "-"}</td>
+    </tr>`,
+    )
+    .join("");
+
+  return `<div class='bg-white rounded-xl shadow p-4'>
+    <h2 class='text-lg font-semibold mb-3'>To-Do</h2>
+    ${isAdmin ? renderTaskCreateBox() : ""}
+    <h3 class='font-semibold mt-3 mb-2'>Offene Aufgaben</h3>
+    <div class='overflow-auto max-h-[45vh] border rounded-lg'>
+      <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Aufgabe</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Frist</th><th class='p-2 text-left'>Status</th><th class='p-2'></th></tr></thead><tbody>${openRows || '<tr><td class=\"p-2\" colspan=\"5\">Keine offenen Aufgaben.</td></tr>'}</tbody></table>
+    </div>
+    <h3 class='font-semibold mt-4 mb-2'>Erledigte Aufgaben</h3>
+    <div class='overflow-auto max-h-[25vh] border rounded-lg'>
+      <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Aufgabe</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Frist</th><th class='p-2 text-left'>Erledigt am</th><th class='p-2'></th></tr></thead><tbody>${doneRows || '<tr><td class=\"p-2\" colspan=\"5\">Noch keine erledigten Aufgaben.</td></tr>'}</tbody></table>
+    </div>
+  </div>`;
+}
+
+function renderTaskCreateBox() {
+  const options = USERS.map(
+    (u) => `<option value='${u.name}'>${u.name}</option>`,
+  ).join("");
+  return `<div class='border rounded-lg p-3 bg-slate-50 mb-3'>
+    <h3 class='font-semibold mb-2'>Neue Aufgabe erstellen</h3>
+    <div class='grid md:grid-cols-4 gap-2'>
+      <input id='taskTitle' class='border rounded p-2' placeholder='Aufgabe'/>
+      <select id='taskAssignee' class='border rounded p-2'>${options}</select>
+      <input id='taskDeadline' type='date' class='border rounded p-2'/>
+      <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick='createTask()'>Speichern</button>
+    </div>
+  </div>`;
+}
+
+function createTask() {
+  const title = document.getElementById("taskTitle")?.value?.trim();
+  const assignee = document.getElementById("taskAssignee")?.value;
+  const deadline = document.getElementById("taskDeadline")?.value;
+  if (!title || !assignee)
+    return alert("Bitte Aufgabe und Mitarbeiter angeben.");
+  state.tasks.push({
+    id: `task-${Date.now()}`,
+    title,
+    assignee,
+    deadline,
+    status: "open",
+    createdAt: new Date().toISOString(),
+    doneAt: null,
+  });
+  persist();
+  render();
+}
+
+function completeTask(taskId) {
+  const task = state.tasks.find((t) => t.id === taskId);
+  if (!task) return;
+  task.status = "done";
+  task.doneAt = new Date().toISOString().slice(0, 16).replace("T", " ");
+  persist();
+  render();
+}
+
+function deleteTask(taskId) {
+  state.tasks = state.tasks.filter((t) => t.id !== taskId);
+  persist();
+  render();
+}
+
+function reassignTaskPrompt(taskId) {
+  const task = state.tasks.find((t) => t.id === taskId);
+  if (!task) return;
+  const name = prompt("Neuer Mitarbeiter:", task.assignee);
+  if (!name) return;
+  task.assignee = name;
+  task.status = "open";
+  task.doneAt = null;
+  persist();
+  render();
+}
+
+function maybeTaskReminder() {
+  if (!currentUser || currentUser.role !== "employee") return;
+  const now = new Date();
+  const today = isoDate(now);
+  const hourKey = `${today}:${now.getHours()}:${currentUser.name}`;
+  if (state[`_taskReminder_${hourKey}`]) return;
+  const dueToday = state.tasks.filter(
+    (t) =>
+      t.assignee === currentUser.name &&
+      t.status !== "done" &&
+      t.deadline === today,
+  );
+  if (!dueToday.length) return;
+  alert(`Erinnerung: ${dueToday.length} Aufgabe(n) heute fällig.`);
+  state[`_taskReminder_${hourKey}`] = true;
+  persist();
+}
+
+function renderConflicts() {
+  const rows = Object.entries(state.conflicts)
+    .map(
+      ([id, c]) => `<tr class='border-b'>
+    <td class='p-2'>${c.date}</td><td class='p-2'>${c.user}</td><td class='p-2'>${c.text}</td>
+    <td class='p-2'>${c.resolved ? "Ja" : "Nein"}</td>
+    <td class='p-2'><button class='px-2 py-1 rounded bg-slate-900 text-white' onclick="setConflictResolved('${id}', ${c.resolved ? "false" : "true"})">${c.resolved ? "Auf Nein" : "Als gelöst markieren"}</button></td>
+  </tr>`,
+    )
+    .join("");
+  return `<div class='bg-white rounded-xl shadow p-4'>
+    <h2 class='text-lg font-semibold mb-3'>Konflikte</h2>
+    <div class='overflow-auto max-h-[70vh] border rounded-lg'>
+      <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Konflikt</th><th class='p-2 text-left'>Gelöst</th><th class='p-2'></th></tr></thead>
+      <tbody>${rows || '<tr><td class=\"p-2\" colspan=\"5\">Keine Konflikte.</td></tr>'}</tbody></table>
+    </div>
+  </div>`;
+}
+
+function setConflictResolved(id, resolved) {
+  if (!state.conflicts[id]) return;
+  state.conflicts[id].resolved = resolved;
+  persist();
+  render();
+}
+
+function getWeekHours() {
+  const shifts = generateThreeMonths();
+  const monday = new Date();
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const from = isoDate(monday);
+  const to = isoDate(sunday);
+  const planned = shifts
+    .filter((s) => s.date >= from && s.date <= to && s.assigned)
+    .reduce((acc, s) => acc + shiftHours(s.start, s.end), 0);
+  const downtime =
+    Object.entries(state.machineDowntime)
+      .filter(([k]) => {
+        const date = k.split(":")[0];
+        return date >= from && date <= to;
+      })
+      .reduce((acc, [, v]) => acc + (v.minutes || 0), 0) / 60;
+  return {
+    planned: Math.round(planned * 10) / 10,
+    downtime: Math.round(downtime * 10) / 10,
+  };
+}
+
+function shiftHours(start, end) {
+  const [sh, sm] = start.split(":").map(Number);
+  const [eh, em] = end.split(":").map(Number);
+  let diff = eh * 60 + em - (sh * 60 + sm);
+  if (diff <= 0) diff += 24 * 60;
+  return diff / 60;
+}
+
+function renderStats() {
+  const target = 154;
+  const { planned, downtime } = getWeekHours();
+  const deviation = planned ? (downtime / planned) * 100 : 0;
+  const color =
+    deviation <= 8
+      ? "text-emerald-600"
+      : deviation <= 12
+        ? "text-orange-500"
+        : "text-rose-600";
+  return `<div class='bg-white rounded-xl shadow p-4'>
+    <h2 class='text-lg font-semibold mb-3'>Laufzeitstatistik (Woche)</h2>
+    <div class='grid md:grid-cols-4 gap-3 text-center'>
+      <div class='p-3 rounded bg-slate-100'><div class='text-sm'>Marker</div><div class='text-2xl font-bold'>${target} h</div></div>
+      <div class='p-3 rounded bg-blue-100'><div class='text-sm'>Geplante Stunden</div><div class='text-2xl font-bold'>${planned} h</div></div>
+      <div class='p-3 rounded bg-rose-100'><div class='text-sm'>Ist-Stillstand</div><div class='text-2xl font-bold'>${downtime} h</div></div>
+      <div class='p-3 rounded bg-white border'><div class='text-sm'>Abweichung</div><div class='text-2xl font-bold ${color}'>${deviation.toFixed(1)}%</div></div>
+    </div>
+  </div>`;
 }
 
 function renderAvailability() {
@@ -778,6 +1104,11 @@ function openChecklist(shiftId) {
       at: new Date().toISOString(),
       checks,
     };
+    state.shiftEndChecks[shiftId] = {
+      by: currentUser.name,
+      at: new Date().toISOString(),
+      checks,
+    };
     const h = wrapper.querySelector("#uh").value;
     const m = wrapper.querySelector("#um").value;
     state.unmanned[shiftId] = `${h}:${m}`;
@@ -785,6 +1116,127 @@ function openChecklist(shiftId) {
     wrapper.remove();
     render();
   };
+}
+
+function getCurrentShiftForUser(name) {
+  const now = new Date();
+  const today = isoDate(now);
+  const shifts = generateThreeMonths().filter(
+    (s) => s.assigned === name && s.date === today,
+  );
+  return (
+    shifts.find((s) => {
+      const [sh, sm] = s.start.split(":").map(Number);
+      const [eh, em] = s.end.split(":").map(Number);
+      const start = new Date(now);
+      start.setHours(sh, sm, 0, 0);
+      const end = new Date(now);
+      end.setHours(eh, em, 0, 0);
+      if (end <= start) end.setDate(end.getDate() + 1);
+      return now >= start && now <= end;
+    }) || null
+  );
+}
+
+function maybeShowMachinePrompt() {
+  if (!currentUser || currentUser.role !== "employee") return;
+  const today = isoDate(new Date());
+  const key = `${today}:${currentUser.name}`;
+  if (state.machinePromptSeen[key]) {
+    renderDowntimeWidget();
+    return;
+  }
+  state.machinePromptSeen[key] = true;
+  const running = confirm("Läuft die Maschine zu Schichtbeginn?");
+  if (!running) {
+    state.machineDowntime[key] = {
+      startAt: new Date().toISOString(),
+      minutes: 0,
+      running: true,
+    };
+  }
+  persist();
+  renderDowntimeWidget();
+}
+
+function renderDowntimeWidget() {
+  const today = isoDate(new Date());
+  const key = `${today}:${currentUser.name}`;
+  const downtime = state.machineDowntime[key];
+  let box = document.getElementById("downtimeWidget");
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "downtimeWidget";
+    box.className = "fixed top-4 right-4 z-50";
+    document.body.appendChild(box);
+  }
+  if (!downtime || !downtime.running) {
+    box.innerHTML = "";
+    return;
+  }
+  box.innerHTML = `<button onclick="stopDowntimeTimer()" class="px-4 py-3 rounded-full bg-emerald-600 text-white shadow-lg flex items-center gap-2">
+    <span class="w-4 h-4 rounded-full bg-green-300 inline-block"></span>
+    Stillstand läuft – Stoppen
+  </button>`;
+}
+
+function stopDowntimeTimer() {
+  const today = isoDate(new Date());
+  const key = `${today}:${currentUser.name}`;
+  const downtime = state.machineDowntime[key];
+  if (!downtime?.running) return;
+  const start = new Date(downtime.startAt);
+  const minutes = Math.max(
+    1,
+    Math.round((Date.now() - start.getTime()) / 60000),
+  );
+  state.machineDowntime[key] = {
+    ...downtime,
+    running: false,
+    minutes: (downtime.minutes || 0) + minutes,
+  };
+  persist();
+  render();
+}
+
+function maybeShowShiftEndChecklist() {
+  if (!currentUser || currentUser.role !== "employee") return;
+  const shift = getCurrentShiftForUser(currentUser.name);
+  if (!shift) return;
+  const [eh, em] = shift.end.split(":").map(Number);
+  const end = new Date();
+  end.setHours(eh, em, 0, 0);
+  const trigger = new Date(end.getTime() - 15 * 60000);
+  const now = new Date();
+  if (now >= trigger && !state.shiftEndChecks[shift.id])
+    openChecklist(shift.id);
+}
+
+function maybeShowShiftStartChecklist() {
+  if (!currentUser || currentUser.role !== "employee") return;
+  const shift = getCurrentShiftForUser(currentUser.name);
+  if (!shift) return;
+  const key = `${shift.id}:${currentUser.name}`;
+  if (state.shiftStartChecks[key]) return;
+  const endData = state.shiftEndChecks[shift.id];
+  const answers = [
+    "Arbeitsplatz ordentlich",
+    "Informationen für die nächste Schicht vorhanden",
+    "Material versorgt und Lagerorte eingetragen",
+    "Alle Aufträge gebucht",
+  ].map((txt, idx) => ({ txt, ok: confirm(`Schichtstart-Check: ${txt}?`) }));
+  state.shiftStartChecks[key] = answers;
+  answers.forEach((a, idx) => {
+    if (endData && endData.checks && endData.checks[idx] !== a.ok) {
+      state.conflicts[`${key}:${idx}`] = {
+        date: shift.date,
+        user: currentUser.name,
+        text: `${a.txt} weicht von Schichtende-Angabe ab`,
+        resolved: false,
+      };
+    }
+  });
+  persist();
 }
 
 function checkbox(id, label) {
@@ -799,8 +1251,17 @@ window.markAbsent = markAbsent;
 window.assignShift = assignShift;
 window.cancelShift = cancelShift;
 window.assignOptionalShift = assignOptionalShift;
+window.approveSaturdayRequest = approveSaturdayRequest;
 window.setAvailability = setAvailability;
 window.openChecklist = openChecklist;
 window.addVacation = addVacation;
 window.addSickLeave = addSickLeave;
 window.addSwap = addSwap;
+window.updateSlotAssignment = updateSlotAssignment;
+window.requestSaturdayEvening = requestSaturdayEvening;
+window.createTask = createTask;
+window.completeTask = completeTask;
+window.deleteTask = deleteTask;
+window.reassignTaskPrompt = reassignTaskPrompt;
+window.setConflictResolved = setConflictResolved;
+window.stopDowntimeTimer = stopDowntimeTimer;
