@@ -583,9 +583,12 @@ function renderMyShifts() {
     .slice(0, 90);
   const rows = shifts
     .map((s) => {
-      const status = s.open
-        ? '<span class="text-red-600 font-semibold">OFFEN</span>'
-        : '<span class="text-emerald-700">Besetzt</span>';
+      const status =
+        s.assigned === currentUser.name
+          ? '<span class="text-emerald-700 font-semibold">Eingeplant</span>'
+          : s.open
+            ? '<span class="text-red-600 font-semibold">OFFEN</span>'
+            : '<span class="text-emerald-700">Besetzt</span>';
       const saturdayEvening = s.id.includes("-sa-1");
       const reqKey = `${s.id}:${currentUser.name}`;
       const requested = !!state.saturdayEveningRequests[reqKey];
