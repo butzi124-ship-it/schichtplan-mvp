@@ -774,7 +774,10 @@ function renderPlanning() {
     </div>
 
     <h3 class='text-md font-semibold mb-2'>Offene Schichten / Übernahme</h3>
-    <p class='text-sm text-slate-500 mb-2'>Pro Tag kannst du entscheiden: ganze Schicht übernehmen lassen oder Ausfall markieren.</p>
+    <div class='flex items-center justify-between mb-2 gap-2'>
+      <p class='text-sm text-slate-500'>Pro Tag kannst du entscheiden: ganze Schicht übernehmen lassen oder Ausfall markieren.</p>
+      <button class='px-2 py-1 rounded bg-slate-800 text-white text-sm' onclick='resetManualAssignments()'>Zuordnungen zurücksetzen (aktuelle+zukünftige)</button>
+    </div>
     <div class='overflow-auto max-h-[50vh] mb-6'>
       <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr>
       <th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Zeit</th><th class='p-2 text-left'>Vorher</th><th class='p-2 text-left'>Übernahme durch</th><th class='p-2'>Aktion</th></tr></thead>
@@ -796,6 +799,9 @@ function renderPlanning() {
       <label class='text-sm'>Gültig ab<input id='swapDate' type='date' value='${todayIso()}' class='border rounded p-1 w-full'/></label>
       <label class='text-sm'>Bis (optional)<input id='swapEndDate' type='date' class='border rounded p-1 w-full'/></label>
       <button class='px-2 py-1 rounded bg-purple-700 text-white h-9' onclick='addSwap()'>Tausch speichern</button>
+    </div>
+    <div class='mt-2'>
+      <button class='px-2 py-1 rounded bg-slate-800 text-white text-sm' onclick='resetActiveSwaps()'>Tausch zurücksetzen (aktuelle+zukünftige)</button>
     </div>
   </div>`;
 }
@@ -879,6 +885,36 @@ function addSwap() {
     return;
   }
   state.swaps.push({ userA, userB, startDate, endDate });
+  persist();
+  render();
+}
+
+function resetActiveSwaps() {
+  const today = todayIso();
+  const y = new Date(`${today}T00:00:00`);
+  y.setDate(y.getDate() - 1);
+  const yesterday = isoDate(y);
+  state.swaps = state.swaps.flatMap((swap) => {
+    if (!swap) return [];
+    if (swap.startDate >= today) return []; // komplett zukünftig -> löschen
+    if (!swap.endDate || swap.endDate >= today)
+      return [{ ...swap, endDate: yesterday }]; // laufend -> vor heutiger Schicht beenden
+    return [swap]; // rein historisch bleibt
+  });
+  persist();
+  render();
+}
+
+function resetManualAssignments() {
+  const assignments = { ...state.assignments };
+  Object.keys(assignments).forEach((shiftId) => {
+    const shift = getShiftById(shiftId);
+    if (!shift) return;
+    if (isCurrentOrFutureShift(shift)) {
+      delete state.assignments[shiftId];
+      delete state.shiftCancellations[shiftId];
+    }
+  });
   persist();
   render();
 }
@@ -1075,6 +1111,16 @@ function shiftDateRange(shift) {
   const end = new Date(`${shift.date}T${shift.end}:00`);
   if (end <= start) end.setDate(end.getDate() + 1);
   return { start, end };
+}
+
+function getShiftById(shiftId) {
+  return generateThreeMonths().find((s) => s.id === shiftId) || null;
+}
+
+function isCurrentOrFutureShift(shift) {
+  const now = new Date();
+  const { start, end } = shiftDateRange(shift);
+  return start >= now || (now >= start && now <= end);
 }
 
 function maxUnmannedHoursForShift(shiftId) {
@@ -1464,6 +1510,8 @@ window.openChecklist = openChecklist;
 window.addVacation = addVacation;
 window.addSickLeave = addSickLeave;
 window.addSwap = addSwap;
+window.resetActiveSwaps = resetActiveSwaps;
+window.resetManualAssignments = resetManualAssignments;
 window.updateSlotAssignment = updateSlotAssignment;
 window.requestSaturdayEvening = requestSaturdayEvening;
 window.setWeekendAvailability = setWeekendAvailability;
