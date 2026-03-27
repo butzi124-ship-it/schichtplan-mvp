@@ -131,7 +131,7 @@ function render() {
   if (!currentUser) return;
   const tabs = ["schichtplan"];
   if (currentUser.role === "admin")
-    tabs.push("meine", "planung", "todo", "konflikte", "statistik");
+    tabs.push("planung", "todo", "konflikte", "statistik");
   if (currentUser.role === "employee") tabs.push("meine", "todo");
 
   const tabsEl = document.getElementById("tabs");
@@ -242,14 +242,15 @@ function buildShift(date, id, template) {
   const isOptional = template.options.length > 1;
   const manualAssigned = state.assignments[id] || null;
   const absenceKey = `${date}:${swappedDefault}`;
-  const absent =
-    !!state.absences[absenceKey] || hasCalendarAbsence(swappedDefault, date);
+  const calendarAbsenceType = getCalendarAbsenceType(swappedDefault, date);
+  const manualAbsent = !!state.absences[absenceKey];
+  const absent = manualAbsent || !!calendarAbsenceType;
   const canceled = !!state.shiftCancellations[id];
   const assigned = canceled
     ? null
     : !isOptional && !absent
       ? swappedDefault
-      : manualAssigned || swappedDefault;
+      : manualAssigned || (isOptional ? swappedDefault : null);
   return {
     id,
     date,
@@ -258,6 +259,7 @@ function buildShift(date, id, template) {
     end: template.end,
     options: template.options,
     assigned,
+    absenceType: calendarAbsenceType || (manualAbsent ? "abwesend" : null),
     open: absent || !assigned || assigned === "NONE",
   };
 }
@@ -354,6 +356,18 @@ function hasCalendarAbsence(name, date) {
   return inVacation || inSick;
 }
 
+function getCalendarAbsenceType(name, date) {
+  if (
+    state.sickLeaves.some((s) => s.user === name && inRange(date, s.from, s.to))
+  )
+    return "krank";
+  if (
+    state.vacations.some((v) => v.user === name && inRange(date, v.from, v.to))
+  )
+    return "urlaub";
+  return null;
+}
+
 function resolveAssigned(shiftId, options) {
   const date = shiftId.slice(0, 10);
   const defaultAssigned = chooseDefault(options);
@@ -368,7 +382,19 @@ function resolveAssigned(shiftId, options) {
   if (state.shiftCancellations[shiftId]) return null;
   return !isOptional && !absent
     ? swappedDefault
-    : manualAssigned || swappedDefault;
+    : manualAssigned || (isOptional ? swappedDefault : null);
+}
+
+function resolveAbsenceType(shiftId, options) {
+  const date = shiftId.slice(0, 10);
+  const defaultAssigned = chooseDefault(options);
+  const swappedDefault = defaultAssigned
+    ? applySwap(date, defaultAssigned)
+    : defaultAssigned;
+  if (getCalendarAbsenceType(swappedDefault, date))
+    return getCalendarAbsenceType(swappedDefault, date);
+  if (state.absences[`${date}:${swappedDefault}`]) return "abwesend";
+  return null;
 }
 
 function assignedDisplay(shiftId, options) {
@@ -379,7 +405,18 @@ function assignedDisplay(shiftId, options) {
 
 function assignedMeta(shiftId, options) {
   const assignedName = resolveAssigned(shiftId, options);
-  if (!assignedName) return { label: "-", cls: "bg-slate-100 text-slate-700" };
+  if (!assignedName) {
+    const abs = resolveAbsenceType(shiftId, options);
+    if (abs)
+      return {
+        label: abs.toUpperCase(),
+        cls:
+          abs === "krank"
+            ? "bg-rose-100 text-rose-800"
+            : "bg-amber-100 text-amber-900",
+      };
+    return { label: "-", cls: "bg-slate-100 text-slate-700" };
+  }
   return {
     label: `${slotOfUser(assignedName)} • ${assignedName}`,
     cls: PERSON_COLORS[assignedName] || "bg-slate-100 text-slate-800",
@@ -622,22 +659,33 @@ function renderPlanning() {
     })
     .join("");
 
+  let lastWeekend = "";
   const optionalRows = optionalShifts
     .slice(0, 120)
     .map((s) => {
       const canUsers = activeUsers()
         .filter((u) => state.availability[`${s.id}:${u.name}`] === "yes")
         .map((u) => u.name);
+      const cantUsers = activeUsers()
+        .filter((u) => state.availability[`${s.id}:${u.name}`] === "no")
+        .map((u) => u.name);
       const options = (
         canUsers.length ? canUsers : activeUsers().map((u) => u.name)
       )
         .map((name) => `<option value="${name}">${name}</option>`)
         .join("");
-      return `<tr class='border-b'>
+      const weekendId = s.date.slice(0, 8);
+      const divider =
+        weekendId !== lastWeekend
+          ? `<tr class='bg-slate-200'><td class='p-2 font-semibold' colspan='7'>Wochenende ab ${s.date}</td></tr>`
+          : "";
+      lastWeekend = weekendId;
+      return `${divider}<tr class='border-b'>
       <td class='p-2'>${s.date}</td>
       <td class='p-2'>${s.label}</td>
       <td class='p-2'>${s.options.map((o) => (o === "NONE" ? "0" : o)).join("/")}</td>
-      <td class='p-2'>${canUsers.length ? canUsers.join(", ") : "-"}</td>
+      <td class='p-2'>${canUsers.length ? canUsers.map((n) => `<span class='px-1 rounded bg-emerald-100 text-emerald-700 mr-1'>${n}</span>`).join("") : "-"}</td>
+      <td class='p-2'>${cantUsers.length ? cantUsers.map((n) => `<span class='px-1 rounded bg-rose-100 text-rose-700 mr-1'>${n}</span>`).join("") : "-"}</td>
       <td class='p-2'><select id='opt-${s.id}' class='border rounded p-1'>${options}</select></td>
       <td class='p-2'><button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="assignOptionalShift('${s.id}')">Einteilen</button></td>
     </tr>`;
@@ -840,13 +888,13 @@ function renderPlanning() {
       <th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Zeit</th><th class='p-2 text-left'>Vorher</th><th class='p-2 text-left'>Übernahme durch</th><th class='p-2'>Aktion</th></tr></thead>
       <tbody>${rows || '<tr><td class="p-2" colspan="6">Keine offenen Schichten.</td></tr>'}</tbody></table>
     </div>
-    <h3 class='text-md font-semibold mt-6 mb-2'>Unklare Schichten mit \"Kann\"-Meldungen</h3>
-    <p class='text-sm text-slate-500 mb-2'>Wenn Mitarbeitende bei einer Schicht \"Kann\" melden, kannst du sie hier direkt einteilen. Die Zuweisung erscheint danach im Schichtplan.</p>
+    <h3 class='text-md font-semibold mt-6 mb-2'>Wochenende</h3>
+    <p class='text-sm text-slate-500 mb-2'>Zugesagt = grün, nicht zugesagt = rot. Beide Gruppen bleiben einsetzbar. Wochenenden sind getrennt dargestellt.</p>
     <div class='overflow-auto max-h-[60vh]'>
       <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr>
-        <th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Option</th><th class='p-2 text-left'>Kann</th><th class='p-2 text-left'>Einteilen</th><th class='p-2'></th>
+        <th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Option</th><th class='p-2 text-left'>Kann</th><th class='p-2 text-left'>Kann nicht</th><th class='p-2 text-left'>Einteilen</th><th class='p-2'></th>
       </tr></thead>
-      <tbody>${optionalRows || '<tr><td class=\"p-2\" colspan=\"6\">Keine unklaren Schichten.</td></tr>'}</tbody></table>
+      <tbody>${optionalRows || '<tr><td class=\"p-2\" colspan=\"7\">Keine Wochenend-Schichten.</td></tr>'}</tbody></table>
     </div>
 
     <h3 class='text-md font-semibold mt-6 mb-2'>Mitarbeiter-Tausch ab Datum</h3>
@@ -866,6 +914,7 @@ function renderPlanning() {
 function assignShift(shiftId) {
   const select = document.getElementById(`sel-${shiftId}`);
   if (!select) return;
+  if (!canAssignUserToShift(select.value, shiftId)) return;
   delete state.shiftCancellations[shiftId];
   state.assignments[shiftId] = select.value;
   persist();
@@ -882,6 +931,7 @@ function cancelShift(shiftId) {
 function assignOptionalShift(shiftId) {
   const select = document.getElementById(`opt-${shiftId}`);
   if (!select) return;
+  if (!canAssignUserToShift(select.value, shiftId)) return;
   delete state.shiftCancellations[shiftId];
   state.assignments[shiftId] = select.value;
   persist();
@@ -889,10 +939,24 @@ function assignOptionalShift(shiftId) {
 }
 
 function approveSaturdayRequest(shiftId, user) {
+  if (!canAssignUserToShift(user, shiftId)) return;
   state.assignments[shiftId] = user;
   delete state.saturdayEveningRequests[`${shiftId}:${user}`];
   persist();
   render();
+}
+
+function canAssignUserToShift(name, shiftId) {
+  const shift = getShiftById(shiftId);
+  if (!shift) return true;
+  const absType = getCalendarAbsenceType(name, shift.date);
+  if (absType) {
+    alert(
+      `${name} ist am ${shift.date} als ${absType} gemeldet und kann nicht eingesetzt werden.`,
+    );
+    return false;
+  }
+  return true;
 }
 
 function readAdminCalendarForm() {
@@ -991,46 +1055,31 @@ function resetPlanCurrentFuture() {
     )
   )
     return;
-  const now = new Date();
-  const today = isoDate(now);
-  resetManualAssignments(true);
-  resetActiveSwaps(true);
+  // Gesamter Plan zurück auf Ausgangszustand (Ursprungsrotation).
+  state.assignments = {};
+  state.shiftCancellations = {};
+  state.absences = {};
+  state.swaps = [];
+  state.saturdayEveningRequests = {};
+  state.vacations = [];
+  state.sickLeaves = [];
+  state.availability = {};
+  state.unmanned = {};
+  state.shiftEndChecks = {};
+  state.shiftStartChecks = {};
+  state.checklists = {};
+  state.conflicts = {};
+  state.machineDowntime = {};
+  state.machinePromptSeen = {};
 
-  // Abwesenheiten und Wochenend-Anfragen für Gegenwart/Zukunft löschen.
-  Object.keys(state.absences).forEach((key) => {
-    const [date] = key.split(":");
-    if (date >= today) delete state.absences[key];
-  });
-  Object.keys(state.saturdayEveningRequests).forEach((key) => {
-    const [shiftId] = key.split(":");
-    const shift = getShiftById(shiftId);
-    if (shift && isCurrentOrFutureShift(shift))
-      delete state.saturdayEveningRequests[key];
-  });
-
-  // Slotzuordnung auf Standard zurücksetzen.
+  // Personal/Slots ebenfalls auf Startzustand.
+  state.extraUsers = [];
+  state.inactiveUsers = {};
   state.slotAssignments = { ...DEFAULT_SLOT_ASSIGNMENTS };
-
-  // Urlaube/Krankheit in Gegenwart/Zukunft entfernen.
-  state.vacations = state.vacations.filter((v) => v.to < today);
-  state.sickLeaves = state.sickLeaves.filter((s) => s.to < today);
-
-  // Eventuelle manuelle Marker für Gegenwart/Zukunft bereinigen.
-  Object.keys(state.unmanned).forEach((shiftId) => {
-    const shift = getShiftById(shiftId);
-    if (shift && isCurrentOrFutureShift(shift)) delete state.unmanned[shiftId];
-  });
-  Object.keys(state.shiftEndChecks).forEach((shiftId) => {
-    const shift = getShiftById(shiftId);
-    if (shift && isCurrentOrFutureShift(shift))
-      delete state.shiftEndChecks[shiftId];
-  });
 
   persist();
   render();
-  alert(
-    "Gesamtplan wurde für Gegenwart/Zukunft auf den Ursprungsplan zurückgesetzt.",
-  );
+  alert("Gesamtplan wurde auf den Ursprungsplan zurückgesetzt.");
 }
 
 function updateSlotAssignment(slot) {
