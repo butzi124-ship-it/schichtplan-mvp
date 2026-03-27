@@ -1,85 +1,42 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Schichtplan Maschine 50 – 90 Tage Übersicht (3 Monate)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  <body class="bg-slate-100 text-slate-900 min-h-screen">
-    <div class="max-w-7xl mx-auto p-4 space-y-4">
-      <header
-        class="bg-white rounded-xl shadow p-4 flex flex-wrap items-center justify-between gap-3"
-      >
-        <div class="flex items-center gap-4">
-          <img
-            src="./img/humbel.png"
-            alt="Humbel Gear Technology"
-            class="h-14 w-auto object-contain"
-          />
-          <div>
-            <h1 class="text-2xl font-bold">
-              Schichtplan Maschine 50 – 90 Tage Übersicht
-            </h1>
-            <p class="text-sm text-slate-500">90 Tage Übersicht</p>
-          </div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Schichtplan Maschine 50 – 90 Tage Übersicht (3 Monate)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen">
+  <div class="max-w-7xl mx-auto p-4 space-y-4">
+    <header class="bg-white rounded-xl shadow p-4 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-4">
+        <img src="./img/humbel.png" alt="Humbel Gear Technology" class="h-14 w-auto object-contain" />
+        <div>
+          <h1 class="text-2xl font-bold">Schichtplan Maschine 50 – 90 Tage Übersicht</h1>
+          <p class="text-sm text-slate-500">90 Tage Übersicht</p>
         </div>
-        <div id="sessionInfo" class="text-sm font-medium"></div>
-      </header>
+      </div>
+      <div id="sessionInfo" class="text-sm font-medium"></div>
+    </header>
 
-      <section id="loginBox" class="bg-white rounded-xl shadow p-4 space-y-3">
-        <h2 class="font-semibold text-lg">Anmeldung</h2>
-        <div class="flex flex-wrap gap-2">
-          <button
-            class="px-3 py-2 rounded bg-slate-900 text-white"
-            onclick="loginAs('admin')"
-          >
-            Mido/Admin
-          </button>
-          <button
-            class="px-3 py-2 rounded bg-blue-700 text-white"
-            onclick="loginAs('Lavdrim')"
-          >
-            Lavdrim (A)
-          </button>
-          <button
-            class="px-3 py-2 rounded bg-blue-700 text-white"
-            onclick="loginAs('Roger')"
-          >
-            Roger (B)
-          </button>
-          <button
-            class="px-3 py-2 rounded bg-blue-700 text-white"
-            onclick="loginAs('Dashmir')"
-          >
-            Dashmir (C)
-          </button>
-          <button
-            class="px-3 py-2 rounded bg-emerald-700 text-white"
-            onclick="loginAs('Thomas')"
-          >
-            Thomas (D)
-          </button>
-          <button
-            class="px-3 py-2 rounded bg-emerald-700 text-white"
-            onclick="loginAs('Musa')"
-          >
-            Musa (E)
-          </button>
-          <button
-            class="px-3 py-2 rounded bg-emerald-700 text-white"
-            onclick="loginAs('Ardian')"
-          >
-            Ardian (F)
-          </button>
-        </div>
-      </section>
+    <section id="loginBox" class="bg-white rounded-xl shadow p-4 space-y-3">
+      <h2 class="font-semibold text-lg">Anmeldung</h2>
+      <div class="flex flex-wrap gap-2">
+        <button class="px-3 py-2 rounded bg-slate-900 text-white" onclick="loginAs('admin')">Mido/Admin</button>
+        <button class="px-3 py-2 rounded bg-blue-700 text-white" onclick="loginAs('Lavdrim')">Lavdrim (A)</button>
+        <button class="px-3 py-2 rounded bg-blue-700 text-white" onclick="loginAs('Roger')">Roger (B)</button>
+        <button class="px-3 py-2 rounded bg-blue-700 text-white" onclick="loginAs('Dashmir')">Dashmir (C)</button>
+        <button class="px-3 py-2 rounded bg-emerald-700 text-white" onclick="loginAs('Thomas')">Thomas (D)</button>
+        <button class="px-3 py-2 rounded bg-emerald-700 text-white" onclick="loginAs('Musa')">Musa (E)</button>
+        <button class="px-3 py-2 rounded bg-emerald-700 text-white" onclick="loginAs('Ardian')">Ardian (F)</button>
+      </div>
+    </section>
 
-      <nav id="tabs" class="hidden gap-2 flex-wrap"></nav>
+    <nav id="tabs" class="hidden gap-2 flex-wrap"></nav>
 
-      <section id="view"></section>
-    </div>
+    <section id="view"></section>
+  </div>
 
-    <script src="./schichtplan_mvp.js"></script>
-  </body>
+  <script src="./schichtplan_mvp.js"></script>
+</body>
 </html>
