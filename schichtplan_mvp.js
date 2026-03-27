@@ -321,6 +321,7 @@ function applySwap(date, name) {
   let resolved = name;
   state.swaps.forEach((swap) => {
     if (!swap || date < swap.startDate) return;
+    if (swap.endDate && date > swap.endDate) return;
     if (resolved === swap.userA) resolved = swap.userB;
     else if (resolved === swap.userB) resolved = swap.userA;
   });
@@ -406,9 +407,9 @@ function renderOverviewPlan(weeksToShow = 12) {
       body += `<tr class="border-b bg-amber-50">
         <td class="p-2"></td>
         <td class="p-2 font-semibold">Start (Sonntag)</td>
+        <td class="p-2 bg-slate-50" colspan="4"></td>
         <td class="p-2 ${startMeta.cls} font-semibold text-center">${startMeta.label}</td>
         <td class="p-2 font-semibold text-center">18:00-24:00</td>
-        <td class="p-2 bg-slate-50" colspan="4"></td>
       </tr>`;
     }
 
@@ -675,6 +676,9 @@ function renderPlanning() {
   const personOptions = USERS.map(
     (u) => `<option value='${u.name}'>${u.name}</option>`,
   ).join("");
+  const corePersonOptions = USERS.filter((u) => u.type === "core")
+    .map((u) => `<option value='${u.name}'>${u.name}</option>`)
+    .join("");
   const slotAssignmentRows = SLOT_CODES.map((slot) => {
     const options = USERS.map(
       (u) =>
@@ -786,10 +790,11 @@ function renderPlanning() {
     </div>
 
     <h3 class='text-md font-semibold mt-6 mb-2'>Mitarbeiter-Tausch ab Datum</h3>
-    <div class='grid md:grid-cols-4 gap-2 items-end'>
-      <label class='text-sm'>Mitarbeiter 1<select id='swapA' class='border rounded p-1 w-full'>${personOptions}</select></label>
-      <label class='text-sm'>Mitarbeiter 2<select id='swapB' class='border rounded p-1 w-full'>${personOptions}</select></label>
+    <div class='grid md:grid-cols-5 gap-2 items-end'>
+      <label class='text-sm'>Mitarbeiter 1 (A/B/C)<select id='swapA' class='border rounded p-1 w-full'>${corePersonOptions}</select></label>
+      <label class='text-sm'>Mitarbeiter 2 (A/B/C)<select id='swapB' class='border rounded p-1 w-full'>${corePersonOptions}</select></label>
       <label class='text-sm'>Gültig ab<input id='swapDate' type='date' value='${todayIso()}' class='border rounded p-1 w-full'/></label>
+      <label class='text-sm'>Bis (optional)<input id='swapEndDate' type='date' class='border rounded p-1 w-full'/></label>
       <button class='px-2 py-1 rounded bg-purple-700 text-white h-9' onclick='addSwap()'>Tausch speichern</button>
     </div>
   </div>`;
@@ -858,11 +863,22 @@ function addSwap() {
   const userA = document.getElementById("swapA")?.value;
   const userB = document.getElementById("swapB")?.value;
   const startDate = document.getElementById("swapDate")?.value;
-  if (!userA || !userB || userA === userB || !startDate) {
-    alert("Bitte zwei verschiedene Mitarbeiter und ein Startdatum wählen.");
+  const endDate = document.getElementById("swapEndDate")?.value || null;
+  if (!isCoreEmployee(userA) || !isCoreEmployee(userB)) {
+    alert("Beim Tausch sind nur A/B/C erlaubt.");
     return;
   }
-  state.swaps.push({ userA, userB, startDate });
+  if (!userA || !userB || userA === userB || !startDate) {
+    alert(
+      "Bitte zwei verschiedene Mitarbeiter (A/B/C) und ein Startdatum wählen.",
+    );
+    return;
+  }
+  if (endDate && endDate < startDate) {
+    alert("Enddatum muss nach dem Startdatum liegen.");
+    return;
+  }
+  state.swaps.push({ userA, userB, startDate, endDate });
   persist();
   render();
 }
