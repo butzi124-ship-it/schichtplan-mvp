@@ -1268,16 +1268,18 @@ function runToolChange() {
   render();
 }
 
-function updateToolFilter(field, value) {
-  if (!state.toolFilters)
-    state.toolFilters = { search: "", label: "", tNumber: "", diameter: "" };
-  state.toolFilters[field] = value;
+function resetToolFilters() {
+  state.toolFilters = { search: "", label: "", tNumber: "", diameter: "" };
   persist();
   render();
 }
 
-function resetToolFilters() {
-  state.toolFilters = { search: "", label: "", tNumber: "", diameter: "" };
+function applyToolFilters() {
+  const search = document.getElementById("toolSearch")?.value || "";
+  const label = document.getElementById("toolFilterLabel")?.value || "";
+  const tNumber = document.getElementById("toolFilterT")?.value || "";
+  const diameter = document.getElementById("toolFilterD")?.value || "";
+  state.toolFilters = { search, label, tNumber, diameter };
   persist();
   render();
 }
@@ -1381,15 +1383,17 @@ function renderTools() {
 
     <div class='border-2 border-slate-300 rounded-xl p-3'>
       <h3 class='text-lg font-bold mb-2'>2) Filter & Suche</h3>
-      <div class='grid md:grid-cols-5 gap-2 mb-2'>
-        <input id='toolSearch' class='border rounded p-1' placeholder='Suche...' value='${filters.search || ""}' oninput="updateToolFilter('search', this.value)" />
-        <select id='toolFilterLabel' class='border rounded p-1' onchange="updateToolFilter('label', this.value)">
+      <div class='grid md:grid-cols-6 gap-2 mb-2'>
+        <input id='toolSearch' class='border rounded p-1' placeholder='Suche...' value='${filters.search || ""}' />
+        <select id='toolFilterLabel' class='border rounded p-1'>
           <option value='' ${filterLabel ? "" : "selected"}>Alle Bezeichnungen</option>${filterLabelOptions}
         </select>
-        <input id='toolFilterT' class='border rounded p-1' placeholder='Filter T-Nummer' value='${filterT}' oninput="updateToolFilter('tNumber', this.value)" />
-        <input id='toolFilterD' class='border rounded p-1' placeholder='Filter Durchmesser' value='${filterD}' oninput="updateToolFilter('diameter', this.value)" />
+        <input id='toolFilterT' class='border rounded p-1' placeholder='Filter T-Nummer' value='${filterT}' />
+        <input id='toolFilterD' class='border rounded p-1' placeholder='Filter Durchmesser' value='${filterD}' />
+        <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick='applyToolFilters()'>Filter anwenden</button>
         <button class='px-2 py-1 rounded bg-slate-700 text-white' onclick='resetToolFilters()'>Filter zurücksetzen</button>
       </div>
+      <p class='text-xs text-slate-500'>Gib alle Werte vollständig ein und klicke dann auf „Filter anwenden“.</p>
     </div>
 
     <div class='border-2 border-slate-300 rounded-xl p-3'>
@@ -2064,3 +2068,5 @@ window.deleteTask = deleteTask;
 window.reassignTaskPrompt = reassignTaskPrompt;
 window.setConflictResolved = setConflictResolved;
 window.stopDowntimeTimer = stopDowntimeTimer;
+window.applyToolFilters = applyToolFilters;
+window.resetToolFilters = resetToolFilters;
