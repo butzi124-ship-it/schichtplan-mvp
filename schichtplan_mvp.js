@@ -1277,13 +1277,124 @@ function runToolChange() {
   render();
 }
 
-function bookToolChange(toolId) {
+function getModalHost() {
+  let host = document.getElementById("centerModalHost");
+  if (!host) {
+    host = document.createElement("div");
+    host.id = "centerModalHost";
+    document.body.appendChild(host);
+  }
+  return host;
+}
+
+function askYesNoCentered(message) {
+  const host = getModalHost();
+  return new Promise((resolve) => {
+    host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-4">
+        <h3 class="text-lg font-bold mb-2">Bestätigung</h3>
+        <p class="text-sm text-slate-700 mb-4">${message}</p>
+        <div class="flex justify-end gap-2">
+          <button id="modalNo" class="px-3 py-1 rounded bg-slate-200">Nein</button>
+          <button id="modalYes" class="px-3 py-1 rounded bg-emerald-700 text-white">Ja</button>
+        </div>
+      </div>
+    </div>`;
+    host.querySelector("#modalYes")?.addEventListener("click", () => {
+      host.innerHTML = "";
+      resolve(true);
+    });
+    host.querySelector("#modalNo")?.addEventListener("click", () => {
+      host.innerHTML = "";
+      resolve(false);
+    });
+  });
+}
+
+function askNumberCentered(message, initialValue = "1") {
+  const host = getModalHost();
+  return new Promise((resolve) => {
+    host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-4">
+        <h3 class="text-lg font-bold mb-2">Eingabe</h3>
+        <p class="text-sm text-slate-700 mb-3">${message}</p>
+        <input id="modalNumber" type="number" min="1" class="border rounded p-2 w-full mb-4" value="${initialValue}" />
+        <div class="flex justify-end gap-2">
+          <button id="modalNo" class="px-3 py-1 rounded bg-slate-200">Nein</button>
+          <button id="modalOk" class="px-3 py-1 rounded bg-slate-900 text-white">Bestätigen</button>
+        </div>
+      </div>
+    </div>`;
+    const input = host.querySelector("#modalNumber");
+    input?.focus();
+    host.querySelector("#modalOk")?.addEventListener("click", () => {
+      const val = Number(input?.value || 0);
+      host.innerHTML = "";
+      resolve(Number.isFinite(val) ? val : null);
+    });
+    host.querySelector("#modalNo")?.addEventListener("click", () => {
+      host.innerHTML = "";
+      resolve(null);
+    });
+  });
+}
+
+function editToolCentered(tool) {
+  const host = getModalHost();
+  return new Promise((resolve) => {
+    host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-4">
+        <h3 class="text-lg font-bold mb-3">Werkzeug bearbeiten – T ${tool.tNumber}</h3>
+        <div class="grid md:grid-cols-2 gap-2 mb-4">
+          <input id="editLabel" class="border rounded p-2" value="${tool.label}" />
+          <input id="editDiameter" type="number" class="border rounded p-2" value="${tool.diameter}" />
+          <input id="editShelf" class="border rounded p-2" value="${tool.shelf}" />
+          <input id="editArticleNo" class="border rounded p-2" value="${tool.articleNo}" />
+          <select id="editHolder" class="border rounded p-2">
+            <option value="HSK 100" ${tool.holder === "HSK 100" ? "selected" : ""}>HSK 100</option>
+            <option value="HSK 63" ${tool.holder === "HSK 63" ? "selected" : ""}>HSK 63</option>
+          </select>
+          <input id="editManufacturer" class="border rounded p-2" value="${tool.manufacturer}" />
+          <input id="editStock" type="number" class="border rounded p-2" value="${tool.stock}" />
+          <input id="editMinStock" type="number" class="border rounded p-2" value="${tool.minStock}" />
+        </div>
+        <div class="flex justify-end gap-2">
+          <button id="modalNo" class="px-3 py-1 rounded bg-slate-200">Nein</button>
+          <button id="modalSave" class="px-3 py-1 rounded bg-slate-900 text-white">Speichern</button>
+        </div>
+      </div>
+    </div>`;
+    host.querySelector("#modalSave")?.addEventListener("click", () => {
+      const payload = {
+        label: host.querySelector("#editLabel")?.value?.trim() || "",
+        diameter: Number(host.querySelector("#editDiameter")?.value || 0),
+        shelf:
+          host.querySelector("#editShelf")?.value?.trim().toUpperCase() || "",
+        articleNo: host.querySelector("#editArticleNo")?.value?.trim() || "",
+        holder: host.querySelector("#editHolder")?.value || "",
+        manufacturer:
+          host.querySelector("#editManufacturer")?.value?.trim() || "",
+        stock: Number(host.querySelector("#editStock")?.value || 0),
+        minStock: Number(host.querySelector("#editMinStock")?.value || 0),
+      };
+      host.innerHTML = "";
+      resolve(payload);
+    });
+    host.querySelector("#modalNo")?.addEventListener("click", () => {
+      host.innerHTML = "";
+      resolve(null);
+    });
+  });
+}
+
+async function bookToolChange(toolId) {
   const tool = state.tools.find((t) => t.id === toolId);
   if (!tool) return;
-  const takeOut = confirm("Werkzeug Entnahme?");
+  const takeOut = await askYesNoCentered("Werkzeug Entnahme?");
   let qty = 0;
   if (takeOut) {
-    qty = Number(prompt("Entnahmemenge eingeben:", "1"));
+    qty = await askNumberCentered("Entnahmemenge eingeben:", "1");
+    if (qty === null) return;
     if (!Number.isFinite(qty) || qty <= 0)
       return alert("Bitte eine gültige Entnahmemenge eingeben.");
     tool.stock = Math.max(0, tool.stock - qty);
@@ -1299,6 +1410,42 @@ function bookToolChange(toolId) {
       ? `Werkzeugwechsel + Entnahme ${qty}`
       : "Werkzeugwechsel ohne Entnahme",
   });
+  persist();
+  render();
+}
+
+async function editTool(toolId) {
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool || currentUser.role !== "admin") return;
+  const data = await editToolCentered(tool);
+  if (!data) return;
+  if (
+    !data.label ||
+    !data.diameter ||
+    !/^[A-Z]\d{2}$/.test(data.shelf) ||
+    !data.articleNo ||
+    !["HSK 100", "HSK 63"].includes(data.holder)
+  ) {
+    return alert(
+      "Bitte Felder korrekt ausfüllen (A-Z + 2-stellige Zahl für Fach, Aufnahme HSK 100 oder HSK 63).",
+    );
+  }
+  Object.assign(tool, data);
+  if (tool.stock >= tool.minStock) tool.ordered = false;
+  persist();
+  render();
+}
+
+async function deleteTool(toolId) {
+  if (currentUser.role !== "admin") return;
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool) return;
+  const yes = await askYesNoCentered(
+    `Werkzeug T ${tool.tNumber} wirklich löschen?`,
+  );
+  if (!yes) return;
+  state.tools = state.tools.filter((t) => t.id !== toolId);
+  state.toolJournal = state.toolJournal.filter((j) => j.toolId !== toolId);
   persist();
   render();
 }
@@ -1386,7 +1533,7 @@ function renderTools() {
       (t) => `<tr class='border-b'>
       <td class='p-2'>T ${t.tNumber}</td><td class='p-2'>${t.label}</td><td class='p-2'>⌀ ${t.diameter}</td><td class='p-2'>${t.shelf}</td><td class='p-2'>${t.articleNo}</td>
       <td class='p-2'>${t.holder || "-"}</td><td class='p-2'>${t.stock}</td><td class='p-2'>${t.minStock}</td><td class='p-2'>${t.manufacturer}</td><td class='p-2'>${t.ordered ? "Bestellt" : "-"}</td>
-      <td class='p-2'><button class='px-2 py-1 rounded bg-emerald-700 text-white mr-1' onclick="bookToolChange('${t.id}')">Wechsel</button>${currentUser.role === "admin" ? `<button class='px-2 py-1 rounded bg-blue-700 text-white mr-1' onclick="markToolOrdered('${t.id}', ${t.ordered ? "false" : "true"})">${t.ordered ? "Bestellt entfernen" : "Bestellt"}</button><button class='px-2 py-1 rounded bg-slate-700 text-white' onclick="restockTool('${t.id}')">Einlagern</button>` : ""}</td>
+      <td class='p-2'><button class='px-2 py-1 rounded bg-emerald-700 text-white mr-1' onclick="bookToolChange('${t.id}')">Wechsel</button>${currentUser.role === "admin" ? `<button class='px-2 py-1 rounded bg-amber-600 text-white mr-1' onclick="editTool('${t.id}')">Bearbeiten</button><button class='px-2 py-1 rounded bg-rose-700 text-white mr-1' onclick="deleteTool('${t.id}')">Löschen</button><button class='px-2 py-1 rounded bg-blue-700 text-white mr-1' onclick="markToolOrdered('${t.id}', ${t.ordered ? "false" : "true"})">${t.ordered ? "Bestellt entfernen" : "Bestellt"}</button><button class='px-2 py-1 rounded bg-slate-700 text-white' onclick="restockTool('${t.id}')">Einlagern</button>` : ""}</td>
     </tr>`,
     )
     .join("");
@@ -2119,3 +2266,5 @@ window.applyToolFilters = applyToolFilters;
 window.resetToolFilters = resetToolFilters;
 window.bookToolChange = bookToolChange;
 window.undoToolJournalEntry = undoToolJournalEntry;
+window.editTool = editTool;
+window.deleteTool = deleteTool;
