@@ -111,7 +111,13 @@ function loadState() {
     toolLabelsExtra: [],
     toolManufacturersExtra: [],
     toolJournal: [],
-    toolFilters: { search: "", label: "", tNumber: "", diameter: "" },
+    toolFilters: {
+      search: "",
+      label: "",
+      tNumber: "",
+      diameter: "",
+      holder: "",
+    },
   };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -1196,6 +1202,7 @@ function createTool() {
     ?.value?.trim()
     .toUpperCase();
   const articleNo = document.getElementById("toolArticle")?.value?.trim();
+  const holder = document.getElementById("toolHolder")?.value;
   const stock = Number(document.getElementById("toolStock")?.value || 0);
   const minStock = Number(document.getElementById("toolMinStock")?.value || 0);
   const manufacturer = document.getElementById("toolManufacturer")?.value;
@@ -1204,10 +1211,11 @@ function createTool() {
     !label ||
     !diameter ||
     !/^[A-Z]\d{2}$/.test(shelf) ||
-    !articleNo
+    !articleNo ||
+    !["HSK 100", "HSK 63"].includes(holder)
   )
     return alert(
-      "Bitte Felder korrekt ausfüllen (A-Z + 2-stellige Zahl für Fach).",
+      "Bitte Felder korrekt ausfüllen (A-Z + 2-stellige Zahl für Fach, Aufnahme HSK 100 oder HSK 63).",
     );
   state.tools.push({
     id: `tool-${Date.now()}`,
@@ -1216,6 +1224,7 @@ function createTool() {
     diameter: Number(diameter),
     shelf,
     articleNo,
+    holder,
     stock,
     minStock,
     manufacturer,
@@ -1268,8 +1277,54 @@ function runToolChange() {
   render();
 }
 
+function bookToolChange(toolId) {
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool) return;
+  const takeOut = confirm("Werkzeug Entnahme?");
+  let qty = 0;
+  if (takeOut) {
+    qty = Number(prompt("Entnahmemenge eingeben:", "1"));
+    if (!Number.isFinite(qty) || qty <= 0)
+      return alert("Bitte eine gültige Entnahmemenge eingeben.");
+    tool.stock = Math.max(0, tool.stock - qty);
+  }
+  state.toolJournal.unshift({
+    id: `journal-${Date.now()}`,
+    user: currentUser.name,
+    at: new Date().toISOString().slice(0, 16).replace("T", " "),
+    toolId: tool.id,
+    tNumber: tool.tNumber,
+    qty,
+    action: takeOut
+      ? `Werkzeugwechsel + Entnahme ${qty}`
+      : "Werkzeugwechsel ohne Entnahme",
+  });
+  persist();
+  render();
+}
+
+function undoToolJournalEntry(entryId) {
+  const idx = state.toolJournal.findIndex((j) => j.id === entryId);
+  if (idx === -1) return;
+  const entry = state.toolJournal[idx];
+  const tool = state.tools.find((t) => t.id === entry.toolId);
+  if (tool && Number(entry.qty) > 0) {
+    tool.stock += Number(entry.qty);
+    if (tool.stock >= tool.minStock) tool.ordered = false;
+  }
+  state.toolJournal.splice(idx, 1);
+  persist();
+  render();
+}
+
 function resetToolFilters() {
-  state.toolFilters = { search: "", label: "", tNumber: "", diameter: "" };
+  state.toolFilters = {
+    search: "",
+    label: "",
+    tNumber: "",
+    diameter: "",
+    holder: "",
+  };
   persist();
   render();
 }
@@ -1279,7 +1334,8 @@ function applyToolFilters() {
   const label = document.getElementById("toolFilterLabel")?.value || "";
   const tNumber = document.getElementById("toolFilterT")?.value || "";
   const diameter = document.getElementById("toolFilterD")?.value || "";
-  state.toolFilters = { search, label, tNumber, diameter };
+  const holder = document.getElementById("toolFilterHolder")?.value || "";
+  state.toolFilters = { search, label, tNumber, diameter, holder };
   persist();
   render();
 }
@@ -1292,11 +1348,13 @@ function renderTools() {
     label: "",
     tNumber: "",
     diameter: "",
+    holder: "",
   };
   const search = (filters.search || "").toLowerCase();
   const filterLabel = filters.label || "";
   const filterT = filters.tNumber || "";
   const filterD = filters.diameter || "";
+  const filterHolder = filters.holder || "";
   const labelOptions = labels
     .map((l) => `<option value="${l}">${l}</option>`)
     .join("");
@@ -1319,15 +1377,16 @@ function renderTools() {
     const byLabel = !filterLabel || t.label === filterLabel;
     const byT = !filterT || String(t.tNumber).includes(filterT);
     const byD = !filterD || String(t.diameter).includes(filterD);
-    return bySearch && byLabel && byT && byD;
+    const byHolder = !filterHolder || t.holder === filterHolder;
+    return bySearch && byLabel && byT && byD && byHolder;
   });
 
   const toolRows = tools
     .map(
       (t) => `<tr class='border-b'>
       <td class='p-2'>T ${t.tNumber}</td><td class='p-2'>${t.label}</td><td class='p-2'>⌀ ${t.diameter}</td><td class='p-2'>${t.shelf}</td><td class='p-2'>${t.articleNo}</td>
-      <td class='p-2'>${t.stock}</td><td class='p-2'>${t.minStock}</td><td class='p-2'>${t.manufacturer}</td><td class='p-2'>${t.ordered ? "Bestellt" : "-"}</td>
-      <td class='p-2'>${currentUser.role === "admin" ? `<button class='px-2 py-1 rounded bg-blue-700 text-white mr-1' onclick="markToolOrdered('${t.id}', ${t.ordered ? "false" : "true"})">${t.ordered ? "Bestellt entfernen" : "Bestellt"}</button><button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick="restockTool('${t.id}')">Werkzeug einlagern</button>` : "-"}</td>
+      <td class='p-2'>${t.holder || "-"}</td><td class='p-2'>${t.stock}</td><td class='p-2'>${t.minStock}</td><td class='p-2'>${t.manufacturer}</td><td class='p-2'>${t.ordered ? "Bestellt" : "-"}</td>
+      <td class='p-2'><button class='px-2 py-1 rounded bg-emerald-700 text-white mr-1' onclick="bookToolChange('${t.id}')">Wechsel</button>${currentUser.role === "admin" ? `<button class='px-2 py-1 rounded bg-blue-700 text-white mr-1' onclick="markToolOrdered('${t.id}', ${t.ordered ? "false" : "true"})">${t.ordered ? "Bestellt entfernen" : "Bestellt"}</button><button class='px-2 py-1 rounded bg-slate-700 text-white' onclick="restockTool('${t.id}')">Einlagern</button>` : ""}</td>
     </tr>`,
     )
     .join("");
@@ -1355,7 +1414,7 @@ function renderTools() {
     .slice(0, 80)
     .map(
       (j) =>
-        `<tr class='border-b'><td class='p-2'>${j.at}</td><td class='p-2'>${j.user}</td><td class='p-2'>T ${j.tNumber}</td><td class='p-2'>${j.action}</td></tr>`,
+        `<tr class='border-b'><td class='p-2'>${j.at}</td><td class='p-2'>${j.user}</td><td class='p-2'>T ${j.tNumber}</td><td class='p-2'>${j.action}</td><td class='p-2'><button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="undoToolJournalEntry('${j.id}')">Rückgängig</button></td></tr>`,
     )
     .join("");
 
@@ -1371,6 +1430,7 @@ function renderTools() {
         <input id='toolDiameter' class='border rounded p-1' placeholder='Durchmesser' />
         <input id='toolShelf' class='border rounded p-1' placeholder='A00' />
         <input id='toolArticle' class='border rounded p-1' placeholder='Artikel Nr.' />
+        <select id='toolHolder' class='border rounded p-1'><option value='HSK 100'>Aufnahme HSK 100</option><option value='HSK 63'>Aufnahme HSK 63</option></select>
         <input id='toolStock' type='number' class='border rounded p-1' placeholder='Bestand' />
         <input id='toolMinStock' type='number' class='border rounded p-1' placeholder='Mindestbestand' />
         <select id='toolManufacturer' class='border rounded p-1'>${manufacturerOptions}</select>
@@ -1383,13 +1443,14 @@ function renderTools() {
 
     <div class='border-2 border-slate-300 rounded-xl p-3'>
       <h3 class='text-lg font-bold mb-2'>2) Filter & Suche</h3>
-      <div class='grid md:grid-cols-6 gap-2 mb-2'>
+      <div class='grid md:grid-cols-7 gap-2 mb-2'>
         <input id='toolSearch' class='border rounded p-1' placeholder='Suche...' value='${filters.search || ""}' />
         <select id='toolFilterLabel' class='border rounded p-1'>
           <option value='' ${filterLabel ? "" : "selected"}>Alle Bezeichnungen</option>${filterLabelOptions}
         </select>
         <input id='toolFilterT' class='border rounded p-1' placeholder='Filter T-Nummer' value='${filterT}' />
         <input id='toolFilterD' class='border rounded p-1' placeholder='Filter Durchmesser' value='${filterD}' />
+        <select id='toolFilterHolder' class='border rounded p-1'><option value='' ${filterHolder ? "" : "selected"}>Alle Aufnahmen</option><option value='HSK 100' ${filterHolder === "HSK 100" ? "selected" : ""}>HSK 100</option><option value='HSK 63' ${filterHolder === "HSK 63" ? "selected" : ""}>HSK 63</option></select>
         <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick='applyToolFilters()'>Filter anwenden</button>
         <button class='px-2 py-1 rounded bg-slate-700 text-white' onclick='resetToolFilters()'>Filter zurücksetzen</button>
       </div>
@@ -1399,7 +1460,7 @@ function renderTools() {
     <div class='border-2 border-slate-300 rounded-xl p-3'>
       <h3 class='text-lg font-bold mb-2'>3) Werkzeugbestand</h3>
       <div class='overflow-auto max-h-[35vh] border rounded-lg'>
-      <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>T</th><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Ø</th><th class='p-2 text-left'>Fach</th><th class='p-2 text-left'>Artikel Nr.</th><th class='p-2 text-left'>Bestand</th><th class='p-2 text-left'>Min</th><th class='p-2 text-left'>Hersteller</th><th class='p-2 text-left'>Status</th><th class='p-2'></th></tr></thead><tbody>${toolRows || '<tr><td class=\"p-2\" colspan=\"10\">Keine Werkzeuge.</td></tr>'}</tbody></table>
+      <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>T</th><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Ø</th><th class='p-2 text-left'>Fach</th><th class='p-2 text-left'>Artikel Nr.</th><th class='p-2 text-left'>Aufnahme</th><th class='p-2 text-left'>Bestand</th><th class='p-2 text-left'>Min</th><th class='p-2 text-left'>Hersteller</th><th class='p-2 text-left'>Status</th><th class='p-2'></th></tr></thead><tbody>${toolRows || '<tr><td class=\"p-2\" colspan=\"11\">Keine Werkzeuge.</td></tr>'}</tbody></table>
       </div>
     </div>
 
@@ -1415,24 +1476,10 @@ function renderTools() {
         : ""
     }
 
-    ${
-      currentUser.role !== "admin"
-        ? `<div class='border-2 border-slate-300 rounded-xl p-3'>
-      <h3 class='text-lg font-bold mb-2'>${currentUser.role === "employee" ? "4) Werkzeugwechsel buchen" : "Werkzeugwechsel buchen"}</h3>
-      <div class='grid md:grid-cols-4 gap-2'>
-        <input id='changeTNumber' class='border rounded p-1' placeholder='T-Nummer' />
-        <label class='flex items-center gap-2'><input id='changeWithdraw' type='checkbox' /> Bestand entnehmen</label>
-        <input id='changeQty' type='number' class='border rounded p-1' placeholder='Entnahmemenge' />
-        <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick='runToolChange()'>Werkzeugwechsel buchen</button>
-      </div>
-    </div>`
-        : ""
-    }
-
     <div class='border-2 border-slate-300 rounded-xl p-3'>
-      <h3 class='text-lg font-bold mb-2'>${currentUser.role === "admin" ? "5) Schichtjournal – Werkzeugwechsel" : "5) Schichtjournal"}</h3>
+      <h3 class='text-lg font-bold mb-2'>4) Schichtjournal – Werkzeugwechsel</h3>
       <div class='overflow-auto max-h-[25vh]'>
-        <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Zeit</th><th class='p-2 text-left'>Wer</th><th class='p-2 text-left'>T-Nr</th><th class='p-2 text-left'>Was</th></tr></thead><tbody>${journalRows || '<tr><td class=\"p-2\" colspan=\"4\">Keine Einträge.</td></tr>'}</tbody></table>
+        <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Zeit</th><th class='p-2 text-left'>Wer</th><th class='p-2 text-left'>T-Nr</th><th class='p-2 text-left'>Was</th><th class='p-2'></th></tr></thead><tbody>${journalRows || '<tr><td class=\"p-2\" colspan=\"5\">Keine Einträge.</td></tr>'}</tbody></table>
       </div>
     </div>
   </div>`;
@@ -2070,3 +2117,5 @@ window.setConflictResolved = setConflictResolved;
 window.stopDowntimeTimer = stopDowntimeTimer;
 window.applyToolFilters = applyToolFilters;
 window.resetToolFilters = resetToolFilters;
+window.bookToolChange = bookToolChange;
+window.undoToolJournalEntry = undoToolJournalEntry;
