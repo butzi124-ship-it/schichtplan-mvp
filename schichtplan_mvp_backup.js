@@ -118,7 +118,6 @@ function loadState() {
       diameter: "",
       holder: "",
     },
-    toolOrderOverrides: {},
   };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -1206,9 +1205,6 @@ function createTool() {
   const holder = document.getElementById("toolHolder")?.value;
   const stock = Number(document.getElementById("toolStock")?.value || 0);
   const minStock = Number(document.getElementById("toolMinStock")?.value || 0);
-  const optimalStock = Number(
-    document.getElementById("toolOptimalStock")?.value || 0,
-  );
   const manufacturer = document.getElementById("toolManufacturer")?.value;
   if (
     !tNumber ||
@@ -1231,7 +1227,6 @@ function createTool() {
     holder,
     stock,
     minStock,
-    optimalStock: currentUser.role === "admin" ? Math.max(0, optimalStock) : 0,
     manufacturer,
     ordered: false,
   });
@@ -1362,7 +1357,6 @@ function editToolCentered(tool) {
           <input id="editManufacturer" class="border rounded p-2" value="${tool.manufacturer}" />
           <input id="editStock" type="number" class="border rounded p-2" value="${tool.stock}" />
           <input id="editMinStock" type="number" class="border rounded p-2" value="${tool.minStock}" />
-          <input id="editOptimalStock" type="number" class="border rounded p-2" value="${tool.optimalStock || 0}" />
         </div>
         <div class="flex justify-end gap-2">
           <button id="modalNo" class="px-3 py-1 rounded bg-slate-200">Nein</button>
@@ -1382,9 +1376,6 @@ function editToolCentered(tool) {
           host.querySelector("#editManufacturer")?.value?.trim() || "",
         stock: Number(host.querySelector("#editStock")?.value || 0),
         minStock: Number(host.querySelector("#editMinStock")?.value || 0),
-        optimalStock: Number(
-          host.querySelector("#editOptimalStock")?.value || 0,
-        ),
       };
       host.innerHTML = "";
       resolve(payload);
@@ -1485,24 +1476,6 @@ function resetToolFilters() {
   render();
 }
 
-function suggestedOrderQty(tool) {
-  return Math.max(0, Number(tool.optimalStock || 0) - Number(tool.stock || 0));
-}
-
-function effectiveOrderQty(tool) {
-  const override = Number(state.toolOrderOverrides?.[tool.id]);
-  if (Number.isFinite(override) && override >= 0) return override;
-  return suggestedOrderQty(tool);
-}
-
-function setToolOrderOverride(toolId, value) {
-  if (currentUser.role !== "admin") return;
-  const qty = Math.max(0, Number(value || 0));
-  if (!state.toolOrderOverrides) state.toolOrderOverrides = {};
-  state.toolOrderOverrides[toolId] = qty;
-  persist();
-}
-
 function applyToolFilters() {
   const search = document.getElementById("toolSearch")?.value || "";
   const label = document.getElementById("toolFilterLabel")?.value || "";
@@ -1571,7 +1544,6 @@ function renderTools() {
   const orderedTools = state.tools.filter(
     (t) => t.stock < t.minStock && t.ordered,
   );
-  const orderCandidates = todoTools.filter((t) => suggestedOrderQty(t) > 0);
 
   const todoRows = todoTools
     .map(
@@ -1592,33 +1564,6 @@ function renderTools() {
         `<tr class='border-b'><td class='p-2'>${j.at}</td><td class='p-2'>${j.user}</td><td class='p-2'>T ${j.tNumber}</td><td class='p-2'>${j.action}</td><td class='p-2'><button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="undoToolJournalEntry('${j.id}')">Rückgängig</button></td></tr>`,
     )
     .join("");
-  const orderGroups = orderCandidates.reduce((acc, tool) => {
-    const maker = tool.manufacturer || "Ohne Hersteller";
-    if (!acc[maker]) acc[maker] = [];
-    acc[maker].push(tool);
-    return acc;
-  }, {});
-  const orderListBlocks = Object.entries(orderGroups)
-    .map(([maker, toolsByMaker]) => {
-      const rows = toolsByMaker
-        .map(
-          (t) => `<tr class='border-b'>
-      <td class='p-2'>${t.label}</td>
-      <td class='p-2'>⌀ ${t.diameter}</td>
-      <td class='p-2'>${t.articleNo}</td>
-      <td class='p-2'><input type='number' min='0' class='border rounded p-1 w-24' value='${effectiveOrderQty(t)}' onchange="setToolOrderOverride('${t.id}', this.value)" /></td>
-    </tr>`,
-        )
-        .join("");
-      return `<div class='border rounded p-3 bg-white'>
-      <div class='flex items-center justify-between mb-2'>
-        <h4 class='font-semibold text-base'>${maker}</h4>
-        <span class='text-xs text-slate-500'>${toolsByMaker.length} Werkzeuge zu bestellen</span>
-      </div>
-      <table class='w-full text-sm'><thead class='bg-slate-100'><tr><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Durchmesser</th><th class='p-2 text-left'>Artikelnummer</th><th class='p-2 text-left'>Menge</th></tr></thead><tbody>${rows}</tbody></table>
-    </div>`;
-    })
-    .join("");
 
   return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
     <h2 class='text-xl font-bold mb-1'>Werkzeugverwaltung</h2>
@@ -1635,7 +1580,6 @@ function renderTools() {
         <select id='toolHolder' class='border rounded p-1'><option value='HSK 100'>Aufnahme HSK 100</option><option value='HSK 63'>Aufnahme HSK 63</option></select>
         <input id='toolStock' type='number' class='border rounded p-1' placeholder='Bestand' />
         <input id='toolMinStock' type='number' class='border rounded p-1' placeholder='Mindestbestand' />
-        ${currentUser.role === "admin" ? `<input id='toolOptimalStock' type='number' class='border rounded p-1' placeholder='Optimale Stückzahl' />` : ""}
         <select id='toolManufacturer' class='border rounded p-1'>${manufacturerOptions}</select>
       </div>
       <div class='flex gap-2 mt-2'>
@@ -1674,11 +1618,6 @@ function renderTools() {
       <div class='grid md:grid-cols-2 gap-3'>
       <div class='border rounded p-3 bg-white'><h4 class='font-semibold mb-2'>Werkzeug To-Do (unter Mindestbestand)</h4><table class='w-full text-sm'><tbody>${todoRows || '<tr><td class=\"p-2\" colspan=\"4\">Keine offenen To-Dos.</td></tr>'}</tbody></table></div>
       <div class='border rounded p-3 bg-white'><h4 class='font-semibold mb-2'>Bestellt</h4><table class='w-full text-sm'><tbody>${orderedRows || '<tr><td class=\"p-2\" colspan=\"4\">Keine bestellten Werkzeuge.</td></tr>'}</tbody></table></div>
-      </div>
-      <div class='mt-3 border rounded p-3 bg-slate-50'>
-        <h4 class='font-semibold mb-2'>Bestellliste nach Hersteller</h4>
-        <p class='text-xs text-slate-500 mb-2'>Vorschlag = Optimale Stückzahl - aktueller Bestand. Menge kann manuell überschrieben werden.</p>
-        <div class='space-y-3'>${orderListBlocks || '<div class=\"text-sm text-slate-500\">Aktuell keine bestellbedürftigen Werkzeuge mit positiver Bestellmenge.</div>'}</div>
       </div>
     </div>`
         : ""
@@ -2329,4 +2268,3 @@ window.bookToolChange = bookToolChange;
 window.undoToolJournalEntry = undoToolJournalEntry;
 window.editTool = editTool;
 window.deleteTool = deleteTool;
-window.setToolOrderOverride = setToolOrderOverride;
