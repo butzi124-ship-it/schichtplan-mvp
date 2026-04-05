@@ -1198,6 +1198,9 @@ function createTool() {
   const tNumber = document.getElementById("toolTNumber")?.value?.trim();
   const label = document.getElementById("toolLabel")?.value;
   const diameter = document.getElementById("toolDiameter")?.value?.trim();
+  const threadPrefix = document.getElementById("toolThreadPrefix")?.value || "";
+  const threadPitch =
+    document.getElementById("toolThreadPitch")?.value?.trim() || "";
   const shelf = document
     .getElementById("toolShelf")
     ?.value?.trim()
@@ -1210,6 +1213,7 @@ function createTool() {
     document.getElementById("toolOptimalStock")?.value || 0,
   );
   const manufacturer = document.getElementById("toolManufacturer")?.value;
+  const isThreadTool = isThreadToolLabel(label);
   if (
     !tNumber ||
     !label ||
@@ -1221,11 +1225,19 @@ function createTool() {
     return alert(
       "Bitte Felder korrekt ausfüllen (A-Z + 2-stellige Zahl für Fach, Aufnahme HSK 100 oder HSK 63).",
     );
+  if (isThreadTool && !threadPrefix)
+    return alert("Bitte Gewindekennung wählen.");
+  if (isThreadTool && threadPrefix === "MF" && !threadPitch)
+    return alert("Bitte bei MF die Steigung (P) angeben.");
+  if (!isThreadTool && !Number.isFinite(Number(diameter)))
+    return alert("Bitte gültigen numerischen Durchmesser eingeben.");
   state.tools.push({
     id: `tool-${Date.now()}`,
     tNumber,
     label,
-    diameter: Number(diameter),
+    diameter: isThreadTool ? diameter : Number(diameter),
+    threadPrefix: isThreadTool ? threadPrefix : "",
+    threadPitch: isThreadTool && threadPrefix === "MF" ? threadPitch : "",
     shelf,
     articleNo,
     holder,
@@ -1234,6 +1246,7 @@ function createTool() {
     optimalStock: currentUser.role === "admin" ? Math.max(0, optimalStock) : 0,
     manufacturer,
     ordered: false,
+    orderedQty: 0,
   });
   persist();
   render();
@@ -1243,20 +1256,59 @@ function markToolOrdered(toolId, ordered) {
   const tool = state.tools.find((t) => t.id === toolId);
   if (!tool || currentUser.role !== "admin") return;
   tool.ordered = ordered;
+  tool.orderedQty = ordered ? Math.max(1, effectiveOrderQty(tool)) : 0;
   persist();
   render();
 }
 
-function restockTool(toolId) {
+async function restockTool(toolId) {
   if (currentUser.role !== "admin") return;
   const tool = state.tools.find((t) => t.id === toolId);
   if (!tool) return;
-  const add = Number(prompt("Werkzeug einlagern (Anzahl):", "0"));
+  let add = 0;
+  if (tool.ordered && Number(tool.orderedQty || 0) > 0) {
+    const full = await askYesNoCentered("Bestellte Menge einlagern?");
+    if (full) {
+      add = Number(tool.orderedQty || 0);
+    } else {
+      add = await askNumberCentered(
+        "Einzulagernde Menge eingeben:",
+        String(tool.orderedQty || 1),
+      );
+      if (add === null) return;
+    }
+  } else {
+    add = await askNumberCentered("Werkzeug einlagern (Anzahl):", "1");
+    if (add === null) return;
+  }
   if (!Number.isFinite(add) || add <= 0) return;
   tool.stock += add;
-  if (tool.stock >= tool.minStock) tool.ordered = false;
+  if (tool.ordered && Number(tool.orderedQty || 0) > 0) {
+    tool.orderedQty = Math.max(0, Number(tool.orderedQty || 0) - add);
+    if (tool.orderedQty === 0) tool.ordered = false;
+  }
+  if (tool.stock >= tool.minStock && Number(tool.orderedQty || 0) === 0)
+    tool.ordered = false;
   persist();
   render();
+}
+
+function isThreadToolLabel(label) {
+  return [
+    "Gewindebohrer",
+    "Gewindefräser",
+    "Gewindeformer",
+    "Gewindewirbler",
+  ].includes(label);
+}
+
+function formatToolSize(tool) {
+  if (!isThreadToolLabel(tool.label)) return `⌀ ${tool.diameter}`;
+  const prefix = tool.threadPrefix || "";
+  const base = `${prefix}${prefix ? " " : ""}${tool.diameter}`;
+  if (prefix === "MF" && tool.threadPitch)
+    return `${base} P${tool.threadPitch}`;
+  return base;
 }
 
 function runToolChange() {
@@ -1352,7 +1404,17 @@ function editToolCentered(tool) {
         <h3 class="text-lg font-bold mb-3">Werkzeug bearbeiten – T ${tool.tNumber}</h3>
         <div class="grid md:grid-cols-2 gap-2 mb-4">
           <input id="editLabel" class="border rounded p-2" value="${tool.label}" />
-          <input id="editDiameter" type="number" class="border rounded p-2" value="${tool.diameter}" />
+          <input id="editDiameter" class="border rounded p-2" value="${tool.diameter}" />
+          <select id="editThreadPrefix" class="border rounded p-2">
+            <option value="" ${!tool.threadPrefix ? "selected" : ""}>Kennung (nur Gewinde)</option>
+            <option value="M" ${tool.threadPrefix === "M" ? "selected" : ""}>M</option>
+            <option value="MF" ${tool.threadPrefix === "MF" ? "selected" : ""}>MF</option>
+            <option value="G" ${tool.threadPrefix === "G" ? "selected" : ""}>G</option>
+            <option value="UNF" ${tool.threadPrefix === "UNF" ? "selected" : ""}>UNF</option>
+            <option value="UNC" ${tool.threadPrefix === "UNC" ? "selected" : ""}>UNC</option>
+            <option value="Mx" ${tool.threadPrefix === "Mx" ? "selected" : ""}>Mx</option>
+          </select>
+          <input id="editThreadPitch" class="border rounded p-2" value="${tool.threadPitch || ""}" placeholder="Steigung P (nur MF)" />
           <input id="editShelf" class="border rounded p-2" value="${tool.shelf}" />
           <input id="editArticleNo" class="border rounded p-2" value="${tool.articleNo}" />
           <select id="editHolder" class="border rounded p-2">
@@ -1373,7 +1435,10 @@ function editToolCentered(tool) {
     host.querySelector("#modalSave")?.addEventListener("click", () => {
       const payload = {
         label: host.querySelector("#editLabel")?.value?.trim() || "",
-        diameter: Number(host.querySelector("#editDiameter")?.value || 0),
+        diameter: host.querySelector("#editDiameter")?.value?.trim() || "",
+        threadPrefix: host.querySelector("#editThreadPrefix")?.value || "",
+        threadPitch:
+          host.querySelector("#editThreadPitch")?.value?.trim() || "",
         shelf:
           host.querySelector("#editShelf")?.value?.trim().toUpperCase() || "",
         articleNo: host.querySelector("#editArticleNo")?.value?.trim() || "",
@@ -1428,6 +1493,7 @@ async function editTool(toolId) {
   if (!tool || currentUser.role !== "admin") return;
   const data = await editToolCentered(tool);
   if (!data) return;
+  const isThreadTool = isThreadToolLabel(data.label);
   if (
     !data.label ||
     !data.diameter ||
@@ -1439,6 +1505,16 @@ async function editTool(toolId) {
       "Bitte Felder korrekt ausfüllen (A-Z + 2-stellige Zahl für Fach, Aufnahme HSK 100 oder HSK 63).",
     );
   }
+  if (isThreadTool && !data.threadPrefix)
+    return alert("Bitte Gewindekennung wählen.");
+  if (isThreadTool && data.threadPrefix === "MF" && !data.threadPitch)
+    return alert("Bitte bei MF die Steigung (P) angeben.");
+  if (!isThreadTool && !Number.isFinite(Number(data.diameter)))
+    return alert("Bitte gültigen numerischen Durchmesser eingeben.");
+  data.diameter = isThreadTool ? data.diameter : Number(data.diameter);
+  data.threadPitch =
+    isThreadTool && data.threadPrefix === "MF" ? data.threadPitch : "";
+  if (!isThreadTool) data.threadPrefix = "";
   Object.assign(tool, data);
   if (tool.stock >= tool.minStock) tool.ordered = false;
   persist();
@@ -1500,6 +1576,8 @@ function setToolOrderOverride(toolId, value) {
   const qty = Math.max(0, Number(value || 0));
   if (!state.toolOrderOverrides) state.toolOrderOverrides = {};
   state.toolOrderOverrides[toolId] = qty;
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (tool?.ordered) tool.orderedQty = qty;
   persist();
 }
 
@@ -1558,9 +1636,9 @@ function renderTools() {
   const toolRows = tools
     .map(
       (t) => `<tr class='border-b'>
-      <td class='p-2'>T ${t.tNumber}</td><td class='p-2'>${t.label}</td><td class='p-2'>⌀ ${t.diameter}</td><td class='p-2'>${t.shelf}</td><td class='p-2'>${t.articleNo}</td>
+      <td class='p-2'>T ${t.tNumber}</td><td class='p-2'>${t.label}</td><td class='p-2'>${formatToolSize(t)}</td><td class='p-2'>${t.shelf}</td><td class='p-2'>${t.articleNo}</td>
       <td class='p-2'>${t.holder || "-"}</td><td class='p-2'>${t.stock}</td><td class='p-2'>${t.minStock}</td><td class='p-2'>${t.manufacturer}</td><td class='p-2'>${t.ordered ? "Bestellt" : "-"}</td>
-      <td class='p-2'><button class='px-2 py-1 rounded bg-emerald-700 text-white mr-1' onclick="bookToolChange('${t.id}')">Wechsel</button>${currentUser.role === "admin" ? `<button class='px-2 py-1 rounded bg-amber-600 text-white mr-1' onclick="editTool('${t.id}')">Bearbeiten</button><button class='px-2 py-1 rounded bg-rose-700 text-white mr-1' onclick="deleteTool('${t.id}')">Löschen</button><button class='px-2 py-1 rounded bg-blue-700 text-white mr-1' onclick="markToolOrdered('${t.id}', ${t.ordered ? "false" : "true"})">${t.ordered ? "Bestellt entfernen" : "Bestellt"}</button><button class='px-2 py-1 rounded bg-slate-700 text-white' onclick="restockTool('${t.id}')">Einlagern</button>` : ""}</td>
+      <td class='p-2'><button class='px-2 py-1 rounded bg-emerald-700 text-white mr-1' onclick="bookToolChange('${t.id}')">Wechsel</button>${currentUser.role === "admin" ? `<button class='px-2 py-1 rounded bg-amber-600 text-white mr-1' onclick="editTool('${t.id}')">Bearbeiten</button><button class='px-2 py-1 rounded bg-rose-700 text-white mr-1' onclick="deleteTool('${t.id}')">Löschen</button><button class='px-2 py-1 rounded bg-slate-700 text-white' onclick="restockTool('${t.id}')">Einlagern</button>` : ""}</td>
     </tr>`,
     )
     .join("");
@@ -1576,13 +1654,20 @@ function renderTools() {
   const todoRows = todoTools
     .map(
       (t) =>
-        `<tr class='border-b'><td class='p-2'>T ${t.tNumber}</td><td class='p-2'>${t.label}</td><td class='p-2'>${t.stock}/${t.minStock}</td><td class='p-2'><button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="markToolOrdered('${t.id}', true)">Bestellt markieren</button></td></tr>`,
+        `<tr class='border-b'><td class='p-2'>T ${t.tNumber}</td><td class='p-2'>${t.label}</td><td class='p-2'>${formatToolSize(t)}</td><td class='p-2'>${t.stock}/${t.minStock}</td><td class='p-2'><button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="markToolOrdered('${t.id}', true)">Bestellt markieren</button></td></tr>`,
     )
     .join("");
   const orderedRows = orderedTools
     .map(
-      (t) =>
-        `<tr class='border-b bg-emerald-50'><td class='p-2'>T ${t.tNumber}</td><td class='p-2'>${t.label}</td><td class='p-2'>${t.stock}/${t.minStock}</td><td class='p-2'>Bestellt</td></tr>`,
+      (t) => `<tr class='border-b bg-emerald-50'>
+    <td class='p-2'>${t.label}</td>
+    <td class='p-2'>${formatToolSize(t)}</td>
+    <td class='p-2'>${t.threadPrefix === "MF" && t.threadPitch ? `P ${t.threadPitch}` : "-"}</td>
+    <td class='p-2'>${t.orderedQty || effectiveOrderQty(t)}</td>
+    <td class='p-2'>${t.articleNo}</td>
+    <td class='p-2'>${t.shelf}</td>
+    <td class='p-2'><button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="markToolOrdered('${t.id}', false)">Bestellt</button></td>
+  </tr>`,
     )
     .join("");
   const journalRows = state.toolJournal
@@ -1604,7 +1689,7 @@ function renderTools() {
         .map(
           (t) => `<tr class='border-b'>
       <td class='p-2'>${t.label}</td>
-      <td class='p-2'>⌀ ${t.diameter}</td>
+      <td class='p-2'>${formatToolSize(t)}</td>
       <td class='p-2'>${t.articleNo}</td>
       <td class='p-2'><input type='number' min='0' class='border rounded p-1 w-24' value='${effectiveOrderQty(t)}' onchange="setToolOrderOverride('${t.id}', this.value)" /></td>
     </tr>`,
@@ -1630,6 +1715,16 @@ function renderTools() {
         <input id='toolTNumber' class='border rounded p-1' placeholder='T-Nummer (z.B. 134)' />
         <select id='toolLabel' class='border rounded p-1'>${labelOptions}</select>
         <input id='toolDiameter' class='border rounded p-1' placeholder='Durchmesser' />
+        <select id='toolThreadPrefix' class='border rounded p-1'>
+          <option value=''>Kennung (nur Gewinde)</option>
+          <option value='M'>M</option>
+          <option value='MF'>MF</option>
+          <option value='G'>G</option>
+          <option value='UNF'>UNF</option>
+          <option value='UNC'>UNC</option>
+          <option value='Mx'>Mx</option>
+        </select>
+        <input id='toolThreadPitch' class='border rounded p-1' placeholder='Steigung P (nur MF)' />
         <input id='toolShelf' class='border rounded p-1' placeholder='A00' />
         <input id='toolArticle' class='border rounded p-1' placeholder='Artikel Nr.' />
         <select id='toolHolder' class='border rounded p-1'><option value='HSK 100'>Aufnahme HSK 100</option><option value='HSK 63'>Aufnahme HSK 63</option></select>
@@ -1672,8 +1767,8 @@ function renderTools() {
         ? `<div class='border-2 border-slate-300 rounded-xl p-3'>
       <h3 class='text-lg font-bold mb-2'>4) Admin-Bestandsaktionen</h3>
       <div class='grid md:grid-cols-2 gap-3'>
-      <div class='border rounded p-3 bg-white'><h4 class='font-semibold mb-2'>Werkzeug To-Do (unter Mindestbestand)</h4><table class='w-full text-sm'><tbody>${todoRows || '<tr><td class=\"p-2\" colspan=\"4\">Keine offenen To-Dos.</td></tr>'}</tbody></table></div>
-      <div class='border rounded p-3 bg-white'><h4 class='font-semibold mb-2'>Bestellt</h4><table class='w-full text-sm'><tbody>${orderedRows || '<tr><td class=\"p-2\" colspan=\"4\">Keine bestellten Werkzeuge.</td></tr>'}</tbody></table></div>
+      <div class='border rounded p-3 bg-white'><h4 class='font-semibold mb-2'>Werkzeug To-Do (unter Mindestbestand)</h4><table class='w-full text-sm'><thead class='bg-slate-100'><tr><th class='p-2 text-left'>T</th><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Größe</th><th class='p-2 text-left'>Bestand</th><th class='p-2'></th></tr></thead><tbody>${todoRows || '<tr><td class=\"p-2\" colspan=\"5\">Keine offenen To-Dos.</td></tr>'}</tbody></table></div>
+      <div class='border rounded p-3 bg-white'><h4 class='font-semibold mb-2'>Bestellt</h4><table class='w-full text-sm'><thead class='bg-slate-100'><tr><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Durchmesser</th><th class='p-2 text-left'>Steigung</th><th class='p-2 text-left'>Menge</th><th class='p-2 text-left'>Artikelnummer</th><th class='p-2 text-left'>Lagerfach</th><th class='p-2'></th></tr></thead><tbody>${orderedRows || '<tr><td class=\"p-2\" colspan=\"7\">Keine bestellten Werkzeuge.</td></tr>'}</tbody></table></div>
       </div>
       <div class='mt-3 border rounded p-3 bg-slate-50'>
         <h4 class='font-semibold mb-2'>Bestellliste nach Hersteller</h4>
