@@ -433,9 +433,14 @@ function assignedDisplay(shiftId, options) {
 }
 
 function assignedMeta(shiftId, options) {
-  const assignedName = resolveAssigned(shiftId, options);
+  if (state.shiftCancellations?.[shiftId]) {
+    return { label: "AUSFALL", cls: "bg-rose-200 text-rose-900" };
+  }
+  const shift = getShiftById(shiftId);
+  const assignedName = shift?.assigned || resolveAssigned(shiftId, options);
+  const absence = getPrimaryAbsenceInfo(shiftId, options);
   if (!assignedName) {
-    const abs = resolveAbsenceType(shiftId, options);
+    const abs = absence?.type || resolveAbsenceType(shiftId, options);
     if (abs)
       return {
         label: abs.toUpperCase(),
@@ -447,9 +452,23 @@ function assignedMeta(shiftId, options) {
     return { label: "-", cls: "bg-slate-100 text-slate-700" };
   }
   return {
-    label: `${slotOfUser(assignedName)} • ${assignedName}`,
-    cls: PERSON_COLORS[assignedName] || "bg-slate-100 text-slate-800",
+    label: `${slotOfUser(assignedName)} • ${assignedName}${absence ? ` · ${absence.type.toUpperCase()}: ${absence.name}` : ""}`,
+    cls: absence
+      ? "bg-amber-100 text-amber-900"
+      : PERSON_COLORS[assignedName] || "bg-slate-100 text-slate-800",
   };
+}
+
+function getPrimaryAbsenceInfo(shiftId, options) {
+  const date = shiftId.slice(0, 10);
+  const defaultAssigned = chooseDefault(options);
+  if (!defaultAssigned) return null;
+  const swappedDefault = applySwap(date, defaultAssigned);
+  const type = getCalendarAbsenceType(swappedDefault, date);
+  if (type) return { name: swappedDefault, type };
+  if (state.absences[`${date}:${swappedDefault}`])
+    return { name: swappedDefault, type: "abwesend" };
+  return null;
 }
 
 function renderOverviewPlan(weeksToShow = 12) {
@@ -988,7 +1007,63 @@ function canAssignUserToShift(name, shiftId) {
     );
     return false;
   }
+  const restCheck = checkRestTimeRule(name, shiftId);
+  if (!restCheck.ok) {
+    alert(restCheck.message);
+    return false;
+  }
   return true;
+}
+
+function checkRestTimeRule(name, shiftId) {
+  const target = getShiftById(shiftId);
+  if (!target) return { ok: true };
+  const assigned = generateThreeMonths()
+    .filter((s) => s.assigned === name && s.id !== shiftId)
+    .map((s) => ({
+      ...s,
+      _start: shiftDateRange(s).start,
+      _end: shiftDateRange(s).end,
+    }));
+  const tRange = shiftDateRange(target);
+  assigned.push({
+    ...target,
+    assigned: name,
+    _start: tRange.start,
+    _end: tRange.end,
+  });
+  assigned.sort((a, b) => a._start - b._start);
+
+  let shortRestCountWeek = 0;
+  const targetWeek = weekKey(target.date);
+  for (let i = 1; i < assigned.length; i++) {
+    const prev = assigned[i - 1];
+    const cur = assigned[i];
+    const restHours =
+      (cur._start.getTime() - prev._end.getTime()) / (1000 * 60 * 60);
+    if (restHours < 8) {
+      return {
+        ok: false,
+        message: `${name} hat zwischen Schichten weniger als 8 Stunden Ruhezeit.`,
+      };
+    }
+    if (restHours < 11 && weekKey(cur.date) === targetWeek)
+      shortRestCountWeek += 1;
+  }
+  if (shortRestCountWeek > 1) {
+    return {
+      ok: false,
+      message: `${name} überschreitet die Ruhezeit-Regel: max. 1 Ausnahme mit 8h pro Woche.`,
+    };
+  }
+  return { ok: true };
+}
+
+function weekKey(iso) {
+  const d = new Date(`${iso}T00:00:00`);
+  const weekday = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - weekday);
+  return d.toISOString().slice(0, 10);
 }
 
 function readAdminCalendarForm() {
@@ -1195,6 +1270,8 @@ function addToolManufacturer() {
 }
 
 function createTool() {
+  if (currentUser.role !== "admin")
+    return alert("Nur Admin darf Werkzeuge anlegen.");
   const tNumber = document.getElementById("toolTNumber")?.value?.trim();
   const label = document.getElementById("toolLabel")?.value;
   const diameter = document.getElementById("toolDiameter")?.value?.trim();
@@ -1709,7 +1786,9 @@ function renderTools() {
     <h2 class='text-xl font-bold mb-1'>Werkzeugverwaltung</h2>
     <p class='text-sm text-slate-600 mb-2'>Alle Bereiche sind getrennt dargestellt: Stammdaten, Bestand, To-Do und Journal.</p>
 
-    <div class='border-2 border-slate-300 rounded-xl p-3 bg-slate-50'>
+    ${
+      currentUser.role === "admin"
+        ? `<div class='border-2 border-slate-300 rounded-xl p-3 bg-slate-50'>
       <h3 class='text-lg font-bold mb-2'>1) Neues Werkzeug anlegen</h3>
       <div class='grid md:grid-cols-4 gap-2'>
         <input id='toolTNumber' class='border rounded p-1' placeholder='T-Nummer (z.B. 134)' />
@@ -1737,7 +1816,9 @@ function renderTools() {
         <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick='createTool()'>Werkzeug speichern</button>
         ${currentUser.role === "admin" ? `<button class='px-2 py-1 rounded bg-slate-700 text-white' onclick='addToolLabel()'>Bezeichnung hinzufügen</button><button class='px-2 py-1 rounded bg-slate-700 text-white' onclick='addToolManufacturer()'>Hersteller hinzufügen</button>` : ""}
       </div>
-    </div>
+    </div>`
+        : ""
+    }
 
     <div class='border-2 border-slate-300 rounded-xl p-3'>
       <h3 class='text-lg font-bold mb-2'>2) Filter & Suche</h3>
