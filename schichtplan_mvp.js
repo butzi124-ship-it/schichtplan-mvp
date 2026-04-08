@@ -1519,14 +1519,24 @@ function editToolCentered(tool) {
 }
 
 function suggestedOrderQty(tool) {
-  const base = Math.max(
-    0,
-    Number(tool.optimalStock || 0) - Number(tool.stock || 0),
-  );
+  const stock = Number(tool.stock || 0);
+  const optimal = Number(tool.optimalStock || 0);
+  const minStock = Number(tool.minStock || 0);
+
+  const baseFromOptimal = Math.max(0, optimal - stock);
   const statSuggestion = getOptimalQtySuggestion(tool);
-  if (Number.isFinite(statSuggestion) && statSuggestion > 0)
-    return Math.max(base, statSuggestion);
-  return base;
+
+  if (Number.isFinite(statSuggestion) && statSuggestion > 0) {
+    return Math.max(baseFromOptimal, statSuggestion);
+  }
+
+  if (baseFromOptimal > 0) return baseFromOptimal;
+
+  if (stock <= minStock) {
+    return Math.max(1, minStock - stock + 1);
+  }
+
+  return 0;
 }
 
 function effectiveOrderQty(tool) {
@@ -1944,7 +1954,7 @@ function renderTools() {
   const tools = state.tools.filter((t) => {
     const bySearch =
       !search ||
-      `${t.tNumber} ${t.label} ${t.diameter} ${t.articleNo} ${t.holder || ""}`
+      `${t.tNumber} ${t.label} ${t.diameter} ${t.articleNo} ${t.holder || ""} ${t.manufacturer || ""}`
         .toLowerCase()
         .includes(search);
     const byLabel = !filterLabel || t.label === filterLabel;
@@ -1965,7 +1975,7 @@ function renderTools() {
       <td class='p-2'>${t.holder || "-"}</td>
       <td class='p-2'>${t.stock}</td>
       <td class='p-2'>${t.minStock}</td>
-      <td class='p-2'>${t.manufacturer}</td>
+      <td class='p-2'>${t.manufacturer || "-"}</td>
       <td class='p-2'>${t.ordered ? "Bestellt" : "-"}</td>
       <td class='p-2'>
         <button class='px-2 py-1 rounded bg-emerald-700 text-white mr-1' onclick="bookToolChange('${t.id}')">Wechsel</button>
@@ -1982,7 +1992,7 @@ function renderTools() {
   const todoTools = state.tools.filter((t) => shouldOrderTool(t) && !t.ordered);
   const orderedTools = state.tools.filter((t) => t.ordered);
   const orderCandidates = state.tools.filter(
-    (t) => shouldOrderTool(t) && effectiveOrderQty(t) > 0,
+    (t) => shouldOrderTool(t) || t.ordered,
   );
 
   const todoRows = todoTools
@@ -1991,7 +2001,7 @@ function renderTools() {
     <td class='p-2'>T ${t.tNumber}</td>
     <td class='p-2'>${t.label}</td>
     <td class='p-2'>${formatToolSize(t)}</td>
-    <td class='p-2'>${t.stock}/${t.minStock}</td>
+    <td class='p-2'>${t.articleNo || "-"}</td>
     <td class='p-2 whitespace-nowrap'><button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="markToolOrdered('${t.id}', true)">Bestellt markieren</button></td>
   </tr>`,
     )
@@ -2030,7 +2040,7 @@ function renderTools() {
     .join("");
 
   const orderGroups = orderCandidates.reduce((acc, tool) => {
-    const maker = tool.manufacturer || "Ohne Hersteller";
+    const maker = (tool.manufacturer || "").trim() || "Ohne Hersteller";
     if (!acc[maker]) acc[maker] = [];
     acc[maker].push(tool);
     return acc;
@@ -2038,7 +2048,7 @@ function renderTools() {
 
   const orderListPopup = state.orderListPopupOpen
     ? `<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-5xl max-h-[85vh] overflow-auto p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-6xl max-h-[88vh] overflow-auto p-4">
       <div class="flex items-center justify-between mb-3">
         <h3 class="text-lg font-bold">Bestellliste nach Hersteller</h3>
         <button class="px-2 py-1 rounded bg-slate-200" onclick="closeOrderListPopup()">Schließen</button>
@@ -2046,25 +2056,43 @@ function renderTools() {
       ${
         Object.keys(orderGroups).length
           ? Object.entries(orderGroups)
+              .sort((a, b) => a[0].localeCompare(b[0]))
               .map(([maker, list]) => {
                 const rows = list
                   .map(
                     (t) => `<tr class='border-b'>
+          <td class='p-2'>T ${t.tNumber}</td>
           <td class='p-2'>${t.label}</td>
           <td class='p-2'>${formatToolSize(t)}</td>
-          <td class='p-2'>${t.articleNo}</td>
-          <td class='p-2'><input type='number' min='0' class='border rounded p-1 w-24' value='${effectiveOrderQty(t)}' onchange="setToolOrderOverride('${t.id}', this.value)" /></td>
+          <td class='p-2'>${t.articleNo || "-"}</td>
+          <td class='p-2'>${t.shelf || "-"}</td>
+          <td class='p-2'>${t.stock}/${t.minStock}</td>
+          <td class='p-2'>
+            <input
+              type='number'
+              min='0'
+              class='border rounded p-1 w-24'
+              value='${effectiveOrderQty(t)}'
+              onchange="setToolOrderOverride('${t.id}', this.value)"
+            />
+          </td>
         </tr>`,
                   )
                   .join("");
-                return `<div class='border rounded p-3 mb-3'>
-          <h4 class='font-semibold mb-2'>${maker}</h4>
+                return `<div class='border rounded p-3 mb-4 bg-white'>
+          <div class='flex items-center justify-between mb-2'>
+            <h4 class='font-semibold text-base'>${maker}</h4>
+            <span class='text-xs text-slate-500'>${list.length} Werkzeug(e)</span>
+          </div>
           <table class='w-full text-sm'>
             <thead class='bg-slate-100'>
               <tr>
+                <th class='p-2 text-left'>T</th>
                 <th class='p-2 text-left'>Bezeichnung</th>
-                <th class='p-2 text-left'>Durchmesser</th>
+                <th class='p-2 text-left'>Größe</th>
                 <th class='p-2 text-left'>Artikelnummer</th>
+                <th class='p-2 text-left'>Lagerfach</th>
+                <th class='p-2 text-left'>Bestand</th>
                 <th class='p-2 text-left'>Menge</th>
               </tr>
             </thead>
@@ -2174,7 +2202,7 @@ function renderTools() {
         <div class='border rounded p-3 bg-white overflow-auto'>
           <h4 class='font-semibold mb-2'>Werkzeug To-Do (bei Mindestbestand oder darunter)</h4>
           <table class='w-full text-sm'>
-            <thead class='bg-slate-100'><tr><th class='p-2 text-left'>T</th><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Größe</th><th class='p-2 text-left'>Bestand</th><th class='p-2'></th></tr></thead>
+            <thead class='bg-slate-100'><tr><th class='p-2 text-left'>T</th><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Größe</th><th class='p-2 text-left'>Artikelnummer</th><th class='p-2'></th></tr></thead>
             <tbody>${todoRows || '<tr><td class="p-2" colspan="5">Keine offenen To-Dos.</td></tr>'}</tbody>
           </table>
         </div>
