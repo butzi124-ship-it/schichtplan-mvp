@@ -1519,9 +1519,13 @@ function editToolCentered(tool) {
 }
 
 function suggestedOrderQty(tool) {
-  const base = Math.max(0, Number(tool.optimalStock || 0) - Number(tool.stock || 0));
+  const base = Math.max(
+    0,
+    Number(tool.optimalStock || 0) - Number(tool.stock || 0),
+  );
   const statSuggestion = getOptimalQtySuggestion(tool);
-  if (Number.isFinite(statSuggestion) && statSuggestion > 0) return Math.max(base, statSuggestion);
+  if (Number.isFinite(statSuggestion) && statSuggestion > 0)
+    return Math.max(base, statSuggestion);
   return base;
 }
 
@@ -1679,7 +1683,10 @@ async function editTool(toolId) {
     return alert("Bitte bei MF die Steigung (P) angeben.");
   if (!isThreadTool && !Number.isFinite(Number(data.diameter)))
     return alert("Bitte gültigen numerischen Durchmesser eingeben.");
-  if (data.insertTool && (!Number.isFinite(Number(data.insertEdges)) || Number(data.insertEdges) <= 0))
+  if (
+    data.insertTool &&
+    (!Number.isFinite(Number(data.insertEdges)) || Number(data.insertEdges) <= 0)
+  )
     return alert("Bitte Anzahl der Schneiden > 0 eingeben.");
 
   data.diameter = isThreadTool ? data.diameter : Number(data.diameter);
@@ -1784,7 +1791,11 @@ function buildOrderFrequency(view) {
   const { start, end } = getOrderStatsRange(view);
   const rows = (state.orderHistory || []).filter((e) => {
     const d = new Date(e.at);
-    return d >= start && d <= end && (e.action === "mark_ordered" || e.action === "restock");
+    return (
+      d >= start &&
+      d <= end &&
+      (e.action === "mark_ordered" || e.action === "restock")
+    );
   });
 
   const map = {};
@@ -1970,7 +1981,9 @@ function renderTools() {
 
   const todoTools = state.tools.filter((t) => shouldOrderTool(t) && !t.ordered);
   const orderedTools = state.tools.filter((t) => t.ordered);
-  const orderCandidates = todoTools.filter((t) => suggestedOrderQty(t) > 0);
+  const orderCandidates = state.tools.filter(
+    (t) => shouldOrderTool(t) && effectiveOrderQty(t) > 0,
+  );
 
   const todoRows = todoTools
     .map(
@@ -2046,7 +2059,17 @@ function renderTools() {
                   .join("");
                 return `<div class='border rounded p-3 mb-3'>
           <h4 class='font-semibold mb-2'>${maker}</h4>
-          <table class='w-full text-sm'><thead class='bg-slate-100'><tr><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Durchmesser</th><th class='p-2 text-left'>Artikelnummer</th><th class='p-2 text-left'>Menge</th></tr></thead><tbody>${rows}</tbody></table>
+          <table class='w-full text-sm'>
+            <thead class='bg-slate-100'>
+              <tr>
+                <th class='p-2 text-left'>Bezeichnung</th>
+                <th class='p-2 text-left'>Durchmesser</th>
+                <th class='p-2 text-left'>Artikelnummer</th>
+                <th class='p-2 text-left'>Menge</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
         </div>`;
               })
               .join("")
