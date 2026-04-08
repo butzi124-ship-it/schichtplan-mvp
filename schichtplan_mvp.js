@@ -1984,22 +1984,22 @@ function renderTools() {
     )
     .join("");
 
-  const orderedRows = orderedTools
+  const orderedCards = orderedTools
     .map(
-      (t) => `<tr class='border-b bg-emerald-50'>
-    <td class='p-2 align-top'>${t.label}</td>
-    <td class='p-2 align-top'>${formatToolSize(t)}</td>
-    <td class='p-2 align-top'>${t.threadPrefix === "MF" && t.threadPitch ? `P ${t.threadPitch}` : "-"}</td>
-    <td class='p-2 align-top'>${t.orderedQty || effectiveOrderQty(t)}</td>
-    <td class='p-2 align-top'>${t.articleNo}</td>
-    <td class='p-2 align-top'>${t.shelf}</td>
-    <td class='p-2 align-top'>
-      <div class='flex flex-col gap-2'>
-        <button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="markToolOrdered('${t.id}', false)">Bestellt</button>
-        <button class='px-2 py-1 rounded bg-slate-700 text-white' onclick="restockTool('${t.id}')">Einlagern</button>
-      </div>
-    </td>
-  </tr>`,
+      (t) => `<div class='border rounded-lg p-3 bg-emerald-50 space-y-3'>
+    <div class='grid md:grid-cols-2 gap-x-6 gap-y-2 text-sm'>
+      <div><span class='font-semibold'>Bezeichnung:</span> ${t.label}</div>
+      <div><span class='font-semibold'>Durchmesser:</span> ${formatToolSize(t)}</div>
+      <div><span class='font-semibold'>Steigung:</span> ${t.threadPrefix === "MF" && t.threadPitch ? `P ${t.threadPitch}` : "-"}</div>
+      <div><span class='font-semibold'>Menge:</span> ${t.orderedQty || effectiveOrderQty(t)}</div>
+      <div><span class='font-semibold'>Artikelnummer:</span> ${t.articleNo}</div>
+      <div><span class='font-semibold'>Lagerfach:</span> ${t.shelf}</div>
+    </div>
+    <div class='flex flex-col sm:flex-row gap-2'>
+      <button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="markToolOrdered('${t.id}', false)">Bestellt</button>
+      <button class='px-2 py-1 rounded bg-slate-700 text-white' onclick="restockTool('${t.id}')">Einlagern</button>
+    </div>
+  </div>`,
     )
     .join("");
 
@@ -2155,12 +2155,11 @@ function renderTools() {
             <tbody>${todoRows || '<tr><td class="p-2" colspan="5">Keine offenen To-Dos.</td></tr>'}</tbody>
           </table>
         </div>
-        <div class='border rounded p-3 bg-white overflow-auto'>
+        <div class='border rounded p-3 bg-white'>
           <h4 class='font-semibold mb-2'>Bestellt</h4>
-          <table class='w-full text-sm'>
-            <thead class='bg-slate-100'><tr><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Durchmesser</th><th class='p-2 text-left'>Steigung</th><th class='p-2 text-left'>Menge</th><th class='p-2 text-left'>Artikelnummer</th><th class='p-2 text-left'>Lagerfach</th><th class='p-2'></th></tr></thead>
-            <tbody>${orderedRows || '<tr><td class="p-2" colspan="7">Keine bestellten Werkzeuge.</td></tr>'}</tbody>
-          </table>
+          <div class='space-y-3'>
+            ${orderedCards || '<div class="text-sm text-slate-500">Keine bestellten Werkzeuge.</div>'}
+          </div>
         </div>
       </div>
 
