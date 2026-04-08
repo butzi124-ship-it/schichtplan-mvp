@@ -24,10 +24,12 @@ const DEFAULT_TOOL_LABELS = [
   "NC Anbohrer",
   "Gewindebohrer",
   "Gewindefräser",
+  "Gewindeformer",
   "Gewindewirbler",
   "Ausdrehkopf",
 ];
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
+const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
 const STORAGE_KEY = "schichtplan_mvp_v1";
 const state = loadState();
@@ -119,11 +121,17 @@ function loadState() {
       holder: "",
     },
     toolOrderOverrides: {},
+    orderArchive: [],
+    orderHistory: [],
+    orderStatsView: "week",
+    orderSuggestionState: {},
+    orderListPopupOpen: false,
   };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return base;
-    return { ...base, ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw);
+    return { ...base, ...parsed };
   } catch {
     return base;
   }
@@ -154,9 +162,19 @@ function logout() {
 
 function render() {
   if (!currentUser) return;
+  cleanupOrderArchive();
+
   const tabs = ["schichtplan"];
-  if (currentUser.role === "admin")
-    tabs.push("planung", "werkzeuge", "todo", "konflikte", "statistik");
+  if (currentUser.role === "admin") {
+    tabs.push(
+      "planung",
+      "werkzeuge",
+      "bestellstatistik",
+      "todo",
+      "konflikte",
+      "statistik",
+    );
+  }
   if (currentUser.role === "employee") tabs.push("meine", "werkzeuge", "todo");
 
   const tabsEl = document.getElementById("tabs");
@@ -182,6 +200,7 @@ function render() {
   if (currentTab === "meine") view.innerHTML = renderMyShifts();
   if (currentTab === "planung") view.innerHTML = renderPlanning();
   if (currentTab === "werkzeuge") view.innerHTML = renderTools();
+  if (currentTab === "bestellstatistik") view.innerHTML = renderOrderStats();
   if (currentTab === "todo") view.innerHTML = renderTodo();
   if (currentTab === "konflikte") view.innerHTML = renderConflicts();
   if (currentTab === "statistik") view.innerHTML = renderStats();
@@ -197,6 +216,7 @@ function labelTab(tab) {
     meine: "Meine Schichten",
     planung: "Planung (Admin)",
     werkzeuge: "Werkzeuge",
+    bestellstatistik: "Bestell-Statistik",
     todo: "To-Do",
     konflikte: "Konflikte",
     statistik: "Statistik",
@@ -213,11 +233,17 @@ function setStatsView(period) {
   render();
 }
 
+function shouldOrderTool(tool) {
+  return Number(tool.stock) <= Number(tool.minStock);
+}
+
 function tabNeedsAttention(tab) {
   if (tab === "planung") return generateThreeMonths().some((s) => s.open);
   if (tab === "todo") return state.tasks.some((t) => t.status !== "done");
   if (tab === "werkzeuge" && currentUser?.role === "admin")
-    return state.tools.some((t) => Number(t.stock) < Number(t.minStock));
+    return state.tools.some((t) => shouldOrderTool(t));
+  if (tab === "bestellstatistik" && currentUser?.role === "admin")
+    return (state.orderHistory || []).length > 0;
   if (tab === "konflikte")
     return Object.values(state.conflicts).some((c) => c.resolved !== true);
   if (tab === "meine" && currentUser?.role === "employee")
@@ -289,7 +315,7 @@ function buildShift(date, id, template) {
     options: template.options,
     assigned,
     absenceType: calendarAbsenceType || (manualAbsent ? "abwesend" : null),
-    open: absent || !assigned || assigned === "NONE",
+    open: canceled || absent || !assigned || assigned === "NONE",
   };
 }
 
@@ -432,33 +458,6 @@ function assignedDisplay(shiftId, options) {
   return `${slotOfUser(assignedName)} • ${assignedName}`;
 }
 
-function assignedMeta(shiftId, options) {
-  if (state.shiftCancellations?.[shiftId]) {
-    return { label: "AUSFALL", cls: "bg-rose-200 text-rose-900" };
-  }
-  const shift = getShiftById(shiftId);
-  const assignedName = shift?.assigned || resolveAssigned(shiftId, options);
-  const absence = getPrimaryAbsenceInfo(shiftId, options);
-  if (!assignedName) {
-    const abs = absence?.type || resolveAbsenceType(shiftId, options);
-    if (abs)
-      return {
-        label: abs.toUpperCase(),
-        cls:
-          abs === "krank"
-            ? "bg-rose-100 text-rose-800"
-            : "bg-amber-100 text-amber-900",
-      };
-    return { label: "-", cls: "bg-slate-100 text-slate-700" };
-  }
-  return {
-    label: `${slotOfUser(assignedName)} • ${assignedName}${absence ? ` · ${absence.type.toUpperCase()}: ${absence.name}` : ""}`,
-    cls: absence
-      ? "bg-amber-100 text-amber-900"
-      : PERSON_COLORS[assignedName] || "bg-slate-100 text-slate-800",
-  };
-}
-
 function getPrimaryAbsenceInfo(shiftId, options) {
   const date = shiftId.slice(0, 10);
   const defaultAssigned = chooseDefault(options);
@@ -469,6 +468,34 @@ function getPrimaryAbsenceInfo(shiftId, options) {
   if (state.absences[`${date}:${swappedDefault}`])
     return { name: swappedDefault, type: "abwesend" };
   return null;
+}
+
+function assignedMeta(shiftId, options) {
+  if (state.shiftCancellations?.[shiftId]) {
+    return { label: "AUSFALL", cls: "bg-rose-200 text-rose-900" };
+  }
+  const shift = getShiftById(shiftId);
+  const assignedName = shift?.assigned || resolveAssigned(shiftId, options);
+  const absence = getPrimaryAbsenceInfo(shiftId, options);
+  if (!assignedName) {
+    const abs = absence?.type || resolveAbsenceType(shiftId, options);
+    if (abs) {
+      return {
+        label: abs.toUpperCase(),
+        cls:
+          abs === "krank"
+            ? "bg-rose-100 text-rose-800"
+            : "bg-amber-100 text-amber-900",
+      };
+    }
+    return { label: "-", cls: "bg-slate-100 text-slate-700" };
+  }
+  return {
+    label: `${slotOfUser(assignedName)} • ${assignedName}${absence ? ` · ${absence.type.toUpperCase()}: ${absence.name}` : ""}`,
+    cls: absence
+      ? "bg-amber-100 text-amber-900"
+      : PERSON_COLORS[assignedName] || "bg-slate-100 text-slate-800",
+  };
 }
 
 function renderOverviewPlan(weeksToShow = 12) {
@@ -495,7 +522,6 @@ function renderOverviewPlan(weeksToShow = 12) {
       ((Math.floor((weekStart - anchor) / msPerWeek) % 6) + 6) % 6;
     const template = WEEK_TEMPLATES[templateWeekIndex];
 
-    // Start-Zeile (Sonntagabend vor Woche)
     if (w === 0) {
       const startSunday = new Date(weekStart);
       startSunday.setDate(startSunday.getDate() - 1);
@@ -546,7 +572,7 @@ function renderOverviewPlan(weeksToShow = 12) {
         body += `<tr class="border-b bg-amber-50">
           <td class="p-2 font-semibold">${weekLabel}</td>
           <td class="p-2 font-semibold">${dayName}<div class="text-[11px] text-slate-500">${dateIso}</div></td>
-          <td class="p-2 ${m1.cls} font-semibold text-center ring-1 ring-amber-500"> ${m1.label}</td>
+          <td class="p-2 ${m1.cls} font-semibold text-center ring-1 ring-amber-500">${m1.label}</td>
           <td class="p-2 font-semibold text-center bg-amber-100">05:00-11:00 (Sa Morgen)</td>
           <td class="p-2 ${m2.cls} font-semibold text-center">${m2.label}</td>
           <td class="p-2 font-semibold text-center bg-amber-200">16:00-22:00 (Sa Abend)</td>
@@ -659,14 +685,14 @@ function renderMyShifts() {
     <div class='overflow-auto max-h-[65vh] border rounded-lg'>
       <table class='w-full text-sm'><thead class='sticky top-0 bg-slate-100'><tr>
         <th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Zeit</th><th class='p-2 text-left'>Status</th><th class='p-2 text-left'>Aktionen</th>
-      </tr></thead><tbody>${rows || '<tr><td class=\"p-2\" colspan=\"5\">Keine Schichten gefunden.</td></tr>'}</tbody></table>
+      </tr></thead><tbody>${rows || '<tr><td class="p-2" colspan="5">Keine Schichten gefunden.</td></tr>'}</tbody></table>
     </div>
     ${
       isSpringer(currentUser.name)
         ? `<h3 class='font-semibold mt-4 mb-2'>Wochenende-Verfügbarkeit (Samstag/Sonntag)</h3>
     <div class='overflow-auto max-h-[35vh] border rounded-lg'>
       <table class='w-full text-sm'><thead class='sticky top-0 bg-slate-100'><tr><th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Zeit</th><th class='p-2 text-left'>Kannst du?</th></tr></thead>
-      <tbody>${weekendRows || '<tr><td class=\"p-2\" colspan=\"4\">Keine Wochenend-Schichten.</td></tr>'}</tbody></table>
+      <tbody>${weekendRows || '<tr><td class="p-2" colspan="4">Keine Wochenend-Schichten.</td></tr>'}</tbody></table>
     </div>`
         : ""
     }
@@ -880,21 +906,21 @@ function renderPlanning() {
         <h3 class='font-semibold mb-2'>Meldungen „Kann nicht kommen“</h3>
         <div class='overflow-auto max-h-56'>
           <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Typ</th></tr></thead>
-          <tbody>${absenceRows || '<tr><td class=\"p-2\" colspan=\"3\">Keine Meldungen.</td></tr>'}</tbody></table>
+          <tbody>${absenceRows || '<tr><td class="p-2" colspan="3">Keine Meldungen.</td></tr>'}</tbody></table>
         </div>
       </div>
       <div class='border rounded-lg p-3 bg-slate-50'>
         <h3 class='font-semibold mb-2'>Samstag-Abend Eintragungen (Freigabe durch Admin)</h3>
         <div class='overflow-auto max-h-56'>
           <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Schicht</th><th class='p-2'></th></tr></thead>
-          <tbody>${saturdayRequestRows || '<tr><td class=\"p-2\" colspan=\"4\">Keine Anfragen.</td></tr>'}</tbody></table>
+          <tbody>${saturdayRequestRows || '<tr><td class="p-2" colspan="4">Keine Anfragen.</td></tr>'}</tbody></table>
         </div>
       </div>
       <div class='border rounded-lg p-3 bg-slate-50'>
         <h3 class='font-semibold mb-2'>Springer-Verfügbarkeit Wochenende</h3>
         <div class='overflow-auto max-h-56'>
           <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Kann</th><th class='p-2 text-left'>Kann nicht</th></tr></thead>
-          <tbody>${weekendAvailabilityRows || '<tr><td class=\"p-2\" colspan=\"4\">Keine Angaben.</td></tr>'}</tbody></table>
+          <tbody>${weekendAvailabilityRows || '<tr><td class="p-2" colspan="4">Keine Angaben.</td></tr>'}</tbody></table>
         </div>
       </div>
       <div class='border rounded-lg p-3 bg-slate-50 space-y-3'>
@@ -917,14 +943,14 @@ function renderPlanning() {
         <h4 class='font-semibold mb-2'>Geplante Urlaube</h4>
         <div class='overflow-auto max-h-48'>
           <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th><th class='p-2'></th></tr></thead>
-          <tbody>${vacationRows || '<tr><td class=\"p-2\" colspan=\"4\">Keine Einträge.</td></tr>'}</tbody></table>
+          <tbody>${vacationRows || '<tr><td class="p-2" colspan="4">Keine Einträge.</td></tr>'}</tbody></table>
         </div>
       </div>
       <div class='border rounded-lg p-3'>
         <h4 class='font-semibold mb-2'>Krankmeldungen</h4>
         <div class='overflow-auto max-h-48'>
           <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th><th class='p-2'></th></tr></thead>
-          <tbody>${sickRows || '<tr><td class=\"p-2\" colspan=\"4\">Keine Einträge.</td></tr>'}</tbody></table>
+          <tbody>${sickRows || '<tr><td class="p-2" colspan="4">Keine Einträge.</td></tr>'}</tbody></table>
         </div>
       </div>
     </div>
@@ -945,7 +971,7 @@ function renderPlanning() {
       <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr>
         <th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Option</th><th class='p-2 text-left'>Kann</th><th class='p-2 text-left'>Kann nicht</th><th class='p-2 text-left'>Einteilen</th><th class='p-2'></th>
       </tr></thead>
-      <tbody>${optionalRows || '<tr><td class=\"p-2\" colspan=\"7\">Keine Wochenend-Schichten.</td></tr>'}</tbody></table>
+      <tbody>${optionalRows || '<tr><td class="p-2" colspan="7">Keine Wochenend-Schichten.</td></tr>'}</tbody></table>
     </div>
 
     <h3 class='text-md font-semibold mt-6 mb-2'>Mitarbeiter-Tausch ab Datum</h3>
@@ -1136,10 +1162,10 @@ function resetActiveSwaps(silent = false) {
   const yesterday = isoDate(y);
   state.swaps = state.swaps.flatMap((swap) => {
     if (!swap) return [];
-    if (swap.startDate >= today) return []; // komplett zukünftig -> löschen
+    if (swap.startDate >= today) return [];
     if (!swap.endDate || swap.endDate >= today)
-      return [{ ...swap, endDate: yesterday }]; // laufend -> vor heutiger Schicht beenden
-    return [swap]; // rein historisch bleibt
+      return [{ ...swap, endDate: yesterday }];
+    return [swap];
   });
   persist();
   if (!silent) {
@@ -1174,7 +1200,6 @@ function resetPlanCurrentFuture() {
     )
   )
     return;
-  // Gesamter Plan zurück auf Ausgangszustand (Ursprungsrotation).
   state.assignments = {};
   state.shiftCancellations = {};
   state.absences = {};
@@ -1190,12 +1215,9 @@ function resetPlanCurrentFuture() {
   state.conflicts = {};
   state.machineDowntime = {};
   state.machinePromptSeen = {};
-
-  // Personal/Slots ebenfalls auf Startzustand.
   state.extraUsers = [];
   state.inactiveUsers = {};
   state.slotAssignments = { ...DEFAULT_SLOT_ASSIGNMENTS };
-
   persist();
   render();
   alert("Gesamtplan wurde auf den Ursprungsplan zurückgesetzt.");
@@ -1250,6 +1272,10 @@ function getToolManufacturers() {
   ];
 }
 
+function getToolHolders() {
+  return [...DEFAULT_TOOL_HOLDERS];
+}
+
 function addToolLabel() {
   if (currentUser.role !== "admin") return;
   const value = prompt("Neue Bezeichnung:");
@@ -1265,107 +1291,6 @@ function addToolManufacturer() {
   if (!value) return;
   if (!state.toolManufacturersExtra.includes(value))
     state.toolManufacturersExtra.push(value);
-  persist();
-  render();
-}
-
-function createTool() {
-  if (currentUser.role !== "admin")
-    return alert("Nur Admin darf Werkzeuge anlegen.");
-  const tNumber = document.getElementById("toolTNumber")?.value?.trim();
-  const label = document.getElementById("toolLabel")?.value;
-  const diameter = document.getElementById("toolDiameter")?.value?.trim();
-  const threadPrefix = document.getElementById("toolThreadPrefix")?.value || "";
-  const threadPitch =
-    document.getElementById("toolThreadPitch")?.value?.trim() || "";
-  const shelf = document
-    .getElementById("toolShelf")
-    ?.value?.trim()
-    .toUpperCase();
-  const articleNo = document.getElementById("toolArticle")?.value?.trim();
-  const holder = document.getElementById("toolHolder")?.value;
-  const stock = Number(document.getElementById("toolStock")?.value || 0);
-  const minStock = Number(document.getElementById("toolMinStock")?.value || 0);
-  const optimalStock = Number(
-    document.getElementById("toolOptimalStock")?.value || 0,
-  );
-  const manufacturer = document.getElementById("toolManufacturer")?.value;
-  const isThreadTool = isThreadToolLabel(label);
-  if (
-    !tNumber ||
-    !label ||
-    !diameter ||
-    !/^[A-Z]\d{2}$/.test(shelf) ||
-    !articleNo ||
-    !["HSK 100", "HSK 63"].includes(holder)
-  )
-    return alert(
-      "Bitte Felder korrekt ausfüllen (A-Z + 2-stellige Zahl für Fach, Aufnahme HSK 100 oder HSK 63).",
-    );
-  if (isThreadTool && !threadPrefix)
-    return alert("Bitte Gewindekennung wählen.");
-  if (isThreadTool && threadPrefix === "MF" && !threadPitch)
-    return alert("Bitte bei MF die Steigung (P) angeben.");
-  if (!isThreadTool && !Number.isFinite(Number(diameter)))
-    return alert("Bitte gültigen numerischen Durchmesser eingeben.");
-  state.tools.push({
-    id: `tool-${Date.now()}`,
-    tNumber,
-    label,
-    diameter: isThreadTool ? diameter : Number(diameter),
-    threadPrefix: isThreadTool ? threadPrefix : "",
-    threadPitch: isThreadTool && threadPrefix === "MF" ? threadPitch : "",
-    shelf,
-    articleNo,
-    holder,
-    stock,
-    minStock,
-    optimalStock: currentUser.role === "admin" ? Math.max(0, optimalStock) : 0,
-    manufacturer,
-    ordered: false,
-    orderedQty: 0,
-  });
-  persist();
-  render();
-}
-
-function markToolOrdered(toolId, ordered) {
-  const tool = state.tools.find((t) => t.id === toolId);
-  if (!tool || currentUser.role !== "admin") return;
-  tool.ordered = ordered;
-  tool.orderedQty = ordered ? Math.max(1, effectiveOrderQty(tool)) : 0;
-  persist();
-  render();
-}
-
-async function restockTool(toolId) {
-  if (currentUser.role !== "admin") return;
-  const tool = state.tools.find((t) => t.id === toolId);
-  if (!tool) return;
-  let add = 0;
-  if (tool.ordered && Number(tool.orderedQty || 0) > 0) {
-    const full = await askYesNoCentered("Bestellte Menge einlagern?");
-    if (full) {
-      add = Number(tool.orderedQty || 0);
-    } else {
-      add = await askNumberCentered(
-        "Einzulagernde Menge eingeben:",
-        String(tool.orderedQty || 1),
-      );
-      if (add === null) return;
-    }
-  } else {
-    add = await askNumberCentered("Werkzeug einlagern (Anzahl):", "1");
-    if (add === null) return;
-  }
-  if (!Number.isFinite(add) || add <= 0) return;
-  tool.stock += add;
-  if (tool.ordered && Number(tool.orderedQty || 0) > 0) {
-    tool.orderedQty = Math.max(0, Number(tool.orderedQty || 0) - add);
-    if (tool.orderedQty === 0) tool.ordered = false;
-  }
-  if (tool.stock >= tool.minStock && Number(tool.orderedQty || 0) === 0)
-    tool.ordered = false;
   persist();
   render();
 }
@@ -1388,25 +1313,76 @@ function formatToolSize(tool) {
   return base;
 }
 
-function runToolChange() {
-  const tNumber = document.getElementById("changeTNumber")?.value?.trim();
-  const withdraw = document.getElementById("changeWithdraw")?.checked;
-  const qty = Number(document.getElementById("changeQty")?.value || 0);
-  const tool = state.tools.find((t) => String(t.tNumber) === String(tNumber));
-  if (!tool) return alert("T-Nummer nicht gefunden.");
-  if (withdraw) {
-    if (qty <= 0) return alert("Bitte Entnahmemenge angeben.");
-    tool.stock = Math.max(0, tool.stock - qty);
+function createTool() {
+  if (currentUser.role !== "admin")
+    return alert("Nur Admin darf Werkzeuge anlegen.");
+
+  const tNumber = document.getElementById("toolTNumber")?.value?.trim();
+  const label = document.getElementById("toolLabel")?.value;
+  const diameter = document.getElementById("toolDiameter")?.value?.trim();
+  const threadPrefix = document.getElementById("toolThreadPrefix")?.value || "";
+  const threadPitch =
+    document.getElementById("toolThreadPitch")?.value?.trim() || "";
+  const shelf = document
+    .getElementById("toolShelf")
+    ?.value?.trim()
+    .toUpperCase();
+  const articleNo = document.getElementById("toolArticle")?.value?.trim();
+  const holder = document.getElementById("toolHolder")?.value;
+  const stock = Number(document.getElementById("toolStock")?.value || 0);
+  const minStock = Number(document.getElementById("toolMinStock")?.value || 0);
+  const optimalStock = Number(
+    document.getElementById("toolOptimalStock")?.value || 0,
+  );
+  const manufacturer = document.getElementById("toolManufacturer")?.value;
+  const insertTool = !!document.getElementById("toolInsertTool")?.checked;
+  const insertEdges = Number(
+    document.getElementById("toolInsertEdges")?.value || 0,
+  );
+
+  const isThreadTool = isThreadToolLabel(label);
+
+  if (
+    !tNumber ||
+    !label ||
+    !diameter ||
+    !/^[A-Z]\d{2}$/.test(shelf) ||
+    !articleNo ||
+    !["HSK 100", "HSK 63"].includes(holder)
+  ) {
+    return alert(
+      "Bitte Felder korrekt ausfüllen (A-Z + 2-stellige Zahl für Fach, Aufnahme HSK 100 oder HSK 63).",
+    );
   }
-  state.toolJournal.unshift({
-    id: `journal-${Date.now()}`,
-    user: currentUser.name,
-    at: new Date().toISOString().slice(0, 16).replace("T", " "),
-    tNumber: tool.tNumber,
-    action: withdraw
-      ? `Werkzeugwechsel + Entnahme ${qty}`
-      : "Werkzeugwechsel ohne Entnahme",
+  if (isThreadTool && !threadPrefix)
+    return alert("Bitte Gewindekennung wählen.");
+  if (isThreadTool && threadPrefix === "MF" && !threadPitch)
+    return alert("Bitte bei MF die Steigung (P) angeben.");
+  if (!isThreadTool && !Number.isFinite(Number(diameter)))
+    return alert("Bitte gültigen numerischen Durchmesser eingeben.");
+  if (insertTool && (!Number.isFinite(insertEdges) || insertEdges <= 0))
+    return alert("Bitte Anzahl der Schneiden > 0 eingeben.");
+
+  state.tools.push({
+    id: `tool-${Date.now()}`,
+    tNumber,
+    label,
+    diameter: isThreadTool ? diameter : Number(diameter),
+    threadPrefix: isThreadTool ? threadPrefix : "",
+    threadPitch: isThreadTool && threadPrefix === "MF" ? threadPitch : "",
+    shelf,
+    articleNo,
+    holder,
+    stock,
+    minStock,
+    optimalStock: Math.max(0, optimalStock),
+    manufacturer,
+    ordered: false,
+    orderedQty: 0,
+    insertTool,
+    insertEdges: insertTool ? insertEdges : 0,
   });
+
   persist();
   render();
 }
@@ -1454,7 +1430,7 @@ function askNumberCentered(message, initialValue = "1") {
         <p class="text-sm text-slate-700 mb-3">${message}</p>
         <input id="modalNumber" type="number" min="1" class="border rounded p-2 w-full mb-4" value="${initialValue}" />
         <div class="flex justify-end gap-2">
-          <button id="modalNo" class="px-3 py-1 rounded bg-slate-200">Nein</button>
+          <button id="modalNo" class="px-3 py-1 rounded bg-slate-200">Abbrechen</button>
           <button id="modalOk" class="px-3 py-1 rounded bg-slate-900 text-white">Bestätigen</button>
         </div>
       </div>
@@ -1502,9 +1478,11 @@ function editToolCentered(tool) {
           <input id="editStock" type="number" class="border rounded p-2" value="${tool.stock}" />
           <input id="editMinStock" type="number" class="border rounded p-2" value="${tool.minStock}" />
           <input id="editOptimalStock" type="number" class="border rounded p-2" value="${tool.optimalStock || 0}" />
+          <label class="flex items-center gap-2 text-sm"><input id="editInsertTool" type="checkbox" ${tool.insertTool ? "checked" : ""}/> Wendeplattenwerkzeug</label>
+          <input id="editInsertEdges" type="number" class="border rounded p-2" value="${tool.insertEdges || 0}" placeholder="Anzahl Schneiden" />
         </div>
         <div class="flex justify-end gap-2">
-          <button id="modalNo" class="px-3 py-1 rounded bg-slate-200">Nein</button>
+          <button id="modalNo" class="px-3 py-1 rounded bg-slate-200">Abbrechen</button>
           <button id="modalSave" class="px-3 py-1 rounded bg-slate-900 text-white">Speichern</button>
         </div>
       </div>
@@ -1527,6 +1505,8 @@ function editToolCentered(tool) {
         optimalStock: Number(
           host.querySelector("#editOptimalStock")?.value || 0,
         ),
+        insertTool: !!host.querySelector("#editInsertTool")?.checked,
+        insertEdges: Number(host.querySelector("#editInsertEdges")?.value || 0),
       };
       host.innerHTML = "";
       resolve(payload);
@@ -1538,18 +1518,127 @@ function editToolCentered(tool) {
   });
 }
 
+function suggestedOrderQty(tool) {
+  const base = Math.max(0, Number(tool.optimalStock || 0) - Number(tool.stock || 0));
+  const statSuggestion = getOptimalQtySuggestion(tool);
+  if (Number.isFinite(statSuggestion) && statSuggestion > 0) return Math.max(base, statSuggestion);
+  return base;
+}
+
+function effectiveOrderQty(tool) {
+  const override = Number(state.toolOrderOverrides?.[tool.id]);
+  if (Number.isFinite(override) && override >= 0) return override;
+  return suggestedOrderQty(tool);
+}
+
+function setToolOrderOverride(toolId, value) {
+  if (currentUser.role !== "admin") return;
+  const qty = Math.max(0, Number(value || 0));
+  if (!state.toolOrderOverrides) state.toolOrderOverrides = {};
+  state.toolOrderOverrides[toolId] = qty;
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (tool?.ordered) tool.orderedQty = qty;
+  persist();
+}
+
+function archiveOrderEvent(tool, qty, action) {
+  if (!state.orderArchive) state.orderArchive = [];
+  if (!state.orderHistory) state.orderHistory = [];
+  const entry = {
+    id: `order-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    at: new Date().toISOString(),
+    action,
+    toolId: tool.id,
+    tNumber: tool.tNumber,
+    label: tool.label,
+    size: formatToolSize(tool),
+    manufacturer: tool.manufacturer || "Ohne Hersteller",
+    articleNo: tool.articleNo,
+    shelf: tool.shelf,
+    qty: Number(qty || 0),
+    user: currentUser?.name || "System",
+  };
+  state.orderArchive.unshift(entry);
+  state.orderHistory.unshift(entry);
+}
+
+function cleanupOrderArchive() {
+  if (!state.orderArchive) state.orderArchive = [];
+  const now = Date.now();
+  const sixWeeksMs = 6 * 7 * 24 * 60 * 60 * 1000;
+  state.orderArchive = state.orderArchive.filter(
+    (e) => now - new Date(e.at).getTime() <= sixWeeksMs,
+  );
+}
+
+function markToolOrdered(toolId, ordered) {
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool || currentUser.role !== "admin") return;
+  tool.ordered = ordered;
+  tool.orderedQty = ordered ? Math.max(1, effectiveOrderQty(tool)) : 0;
+  if (ordered) archiveOrderEvent(tool, tool.orderedQty, "mark_ordered");
+  persist();
+  render();
+}
+
+async function restockTool(toolId) {
+  if (currentUser.role !== "admin") return;
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool) return;
+
+  let add = 0;
+  if (tool.ordered && Number(tool.orderedQty || 0) > 0) {
+    const full = await askYesNoCentered("Bestellte Menge einlagern?");
+    if (full) {
+      add = Number(tool.orderedQty || 0);
+    } else {
+      add = await askNumberCentered(
+        "Einzulagernde Menge eingeben:",
+        String(tool.orderedQty || 1),
+      );
+      if (add === null) return;
+    }
+  } else {
+    add = await askNumberCentered("Werkzeug einlagern (Anzahl):", "1");
+    if (add === null) return;
+  }
+
+  if (!Number.isFinite(add) || add <= 0) return;
+
+  tool.stock += add;
+
+  if (tool.ordered && Number(tool.orderedQty || 0) > 0) {
+    tool.orderedQty = Math.max(0, Number(tool.orderedQty || 0) - add);
+    if (tool.orderedQty === 0) tool.ordered = false;
+  }
+
+  if (tool.stock >= tool.minStock && Number(tool.orderedQty || 0) === 0)
+    tool.ordered = false;
+
+  archiveOrderEvent(tool, add, "restock");
+  persist();
+  render();
+}
+
 async function bookToolChange(toolId) {
   const tool = state.tools.find((t) => t.id === toolId);
   if (!tool) return;
+
   const takeOut = await askYesNoCentered("Werkzeug Entnahme?");
   let qty = 0;
+
   if (takeOut) {
-    qty = await askNumberCentered("Entnahmemenge eingeben:", "1");
+    const defaultQty =
+      tool.insertTool && Number(tool.insertEdges || 0) > 0
+        ? String(tool.insertEdges)
+        : "1";
+    qty = await askNumberCentered("Entnahmemenge eingeben:", defaultQty);
     if (qty === null) return;
     if (!Number.isFinite(qty) || qty <= 0)
       return alert("Bitte eine gültige Entnahmemenge eingeben.");
     tool.stock = Math.max(0, tool.stock - qty);
   }
+
   state.toolJournal.unshift({
     id: `journal-${Date.now()}`,
     user: currentUser.name,
@@ -1561,6 +1650,7 @@ async function bookToolChange(toolId) {
       ? `Werkzeugwechsel + Entnahme ${qty}`
       : "Werkzeugwechsel ohne Entnahme",
   });
+
   persist();
   render();
 }
@@ -1570,6 +1660,7 @@ async function editTool(toolId) {
   if (!tool || currentUser.role !== "admin") return;
   const data = await editToolCentered(tool);
   if (!data) return;
+
   const isThreadTool = isThreadToolLabel(data.label);
   if (
     !data.label ||
@@ -1588,12 +1679,17 @@ async function editTool(toolId) {
     return alert("Bitte bei MF die Steigung (P) angeben.");
   if (!isThreadTool && !Number.isFinite(Number(data.diameter)))
     return alert("Bitte gültigen numerischen Durchmesser eingeben.");
+  if (data.insertTool && (!Number.isFinite(Number(data.insertEdges)) || Number(data.insertEdges) <= 0))
+    return alert("Bitte Anzahl der Schneiden > 0 eingeben.");
+
   data.diameter = isThreadTool ? data.diameter : Number(data.diameter);
   data.threadPitch =
     isThreadTool && data.threadPrefix === "MF" ? data.threadPitch : "";
   if (!isThreadTool) data.threadPrefix = "";
+
   Object.assign(tool, data);
-  if (tool.stock >= tool.minStock) tool.ordered = false;
+  if (tool.stock >= tool.minStock && Number(tool.orderedQty || 0) === 0)
+    tool.ordered = false;
   persist();
   render();
 }
@@ -1619,7 +1715,8 @@ function undoToolJournalEntry(entryId) {
   const tool = state.tools.find((t) => t.id === entry.toolId);
   if (tool && Number(entry.qty) > 0) {
     tool.stock += Number(entry.qty);
-    if (tool.stock >= tool.minStock) tool.ordered = false;
+    if (tool.stock >= tool.minStock && Number(tool.orderedQty || 0) === 0)
+      tool.ordered = false;
   }
   state.toolJournal.splice(idx, 1);
   persist();
@@ -1638,26 +1735,6 @@ function resetToolFilters() {
   render();
 }
 
-function suggestedOrderQty(tool) {
-  return Math.max(0, Number(tool.optimalStock || 0) - Number(tool.stock || 0));
-}
-
-function effectiveOrderQty(tool) {
-  const override = Number(state.toolOrderOverrides?.[tool.id]);
-  if (Number.isFinite(override) && override >= 0) return override;
-  return suggestedOrderQty(tool);
-}
-
-function setToolOrderOverride(toolId, value) {
-  if (currentUser.role !== "admin") return;
-  const qty = Math.max(0, Number(value || 0));
-  if (!state.toolOrderOverrides) state.toolOrderOverrides = {};
-  state.toolOrderOverrides[toolId] = qty;
-  const tool = state.tools.find((t) => t.id === toolId);
-  if (tool?.ordered) tool.orderedQty = qty;
-  persist();
-}
-
 function applyToolFilters() {
   const search = document.getElementById("toolSearch")?.value || "";
   const label = document.getElementById("toolFilterLabel")?.value || "";
@@ -1669,9 +1746,161 @@ function applyToolFilters() {
   render();
 }
 
+function openOrderListPopup() {
+  state.orderListPopupOpen = true;
+  render();
+}
+
+function closeOrderListPopup() {
+  state.orderListPopupOpen = false;
+  render();
+}
+
+function setOrderStatsView(view) {
+  if (!["week", "month", "year"].includes(view)) return;
+  state.orderStatsView = view;
+  persist();
+  render();
+}
+
+function getOrderStatsRange(view) {
+  const now = new Date();
+  const start = new Date(now);
+  const end = new Date(now);
+  if (view === "week") {
+    start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+    end.setDate(start.getDate() + 6);
+  } else if (view === "month") {
+    start.setDate(1);
+    end.setMonth(start.getMonth() + 1, 0);
+  } else {
+    start.setMonth(0, 1);
+    end.setMonth(11, 31);
+  }
+  return { start, end };
+}
+
+function buildOrderFrequency(view) {
+  const { start, end } = getOrderStatsRange(view);
+  const rows = (state.orderHistory || []).filter((e) => {
+    const d = new Date(e.at);
+    return d >= start && d <= end && (e.action === "mark_ordered" || e.action === "restock");
+  });
+
+  const map = {};
+  rows.forEach((e) => {
+    const key = `${e.toolId}`;
+    if (!map[key]) {
+      map[key] = {
+        toolId: e.toolId,
+        label: e.label,
+        size: e.size,
+        manufacturer: e.manufacturer,
+        articleNo: e.articleNo,
+        count: 0,
+        qtyTotal: 0,
+      };
+    }
+    map[key].count += 1;
+    map[key].qtyTotal += Number(e.qty || 0);
+  });
+
+  return Object.values(map).sort((a, b) => b.count - a.count);
+}
+
+function getOptimalQtySuggestion(tool) {
+  const yearData = buildOrderFrequency("year").find((r) => r.toolId === tool.id);
+  if (!yearData || yearData.count < 6) return null;
+  const avg = Math.ceil(yearData.qtyTotal / yearData.count);
+  return Math.max(1, avg);
+}
+
+function shouldShowOptimalQtySuggestion(tool) {
+  const suggestion = getOptimalQtySuggestion(tool);
+  if (!Number.isFinite(suggestion) || suggestion <= 0) return false;
+  const stateEntry = state.orderSuggestionState?.[tool.id];
+  if (!stateEntry) return true;
+  if (stateEntry.accepted) return false;
+  const last = new Date(stateEntry.lastDecisionAt || 0).getTime();
+  const days30 = 30 * 24 * 60 * 60 * 1000;
+  return Date.now() - last >= days30;
+}
+
+function applyOptimalQtySuggestion(toolId) {
+  if (currentUser.role !== "admin") return;
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool) return;
+  const s = getOptimalQtySuggestion(tool);
+  if (!Number.isFinite(s) || s <= 0) return;
+  tool.optimalStock = s;
+  if (!state.orderSuggestionState) state.orderSuggestionState = {};
+  state.orderSuggestionState[toolId] = {
+    lastDecisionAt: new Date().toISOString(),
+    accepted: true,
+  };
+  persist();
+  render();
+}
+
+function rejectOptimalQtySuggestion(toolId) {
+  if (currentUser.role !== "admin") return;
+  if (!state.orderSuggestionState) state.orderSuggestionState = {};
+  state.orderSuggestionState[toolId] = {
+    lastDecisionAt: new Date().toISOString(),
+    accepted: false,
+  };
+  persist();
+  render();
+}
+
+function renderOrderStats() {
+  if (currentUser.role !== "admin")
+    return `<div class='bg-white rounded-xl shadow p-4'><p>Kein Zugriff.</p></div>`;
+  const view = state.orderStatsView || "week";
+  const freq = buildOrderFrequency(view);
+
+  const rows = freq
+    .map(
+      (r) => `<tr class='border-b'>
+    <td class='p-2'>${r.label}</td>
+    <td class='p-2'>${r.size}</td>
+    <td class='p-2'>${r.manufacturer}</td>
+    <td class='p-2'>${r.articleNo}</td>
+    <td class='p-2'>${r.count}</td>
+    <td class='p-2'>${r.qtyTotal}</td>
+  </tr>`,
+    )
+    .join("");
+
+  return `<div class='bg-white rounded-xl shadow p-4 space-y-3'>
+    <h2 class='text-lg font-semibold'>Bestell-Statistik</h2>
+    <div class='flex gap-2'>
+      <button class='px-2 py-1 rounded ${view === "week" ? "bg-slate-900 text-white" : "bg-slate-200"}' onclick="setOrderStatsView('week')">Woche</button>
+      <button class='px-2 py-1 rounded ${view === "month" ? "bg-slate-900 text-white" : "bg-slate-200"}' onclick="setOrderStatsView('month')">Monat</button>
+      <button class='px-2 py-1 rounded ${view === "year" ? "bg-slate-900 text-white" : "bg-slate-200"}' onclick="setOrderStatsView('year')">Jahr</button>
+    </div>
+    <div class='border rounded-lg overflow-auto max-h-[60vh]'>
+      <table class='w-full text-sm'>
+        <thead class='bg-slate-100 sticky top-0'>
+          <tr>
+            <th class='p-2 text-left'>Bezeichnung</th>
+            <th class='p-2 text-left'>Größe</th>
+            <th class='p-2 text-left'>Hersteller</th>
+            <th class='p-2 text-left'>Artikelnummer</th>
+            <th class='p-2 text-left'>Bestellvorgänge</th>
+            <th class='p-2 text-left'>Gesamtmenge</th>
+          </tr>
+        </thead>
+        <tbody>${rows || '<tr><td class="p-2" colspan="6">Keine Daten im gewählten Zeitraum.</td></tr>'}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
 function renderTools() {
   const labels = getToolLabels();
   const manufacturers = getToolManufacturers();
+  const holders = getToolHolders();
   const filters = state.toolFilters || {
     search: "",
     label: "",
@@ -1684,6 +1913,7 @@ function renderTools() {
   const filterT = filters.tNumber || "";
   const filterD = filters.diameter || "";
   const filterHolder = filters.holder || "";
+
   const labelOptions = labels
     .map((l) => `<option value="${l}">${l}</option>`)
     .join("");
@@ -1696,11 +1926,14 @@ function renderTools() {
   const manufacturerOptions = manufacturers
     .map((m) => `<option value="${m}">${m}</option>`)
     .join("");
+  const holderOptions = holders
+    .map((h) => `<option value="${h}">${h}</option>`)
+    .join("");
 
   const tools = state.tools.filter((t) => {
     const bySearch =
       !search ||
-      `${t.tNumber} ${t.label} ${t.diameter} ${t.articleNo}`
+      `${t.tNumber} ${t.label} ${t.diameter} ${t.articleNo} ${t.holder || ""}`
         .toLowerCase()
         .includes(search);
     const byLabel = !filterLabel || t.label === filterLabel;
@@ -1713,78 +1946,137 @@ function renderTools() {
   const toolRows = tools
     .map(
       (t) => `<tr class='border-b'>
-      <td class='p-2'>T ${t.tNumber}</td><td class='p-2'>${t.label}</td><td class='p-2'>${formatToolSize(t)}</td><td class='p-2'>${t.shelf}</td><td class='p-2'>${t.articleNo}</td>
-      <td class='p-2'>${t.holder || "-"}</td><td class='p-2'>${t.stock}</td><td class='p-2'>${t.minStock}</td><td class='p-2'>${t.manufacturer}</td><td class='p-2'>${t.ordered ? "Bestellt" : "-"}</td>
-      <td class='p-2'><button class='px-2 py-1 rounded bg-emerald-700 text-white mr-1' onclick="bookToolChange('${t.id}')">Wechsel</button>${currentUser.role === "admin" ? `<button class='px-2 py-1 rounded bg-amber-600 text-white mr-1' onclick="editTool('${t.id}')">Bearbeiten</button><button class='px-2 py-1 rounded bg-rose-700 text-white mr-1' onclick="deleteTool('${t.id}')">Löschen</button><button class='px-2 py-1 rounded bg-slate-700 text-white' onclick="restockTool('${t.id}')">Einlagern</button>` : ""}</td>
+      <td class='p-2'>T ${t.tNumber}</td>
+      <td class='p-2'>${t.label}</td>
+      <td class='p-2'>${formatToolSize(t)}</td>
+      <td class='p-2'>${t.shelf}</td>
+      <td class='p-2'>${t.articleNo}</td>
+      <td class='p-2'>${t.holder || "-"}</td>
+      <td class='p-2'>${t.stock}</td>
+      <td class='p-2'>${t.minStock}</td>
+      <td class='p-2'>${t.manufacturer}</td>
+      <td class='p-2'>${t.ordered ? "Bestellt" : "-"}</td>
+      <td class='p-2'>
+        <button class='px-2 py-1 rounded bg-emerald-700 text-white mr-1' onclick="bookToolChange('${t.id}')">Wechsel</button>
+        ${
+          currentUser.role === "admin"
+            ? `<button class='px-2 py-1 rounded bg-amber-600 text-white mr-1' onclick="editTool('${t.id}')">Bearbeiten</button><button class='px-2 py-1 rounded bg-rose-700 text-white mr-1' onclick="deleteTool('${t.id}')">Löschen</button>`
+            : ""
+        }
+      </td>
     </tr>`,
     )
     .join("");
 
-  const todoTools = state.tools.filter(
-    (t) => t.stock < t.minStock && !t.ordered,
-  );
-  const orderedTools = state.tools.filter(
-    (t) => t.stock < t.minStock && t.ordered,
-  );
+  const todoTools = state.tools.filter((t) => shouldOrderTool(t) && !t.ordered);
+  const orderedTools = state.tools.filter((t) => t.ordered);
   const orderCandidates = todoTools.filter((t) => suggestedOrderQty(t) > 0);
 
   const todoRows = todoTools
     .map(
-      (t) =>
-        `<tr class='border-b'><td class='p-2'>T ${t.tNumber}</td><td class='p-2'>${t.label}</td><td class='p-2'>${formatToolSize(t)}</td><td class='p-2'>${t.stock}/${t.minStock}</td><td class='p-2'><button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="markToolOrdered('${t.id}', true)">Bestellt markieren</button></td></tr>`,
-    )
-    .join("");
-  const orderedRows = orderedTools
-    .map(
-      (t) => `<tr class='border-b bg-emerald-50'>
+      (t) => `<tr class='border-b'>
+    <td class='p-2'>T ${t.tNumber}</td>
     <td class='p-2'>${t.label}</td>
     <td class='p-2'>${formatToolSize(t)}</td>
-    <td class='p-2'>${t.threadPrefix === "MF" && t.threadPitch ? `P ${t.threadPitch}` : "-"}</td>
-    <td class='p-2'>${t.orderedQty || effectiveOrderQty(t)}</td>
-    <td class='p-2'>${t.articleNo}</td>
-    <td class='p-2'>${t.shelf}</td>
-    <td class='p-2'><button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="markToolOrdered('${t.id}', false)">Bestellt</button></td>
+    <td class='p-2'>${t.stock}/${t.minStock}</td>
+    <td class='p-2 whitespace-nowrap'><button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="markToolOrdered('${t.id}', true)">Bestellt markieren</button></td>
   </tr>`,
     )
     .join("");
+
+  const orderedRows = orderedTools
+    .map(
+      (t) => `<tr class='border-b bg-emerald-50'>
+    <td class='p-2 align-top'>${t.label}</td>
+    <td class='p-2 align-top'>${formatToolSize(t)}</td>
+    <td class='p-2 align-top'>${t.threadPrefix === "MF" && t.threadPitch ? `P ${t.threadPitch}` : "-"}</td>
+    <td class='p-2 align-top'>${t.orderedQty || effectiveOrderQty(t)}</td>
+    <td class='p-2 align-top'>${t.articleNo}</td>
+    <td class='p-2 align-top'>${t.shelf}</td>
+    <td class='p-2 align-top'>
+      <div class='flex flex-col gap-2'>
+        <button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="markToolOrdered('${t.id}', false)">Bestellt</button>
+        <button class='px-2 py-1 rounded bg-slate-700 text-white' onclick="restockTool('${t.id}')">Einlagern</button>
+      </div>
+    </td>
+  </tr>`,
+    )
+    .join("");
+
   const journalRows = state.toolJournal
     .slice(0, 80)
     .map(
-      (j) =>
-        `<tr class='border-b'><td class='p-2'>${j.at}</td><td class='p-2'>${j.user}</td><td class='p-2'>T ${j.tNumber}</td><td class='p-2'>${j.action}</td><td class='p-2'><button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="undoToolJournalEntry('${j.id}')">Rückgängig</button></td></tr>`,
+      (j) => `<tr class='border-b'>
+    <td class='p-2'>${j.at}</td>
+    <td class='p-2'>${j.user}</td>
+    <td class='p-2'>T ${j.tNumber}</td>
+    <td class='p-2'>${j.action}</td>
+    <td class='p-2'><button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="undoToolJournalEntry('${j.id}')">Rückgängig</button></td>
+  </tr>`,
     )
     .join("");
+
   const orderGroups = orderCandidates.reduce((acc, tool) => {
     const maker = tool.manufacturer || "Ohne Hersteller";
     if (!acc[maker]) acc[maker] = [];
     acc[maker].push(tool);
     return acc;
   }, {});
-  const orderListBlocks = Object.entries(orderGroups)
-    .map(([maker, toolsByMaker]) => {
-      const rows = toolsByMaker
-        .map(
-          (t) => `<tr class='border-b'>
+
+  const orderListPopup = state.orderListPopupOpen
+    ? `<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-5xl max-h-[85vh] overflow-auto p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-lg font-bold">Bestellliste nach Hersteller</h3>
+        <button class="px-2 py-1 rounded bg-slate-200" onclick="closeOrderListPopup()">Schließen</button>
+      </div>
+      ${
+        Object.keys(orderGroups).length
+          ? Object.entries(orderGroups)
+              .map(([maker, list]) => {
+                const rows = list
+                  .map(
+                    (t) => `<tr class='border-b'>
+          <td class='p-2'>${t.label}</td>
+          <td class='p-2'>${formatToolSize(t)}</td>
+          <td class='p-2'>${t.articleNo}</td>
+          <td class='p-2'><input type='number' min='0' class='border rounded p-1 w-24' value='${effectiveOrderQty(t)}' onchange="setToolOrderOverride('${t.id}', this.value)" /></td>
+        </tr>`,
+                  )
+                  .join("");
+                return `<div class='border rounded p-3 mb-3'>
+          <h4 class='font-semibold mb-2'>${maker}</h4>
+          <table class='w-full text-sm'><thead class='bg-slate-100'><tr><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Durchmesser</th><th class='p-2 text-left'>Artikelnummer</th><th class='p-2 text-left'>Menge</th></tr></thead><tbody>${rows}</tbody></table>
+        </div>`;
+              })
+              .join("")
+          : '<div class="text-sm text-slate-500">Keine bestellrelevanten Werkzeuge.</div>'
+      }
+    </div>
+  </div>`
+    : "";
+
+  const suggestionTools = state.tools.filter((t) => shouldShowOptimalQtySuggestion(t));
+  const suggestionRows = suggestionTools
+    .map(
+      (t) => `<tr class='border-b'>
       <td class='p-2'>${t.label}</td>
       <td class='p-2'>${formatToolSize(t)}</td>
-      <td class='p-2'>${t.articleNo}</td>
-      <td class='p-2'><input type='number' min='0' class='border rounded p-1 w-24' value='${effectiveOrderQty(t)}' onchange="setToolOrderOverride('${t.id}', this.value)" /></td>
+      <td class='p-2'>${t.optimalStock || 0}</td>
+      <td class='p-2'>${getOptimalQtySuggestion(t)}</td>
+      <td class='p-2'>
+        <div class='flex gap-2'>
+          <button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick="applyOptimalQtySuggestion('${t.id}')">Übernehmen</button>
+          <button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="rejectOptimalQtySuggestion('${t.id}')">Ablehnen</button>
+        </div>
+      </td>
     </tr>`,
-        )
-        .join("");
-      return `<div class='border rounded p-3 bg-white'>
-      <div class='flex items-center justify-between mb-2'>
-        <h4 class='font-semibold text-base'>${maker}</h4>
-        <span class='text-xs text-slate-500'>${toolsByMaker.length} Werkzeuge zu bestellen</span>
-      </div>
-      <table class='w-full text-sm'><thead class='bg-slate-100'><tr><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Durchmesser</th><th class='p-2 text-left'>Artikelnummer</th><th class='p-2 text-left'>Menge</th></tr></thead><tbody>${rows}</tbody></table>
-    </div>`;
-    })
+    )
     .join("");
 
   return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
     <h2 class='text-xl font-bold mb-1'>Werkzeugverwaltung</h2>
-    <p class='text-sm text-slate-600 mb-2'>Alle Bereiche sind getrennt dargestellt: Stammdaten, Bestand, To-Do und Journal.</p>
+    <p class='text-sm text-slate-600 mb-2'>Alle Bereiche sind getrennt dargestellt: Stammdaten, Bestand, To-Do, Bestellt und Journal.</p>
 
     ${
       currentUser.role === "admin"
@@ -1806,15 +2098,18 @@ function renderTools() {
         <input id='toolThreadPitch' class='border rounded p-1' placeholder='Steigung P (nur MF)' />
         <input id='toolShelf' class='border rounded p-1' placeholder='A00' />
         <input id='toolArticle' class='border rounded p-1' placeholder='Artikel Nr.' />
-        <select id='toolHolder' class='border rounded p-1'><option value='HSK 100'>Aufnahme HSK 100</option><option value='HSK 63'>Aufnahme HSK 63</option></select>
+        <select id='toolHolder' class='border rounded p-1'>${holderOptions}</select>
         <input id='toolStock' type='number' class='border rounded p-1' placeholder='Bestand' />
         <input id='toolMinStock' type='number' class='border rounded p-1' placeholder='Mindestbestand' />
-        ${currentUser.role === "admin" ? `<input id='toolOptimalStock' type='number' class='border rounded p-1' placeholder='Optimale Stückzahl' />` : ""}
+        <input id='toolOptimalStock' type='number' class='border rounded p-1' placeholder='Optimale Stückzahl' />
+        <label class='flex items-center gap-2 text-sm'><input id='toolInsertTool' type='checkbox' onchange='toggleInsertToolFields()' /> Wendeplattenwerkzeug</label>
+        <input id='toolInsertEdges' type='number' class='border rounded p-1' placeholder='Anzahl Schneiden' disabled />
         <select id='toolManufacturer' class='border rounded p-1'>${manufacturerOptions}</select>
       </div>
-      <div class='flex gap-2 mt-2'>
+      <div class='flex gap-2 mt-2 flex-wrap'>
         <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick='createTool()'>Werkzeug speichern</button>
-        ${currentUser.role === "admin" ? `<button class='px-2 py-1 rounded bg-slate-700 text-white' onclick='addToolLabel()'>Bezeichnung hinzufügen</button><button class='px-2 py-1 rounded bg-slate-700 text-white' onclick='addToolManufacturer()'>Hersteller hinzufügen</button>` : ""}
+        <button class='px-2 py-1 rounded bg-slate-700 text-white' onclick='addToolLabel()'>Bezeichnung hinzufügen</button>
+        <button class='px-2 py-1 rounded bg-slate-700 text-white' onclick='addToolManufacturer()'>Hersteller hinzufügen</button>
       </div>
     </div>`
         : ""
@@ -1839,7 +2134,12 @@ function renderTools() {
     <div class='border-2 border-slate-300 rounded-xl p-3'>
       <h3 class='text-lg font-bold mb-2'>3) Werkzeugbestand</h3>
       <div class='overflow-auto max-h-[35vh] border rounded-lg'>
-      <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>T</th><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Ø</th><th class='p-2 text-left'>Fach</th><th class='p-2 text-left'>Artikel Nr.</th><th class='p-2 text-left'>Aufnahme</th><th class='p-2 text-left'>Bestand</th><th class='p-2 text-left'>Min</th><th class='p-2 text-left'>Hersteller</th><th class='p-2 text-left'>Status</th><th class='p-2'></th></tr></thead><tbody>${toolRows || '<tr><td class=\"p-2\" colspan=\"11\">Keine Werkzeuge.</td></tr>'}</tbody></table>
+        <table class='w-full text-sm'>
+          <thead class='bg-slate-100 sticky top-0'>
+            <tr><th class='p-2 text-left'>T</th><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Ø</th><th class='p-2 text-left'>Fach</th><th class='p-2 text-left'>Artikel Nr.</th><th class='p-2 text-left'>Aufnahme</th><th class='p-2 text-left'>Bestand</th><th class='p-2 text-left'>Min</th><th class='p-2 text-left'>Hersteller</th><th class='p-2 text-left'>Status</th><th class='p-2'></th></tr>
+          </thead>
+          <tbody>${toolRows || '<tr><td class="p-2" colspan="11">Keine Werkzeuge.</td></tr>'}</tbody>
+        </table>
       </div>
     </div>
 
@@ -1848,25 +2148,55 @@ function renderTools() {
         ? `<div class='border-2 border-slate-300 rounded-xl p-3'>
       <h3 class='text-lg font-bold mb-2'>4) Admin-Bestandsaktionen</h3>
       <div class='grid md:grid-cols-2 gap-3'>
-      <div class='border rounded p-3 bg-white'><h4 class='font-semibold mb-2'>Werkzeug To-Do (unter Mindestbestand)</h4><table class='w-full text-sm'><thead class='bg-slate-100'><tr><th class='p-2 text-left'>T</th><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Größe</th><th class='p-2 text-left'>Bestand</th><th class='p-2'></th></tr></thead><tbody>${todoRows || '<tr><td class=\"p-2\" colspan=\"5\">Keine offenen To-Dos.</td></tr>'}</tbody></table></div>
-      <div class='border rounded p-3 bg-white'><h4 class='font-semibold mb-2'>Bestellt</h4><table class='w-full text-sm'><thead class='bg-slate-100'><tr><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Durchmesser</th><th class='p-2 text-left'>Steigung</th><th class='p-2 text-left'>Menge</th><th class='p-2 text-left'>Artikelnummer</th><th class='p-2 text-left'>Lagerfach</th><th class='p-2'></th></tr></thead><tbody>${orderedRows || '<tr><td class=\"p-2\" colspan=\"7\">Keine bestellten Werkzeuge.</td></tr>'}</tbody></table></div>
+        <div class='border rounded p-3 bg-white overflow-auto'>
+          <h4 class='font-semibold mb-2'>Werkzeug To-Do (bei Mindestbestand oder darunter)</h4>
+          <table class='w-full text-sm'>
+            <thead class='bg-slate-100'><tr><th class='p-2 text-left'>T</th><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Größe</th><th class='p-2 text-left'>Bestand</th><th class='p-2'></th></tr></thead>
+            <tbody>${todoRows || '<tr><td class="p-2" colspan="5">Keine offenen To-Dos.</td></tr>'}</tbody>
+          </table>
+        </div>
+        <div class='border rounded p-3 bg-white overflow-auto'>
+          <h4 class='font-semibold mb-2'>Bestellt</h4>
+          <table class='w-full text-sm'>
+            <thead class='bg-slate-100'><tr><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Durchmesser</th><th class='p-2 text-left'>Steigung</th><th class='p-2 text-left'>Menge</th><th class='p-2 text-left'>Artikelnummer</th><th class='p-2 text-left'>Lagerfach</th><th class='p-2'></th></tr></thead>
+            <tbody>${orderedRows || '<tr><td class="p-2" colspan="7">Keine bestellten Werkzeuge.</td></tr>'}</tbody>
+          </table>
+        </div>
       </div>
+
       <div class='mt-3 border rounded p-3 bg-slate-50'>
         <h4 class='font-semibold mb-2'>Bestellliste nach Hersteller</h4>
-        <p class='text-xs text-slate-500 mb-2'>Vorschlag = Optimale Stückzahl - aktueller Bestand. Menge kann manuell überschrieben werden.</p>
-        <div class='space-y-3'>${orderListBlocks || '<div class=\"text-sm text-slate-500\">Aktuell keine bestellbedürftigen Werkzeuge mit positiver Bestellmenge.</div>'}</div>
+        <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick='openOrderListPopup()'>Bestellliste anzeigen</button>
+      </div>
+
+      <div class='mt-3 border rounded p-3 bg-slate-50'>
+        <h4 class='font-semibold mb-2'>Vorschläge für optimale Bestellmenge</h4>
+        <table class='w-full text-sm'>
+          <thead class='bg-slate-100'><tr><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Größe</th><th class='p-2 text-left'>Aktuell optimal</th><th class='p-2 text-left'>Vorschlag</th><th class='p-2'></th></tr></thead>
+          <tbody>${suggestionRows || '<tr><td class="p-2" colspan="5">Noch keine aussagekräftigen Vorschläge vorhanden.</td></tr>'}</tbody>
+        </table>
       </div>
     </div>`
         : ""
     }
 
     <div class='border-2 border-slate-300 rounded-xl p-3'>
-      <h3 class='text-lg font-bold mb-2'>4) Schichtjournal – Werkzeugwechsel</h3>
+      <h3 class='text-lg font-bold mb-2'>5) Schichtjournal – Werkzeugwechsel</h3>
       <div class='overflow-auto max-h-[25vh]'>
-        <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Zeit</th><th class='p-2 text-left'>Wer</th><th class='p-2 text-left'>T-Nr</th><th class='p-2 text-left'>Was</th><th class='p-2'></th></tr></thead><tbody>${journalRows || '<tr><td class=\"p-2\" colspan=\"5\">Keine Einträge.</td></tr>'}</tbody></table>
+        <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Zeit</th><th class='p-2 text-left'>Wer</th><th class='p-2 text-left'>T-Nr</th><th class='p-2 text-left'>Was</th><th class='p-2'></th></tr></thead><tbody>${journalRows || '<tr><td class="p-2" colspan="5">Keine Einträge.</td></tr>'}</tbody></table>
       </div>
     </div>
+
+    ${orderListPopup}
   </div>`;
+}
+
+function toggleInsertToolFields() {
+  const checkbox = document.getElementById("toolInsertTool");
+  const edges = document.getElementById("toolInsertEdges");
+  if (!checkbox || !edges) return;
+  edges.disabled = !checkbox.checked;
+  if (!checkbox.checked) edges.value = "";
 }
 
 function renderTodo() {
@@ -1910,11 +2240,11 @@ function renderTodo() {
     ${isAdmin ? renderTaskCreateBox() : ""}
     <h3 class='font-semibold mt-3 mb-2'>Offene Aufgaben</h3>
     <div class='overflow-auto max-h-[45vh] border rounded-lg'>
-      <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Aufgabe</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Frist</th><th class='p-2 text-left'>Status</th><th class='p-2'></th></tr></thead><tbody>${openRows || '<tr><td class=\"p-2\" colspan=\"5\">Keine offenen Aufgaben.</td></tr>'}</tbody></table>
+      <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Aufgabe</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Frist</th><th class='p-2 text-left'>Status</th><th class='p-2'></th></tr></thead><tbody>${openRows || '<tr><td class="p-2" colspan="5">Keine offenen Aufgaben.</td></tr>'}</tbody></table>
     </div>
     <h3 class='font-semibold mt-4 mb-2'>Erledigte Aufgaben</h3>
     <div class='overflow-auto max-h-[25vh] border rounded-lg'>
-      <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Aufgabe</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Frist</th><th class='p-2 text-left'>Erledigt am</th><th class='p-2'></th></tr></thead><tbody>${doneRows || '<tr><td class=\"p-2\" colspan=\"5\">Noch keine erledigten Aufgaben.</td></tr>'}</tbody></table>
+      <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Aufgabe</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Frist</th><th class='p-2 text-left'>Erledigt am</th><th class='p-2'></th></tr></thead><tbody>${doneRows || '<tr><td class="p-2" colspan="5">Noch keine erledigten Aufgaben.</td></tr>'}</tbody></table>
     </div>
   </div>`;
 }
@@ -2012,7 +2342,7 @@ function renderConflicts() {
     <h2 class='text-lg font-semibold mb-3'>Konflikte</h2>
     <div class='overflow-auto max-h-[70vh] border rounded-lg'>
       <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Konflikt</th><th class='p-2 text-left'>Gelöst</th><th class='p-2'></th></tr></thead>
-      <tbody>${rows || '<tr><td class=\"p-2\" colspan=\"5\">Keine Konflikte.</td></tr>'}</tbody></table>
+      <tbody>${rows || '<tr><td class="p-2" colspan="5">Keine Konflikte.</td></tr>'}</tbody></table>
     </div>
   </div>`;
 }
@@ -2042,11 +2372,11 @@ function getPeriodRange(period) {
 }
 
 function plannedMannedHoursForShift(shift) {
-  if (shift.id.includes("-mf-")) return 6; // Mo-Fr Zeit 1/3/5 bemannt
-  if (shift.id.includes("-sa-0")) return 6; // Samstag Morgen
-  if (shift.id.includes("-sa-1")) return 6; // Samstag Abend
-  if (shift.id.includes("-su-0")) return 6; // Sonntag Morgen
-  if (shift.id.includes("-su-1")) return 6; // Sonntag Abend
+  if (shift.id.includes("-mf-")) return 6;
+  if (shift.id.includes("-sa-0")) return 6;
+  if (shift.id.includes("-sa-1")) return 6;
+  if (shift.id.includes("-su-0")) return 6;
+  if (shift.id.includes("-su-1")) return 6;
   return shiftHours(shift.start, shift.end);
 }
 
@@ -2506,3 +2836,9 @@ window.undoToolJournalEntry = undoToolJournalEntry;
 window.editTool = editTool;
 window.deleteTool = deleteTool;
 window.setToolOrderOverride = setToolOrderOverride;
+window.setOrderStatsView = setOrderStatsView;
+window.openOrderListPopup = openOrderListPopup;
+window.closeOrderListPopup = closeOrderListPopup;
+window.applyOptimalQtySuggestion = applyOptimalQtySuggestion;
+window.rejectOptimalQtySuggestion = rejectOptimalQtySuggestion;
+window.toggleInsertToolFields = toggleInsertToolFields;
