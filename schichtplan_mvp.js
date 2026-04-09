@@ -1375,74 +1375,98 @@ function formatToolSize(tool) {
   return base;
 }
 
+function collectToolFormData(root = document) {
+  return {
+    tNumber: root.getElementById("toolTNumber")?.value?.trim(),
+    label: root.getElementById("toolLabel")?.value,
+    diameter: root.getElementById("toolDiameter")?.value?.trim(),
+    threadPrefix: root.getElementById("toolThreadPrefix")?.value || "",
+    threadPitch: root.getElementById("toolThreadPitch")?.value?.trim() || "",
+    shelf: root.getElementById("toolShelf")?.value?.trim().toUpperCase(),
+    articleNo: root.getElementById("toolArticle")?.value?.trim(),
+    holder: root.getElementById("toolHolder")?.value,
+    stock: Number(root.getElementById("toolStock")?.value || 0),
+    minStock: Number(root.getElementById("toolMinStock")?.value || 0),
+    optimalStock: Number(root.getElementById("toolOptimalStock")?.value || 0),
+    manufacturer: root.getElementById("toolManufacturer")?.value,
+    insertTool: !!root.getElementById("toolInsertTool")?.checked,
+    insertEdges: Number(root.getElementById("toolInsertEdges")?.value || 0),
+  };
+}
+
+function validateToolData(data) {
+  const isThreadTool = isThreadToolLabel(data.label);
+  if (
+    !data.tNumber ||
+    !data.label ||
+    !data.diameter ||
+    !/^[A-Z]\d{2}$/.test(data.shelf) ||
+    !data.articleNo ||
+    !["HSK 100", "HSK 63"].includes(data.holder)
+  ) {
+    return {
+      ok: false,
+      message:
+        "Bitte Felder korrekt ausfüllen (A-Z + 2-stellige Zahl für Fach, Aufnahme HSK 100 oder HSK 63).",
+    };
+  }
+  if (isThreadTool && !data.threadPrefix) {
+    return { ok: false, message: "Bitte Gewindekennung wählen." };
+  }
+  if (isThreadTool && data.threadPrefix === "MF" && !data.threadPitch) {
+    return {
+      ok: false,
+      message: "Bitte bei MF die Steigung (P) angeben.",
+    };
+  }
+  if (!isThreadTool && !Number.isFinite(Number(data.diameter))) {
+    return {
+      ok: false,
+      message: "Bitte gültigen numerischen Durchmesser eingeben.",
+    };
+  }
+  if (data.insertTool && (!Number.isFinite(data.insertEdges) || data.insertEdges <= 0)) {
+    return {
+      ok: false,
+      message: "Bitte Anzahl der Schneiden > 0 eingeben.",
+    };
+  }
+  return { ok: true };
+}
+
+function normalizeToolData(data) {
+  const isThreadTool = isThreadToolLabel(data.label);
+  return {
+    tNumber: data.tNumber,
+    label: data.label,
+    diameter: isThreadTool ? data.diameter : Number(data.diameter),
+    threadPrefix: isThreadTool ? data.threadPrefix : "",
+    threadPitch: isThreadTool && data.threadPrefix === "MF" ? data.threadPitch : "",
+    shelf: data.shelf,
+    articleNo: data.articleNo,
+    holder: data.holder,
+    stock: data.stock,
+    minStock: data.minStock,
+    optimalStock: Math.max(0, data.optimalStock),
+    manufacturer: data.manufacturer,
+    ordered: false,
+    orderedQty: 0,
+    insertTool: data.insertTool,
+    insertEdges: data.insertTool ? data.insertEdges : 0,
+  };
+}
+
 function createTool() {
   if (currentUser.role !== "admin")
     return alert("Nur Admin darf Werkzeuge anlegen.");
 
-  const tNumber = document.getElementById("toolTNumber")?.value?.trim();
-  const label = document.getElementById("toolLabel")?.value;
-  const diameter = document.getElementById("toolDiameter")?.value?.trim();
-  const threadPrefix = document.getElementById("toolThreadPrefix")?.value || "";
-  const threadPitch =
-    document.getElementById("toolThreadPitch")?.value?.trim() || "";
-  const shelf = document
-    .getElementById("toolShelf")
-    ?.value?.trim()
-    .toUpperCase();
-  const articleNo = document.getElementById("toolArticle")?.value?.trim();
-  const holder = document.getElementById("toolHolder")?.value;
-  const stock = Number(document.getElementById("toolStock")?.value || 0);
-  const minStock = Number(document.getElementById("toolMinStock")?.value || 0);
-  const optimalStock = Number(
-    document.getElementById("toolOptimalStock")?.value || 0,
-  );
-  const manufacturer = document.getElementById("toolManufacturer")?.value;
-  const insertTool = !!document.getElementById("toolInsertTool")?.checked;
-  const insertEdges = Number(
-    document.getElementById("toolInsertEdges")?.value || 0,
-  );
-
-  const isThreadTool = isThreadToolLabel(label);
-
-  if (
-    !tNumber ||
-    !label ||
-    !diameter ||
-    !/^[A-Z]\d{2}$/.test(shelf) ||
-    !articleNo ||
-    !["HSK 100", "HSK 63"].includes(holder)
-  ) {
-    return alert(
-      "Bitte Felder korrekt ausfüllen (A-Z + 2-stellige Zahl für Fach, Aufnahme HSK 100 oder HSK 63).",
-    );
-  }
-  if (isThreadTool && !threadPrefix)
-    return alert("Bitte Gewindekennung wählen.");
-  if (isThreadTool && threadPrefix === "MF" && !threadPitch)
-    return alert("Bitte bei MF die Steigung (P) angeben.");
-  if (!isThreadTool && !Number.isFinite(Number(diameter)))
-    return alert("Bitte gültigen numerischen Durchmesser eingeben.");
-  if (insertTool && (!Number.isFinite(insertEdges) || insertEdges <= 0))
-    return alert("Bitte Anzahl der Schneiden > 0 eingeben.");
+  const data = collectToolFormData(document);
+  const validation = validateToolData(data);
+  if (!validation.ok) return alert(validation.message);
 
   state.tools.push({
     id: `tool-${Date.now()}`,
-    tNumber,
-    label,
-    diameter: isThreadTool ? diameter : Number(diameter),
-    threadPrefix: isThreadTool ? threadPrefix : "",
-    threadPitch: isThreadTool && threadPrefix === "MF" ? threadPitch : "",
-    shelf,
-    articleNo,
-    holder,
-    stock,
-    minStock,
-    optimalStock: Math.max(0, optimalStock),
-    manufacturer,
-    ordered: false,
-    orderedQty: 0,
-    insertTool,
-    insertEdges: insertTool ? insertEdges : 0,
+    ...normalizeToolData(data),
   });
 
   persist();
@@ -1577,6 +1601,95 @@ function editToolCentered(tool) {
       host.innerHTML = "";
       resolve(null);
     });
+  });
+}
+
+function renderToolCreateForm(prefix = "tool") {
+  const labels = getToolLabels();
+  const manufacturers = getToolManufacturers();
+  const holders = getToolHolders();
+
+  const labelOptions = labels
+    .map((l) => `<option value="${l}">${l}</option>`)
+    .join("");
+  const manufacturerOptions = manufacturers
+    .map((m) => `<option value="${m}">${m}</option>`)
+    .join("");
+  const holderOptions = holders
+    .map((h) => `<option value="${h}">${h}</option>`)
+    .join("");
+
+  return `<div class='grid md:grid-cols-2 gap-3'>
+    <input id='${prefix}TNumber' class='border rounded p-2' placeholder='T-Nummer (z.B. 134)' />
+    <select id='${prefix}Label' class='border rounded p-2'>${labelOptions}</select>
+    <input id='${prefix}Diameter' class='border rounded p-2' placeholder='Durchmesser' />
+    <select id='${prefix}ThreadPrefix' class='border rounded p-2'>
+      <option value=''>Kennung (nur Gewinde)</option>
+      <option value='M'>M</option>
+      <option value='MF'>MF</option>
+      <option value='G'>G</option>
+      <option value='UNF'>UNF</option>
+      <option value='UNC'>UNC</option>
+      <option value='Mx'>Mx</option>
+    </select>
+    <input id='${prefix}ThreadPitch' class='border rounded p-2' placeholder='Steigung P (nur MF)' />
+    <input id='${prefix}Shelf' class='border rounded p-2' placeholder='A00' />
+    <input id='${prefix}Article' class='border rounded p-2' placeholder='Artikel Nr.' />
+    <select id='${prefix}Holder' class='border rounded p-2'>${holderOptions}</select>
+    <input id='${prefix}Stock' type='number' class='border rounded p-2' placeholder='Bestand' />
+    <input id='${prefix}MinStock' type='number' class='border rounded p-2' placeholder='Mindestbestand' />
+    <input id='${prefix}OptimalStock' type='number' class='border rounded p-2' placeholder='Optimale Stückzahl' />
+    <select id='${prefix}Manufacturer' class='border rounded p-2'>${manufacturerOptions}</select>
+    <label class='flex items-center gap-2 text-sm md:col-span-2'><input id='${prefix}InsertTool' type='checkbox' onchange='toggleInsertToolFieldsById("${prefix}InsertTool","${prefix}InsertEdges")' /> Wendeplattenwerkzeug</label>
+    <input id='${prefix}InsertEdges' type='number' class='border rounded p-2 md:col-span-2' placeholder='Anzahl Schneiden' disabled />
+  </div>`;
+}
+
+function openCreateToolModal() {
+  if (currentUser?.role !== "admin") return;
+  const host = getModalHost();
+  host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-auto p-4">
+      <div class='flex items-center justify-between mb-4 gap-3'>
+        <h3 class="text-lg font-bold">Neues Werkzeug anlegen</h3>
+        <button id="toolCreateCloseTop" class="px-3 py-1 rounded bg-slate-200">Schließen</button>
+      </div>
+      <div class='space-y-4'>
+        <div class='border rounded-lg p-3 bg-slate-50'>
+          ${renderToolCreateForm("tool")}
+        </div>
+        <div class='flex justify-between gap-2 flex-wrap'>
+          <div class='flex gap-2 flex-wrap'>
+            <button class='px-3 py-2 rounded bg-slate-700 text-white' onclick='addToolLabel()'>Bezeichnung hinzufügen</button>
+            <button class='px-3 py-2 rounded bg-slate-700 text-white' onclick='addToolManufacturer()'>Hersteller hinzufügen</button>
+          </div>
+          <div class='flex gap-2'>
+            <button id="toolCreateCloseBottom" class="px-3 py-2 rounded bg-slate-200">Abbrechen</button>
+            <button id="toolCreateSave" class="px-3 py-2 rounded bg-slate-900 text-white">Werkzeug speichern</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  const close = () => {
+    host.innerHTML = "";
+  };
+
+  host.querySelector("#toolCreateCloseTop")?.addEventListener("click", close);
+  host.querySelector("#toolCreateCloseBottom")?.addEventListener("click", close);
+  host.querySelector("#toolCreateSave")?.addEventListener("click", () => {
+    const data = collectToolFormData(document);
+    const validation = validateToolData(data);
+    if (!validation.ok) return alert(validation.message);
+
+    state.tools.push({
+      id: `tool-${Date.now()}`,
+      ...normalizeToolData(data),
+    });
+    persist();
+    close();
+    render();
   });
 }
 
@@ -2017,7 +2130,6 @@ function renderOrderStats() {
 
 function renderTools() {
   const labels = getToolLabels();
-  const manufacturers = getToolManufacturers();
   const holders = getToolHolders();
   const filters = state.toolFilters || {
     search: "",
@@ -2032,20 +2144,11 @@ function renderTools() {
   const filterD = filters.diameter || "";
   const filterHolder = filters.holder || "";
 
-  const labelOptions = labels
-    .map((l) => `<option value="${l}">${l}</option>`)
-    .join("");
   const filterLabelOptions = labels
     .map(
       (l) =>
         `<option value="${l}" ${l === filterLabel ? "selected" : ""}>${l}</option>`,
     )
-    .join("");
-  const manufacturerOptions = manufacturers
-    .map((m) => `<option value="${m}">${m}</option>`)
-    .join("");
-  const holderOptions = holders
-    .map((h) => `<option value="${h}">${h}</option>`)
     .join("");
 
   const tools = state.tools.filter((t) => {
@@ -2240,35 +2343,16 @@ function renderTools() {
     ${
       currentUser.role === "admin"
         ? `<div class='border-2 border-slate-300 rounded-xl p-3 bg-slate-50'>
-      <h3 class='text-lg font-bold mb-2'>1) Neues Werkzeug anlegen</h3>
-      <div class='grid md:grid-cols-4 gap-2'>
-        <input id='toolTNumber' class='border rounded p-1' placeholder='T-Nummer (z.B. 134)' />
-        <select id='toolLabel' class='border rounded p-1'>${labelOptions}</select>
-        <input id='toolDiameter' class='border rounded p-1' placeholder='Durchmesser' />
-        <select id='toolThreadPrefix' class='border rounded p-1'>
-          <option value=''>Kennung (nur Gewinde)</option>
-          <option value='M'>M</option>
-          <option value='MF'>MF</option>
-          <option value='G'>G</option>
-          <option value='UNF'>UNF</option>
-          <option value='UNC'>UNC</option>
-          <option value='Mx'>Mx</option>
-        </select>
-        <input id='toolThreadPitch' class='border rounded p-1' placeholder='Steigung P (nur MF)' />
-        <input id='toolShelf' class='border rounded p-1' placeholder='A00' />
-        <input id='toolArticle' class='border rounded p-1' placeholder='Artikel Nr.' />
-        <select id='toolHolder' class='border rounded p-1'>${holderOptions}</select>
-        <input id='toolStock' type='number' class='border rounded p-1' placeholder='Bestand' />
-        <input id='toolMinStock' type='number' class='border rounded p-1' placeholder='Mindestbestand' />
-        <input id='toolOptimalStock' type='number' class='border rounded p-1' placeholder='Optimale Stückzahl' />
-        <label class='flex items-center gap-2 text-sm'><input id='toolInsertTool' type='checkbox' onchange='toggleInsertToolFields()' /> Wendeplattenwerkzeug</label>
-        <input id='toolInsertEdges' type='number' class='border rounded p-1' placeholder='Anzahl Schneiden' disabled />
-        <select id='toolManufacturer' class='border rounded p-1'>${manufacturerOptions}</select>
-      </div>
-      <div class='flex gap-2 mt-2 flex-wrap'>
-        <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick='createTool()'>Werkzeug speichern</button>
-        <button class='px-2 py-1 rounded bg-slate-700 text-white' onclick='addToolLabel()'>Bezeichnung hinzufügen</button>
-        <button class='px-2 py-1 rounded bg-slate-700 text-white' onclick='addToolManufacturer()'>Hersteller hinzufügen</button>
+      <div class='flex items-center justify-between gap-3 flex-wrap'>
+        <div>
+          <h3 class='text-lg font-bold mb-1'>1) Neues Werkzeug anlegen</h3>
+          <p class='text-sm text-slate-500'>Die Dateneingabe öffnet sich in einem separaten Eingabefenster.</p>
+        </div>
+        <div class='flex gap-2 flex-wrap'>
+          <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='openCreateToolModal()'>Neues Werkzeug erfassen</button>
+          <button class='px-3 py-2 rounded bg-slate-700 text-white' onclick='addToolLabel()'>Bezeichnung hinzufügen</button>
+          <button class='px-3 py-2 rounded bg-slate-700 text-white' onclick='addToolManufacturer()'>Hersteller hinzufügen</button>
+        </div>
       </div>
     </div>`
         : ""
@@ -2350,8 +2434,12 @@ function renderTools() {
 }
 
 function toggleInsertToolFields() {
-  const checkbox = document.getElementById("toolInsertTool");
-  const edges = document.getElementById("toolInsertEdges");
+  toggleInsertToolFieldsById("toolInsertTool", "toolInsertEdges");
+}
+
+function toggleInsertToolFieldsById(checkboxId, edgesId) {
+  const checkbox = document.getElementById(checkboxId);
+  const edges = document.getElementById(edgesId);
   if (!checkbox || !edges) return;
   edges.disabled = !checkbox.checked;
   if (!checkbox.checked) edges.value = "";
@@ -3005,8 +3093,10 @@ window.setOrderListManufacturer = setOrderListManufacturer;
 window.applyOptimalQtySuggestion = applyOptimalQtySuggestion;
 window.rejectOptimalQtySuggestion = rejectOptimalQtySuggestion;
 window.toggleInsertToolFields = toggleInsertToolFields;
+window.toggleInsertToolFieldsById = toggleInsertToolFieldsById;
 window.markToolOrdered = markToolOrdered;
 window.restockTool = restockTool;
 window.createTool = createTool;
+window.openCreateToolModal = openCreateToolModal;
 window.addToolLabel = addToolLabel;
 window.addToolManufacturer = addToolManufacturer;
