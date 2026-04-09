@@ -132,6 +132,7 @@ function loadState() {
     orderStatsView: "week",
     orderSuggestionState: {},
     orderListPopupOpen: false,
+    selectedOrderListManufacturer: "",
     planningSubTab: "personal",
   };
   try {
@@ -1825,13 +1826,45 @@ function applyToolFilters() {
   render();
 }
 
+function getOrderCandidateGroups() {
+  return state.tools
+    .filter((t) => shouldOrderTool(t) || t.ordered)
+    .reduce((acc, tool) => {
+      const maker = (tool.manufacturer || "").trim() || "Ohne Hersteller";
+      if (!acc[maker]) acc[maker] = [];
+      acc[maker].push(tool);
+      return acc;
+    }, {});
+}
+
+function ensureSelectedOrderListManufacturer(groups) {
+  const makers = Object.keys(groups).sort((a, b) => a.localeCompare(b));
+  if (!makers.length) {
+    state.selectedOrderListManufacturer = "";
+    return "";
+  }
+  if (!makers.includes(state.selectedOrderListManufacturer || "")) {
+    state.selectedOrderListManufacturer = makers[0];
+  }
+  return state.selectedOrderListManufacturer;
+}
+
 function openOrderListPopup() {
   state.orderListPopupOpen = true;
+  const groups = getOrderCandidateGroups();
+  ensureSelectedOrderListManufacturer(groups);
+  persist();
   render();
 }
 
 function closeOrderListPopup() {
   state.orderListPopupOpen = false;
+  render();
+}
+
+function setOrderListManufacturer(value) {
+  state.selectedOrderListManufacturer = value || "";
+  persist();
   render();
 }
 
@@ -2055,9 +2088,14 @@ function renderTools() {
 
   const todoTools = state.tools.filter((t) => shouldOrderTool(t) && !t.ordered);
   const orderedTools = state.tools.filter((t) => t.ordered);
-  const orderCandidates = state.tools.filter(
-    (t) => shouldOrderTool(t) || t.ordered,
+  const orderGroups = getOrderCandidateGroups();
+  const availableManufacturers = Object.keys(orderGroups).sort((a, b) =>
+    a.localeCompare(b),
   );
+  const selectedManufacturer = ensureSelectedOrderListManufacturer(orderGroups);
+  const selectedManufacturerTools = selectedManufacturer
+    ? orderGroups[selectedManufacturer] || []
+    : [];
 
   const todoRows = todoTools
     .map(
@@ -2103,50 +2141,57 @@ function renderTools() {
     )
     .join("");
 
-  const orderGroups = orderCandidates.reduce((acc, tool) => {
-    const maker = (tool.manufacturer || "").trim() || "Ohne Hersteller";
-    if (!acc[maker]) acc[maker] = [];
-    acc[maker].push(tool);
-    return acc;
-  }, {});
+  const manufacturerOptionsForPopup = availableManufacturers
+    .map(
+      (maker) =>
+        `<option value="${maker}" ${maker === selectedManufacturer ? "selected" : ""}>${maker}</option>`,
+    )
+    .join("");
+
+  const selectedManufacturerRows = selectedManufacturerTools
+    .map(
+      (t) => `<tr class='border-b'>
+        <td class='p-2'>T ${t.tNumber}</td>
+        <td class='p-2'>${t.label}</td>
+        <td class='p-2'>${formatToolSize(t)}</td>
+        <td class='p-2'>${t.articleNo || "-"}</td>
+        <td class='p-2'>${t.stock}/${t.minStock}</td>
+        <td class='p-2'>
+          <input
+            type='number'
+            min='0'
+            class='border rounded p-1 w-24'
+            value='${effectiveOrderQty(t)}'
+            onchange="setToolOrderOverride('${t.id}', this.value)"
+          />
+        </td>
+      </tr>`,
+    )
+    .join("");
 
   const orderListPopup = state.orderListPopupOpen
     ? `<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-6xl max-h-[88vh] overflow-auto p-4">
-      <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center justify-between mb-3 gap-3">
         <h3 class="text-lg font-bold">Bestellliste nach Hersteller</h3>
         <button class="px-2 py-1 rounded bg-slate-200" onclick="closeOrderListPopup()">Schließen</button>
       </div>
       ${
-        Object.keys(orderGroups).length
-          ? Object.entries(orderGroups)
-              .sort((a, b) => a[0].localeCompare(b[0]))
-              .map(([maker, list]) => {
-                const rows = list
-                  .map(
-                    (t) => `<tr class='border-b'>
-          <td class='p-2'>T ${t.tNumber}</td>
-          <td class='p-2'>${t.label}</td>
-          <td class='p-2'>${formatToolSize(t)}</td>
-          <td class='p-2'>${t.articleNo || "-"}</td>
-          <td class='p-2'>${t.shelf || "-"}</td>
-          <td class='p-2'>${t.stock}/${t.minStock}</td>
-          <td class='p-2'>
-            <input
-              type='number'
-              min='0'
-              class='border rounded p-1 w-24'
-              value='${effectiveOrderQty(t)}'
-              onchange="setToolOrderOverride('${t.id}', this.value)"
-            />
-          </td>
-        </tr>`,
-                  )
-                  .join("");
-                return `<div class='border rounded p-3 mb-4 bg-white'>
+        availableManufacturers.length
+          ? `<div class='border rounded p-3 mb-4 bg-slate-50'>
+          <div class='grid md:grid-cols-[280px,1fr] gap-3 items-end'>
+            <label class='text-sm font-medium'>Hersteller auswählen
+              <select class='border rounded p-2 w-full mt-1' onchange="setOrderListManufacturer(this.value)">
+                ${manufacturerOptionsForPopup}
+              </select>
+            </label>
+            <div class='text-sm text-slate-500'>Es wird immer nur ein Hersteller gleichzeitig angezeigt.</div>
+          </div>
+        </div>
+        <div class='border rounded p-3 bg-white'>
           <div class='flex items-center justify-between mb-2'>
-            <h4 class='font-semibold text-base'>${maker}</h4>
-            <span class='text-xs text-slate-500'>${list.length} Werkzeug(e)</span>
+            <h4 class='font-semibold text-base'>${selectedManufacturer}</h4>
+            <span class='text-xs text-slate-500'>${selectedManufacturerTools.length} Werkzeug(e)</span>
           </div>
           <table class='w-full text-sm'>
             <thead class='bg-slate-100'>
@@ -2155,16 +2200,13 @@ function renderTools() {
                 <th class='p-2 text-left'>Bezeichnung</th>
                 <th class='p-2 text-left'>Größe</th>
                 <th class='p-2 text-left'>Artikelnummer</th>
-                <th class='p-2 text-left'>Lagerfach</th>
                 <th class='p-2 text-left'>Bestand</th>
                 <th class='p-2 text-left'>Menge</th>
               </tr>
             </thead>
-            <tbody>${rows}</tbody>
+            <tbody>${selectedManufacturerRows || '<tr><td class="p-2" colspan="6">Keine bestellrelevanten Werkzeuge für diesen Hersteller.</td></tr>'}</tbody>
           </table>
-        </div>`;
-              })
-              .join("")
+        </div>`
           : '<div class="text-sm text-slate-500">Keine bestellrelevanten Werkzeuge.</div>'
       }
     </div>
@@ -2959,6 +3001,7 @@ window.setToolOrderOverride = setToolOrderOverride;
 window.setOrderStatsView = setOrderStatsView;
 window.openOrderListPopup = openOrderListPopup;
 window.closeOrderListPopup = closeOrderListPopup;
+window.setOrderListManufacturer = setOrderListManufacturer;
 window.applyOptimalQtySuggestion = applyOptimalQtySuggestion;
 window.rejectOptimalQtySuggestion = rejectOptimalQtySuggestion;
 window.toggleInsertToolFields = toggleInsertToolFields;
