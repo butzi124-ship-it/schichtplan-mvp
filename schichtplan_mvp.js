@@ -46,6 +46,12 @@ const WEEK_TEMPLATES = [
   makeWeek("C", "A", "B", "C", "A"),
 ];
 const ROTATION_ANCHOR_MONDAY = "2026-01-05";
+const PLANNING_SUBTABS = [
+  { id: "personal", label: "Personal" },
+  { id: "abstinenz", label: "Abstinenz" },
+  { id: "wochenende", label: "Wochenendeinsätze" },
+  { id: "schichttausch", label: "Schichttausch" },
+];
 
 function allUsers() {
   return [...USERS, ...(state.extraUsers || [])];
@@ -126,6 +132,7 @@ function loadState() {
     orderStatsView: "week",
     orderSuggestionState: {},
     orderListPopupOpen: false,
+    planningSubTab: "personal",
   };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -230,6 +237,13 @@ function setTab(tab) {
 
 function setStatsView(period) {
   statsViewPeriod = period;
+  render();
+}
+
+function setPlanningSubTab(subTab) {
+  if (!PLANNING_SUBTABS.some((t) => t.id === subTab)) return;
+  state.planningSubTab = subTab;
+  persist();
   render();
 }
 
@@ -412,6 +426,7 @@ function hasCalendarAbsence(name, date) {
 }
 
 function getCalendarAbsenceType(name, date) {
+  if (!name) return null;
   if (
     state.sickLeaves.some((s) => s.user === name && inRange(date, s.from, s.to))
   )
@@ -712,10 +727,126 @@ function setWeekendAvailability(shiftId, value) {
 }
 
 function renderPlanning() {
+  const subTab = PLANNING_SUBTABS.some((t) => t.id === state.planningSubTab)
+    ? state.planningSubTab
+    : "personal";
+
+  const subTabButtons = PLANNING_SUBTABS.map((tab) => {
+    const active = subTab === tab.id;
+    return `<button class='px-3 py-2 rounded border ${active ? "bg-slate-900 text-white border-slate-900" : "bg-white border-slate-300"}' onclick="setPlanningSubTab('${tab.id}')">${tab.label}</button>`;
+  }).join("");
+
+  let content = "";
+  if (subTab === "personal") content = renderPlanningPersonal();
+  if (subTab === "abstinenz") content = renderPlanningAbstinenz();
+  if (subTab === "wochenende") content = renderPlanningWochenende();
+  if (subTab === "schichttausch") content = renderPlanningSchichttausch();
+
+  return `<div class='bg-white rounded-xl shadow p-4'>
+    <div class='flex items-center justify-between mb-4 gap-2 flex-wrap'>
+      <div>
+        <h2 class='text-lg font-semibold'>Planung (Admin)</h2>
+        <p class='text-sm text-slate-500 mt-1'>Struktur: Unterregister für Personal, Abstinenz, Wochenendeinsätze und Schichttausch.</p>
+      </div>
+      <button class='px-2 py-1 rounded bg-red-700 text-white text-sm' onclick='resetPlanCurrentFuture()'>Gesamtplan zurücksetzen (aktuelle+zukünftige)</button>
+    </div>
+    <div class='flex gap-2 flex-wrap mb-5'>
+      ${subTabButtons}
+    </div>
+    ${content}
+  </div>`;
+}
+
+function renderPlanningPersonal() {
+  const personnelRows = allUsers()
+    .map(
+      (u) => `<tr class='border-b'>
+      <td class='p-2'>${u.name}</td>
+      <td class='p-2'>${u.type === "core" ? "A/B/C" : "Springer"}</td>
+      <td class='p-2'>${state.inactiveUsers?.[u.name] ? "Inaktiv" : "Aktiv"}</td>
+      <td class='p-2'>
+        ${
+          state.inactiveUsers?.[u.name]
+            ? `<button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick="activateEmployee('${u.name}')">Reaktivieren</button>`
+            : `<button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="deactivateEmployee('${u.name}')">Löschen</button>`
+        }
+      </td>
+    </tr>`,
+    )
+    .join("");
+
+  const slotAssignmentRows = SLOT_CODES.map((slot) => {
+    const options = activeUsers()
+      .map(
+        (u) =>
+          `<option value='${u.name}' ${state.slotAssignments?.[slot] === u.name ? "selected" : ""}>${u.name}</option>`,
+      )
+      .join("");
+    return `<tr class='border-b'>
+      <td class='p-2 font-semibold'>${slot}</td>
+      <td class='p-2'><select id='slot-${slot}' class='border rounded p-1 w-full'>${options}</select></td>
+      <td class='p-2'><button class='px-2 py-1 rounded bg-slate-900 text-white' onclick="updateSlotAssignment('${slot}')">Speichern</button></td>
+    </tr>`;
+  }).join("");
+
+  return `<div class='grid md:grid-cols-2 gap-4'>
+    <div class='border rounded-lg p-3 bg-slate-50'>
+      <h3 class='font-semibold mb-2'>Personalverwaltung</h3>
+      <div class='grid grid-cols-3 gap-2 mb-2'>
+        <input id='newEmployeeName' class='border rounded p-1' placeholder='Neuer Name' />
+        <select id='newEmployeeType' class='border rounded p-1'><option value='springer'>Springer</option><option value='core'>A/B/C</option></select>
+        <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick='addEmployee()'>Mitarbeiter hinzufügen</button>
+      </div>
+      <div class='overflow-auto max-h-[55vh]'>
+        <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Name</th><th class='p-2 text-left'>Typ</th><th class='p-2 text-left'>Status</th><th class='p-2'></th></tr></thead>
+        <tbody>${personnelRows}</tbody></table>
+      </div>
+    </div>
+    <div class='border rounded-lg p-3 bg-slate-50'>
+      <h3 class='font-semibold mb-2'>Zuordnung</h3>
+      <p class='text-sm text-slate-500 mb-2'>Admin kann festlegen, welcher Mitarbeiter aktuell A/B/C/D/E/F ist. Der Schichtplan passt sich danach direkt an.</p>
+      <div class='overflow-auto max-h-[55vh]'>
+        <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Slot</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2'></th></tr></thead>
+        <tbody>${slotAssignmentRows}</tbody></table>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderPlanningAbstinenz() {
   const openShifts = generateThreeMonths().filter((s) => s.open);
-  const optionalShifts = generateThreeMonths().filter(
-    (s) => s.options.length > 1,
-  );
+  const absenceRows = Object.entries(state.absences)
+    .slice(-100)
+    .reverse()
+    .map(([key]) => {
+      const [date, user] = key.split(":");
+      return `<tr class='border-b'><td class='p-2'>${date}</td><td class='p-2'>${user}</td><td class='p-2'>Kann nicht kommen</td></tr>`;
+    })
+    .join("");
+
+  const monthValue = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+  const personOptions = activeUsers()
+    .map((u) => `<option value='${u.name}'>${u.name}</option>`)
+    .join("");
+
+  const vacationRows = state.vacations
+    .slice(-20)
+    .reverse()
+    .map(
+      (v) =>
+        `<tr class='border-b'><td class='p-2'>${v.user}</td><td class='p-2'>${v.from}</td><td class='p-2'>${v.to}</td><td class='p-2'><button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="deleteVacation('${v.id}')">Löschen</button></td></tr>`,
+    )
+    .join("");
+
+  const sickRows = state.sickLeaves
+    .slice(-20)
+    .reverse()
+    .map(
+      (v) =>
+        `<tr class='border-b'><td class='p-2'>${v.user}</td><td class='p-2'>${v.from}</td><td class='p-2'>${v.to}</td><td class='p-2'><button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="deleteSickLeave('${v.id}')">Löschen</button></td></tr>`,
+    )
+    .join("");
+
   const rows = openShifts
     .map((s) => {
       const choices = activeUsers()
@@ -736,8 +867,81 @@ function renderPlanning() {
     })
     .join("");
 
+  return `<div class='space-y-4'>
+    <div class='grid md:grid-cols-2 gap-4'>
+      <div class='border rounded-lg p-3 bg-slate-50'>
+        <h3 class='font-semibold mb-2'>Klärung Abstinz</h3>
+        <div class='overflow-auto max-h-56'>
+          <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Typ</th></tr></thead>
+          <tbody>${absenceRows || '<tr><td class="p-2" colspan="3">Keine Meldungen.</td></tr>'}</tbody></table>
+        </div>
+      </div>
+      <div class='border rounded-lg p-3 bg-slate-50 space-y-3'>
+        <h3 class='font-semibold'>Urlaub / Krankmeldung eintragen</h3>
+        <div class='grid grid-cols-2 gap-2 text-sm'>
+          <label>Monat<input id='adminMonth' type='month' value='${monthValue}' class='border rounded p-1 w-full'/></label>
+          <label>Mitarbeiter<select id='adminCalUser' class='border rounded p-1 w-full'>${personOptions}</select></label>
+          <label>Von<input id='adminFrom' type='date' value='${todayIso()}' class='border rounded p-1 w-full'/></label>
+          <label>Bis<input id='adminTo' type='date' value='${todayIso()}' class='border rounded p-1 w-full'/></label>
+        </div>
+        <div class='flex gap-2 flex-wrap'>
+          <button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick='addVacation()'>Urlaub speichern</button>
+          <button class='px-2 py-1 rounded bg-amber-700 text-white' onclick='addSickLeave()'>Krank speichern</button>
+        </div>
+      </div>
+    </div>
+
+    <div class='grid md:grid-cols-2 gap-4'>
+      <div class='border rounded-lg p-3'>
+        <h4 class='font-semibold mb-2'>Geplante Urlaube</h4>
+        <div class='overflow-auto max-h-56'>
+          <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th><th class='p-2'></th></tr></thead>
+          <tbody>${vacationRows || '<tr><td class="p-2" colspan="4">Keine Einträge.</td></tr>'}</tbody></table>
+        </div>
+      </div>
+      <div class='border rounded-lg p-3'>
+        <h4 class='font-semibold mb-2'>Krankmeldungen</h4>
+        <div class='overflow-auto max-h-56'>
+          <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th><th class='p-2'></th></tr></thead>
+          <tbody>${sickRows || '<tr><td class="p-2" colspan="4">Keine Einträge.</td></tr>'}</tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <div class='border rounded-lg p-3 bg-white'>
+      <h3 class='text-md font-semibold mb-2'>Offene Schichten</h3>
+      <div class='flex items-center justify-between mb-2 gap-2 flex-wrap'>
+        <p class='text-sm text-slate-500'>Pro Tag kannst du entscheiden: ganze Schicht übernehmen lassen oder Ausfall markieren.</p>
+        <button class='px-2 py-1 rounded bg-slate-800 text-white text-sm' onclick='resetManualAssignments()'>Zuordnungen zurücksetzen (aktuelle+zukünftige)</button>
+      </div>
+      <div class='overflow-auto max-h-[55vh]'>
+        <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr>
+        <th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Zeit</th><th class='p-2 text-left'>Vorher</th><th class='p-2 text-left'>Übernahme durch</th><th class='p-2'>Aktion</th></tr></thead>
+        <tbody>${rows || '<tr><td class="p-2" colspan="6">Keine offenen Schichten.</td></tr>'}</tbody></table>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderPlanningWochenende() {
+  const saturdayRequestRows = Object.entries(state.saturdayEveningRequests)
+    .filter(([, requested]) => requested)
+    .map(([key]) => {
+      const [shiftId, user] = key.split(":");
+      const shift = generateThreeMonths().find((s) => s.id === shiftId);
+      if (!shift) return "";
+      return `<tr class='border-b'>
+        <td class='p-2'>${shift.date}</td>
+        <td class='p-2'>${user}</td>
+        <td class='p-2'>${shift.label} (${shift.start}–${shift.end})</td>
+        <td class='p-2'><button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick="approveSaturdayRequest('${shiftId}','${user}')">Genehmigen</button></td>
+      </tr>`;
+    })
+    .join("");
+
   let lastWeekend = "";
-  const optionalRows = optionalShifts
+  const optionalRows = generateThreeMonths()
+    .filter((s) => s.options.length > 1)
     .slice(0, 120)
     .map((s) => {
       const canUsers = activeUsers()
@@ -760,7 +964,7 @@ function renderPlanning() {
       return `${divider}<tr class='border-b'>
       <td class='p-2'>${s.date}</td>
       <td class='p-2'>${s.label}</td>
-      <td class='p-2'>${s.options.map((o) => (o === "NONE" ? "0" : o)).join("/")}</td>
+      <td class='p-2'>${formatSlot(s.options)}</td>
       <td class='p-2'>${canUsers.length ? canUsers.map((n) => `<span class='px-1 rounded bg-emerald-100 text-emerald-700 mr-1'>${n}</span>`).join("") : "-"}</td>
       <td class='p-2'>${cantUsers.length ? cantUsers.map((n) => `<span class='px-1 rounded bg-rose-100 text-rose-700 mr-1'>${n}</span>`).join("") : "-"}</td>
       <td class='p-2'><select id='opt-${s.id}' class='border rounded p-1'>${options}</select></td>
@@ -769,221 +973,70 @@ function renderPlanning() {
     })
     .join("");
 
-  const absenceRows = Object.entries(state.absences)
-    .slice(-100)
-    .reverse()
-    .map(([key]) => {
-      const [date, user] = key.split(":");
-      return `<tr class='border-b'><td class='p-2'>${date}</td><td class='p-2'>${user}</td><td class='p-2'>Kann nicht kommen</td></tr>`;
-    })
-    .join("");
+  return `<div class='space-y-4'>
+    <div class='border rounded-lg p-3 bg-slate-50'>
+      <h3 class='font-semibold mb-2'>Samstag Abend</h3>
+      <div class='overflow-auto max-h-56'>
+        <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Schicht</th><th class='p-2'></th></tr></thead>
+        <tbody>${saturdayRequestRows || '<tr><td class="p-2" colspan="4">Keine Anfragen.</td></tr>'}</tbody></table>
+      </div>
+    </div>
 
-  const saturdayRequestRows = Object.entries(state.saturdayEveningRequests)
-    .filter(([, requested]) => requested)
-    .map(([key]) => {
-      const [shiftId, user] = key.split(":");
-      const shift = generateThreeMonths().find((s) => s.id === shiftId);
-      if (!shift) return "";
-      return `<tr class='border-b'>
-        <td class='p-2'>${shift.date}</td>
-        <td class='p-2'>${user}</td>
-        <td class='p-2'>${shift.label} (${shift.start}–${shift.end})</td>
-        <td class='p-2'><button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick="approveSaturdayRequest('${shiftId}','${user}')">Genehmigen</button></td>
-      </tr>`;
-    })
-    .join("");
+    <div class='border rounded-lg p-3 bg-white'>
+      <h3 class='text-md font-semibold mb-2'>Wochenende</h3>
+      <p class='text-sm text-slate-500 mb-2'>Zugesagt = grün, nicht zugesagt = rot. Beide Gruppen bleiben einsetzbar. Wochenenden sind getrennt dargestellt.</p>
+      <div class='overflow-auto max-h-[60vh]'>
+        <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr>
+          <th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Option</th><th class='p-2 text-left'>Kann</th><th class='p-2 text-left'>Kann nicht</th><th class='p-2 text-left'>Einteilen</th><th class='p-2'></th>
+        </tr></thead>
+        <tbody>${optionalRows || '<tr><td class="p-2" colspan="7">Keine Wochenend-Schichten.</td></tr>'}</tbody></table>
+      </div>
+    </div>
+  </div>`;
+}
 
-  const weekendAvailabilityRows = generateThreeMonths()
-    .filter((s) => s.id.includes("-sa-") || s.id.includes("-su-"))
-    .slice(0, 120)
-    .map((s) => {
-      const available = activeUsers()
-        .filter(
-          (u) =>
-            u.type === "springer" &&
-            state.availability[`${s.id}:${u.name}`] === "yes",
-        )
-        .map((u) => u.name);
-      const unavailable = activeUsers()
-        .filter(
-          (u) =>
-            u.type === "springer" &&
-            state.availability[`${s.id}:${u.name}`] === "no",
-        )
-        .map((u) => u.name);
-      return `<tr class='border-b'>
-        <td class='p-2'>${s.date}</td>
-        <td class='p-2'>${s.label}</td>
-        <td class='p-2 text-emerald-700'>${available.join(", ") || "-"}</td>
-        <td class='p-2 text-rose-700'>${unavailable.join(", ") || "-"}</td>
-      </tr>`;
-    })
-    .join("");
-
-  const monthValue = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
-  const personOptions = activeUsers()
-    .map((u) => `<option value='${u.name}'>${u.name}</option>`)
-    .join("");
+function renderPlanningSchichttausch() {
   const corePersonOptions = activeUsers()
     .filter((u) => u.type === "core")
     .map((u) => `<option value='${u.name}'>${u.name}</option>`)
     .join("");
-  const personnelRows = allUsers()
+
+  const swapRows = state.swaps
+    .slice()
+    .reverse()
     .map(
-      (u) => `<tr class='border-b'>
-      <td class='p-2'>${u.name}</td>
-      <td class='p-2'>${u.type === "core" ? "A/B/C" : "Springer"}</td>
-      <td class='p-2'>${state.inactiveUsers?.[u.name] ? "Inaktiv" : "Aktiv"}</td>
-      <td class='p-2'>
-        ${
-          state.inactiveUsers?.[u.name]
-            ? `<button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick="activateEmployee('${u.name}')">Reaktivieren</button>`
-            : `<button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="deactivateEmployee('${u.name}')">Löschen</button>`
-        }
-      </td>
+      (swap, index) => `<tr class='border-b'>
+      <td class='p-2'>${swap.userA}</td>
+      <td class='p-2'>${swap.userB}</td>
+      <td class='p-2'>${swap.startDate}</td>
+      <td class='p-2'>${swap.endDate || "-"}</td>
+      <td class='p-2'>${!swap.endDate || swap.endDate >= todayIso() ? "Aktiv/Geplant" : "Beendet"}</td>
+      <td class='p-2'><button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="deleteSwap(${state.swaps.length - 1 - index})">Löschen</button></td>
     </tr>`,
     )
     .join("");
-  const slotAssignmentRows = SLOT_CODES.map((slot) => {
-    const options = activeUsers()
-      .map(
-        (u) =>
-          `<option value='${u.name}' ${state.slotAssignments?.[slot] === u.name ? "selected" : ""}>${u.name}</option>`,
-      )
-      .join("");
-    return `<tr class='border-b'>
-      <td class='p-2 font-semibold'>${slot}</td>
-      <td class='p-2'><select id='slot-${slot}' class='border rounded p-1 w-full'>${options}</select></td>
-      <td class='p-2'><button class='px-2 py-1 rounded bg-slate-900 text-white' onclick="updateSlotAssignment('${slot}')">Speichern</button></td>
-    </tr>`;
-  }).join("");
-  const vacationRows = state.vacations
-    .slice(-20)
-    .reverse()
-    .map(
-      (v) =>
-        `<tr class='border-b'><td class='p-2'>${v.user}</td><td class='p-2'>${v.from}</td><td class='p-2'>${v.to}</td><td class='p-2'><button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="deleteVacation('${v.id}')">Löschen</button></td></tr>`,
-    )
-    .join("");
-  const sickRows = state.sickLeaves
-    .slice(-20)
-    .reverse()
-    .map(
-      (v) =>
-        `<tr class='border-b'><td class='p-2'>${v.user}</td><td class='p-2'>${v.from}</td><td class='p-2'>${v.to}</td><td class='p-2'><button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="deleteSickLeave('${v.id}')">Löschen</button></td></tr>`,
-    )
-    .join("");
 
-  return `<div class='bg-white rounded-xl shadow p-4'>
-    <h2 class='text-lg font-semibold mb-3'>Planung (Admin)</h2>
-    <div class='flex items-center justify-between mb-4 gap-2'>
-      <p class='text-sm text-slate-500'>Struktur: Abwesenheiten → Urlaube/Krankmeldungen → Vertretung und Tausch.</p>
-      <button class='px-2 py-1 rounded bg-red-700 text-white text-sm' onclick='resetPlanCurrentFuture()'>Gesamtplan zurücksetzen (aktuelle+zukünftige)</button>
-    </div>
-
-    <div class='grid md:grid-cols-2 gap-4 mb-6'>
-      <div class='border rounded-lg p-3 bg-slate-50'>
-        <h3 class='font-semibold mb-2'>Personalverwaltung</h3>
-        <div class='grid grid-cols-3 gap-2 mb-2'>
-          <input id='newEmployeeName' class='border rounded p-1' placeholder='Neuer Name' />
-          <select id='newEmployeeType' class='border rounded p-1'><option value='springer'>Springer</option><option value='core'>A/B/C</option></select>
-          <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick='addEmployee()'>Mitarbeiter hinzufügen</button>
-        </div>
-        <div class='overflow-auto max-h-56'>
-          <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Name</th><th class='p-2 text-left'>Typ</th><th class='p-2 text-left'>Status</th><th class='p-2'></th></tr></thead>
-          <tbody>${personnelRows}</tbody></table>
-        </div>
+  return `<div class='space-y-4'>
+    <div class='border rounded-lg p-3 bg-slate-50'>
+      <h3 class='text-md font-semibold mb-2'>Schichttausch</h3>
+      <div class='grid md:grid-cols-5 gap-2 items-end'>
+        <label class='text-sm'>Mitarbeiter 1 (A/B/C)<select id='swapA' class='border rounded p-1 w-full'>${corePersonOptions}</select></label>
+        <label class='text-sm'>Mitarbeiter 2 (A/B/C)<select id='swapB' class='border rounded p-1 w-full'>${corePersonOptions}</select></label>
+        <label class='text-sm'>Gültig ab<input id='swapDate' type='date' value='${todayIso()}' class='border rounded p-1 w-full'/></label>
+        <label class='text-sm'>Bis (optional)<input id='swapEndDate' type='date' class='border rounded p-1 w-full'/></label>
+        <button class='px-2 py-1 rounded bg-purple-700 text-white h-9' onclick='addSwap()'>Schichttausch speichern</button>
       </div>
-      <div class='border rounded-lg p-3 bg-slate-50'>
-        <h3 class='font-semibold mb-2'>Zuordnung Slots A–F</h3>
-        <p class='text-sm text-slate-500 mb-2'>Admin kann festlegen, welcher Mitarbeiter aktuell A/B/C/D/E/F ist. Der Schichtplan passt sich danach direkt an.</p>
-        <div class='overflow-auto max-h-56'>
-          <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Slot</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2'></th></tr></thead>
-          <tbody>${slotAssignmentRows}</tbody></table>
-        </div>
-      </div>
-      <div class='border rounded-lg p-3 bg-slate-50'>
-        <h3 class='font-semibold mb-2'>Meldungen „Kann nicht kommen“</h3>
-        <div class='overflow-auto max-h-56'>
-          <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Typ</th></tr></thead>
-          <tbody>${absenceRows || '<tr><td class="p-2" colspan="3">Keine Meldungen.</td></tr>'}</tbody></table>
-        </div>
-      </div>
-      <div class='border rounded-lg p-3 bg-slate-50'>
-        <h3 class='font-semibold mb-2'>Samstag-Abend Eintragungen (Freigabe durch Admin)</h3>
-        <div class='overflow-auto max-h-56'>
-          <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Schicht</th><th class='p-2'></th></tr></thead>
-          <tbody>${saturdayRequestRows || '<tr><td class="p-2" colspan="4">Keine Anfragen.</td></tr>'}</tbody></table>
-        </div>
-      </div>
-      <div class='border rounded-lg p-3 bg-slate-50'>
-        <h3 class='font-semibold mb-2'>Springer-Verfügbarkeit Wochenende</h3>
-        <div class='overflow-auto max-h-56'>
-          <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Kann</th><th class='p-2 text-left'>Kann nicht</th></tr></thead>
-          <tbody>${weekendAvailabilityRows || '<tr><td class="p-2" colspan="4">Keine Angaben.</td></tr>'}</tbody></table>
-        </div>
-      </div>
-      <div class='border rounded-lg p-3 bg-slate-50 space-y-3'>
-        <h3 class='font-semibold'>Urlaub / Krankmeldung eintragen</h3>
-        <div class='grid grid-cols-2 gap-2 text-sm'>
-          <label>Monat<input id='adminMonth' type='month' value='${monthValue}' class='border rounded p-1 w-full'/></label>
-          <label>Mitarbeiter<select id='adminCalUser' class='border rounded p-1 w-full'>${personOptions}</select></label>
-          <label>Von<input id='adminFrom' type='date' value='${todayIso()}' class='border rounded p-1 w-full'/></label>
-          <label>Bis<input id='adminTo' type='date' value='${todayIso()}' class='border rounded p-1 w-full'/></label>
-        </div>
-        <div class='flex gap-2'>
-          <button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick='addVacation()'>Urlaub speichern</button>
-          <button class='px-2 py-1 rounded bg-amber-700 text-white' onclick='addSickLeave()'>Krank speichern</button>
-        </div>
+      <div class='mt-3 flex gap-2 flex-wrap'>
+        <button class='px-2 py-1 rounded bg-slate-800 text-white text-sm' onclick='resetActiveSwaps()'>Tausch zurücksetzen (aktuelle+zukünftige)</button>
       </div>
     </div>
 
-    <div class='grid md:grid-cols-2 gap-4 mb-6'>
-      <div class='border rounded-lg p-3'>
-        <h4 class='font-semibold mb-2'>Geplante Urlaube</h4>
-        <div class='overflow-auto max-h-48'>
-          <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th><th class='p-2'></th></tr></thead>
-          <tbody>${vacationRows || '<tr><td class="p-2" colspan="4">Keine Einträge.</td></tr>'}</tbody></table>
-        </div>
+    <div class='border rounded-lg p-3 bg-white'>
+      <h4 class='font-semibold mb-2'>Aktuelle und geplante Tausche</h4>
+      <div class='overflow-auto max-h-[55vh]'>
+        <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter 1</th><th class='p-2 text-left'>Mitarbeiter 2</th><th class='p-2 text-left'>Ab</th><th class='p-2 text-left'>Bis</th><th class='p-2 text-left'>Status</th><th class='p-2'></th></tr></thead>
+        <tbody>${swapRows || '<tr><td class="p-2" colspan="6">Keine Tausche vorhanden.</td></tr>'}</tbody></table>
       </div>
-      <div class='border rounded-lg p-3'>
-        <h4 class='font-semibold mb-2'>Krankmeldungen</h4>
-        <div class='overflow-auto max-h-48'>
-          <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th><th class='p-2'></th></tr></thead>
-          <tbody>${sickRows || '<tr><td class="p-2" colspan="4">Keine Einträge.</td></tr>'}</tbody></table>
-        </div>
-      </div>
-    </div>
-
-    <h3 class='text-md font-semibold mb-2'>Offene Schichten / Übernahme</h3>
-    <div class='flex items-center justify-between mb-2 gap-2'>
-      <p class='text-sm text-slate-500'>Pro Tag kannst du entscheiden: ganze Schicht übernehmen lassen oder Ausfall markieren.</p>
-      <button class='px-2 py-1 rounded bg-slate-800 text-white text-sm' onclick='resetManualAssignments()'>Zuordnungen zurücksetzen (aktuelle+zukünftige)</button>
-    </div>
-    <div class='overflow-auto max-h-[50vh] mb-6'>
-      <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr>
-      <th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Zeit</th><th class='p-2 text-left'>Vorher</th><th class='p-2 text-left'>Übernahme durch</th><th class='p-2'>Aktion</th></tr></thead>
-      <tbody>${rows || '<tr><td class="p-2" colspan="6">Keine offenen Schichten.</td></tr>'}</tbody></table>
-    </div>
-    <h3 class='text-md font-semibold mt-6 mb-2'>Wochenende</h3>
-    <p class='text-sm text-slate-500 mb-2'>Zugesagt = grün, nicht zugesagt = rot. Beide Gruppen bleiben einsetzbar. Wochenenden sind getrennt dargestellt.</p>
-    <div class='overflow-auto max-h-[60vh]'>
-      <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr>
-        <th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Option</th><th class='p-2 text-left'>Kann</th><th class='p-2 text-left'>Kann nicht</th><th class='p-2 text-left'>Einteilen</th><th class='p-2'></th>
-      </tr></thead>
-      <tbody>${optionalRows || '<tr><td class="p-2" colspan="7">Keine Wochenend-Schichten.</td></tr>'}</tbody></table>
-    </div>
-
-    <h3 class='text-md font-semibold mt-6 mb-2'>Mitarbeiter-Tausch ab Datum</h3>
-    <div class='grid md:grid-cols-5 gap-2 items-end'>
-      <label class='text-sm'>Mitarbeiter 1 (A/B/C)<select id='swapA' class='border rounded p-1 w-full'>${corePersonOptions}</select></label>
-      <label class='text-sm'>Mitarbeiter 2 (A/B/C)<select id='swapB' class='border rounded p-1 w-full'>${corePersonOptions}</select></label>
-      <label class='text-sm'>Gültig ab<input id='swapDate' type='date' value='${todayIso()}' class='border rounded p-1 w-full'/></label>
-      <label class='text-sm'>Bis (optional)<input id='swapEndDate' type='date' class='border rounded p-1 w-full'/></label>
-      <button class='px-2 py-1 rounded bg-purple-700 text-white h-9' onclick='addSwap()'>Tausch speichern</button>
-    </div>
-    <div class='mt-2'>
-      <button class='px-2 py-1 rounded bg-slate-800 text-white text-sm' onclick='resetActiveSwaps()'>Tausch zurücksetzen (aktuelle+zukünftige)</button>
     </div>
   </div>`;
 }
@@ -1155,6 +1208,13 @@ function addSwap() {
   render();
 }
 
+function deleteSwap(index) {
+  if (index < 0 || index >= state.swaps.length) return;
+  state.swaps.splice(index, 1);
+  persist();
+  render();
+}
+
 function resetActiveSwaps(silent = false) {
   const today = todayIso();
   const y = new Date(`${today}T00:00:00`);
@@ -1218,6 +1278,7 @@ function resetPlanCurrentFuture() {
   state.extraUsers = [];
   state.inactiveUsers = {};
   state.slotAssignments = { ...DEFAULT_SLOT_ASSIGNMENTS };
+  state.planningSubTab = "personal";
   persist();
   render();
   alert("Gesamtplan wurde auf den Ursprungsplan zurückgesetzt.");
@@ -1695,7 +1756,8 @@ async function editTool(toolId) {
     return alert("Bitte gültigen numerischen Durchmesser eingeben.");
   if (
     data.insertTool &&
-    (!Number.isFinite(Number(data.insertEdges)) || Number(data.insertEdges) <= 0)
+    (!Number.isFinite(Number(data.insertEdges)) ||
+      Number(data.insertEdges) <= 0)
   )
     return alert("Bitte Anzahl der Schneiden > 0 eingeben.");
 
@@ -1830,7 +1892,9 @@ function buildOrderFrequency(view) {
 }
 
 function getOptimalQtySuggestion(tool) {
-  const yearData = buildOrderFrequency("year").find((r) => r.toolId === tool.id);
+  const yearData = buildOrderFrequency("year").find(
+    (r) => r.toolId === tool.id,
+  );
   if (!yearData || yearData.count < 6) return null;
   const avg = Math.ceil(yearData.qtyTotal / yearData.count);
   return Math.max(1, avg);
@@ -2107,7 +2171,9 @@ function renderTools() {
   </div>`
     : "";
 
-  const suggestionTools = state.tools.filter((t) => shouldShowOptimalQtySuggestion(t));
+  const suggestionTools = state.tools.filter((t) =>
+    shouldShowOptimalQtySuggestion(t),
+  );
   const suggestionRows = suggestionTools
     .map(
       (t) => `<tr class='border-b'>
@@ -2830,7 +2896,7 @@ function maybeShowShiftStartChecklist() {
     "Informationen für die nächste Schicht vorhanden",
     "Material versorgt und Lagerorte eingetragen",
     "Alle Aufträge gebucht",
-  ].map((txt, idx) => ({ txt, ok: confirm(`Schichtstart-Check: ${txt}?`) }));
+  ].map((txt) => ({ txt, ok: confirm(`Schichtstart-Check: ${txt}?`) }));
   state.shiftStartChecks[key] = answers;
   answers.forEach((a, idx) => {
     if (endData && endData.checks && endData.checks[idx] !== a.ok) {
@@ -2854,6 +2920,7 @@ window.loginAs = loginAs;
 window.logout = logout;
 window.setTab = setTab;
 window.setStatsView = setStatsView;
+window.setPlanningSubTab = setPlanningSubTab;
 window.markAbsent = markAbsent;
 window.assignShift = assignShift;
 window.cancelShift = cancelShift;
@@ -2863,7 +2930,10 @@ window.setAvailability = setAvailability;
 window.openChecklist = openChecklist;
 window.addVacation = addVacation;
 window.addSickLeave = addSickLeave;
+window.deleteVacation = deleteVacation;
+window.deleteSickLeave = deleteSickLeave;
 window.addSwap = addSwap;
+window.deleteSwap = deleteSwap;
 window.resetActiveSwaps = resetActiveSwaps;
 window.resetManualAssignments = resetManualAssignments;
 window.resetPlanCurrentFuture = resetPlanCurrentFuture;
@@ -2892,3 +2962,8 @@ window.closeOrderListPopup = closeOrderListPopup;
 window.applyOptimalQtySuggestion = applyOptimalQtySuggestion;
 window.rejectOptimalQtySuggestion = rejectOptimalQtySuggestion;
 window.toggleInsertToolFields = toggleInsertToolFields;
+window.markToolOrdered = markToolOrdered;
+window.restockTool = restockTool;
+window.createTool = createTool;
+window.addToolLabel = addToolLabel;
+window.addToolManufacturer = addToolManufacturer;
