@@ -376,6 +376,25 @@ const PERSON_COLORS = {
   Ardian: "bg-indigo-100 text-indigo-900",
 };
 
+function personColorClasses(name) {
+  const raw = PERSON_COLORS[name] || "bg-slate-100 text-slate-800";
+  const parts = raw.split(" ");
+  const bg = parts.find((p) => p.startsWith("bg-")) || "bg-slate-100";
+  const text = parts.find((p) => p.startsWith("text-")) || "text-slate-800";
+  return { bg, text, raw: `${bg} ${text}` };
+}
+
+function personBorderClass(name) {
+  const slot = slotOfUser(name);
+  if (slot === "A") return "border-green-500";
+  if (slot === "B") return "border-violet-500";
+  if (slot === "C") return "border-rose-500";
+  if (slot === "D") return "border-cyan-500";
+  if (slot === "E") return "border-amber-500";
+  if (slot === "F") return "border-indigo-500";
+  return "border-slate-400";
+}
+
 function formatSlot(options) {
   return options.map((slot) => (slot === "NONE" ? "0" : slot)).join("/");
 }
@@ -488,29 +507,46 @@ function getPrimaryAbsenceInfo(shiftId, options) {
 
 function assignedMeta(shiftId, options) {
   if (state.shiftCancellations?.[shiftId]) {
-    return { label: "AUSFALL", cls: "bg-rose-200 text-rose-900" };
+    return { label: "AUSFALL", cls: "bg-rose-200 text-rose-900", borderCls: "border-rose-500", ringCls: "border-2" };
   }
+
   const shift = getShiftById(shiftId);
   const assignedName = shift?.assigned || resolveAssigned(shiftId, options);
   const absence = getPrimaryAbsenceInfo(shiftId, options);
+
   if (!assignedName) {
     const abs = absence?.type || resolveAbsenceType(shiftId, options);
     if (abs) {
       return {
-        label: abs.toUpperCase(),
-        cls:
-          abs === "krank"
-            ? "bg-rose-100 text-rose-800"
-            : "bg-amber-100 text-amber-900",
+        label: "-",
+        cls: "bg-slate-100 text-slate-700",
+        borderCls: absence?.name ? personBorderClass(absence.name) : "border-slate-400",
+        ringCls: "border-2",
       };
     }
-    return { label: "-", cls: "bg-slate-100 text-slate-700" };
+    return {
+      label: "-",
+      cls: "bg-slate-100 text-slate-700",
+      borderCls: "border-slate-300",
+      ringCls: "border",
+    };
   }
+
+  const assignedColors = personColorClasses(assignedName);
+  if (absence?.name) {
+    return {
+      label: `${slotOfUser(assignedName)} • ${assignedName}`,
+      cls: `${assignedColors.bg} ${assignedColors.text}`,
+      borderCls: personBorderClass(absence.name),
+      ringCls: "border-2",
+    };
+  }
+
   return {
-    label: `${slotOfUser(assignedName)} • ${assignedName}${absence ? ` · ${absence.type.toUpperCase()}: ${absence.name}` : ""}`,
-    cls: absence
-      ? "bg-amber-100 text-amber-900"
-      : PERSON_COLORS[assignedName] || "bg-slate-100 text-slate-800",
+    label: `${slotOfUser(assignedName)} • ${assignedName}`,
+    cls: assignedColors.raw,
+    borderCls: personBorderClass(assignedName),
+    ringCls: "border",
   };
 }
 
@@ -551,7 +587,7 @@ function renderOverviewPlan(weeksToShow = 12) {
         <td class="p-2"></td>
         <td class="p-2 font-semibold">Start (Sonntag)</td>
         <td class="p-2 bg-slate-50" colspan="4"></td>
-        <td class="p-2 ${startMeta.cls} font-semibold text-center">${startMeta.label}</td>
+        <td class="p-2 ${startMeta.cls} ${startMeta.borderCls} ${startMeta.ringCls} font-semibold text-center">${startMeta.label}</td>
         <td class="p-2 font-semibold text-center">18:00-24:00</td>
       </tr>`;
     }
@@ -572,11 +608,11 @@ function renderOverviewPlan(weeksToShow = 12) {
         body += `<tr class="border-b">
           <td class="p-2 font-semibold">${weekLabel}</td>
           <td class="p-2">${dayName}<div class="text-[11px] text-slate-500">${dateIso}</div></td>
-          <td class="p-2 ${m1.cls} font-semibold text-center">${m1.label}</td>
+          <td class="p-2 ${m1.cls} ${m1.borderCls} ${m1.ringCls} font-semibold text-center">${m1.label}</td>
           <td class="p-2 font-semibold text-center bg-white">05:00-11:00</td>
-          <td class="p-2 ${m2.cls} font-semibold text-center">${m2.label}</td>
+          <td class="p-2 ${m2.cls} ${m2.borderCls} ${m2.ringCls} font-semibold text-center">${m2.label}</td>
           <td class="p-2 font-semibold text-center bg-white">13:00-19:00</td>
-          <td class="p-2 ${m3.cls} font-semibold text-center">${m3.label}</td>
+          <td class="p-2 ${m3.cls} ${m3.borderCls} ${m3.ringCls} font-semibold text-center">${m3.label}</td>
           <td class="p-2 font-semibold text-center bg-white">21:00-03:00</td>
         </tr>`;
       } else if (dayIndex === 5) {
@@ -588,9 +624,9 @@ function renderOverviewPlan(weeksToShow = 12) {
         body += `<tr class="border-b bg-amber-50">
           <td class="p-2 font-semibold">${weekLabel}</td>
           <td class="p-2 font-semibold">${dayName}<div class="text-[11px] text-slate-500">${dateIso}</div></td>
-          <td class="p-2 ${m1.cls} font-semibold text-center ring-1 ring-amber-500">${m1.label}</td>
+          <td class="p-2 ${m1.cls} ${m1.borderCls} ${m1.ringCls} font-semibold text-center">${m1.label}</td>
           <td class="p-2 font-semibold text-center bg-amber-100">05:00-11:00 (Sa Morgen)</td>
-          <td class="p-2 ${m2.cls} font-semibold text-center">${m2.label}</td>
+          <td class="p-2 ${m2.cls} ${m2.borderCls} ${m2.ringCls} font-semibold text-center">${m2.label}</td>
           <td class="p-2 font-semibold text-center bg-amber-200">16:00-22:00 (Sa Abend)</td>
           <td class="p-2 bg-slate-50" colspan="2"></td>
         </tr>`;
@@ -603,10 +639,10 @@ function renderOverviewPlan(weeksToShow = 12) {
         body += `<tr class="border-b bg-amber-50">
           <td class="p-2 font-semibold">${weekLabel}</td>
           <td class="p-2 font-semibold">${dayName}<div class="text-[11px] text-slate-500">${dateIso}</div></td>
-          <td class="p-2 ${m1.cls} font-semibold text-center ring-1 ring-blue-500">${m1.label}</td>
+          <td class="p-2 ${m1.cls} ${m1.borderCls} ${m1.ringCls} font-semibold text-center">${m1.label}</td>
           <td class="p-2 font-semibold text-center bg-blue-100">06:00-12:00 (So Morgen)</td>
           <td class="p-2 bg-slate-50" colspan="2"></td>
-          <td class="p-2 ${m2.cls} font-semibold text-center">${m2.label}</td>
+          <td class="p-2 ${m2.cls} ${m2.borderCls} ${m2.ringCls} font-semibold text-center">${m2.label}</td>
           <td class="p-2 font-semibold text-center bg-white">18:00-24:00</td>
         </tr>`;
       }
@@ -639,8 +675,19 @@ function renderSchedule() {
   </div>`;
 }
 
-function markAbsent(shiftId, date, employeeName) {
-  state.absences[`${date}:${employeeName}`] = true;
+function assignShift(shiftId) {
+  const select = document.getElementById(`sel-${shiftId}`);
+  if (!select) return;
+  if (!canAssignUserToShift(select.value, shiftId)) return;
+  delete state.shiftCancellations[shiftId];
+  state.assignments[shiftId] = select.value;
+  persist();
+  render();
+}
+
+function cancelShift(shiftId) {
+  state.shiftCancellations[shiftId] = true;
+  delete state.assignments[shiftId];
   persist();
   render();
 }
@@ -1040,41 +1087,6 @@ function renderPlanningSchichttausch() {
       </div>
     </div>
   </div>`;
-}
-
-function assignShift(shiftId) {
-  const select = document.getElementById(`sel-${shiftId}`);
-  if (!select) return;
-  if (!canAssignUserToShift(select.value, shiftId)) return;
-  delete state.shiftCancellations[shiftId];
-  state.assignments[shiftId] = select.value;
-  persist();
-  render();
-}
-
-function cancelShift(shiftId) {
-  state.shiftCancellations[shiftId] = true;
-  delete state.assignments[shiftId];
-  persist();
-  render();
-}
-
-function assignOptionalShift(shiftId) {
-  const select = document.getElementById(`opt-${shiftId}`);
-  if (!select) return;
-  if (!canAssignUserToShift(select.value, shiftId)) return;
-  delete state.shiftCancellations[shiftId];
-  state.assignments[shiftId] = select.value;
-  persist();
-  render();
-}
-
-function approveSaturdayRequest(shiftId, user) {
-  if (!canAssignUserToShift(user, shiftId)) return;
-  state.assignments[shiftId] = user;
-  delete state.saturdayEveningRequests[`${shiftId}:${user}`];
-  persist();
-  render();
 }
 
 function canAssignUserToShift(name, shiftId) {
@@ -1677,7 +1689,9 @@ function openCreateToolModal() {
   };
 
   host.querySelector("#toolCreateCloseTop")?.addEventListener("click", close);
-  host.querySelector("#toolCreateCloseBottom")?.addEventListener("click", close);
+  host
+    .querySelector("#toolCreateCloseBottom")
+    ?.addEventListener("click", close);
   host.querySelector("#toolCreateSave")?.addEventListener("click", () => {
     const data = collectToolFormData(document);
     const validation = validateToolData(data);
