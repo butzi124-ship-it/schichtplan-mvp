@@ -309,6 +309,26 @@ function getReplacementForShift(shiftId) {
   return state.absenceReplacements?.[shiftId] || null;
 }
 
+function getReplacementEntriesForSource(sourceType, sourceId) {
+  return Object.entries(state.absenceReplacements || {}).filter(([, entry]) => {
+    return entry?.sourceType === sourceType && entry?.sourceId === sourceId;
+  });
+}
+
+function getReplacementSummaryForSource(sourceType, sourceId) {
+  const entries = getReplacementEntriesForSource(sourceType, sourceId);
+  if (!entries.length) return "Kein Ersatz geplant";
+
+  const normalized = entries.map(([, entry]) => {
+    if (entry.mode === "cancel") {
+      return `${entry.weekFrom} bis ${entry.weekTo}: AUSFALL`;
+    }
+    return `${entry.weekFrom} bis ${entry.weekTo}: ${entry.replacementUser}`;
+  });
+
+  return normalized.join("<br>");
+}
+
 function applyReplacementToShift(shiftId, replacementEntry) {
   if (!state.absenceReplacements) state.absenceReplacements = {};
   state.absenceReplacements[shiftId] = replacementEntry;
@@ -333,26 +353,6 @@ function clearReplacementPlanForSource(sourceType, sourceId) {
       delete state.assignments[shiftId];
     }
   });
-}
-
-function getReplacementEntriesForSource(sourceType, sourceId) {
-  return Object.entries(state.absenceReplacements || {}).filter(([, entry]) => {
-    return entry?.sourceType === sourceType && entry?.sourceId === sourceId;
-  });
-}
-
-function getReplacementSummaryForSource(sourceType, sourceId) {
-  const entries = getReplacementEntriesForSource(sourceType, sourceId);
-  if (!entries.length) return "Kein Ersatz geplant";
-
-  const normalized = entries.map(([, entry]) => {
-    if (entry.mode === "cancel") {
-      return `${entry.weekFrom} bis ${entry.weekTo}: AUSFALL`;
-    }
-    return `${entry.weekFrom} bis ${entry.weekTo}: ${entry.replacementUser}`;
-  });
-
-  return normalized.join("<br>");
 }
 
 function clearAbsenceReplacementPlan(sourceType, sourceId) {
@@ -586,8 +586,16 @@ function getPrimaryAbsenceInfo(shiftId, options) {
 }
 
 function assignedMeta(shiftId, options) {
-  if (state.shiftCancellations?.[shiftId] || getReplacementForShift(shiftId)?.mode === "cancel") {
-    return { label: "AUSFALL", cls: "bg-rose-200 text-rose-900", borderCls: "border-rose-500", ringCls: "border-2" };
+  if (
+    state.shiftCancellations?.[shiftId] ||
+    getReplacementForShift(shiftId)?.mode === "cancel"
+  ) {
+    return {
+      label: "AUSFALL",
+      cls: "bg-rose-200 text-rose-900",
+      borderCls: "border-rose-500",
+      ringCls: "border-2",
+    };
   }
 
   const shift = getShiftById(shiftId);
@@ -600,7 +608,9 @@ function assignedMeta(shiftId, options) {
       return {
         label: "-",
         cls: "bg-slate-100 text-slate-700",
-        borderCls: absence?.name ? personBorderClass(absence.name) : "border-slate-400",
+        borderCls: absence?.name
+          ? personBorderClass(absence.name)
+          : "border-slate-400",
         ringCls: "border-2",
       };
     }
@@ -955,7 +965,10 @@ function getWeekRanges(from, to) {
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
 
-    const rangeFrom = start > new Date(`${from}T00:00:00`) ? start : new Date(`${from}T00:00:00`);
+    const rangeFrom =
+      start > new Date(`${from}T00:00:00`)
+        ? start
+        : new Date(`${from}T00:00:00`);
     const rangeTo = sunday < end ? sunday : end;
 
     ranges.push({
@@ -972,7 +985,10 @@ function getWeekRanges(from, to) {
 
 function getShiftsOfUserInRange(userName, from, to) {
   return generateThreeMonths().filter(
-    (s) => s.date >= from && s.date <= to && resolveAssigned(s.id, s.options) === userName,
+    (s) =>
+      s.date >= from &&
+      s.date <= to &&
+      resolveAssigned(s.id, s.options) === userName,
   );
 }
 
@@ -1017,8 +1033,7 @@ async function chooseReplacementUser(absentUser, from, to, weekLabel = "") {
     });
 
     host.querySelector("#replacementSave")?.addEventListener("click", () => {
-      const value =
-        host.querySelector("#replacementUserSelect")?.value || "";
+      const value = host.querySelector("#replacementUserSelect")?.value || "";
 
       host.innerHTML = "";
 
@@ -1031,6 +1046,42 @@ async function chooseReplacementUser(absentUser, from, to, weekLabel = "") {
     });
   });
 }
+
+async function planAbsenceReplacement(type, entryId) {
+  const list = type === "vacation" ? state.vacations : state.sickLeaves;
+  const entry = list.find((v) => v.id === entryId);
+  if (!entry) return;
+
+  const full = await askYesNoCentered(
+    `Soll ein Mitarbeiter ${entry.user} für die komplette Zeit von ${entry.from} bis ${entry.to} ersetzen?`,
+  );
+  if (full === null) return;
+
+  clearReplacementPlanForSource(type, entryId);
+
+  if (full) {
+    const choice = await chooseReplacementUser(entry.user, entry.from, entry.to);
+    if (!choice) return;
+
+    const shifts = getShiftsOfUserInRange(entry.user, entry.from, entry.to);
+    shifts.forEach((shift) => {
+      applyReplacementToShift(shift.id, {
+        sourceType: type,
+        sourceId: entryId,
+        absentUser: entry.user,
+        from: entry.from,
+        to: entry.to,
+        mode: choice.mode,
+        replacementUser: choice.replacementUser,
+        weekFrom: entry.from,
+        weekTo: entry.to,
+      });
+    });
+
+    persist();
+    render();
+    return;
+  }
 
   const weeks = getWeekRanges(entry.from, entry.to);
 
@@ -1076,60 +1127,70 @@ function renderPlanningAbstinenz() {
     })
     .join("");
 
-  const monthValue = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+  const monthValue = `${new Date().getFullYear()}-${String(
+    new Date().getMonth() + 1,
+  ).padStart(2, "0")}`;
   const personOptions = activeUsers()
     .map((u) => `<option value='${u.name}'>${u.name}</option>`)
     .join("");
 
   const vacationRows = state.vacations
-  .slice(-20)
-  .reverse()
-  .map((v) => {
-    const hasPlan = getReplacementEntriesForSource("vacation", v.id).length > 0;
-    const summary = getReplacementSummaryForSource("vacation", v.id);
+    .slice(-20)
+    .reverse()
+    .map((v) => {
+      const hasPlan = getReplacementEntriesForSource("vacation", v.id).length > 0;
+      const summary = getReplacementSummaryForSource("vacation", v.id);
 
-    return `<tr class='border-b'>
-      <td class='p-2'>${v.user}</td>
-      <td class='p-2'>${v.from}</td>
-      <td class='p-2'>${v.to}</td>
-      <td class='p-2 text-sm'>${summary}</td>
-      <td class='p-2 whitespace-nowrap'>
-        <button class='px-2 py-1 rounded bg-rose-700 text-white mr-2' onclick="deleteVacation('${v.id}')">Löschen</button>
-        <button class='px-2 py-1 rounded ${hasPlan ? "bg-emerald-700" : "bg-blue-700"} text-white mr-2' onclick="planAbsenceReplacement('vacation','${v.id}')">${hasPlan ? "Bearbeiten" : "Ersetzen"}</button>
-        ${
-          hasPlan
-            ? `<button class='px-2 py-1 rounded bg-slate-700 text-white' onclick="clearAbsenceReplacementPlan('vacation','${v.id}')">Ersatz löschen</button>`
-            : ""
-        }
-      </td>
-    </tr>`;
-  })
-  .join("");
+      return `<tr class='border-b'>
+        <td class='p-2'>${v.user}</td>
+        <td class='p-2'>${v.from}</td>
+        <td class='p-2'>${v.to}</td>
+        <td class='p-2 text-sm'>${summary}</td>
+        <td class='p-2 whitespace-nowrap'>
+          <button class='px-2 py-1 rounded bg-rose-700 text-white mr-2' onclick="deleteVacation('${v.id}')">Löschen</button>
+          <button class='px-2 py-1 rounded ${
+            hasPlan ? "bg-emerald-700" : "bg-blue-700"
+          } text-white mr-2' onclick="planAbsenceReplacement('vacation','${v.id}')">${
+            hasPlan ? "Bearbeiten" : "Ersetzen"
+          }</button>
+          ${
+            hasPlan
+              ? `<button class='px-2 py-1 rounded bg-slate-700 text-white' onclick="clearAbsenceReplacementPlan('vacation','${v.id}')">Ersatz löschen</button>`
+              : ""
+          }
+        </td>
+      </tr>`;
+    })
+    .join("");
 
   const sickRows = state.sickLeaves
-  .slice(-20)
-  .reverse()
-  .map((v) => {
-    const hasPlan = getReplacementEntriesForSource("sick", v.id).length > 0;
-    const summary = getReplacementSummaryForSource("sick", v.id);
+    .slice(-20)
+    .reverse()
+    .map((v) => {
+      const hasPlan = getReplacementEntriesForSource("sick", v.id).length > 0;
+      const summary = getReplacementSummaryForSource("sick", v.id);
 
-    return `<tr class='border-b'>
-      <td class='p-2'>${v.user}</td>
-      <td class='p-2'>${v.from}</td>
-      <td class='p-2'>${v.to}</td>
-      <td class='p-2 text-sm'>${summary}</td>
-      <td class='p-2 whitespace-nowrap'>
-        <button class='px-2 py-1 rounded bg-rose-700 text-white mr-2' onclick="deleteSickLeave('${v.id}')">Löschen</button>
-        <button class='px-2 py-1 rounded ${hasPlan ? "bg-emerald-700" : "bg-blue-700"} text-white mr-2' onclick="planAbsenceReplacement('sick','${v.id}')">${hasPlan ? "Bearbeiten" : "Ersetzen"}</button>
-        ${
-          hasPlan
-            ? `<button class='px-2 py-1 rounded bg-slate-700 text-white' onclick="clearAbsenceReplacementPlan('sick','${v.id}')">Ersatz löschen</button>`
-            : ""
-        }
-      </td>
-    </tr>`;
-  })
-  .join("");
+      return `<tr class='border-b'>
+        <td class='p-2'>${v.user}</td>
+        <td class='p-2'>${v.from}</td>
+        <td class='p-2'>${v.to}</td>
+        <td class='p-2 text-sm'>${summary}</td>
+        <td class='p-2 whitespace-nowrap'>
+          <button class='px-2 py-1 rounded bg-rose-700 text-white mr-2' onclick="deleteSickLeave('${v.id}')">Löschen</button>
+          <button class='px-2 py-1 rounded ${
+            hasPlan ? "bg-emerald-700" : "bg-blue-700"
+          } text-white mr-2' onclick="planAbsenceReplacement('sick','${v.id}')">${
+            hasPlan ? "Bearbeiten" : "Ersetzen"
+          }</button>
+          ${
+            hasPlan
+              ? `<button class='px-2 py-1 rounded bg-slate-700 text-white' onclick="clearAbsenceReplacementPlan('sick','${v.id}')">Ersatz löschen</button>`
+              : ""
+          }
+        </td>
+      </tr>`;
+    })
+    .join("");
 
   const rows = openShifts
     .map((s) => {
@@ -1180,18 +1241,18 @@ function renderPlanningAbstinenz() {
         <h4 class='font-semibold mb-2'>Geplante Urlaube</h4>
         <div class='overflow-auto max-h-56'>
           <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th><th class='p-2 text-left'>Ersatz</th><th class='p-2'></th></tr></thead>
-          <tbody>${vacationRows || '<tr><td class="p-2" colspan="4">Keine Einträge.</td></tr>'}</tbody></table>
+          <tbody>${vacationRows || '<tr><td class="p-2" colspan="5">Keine Einträge.</td></tr>'}</tbody></table>
         </div>
       </div>
       <div class='border rounded-lg p-3'>
         <h4 class='font-semibold mb-2'>Krankmeldungen</h4>
         <div class='overflow-auto max-h-56'>
           <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th><th class='p-2 text-left'>Ersatz</th><th class='p-2'></th></tr></thead>
-          <tbody>${sickRows || '<tr><td class="p-2" colspan="4">Keine Einträge.</td></tr>'}</tbody></table>
+          <tbody>${sickRows || '<tr><td class="p-2" colspan="5">Keine Einträge.</td></tr>'}</tbody></table>
         </div>
       </div>
     </div>
-    <div class='border rounded-lg p-3 bg-white'>
+        <div class='border rounded-lg p-3 bg-white'>
       <h3 class='text-md font-semibold mb-2'>Offene Schichten</h3>
       <div class='flex items-center justify-between mb-2 gap-2 flex-wrap'>
         <p class='text-sm text-slate-500'>Pro Tag kannst du entscheiden: ganze Schicht übernehmen lassen oder Ausfall markieren.</p>
@@ -1677,7 +1738,10 @@ function validateToolData(data) {
       message: "Bitte gültigen numerischen Durchmesser eingeben.",
     };
   }
-  if (data.insertTool && (!Number.isFinite(data.insertEdges) || data.insertEdges <= 0)) {
+  if (
+    data.insertTool &&
+    (!Number.isFinite(data.insertEdges) || data.insertEdges <= 0)
+  ) {
     return {
       ok: false,
       message: "Bitte Anzahl der Schneiden > 0 eingeben.",
@@ -1693,7 +1757,8 @@ function normalizeToolData(data) {
     label: data.label,
     diameter: isThreadTool ? data.diameter : Number(data.diameter),
     threadPrefix: isThreadTool ? data.threadPrefix : "",
-    threadPitch: isThreadTool && data.threadPrefix === "MF" ? data.threadPitch : "",
+    threadPitch:
+      isThreadTool && data.threadPrefix === "MF" ? data.threadPitch : "",
     shelf: data.shelf,
     articleNo: data.articleNo,
     holder: data.holder,
@@ -3343,6 +3408,7 @@ window.addSickLeave = addSickLeave;
 window.deleteVacation = deleteVacation;
 window.deleteSickLeave = deleteSickLeave;
 window.planAbsenceReplacement = planAbsenceReplacement;
+window.clearAbsenceReplacementPlan = clearAbsenceReplacementPlan;
 window.addSwap = addSwap;
 window.deleteSwap = deleteSwap;
 window.resetActiveSwaps = resetActiveSwaps;
@@ -3381,4 +3447,3 @@ window.createTool = createTool;
 window.openCreateToolModal = openCreateToolModal;
 window.addToolLabel = addToolLabel;
 window.addToolManufacturer = addToolManufacturer;
-window.clearAbsenceReplacementPlan = clearAbsenceReplacementPlan;
