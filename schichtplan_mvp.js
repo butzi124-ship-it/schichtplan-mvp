@@ -1,3 +1,4 @@
+// Version V_0.2
 const USERS = [
   { name: "Lavdrim", slot: "A", type: "core" },
   { name: "Roger", slot: "B", type: "core" },
@@ -31,7 +32,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const STORAGE_KEY = "schichtplan_mvp_v1";
+const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
 let currentTab = "schichtplan";
@@ -134,6 +135,7 @@ function loadState() {
     orderListPopupOpen: false,
     selectedOrderListManufacturer: "",
     planningSubTab: "personal",
+    absenceReplacements: {},
   };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -256,7 +258,7 @@ function tabNeedsAttention(tab) {
   if (tab === "planung") return generateThreeMonths().some((s) => s.open);
   if (tab === "todo") return state.tasks.some((t) => t.status !== "done");
   if (tab === "werkzeuge" && currentUser?.role === "admin")
-    return state.tools.some((t) => shouldOrderTool(t));
+        return state.tools.some((t) => shouldOrderTool(t));
   if (tab === "bestellstatistik" && currentUser?.role === "admin")
     return (state.orderHistory || []).length > 0;
   if (tab === "konflikte")
@@ -756,6 +758,13 @@ function renderMyShifts() {
     <div class='overflow-auto max-h-[35vh] border rounded-lg'>
       <table class='w-full text-sm'><thead class='sticky top-0 bg-slate-100'><tr><th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Zeit</th><th class='p-2 text-left'>Kannst du?</th></tr></thead>
       <tbody>${weekendRows || '<tr><td class="p-2" colspan="4">Keine Wochenend-Schichten.</td></tr>'}</tbody></table>
+          </div>
+    ${
+      isSpringer(currentUser.name)
+        ? `<h3 class='font-semibold mt-4 mb-2'>Wochenende-Verfügbarkeit (Samstag/Sonntag)</h3>
+    <div class='overflow-auto max-h-[35vh] border rounded-lg'>
+      <table class='w-full text-sm'><thead class='sticky top-0 bg-slate-100'><tr><th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Zeit</th><th class='p-2 text-left'>Kannst du?</th></tr></thead>
+      <tbody>${weekendRows || '<tr><td class="p-2" colspan="4">Keine Wochenend-Schichten.</td></tr>'}</tbody></table>
     </div>`
         : ""
     }
@@ -861,6 +870,172 @@ function renderPlanningPersonal() {
   </div>`;
 }
 
+function getWeekRanges(from, to) {
+  const ranges = [];
+  let current = new Date(`${from}T00:00:00`);
+  const end = new Date(`${to}T00:00:00`);
+
+  while (current <= end) {
+    const start = new Date(current);
+    const weekday = (start.getDay() + 6) % 7;
+    const monday = new Date(start);
+    monday.setDate(start.getDate() - weekday);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const rangeFrom = start > new Date(`${from}T00:00:00`) ? start : new Date(`${from}T00:00:00`);
+    const rangeTo = sunday < end ? sunday : end;
+
+    ranges.push({
+      from: isoDate(rangeFrom),
+      to: isoDate(rangeTo),
+    });
+
+    current = new Date(sunday);
+    current.setDate(current.getDate() + 1);
+  }
+
+  return ranges;
+}
+
+function getShiftsOfUserInRange(userName, from, to) {
+  return generateThreeMonths().filter(
+    (s) => s.date >= from && s.date <= to && resolveAssigned(s.id, s.options) === userName,
+  );
+}
+
+function clearReplacementPlanForSource(sourceType, sourceId) {
+  if (!state.absenceReplacements) return;
+  Object.keys(state.absenceReplacements).forEach((shiftId) => {
+    const entry = state.absenceReplacements[shiftId];
+    if (entry?.sourceType === sourceType && entry?.sourceId === sourceId) {
+      delete state.absenceReplacements[shiftId];
+      delete state.shiftCancellations[shiftId];
+      delete state.assignments[shiftId];
+    }
+  });
+}
+
+function applyReplacementToShift(shiftId, replacementEntry) {
+  if (!state.absenceReplacements) state.absenceReplacements = {};
+  state.absenceReplacements[shiftId] = replacementEntry;
+
+  if (replacementEntry.mode === "cancel") {
+    state.shiftCancellations[shiftId] = true;
+    delete state.assignments[shiftId];
+    return;
+  }
+
+  delete state.shiftCancellations[shiftId];
+  state.assignments[shiftId] = replacementEntry.replacementUser;
+}
+
+function getReplacementForShift(shiftId) {
+  return state.absenceReplacements?.[shiftId] || null;
+}
+
+async function chooseReplacementUser(absentUser, from, to, weekLabel = "") {
+  const available = activeUsers().filter((u) => u.name !== absentUser);
+  if (!available.length) {
+    alert("Keine anderen aktiven Mitarbeiter verfügbar.");
+    return null;
+  }
+
+  const hint = available.map((u) => u.name).join(", ");
+  const answer = prompt(
+    `${weekLabel ? weekLabel + "\n" : ""}Wer ersetzt ${absentUser} von ${from} bis ${to}?\n\nVerfügbare Mitarbeiter:\n${hint}\n\nDu kannst auch AUSFALL eingeben.`,
+    available[0].name,
+  );
+
+  if (answer === null) return null;
+
+  const value = answer.trim();
+  if (!value) return null;
+  if (value.toUpperCase() === "AUSFALL") {
+    return { mode: "cancel", replacementUser: null };
+  }
+
+  const found = available.find(
+    (u) => u.name.toLowerCase() === value.toLowerCase(),
+  );
+  if (!found) {
+    alert("Mitarbeiter nicht gefunden.");
+    return null;
+  }
+
+  return { mode: "replace", replacementUser: found.name };
+}
+
+async function planAbsenceReplacement(type, entryId) {
+  const list = type === "vacation" ? state.vacations : state.sickLeaves;
+  const entry = list.find((v) => v.id === entryId);
+  if (!entry) return;
+
+  const full = await askYesNoCentered(
+    `Soll ein Mitarbeiter ${entry.user} für die komplette Zeit von ${entry.from} bis ${entry.to} ersetzen?`,
+  );
+  if (full === null) return;
+
+  clearReplacementPlanForSource(type, entryId);
+
+  if (full) {
+    const choice = await chooseReplacementUser(entry.user, entry.from, entry.to);
+    if (!choice) return;
+
+    const shifts = getShiftsOfUserInRange(entry.user, entry.from, entry.to);
+    shifts.forEach((shift) => {
+      applyReplacementToShift(shift.id, {
+        sourceType: type,
+        sourceId: entryId,
+        absentUser: entry.user,
+        from: entry.from,
+        to: entry.to,
+        mode: choice.mode,
+        replacementUser: choice.replacementUser,
+        weekFrom: entry.from,
+        weekTo: entry.to,
+      });
+    });
+
+    persist();
+    render();
+    return;
+  }
+
+  const weeks = getWeekRanges(entry.from, entry.to);
+
+  for (let i = 0; i < weeks.length; i++) {
+    const week = weeks[i];
+    const label = `Woche ${i + 1}: ${week.from} bis ${week.to}`;
+    const choice = await chooseReplacementUser(
+      entry.user,
+      week.from,
+      week.to,
+      label,
+    );
+    if (!choice) continue;
+
+    const shifts = getShiftsOfUserInRange(entry.user, week.from, week.to);
+    shifts.forEach((shift) => {
+      applyReplacementToShift(shift.id, {
+        sourceType: type,
+        sourceId: entryId,
+        absentUser: entry.user,
+        from: entry.from,
+        to: entry.to,
+        mode: choice.mode,
+        replacementUser: choice.replacementUser,
+        weekFrom: week.from,
+        weekTo: week.to,
+      });
+    });
+  }
+
+  persist();
+  render();
+}
+
 function renderPlanningAbstinenz() {
   const openShifts = generateThreeMonths().filter((s) => s.open);
   const absenceRows = Object.entries(state.absences)
@@ -880,19 +1055,23 @@ function renderPlanningAbstinenz() {
   const vacationRows = state.vacations
     .slice(-20)
     .reverse()
-    .map(
-      (v) =>
-        `<tr class='border-b'><td class='p-2'>${v.user}</td><td class='p-2'>${v.from}</td><td class='p-2'>${v.to}</td><td class='p-2'><button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="deleteVacation('${v.id}')">Löschen</button></td></tr>`,
-    )
+    .map((v) => {
+      const hasPlan = Object.values(state.absenceReplacements || {}).some(
+        (r) => r?.sourceType === "vacation" && r?.sourceId === v.id,
+      );
+      return `<tr class='border-b'><td class='p-2'>${v.user}</td><td class='p-2'>${v.from}</td><td class='p-2'>${v.to}</td><td class='p-2 whitespace-nowrap'><button class='px-2 py-1 rounded bg-rose-700 text-white mr-2' onclick="deleteVacation('${v.id}')">Löschen</button><button class='px-2 py-1 rounded ${hasPlan ? "bg-emerald-700" : "bg-blue-700"} text-white' onclick="planAbsenceReplacement('vacation','${v.id}')">${hasPlan ? "Ersetzen bearbeiten" : "Ersetzen"}</button></td></tr>`;
+    })
     .join("");
 
   const sickRows = state.sickLeaves
     .slice(-20)
     .reverse()
-    .map(
-      (v) =>
-        `<tr class='border-b'><td class='p-2'>${v.user}</td><td class='p-2'>${v.from}</td><td class='p-2'>${v.to}</td><td class='p-2'><button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="deleteSickLeave('${v.id}')">Löschen</button></td></tr>`,
-    )
+    .map((v) => {
+      const hasPlan = Object.values(state.absenceReplacements || {}).some(
+        (r) => r?.sourceType === "sick" && r?.sourceId === v.id,
+      );
+      return `<tr class='border-b'><td class='p-2'>${v.user}</td><td class='p-2'>${v.from}</td><td class='p-2'>${v.to}</td><td class='p-2 whitespace-nowrap'><button class='px-2 py-1 rounded bg-rose-700 text-white mr-2' onclick="deleteSickLeave('${v.id}')">Löschen</button><button class='px-2 py-1 rounded ${hasPlan ? "bg-emerald-700" : "bg-blue-700"} text-white' onclick="planAbsenceReplacement('sick','${v.id}')">${hasPlan ? "Ersetzen bearbeiten" : "Ersetzen"}</button></td></tr>`;
+    })
     .join("");
 
   const rows = openShifts
@@ -955,8 +1134,7 @@ function renderPlanningAbstinenz() {
         </div>
       </div>
     </div>
-
-    <div class='border rounded-lg p-3 bg-white'>
+        <div class='border rounded-lg p-3 bg-white'>
       <h3 class='text-md font-semibold mb-2'>Offene Schichten</h3>
       <div class='flex items-center justify-between mb-2 gap-2 flex-wrap'>
         <p class='text-sm text-slate-500'>Pro Tag kannst du entscheiden: ganze Schicht übernehmen lassen oder Ausfall markieren.</p>
@@ -1187,12 +1365,14 @@ function addSickLeave() {
 
 function deleteVacation(id) {
   state.vacations = state.vacations.filter((v) => v.id !== id);
+  clearReplacementPlanForSource("vacation", id);
   persist();
   render();
 }
 
 function deleteSickLeave(id) {
   state.sickLeaves = state.sickLeaves.filter((s) => s.id !== id);
+  clearReplacementPlanForSource("sick", id);
   persist();
   render();
 }
@@ -1255,10 +1435,11 @@ function resetManualAssignments(silent = false) {
     if (isCurrentOrFutureShift(shift)) {
       delete state.assignments[shiftId];
       delete state.shiftCancellations[shiftId];
+      delete state.absenceReplacements?.[shiftId];
     }
   });
   persist();
-  if (!silent) {
+    if (!silent) {
     render();
     alert(
       "Manuelle Zuordnungen (aktuelle/zukünftige Schichten) wurden zurückgesetzt.",
@@ -1277,6 +1458,8 @@ function resetPlanCurrentFuture() {
   state.shiftCancellations = {};
   state.absences = {};
   state.swaps = [];
+  state.shiftCancellations = {};
+  state.absenceReplacements = {};
   state.saturdayEveningRequests = {};
   state.vacations = [];
   state.sickLeaves = [];
@@ -1585,7 +1768,7 @@ function editToolCentered(tool) {
         </div>
       </div>
     </div>`;
-    host.querySelector("#modalSave")?.addEventListener("click", () => {
+        host.querySelector("#modalSave")?.addEventListener("click", () => {
       const payload = {
         label: host.querySelector("#editLabel")?.value?.trim() || "",
         diameter: host.querySelector("#editDiameter")?.value?.trim() || "",
@@ -1857,7 +2040,6 @@ async function bookToolChange(toolId) {
   persist();
   render();
 }
-
 async function editTool(toolId) {
   const tool = state.tools.find((t) => t.id === toolId);
   if (!tool || currentUser.role !== "admin") return;
@@ -2141,7 +2323,6 @@ function renderOrderStats() {
     </div>
   </div>`;
 }
-
 function renderTools() {
   const labels = getToolLabels();
   const holders = getToolHolders();
@@ -2387,8 +2568,7 @@ function renderTools() {
       </div>
       <p class='text-xs text-slate-500'>Gib alle Werte vollständig ein und klicke dann auf „Filter anwenden“.</p>
     </div>
-
-    <div class='border-2 border-slate-300 rounded-xl p-3'>
+        <div class='border-2 border-slate-300 rounded-xl p-3'>
       <h3 class='text-lg font-bold mb-2'>3) Werkzeugbestand</h3>
       <div class='overflow-auto max-h-[35vh] border rounded-lg'>
         <table class='w-full text-sm'>
@@ -2569,7 +2749,6 @@ function reassignTaskPrompt(taskId) {
   persist();
   render();
 }
-
 function maybeTaskReminder() {
   if (!currentUser || currentUser.role !== "employee") return;
   const now = new Date();
@@ -2824,7 +3003,6 @@ function renderStats() {
     </div>
   </div>`;
 }
-
 function renderAvailability() {
   const shifts = generateThreeMonths().filter((s) => s.options.length > 1);
   const rows = shifts
@@ -3014,7 +3192,6 @@ function stopDowntimeTimer() {
   persist();
   render();
 }
-
 function maybeShowShiftEndChecklist() {
   if (!currentUser || currentUser.role !== "employee") return;
   const shift = getCurrentShiftForUser(currentUser.name);
@@ -3059,6 +3236,32 @@ function checkbox(id, label) {
   return `<label class='flex items-center gap-2'><input id='${id}' type='checkbox' class='w-4 h-4'/> ${label}</label>`;
 }
 
+function markAbsent(shiftId, date, userName) {
+  state.absences[`${date}:${userName}`] = true;
+  persist();
+  render();
+}
+
+function assignOptionalShift(shiftId) {
+  const select = document.getElementById(`opt-${shiftId}`);
+  if (!select) return;
+  const name = select.value;
+  if (!canAssignUserToShift(name, shiftId)) return;
+  delete state.shiftCancellations[shiftId];
+  state.assignments[shiftId] = name;
+  persist();
+  render();
+}
+
+function approveSaturdayRequest(shiftId, user) {
+  if (!canAssignUserToShift(user, shiftId)) return;
+  delete state.shiftCancellations[shiftId];
+  state.assignments[shiftId] = user;
+  delete state.saturdayEveningRequests[`${shiftId}:${user}`];
+  persist();
+  render();
+}
+
 render();
 window.loginAs = loginAs;
 window.logout = logout;
@@ -3076,6 +3279,7 @@ window.addVacation = addVacation;
 window.addSickLeave = addSickLeave;
 window.deleteVacation = deleteVacation;
 window.deleteSickLeave = deleteSickLeave;
+window.planAbsenceReplacement = planAbsenceReplacement;
 window.addSwap = addSwap;
 window.deleteSwap = deleteSwap;
 window.resetActiveSwaps = resetActiveSwaps;
