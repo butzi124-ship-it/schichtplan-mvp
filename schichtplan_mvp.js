@@ -1237,22 +1237,22 @@ function renderPlanningAbstinenz() {
       </div>
     </div>
 
-    <div class='grid md:grid-cols-2 gap-4'>
-      <div class='border rounded-lg p-3'>
-        <h4 class='font-semibold mb-2'>Geplante Urlaube</h4>
-        <div class='overflow-auto max-h-56'>
-          <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th><th class='p-2 text-left'>Ersatz</th><th class='p-2'></th></tr></thead>
-          <tbody>${vacationRows || '<tr><td class="p-2" colspan="5">Keine Einträge.</td></tr>'}</tbody></table>
-        </div>
-      </div>
-      <div class='border rounded-lg p-3'>
-        <h4 class='font-semibold mb-2'>Krankmeldungen</h4>
-        <div class='overflow-auto max-h-56'>
-          <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th><th class='p-2 text-left'>Ersatz</th><th class='p-2'></th></tr></thead>
-          <tbody>${sickRows || '<tr><td class="p-2" colspan="5">Keine Einträge.</td></tr>'}</tbody></table>
-        </div>
-      </div>
+    <div class='grid grid-cols-1 gap-4'>
+  <div class='border rounded-lg p-3'>
+    <h4 class='font-semibold mb-2'>Geplante Urlaube</h4>
+    <div class='overflow-auto max-h-56'>
+      <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th><th class='p-2 text-left'>Ersatz</th><th class='p-2'></th></tr></thead>
+      <tbody>${vacationRows || '<tr><td class="p-2" colspan="5">Keine Einträge.</td></tr>'}</tbody></table>
     </div>
+  </div>
+  <div class='border rounded-lg p-3'>
+    <h4 class='font-semibold mb-2'>Krankmeldungen</h4>
+    <div class='overflow-auto max-h-56'>
+      <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th><th class='p-2 text-left'>Ersatz</th><th class='p-2'></th></tr></thead>
+      <tbody>${sickRows || '<tr><td class="p-2" colspan="5">Keine Einträge.</td></tr>'}</tbody></table>
+    </div>
+  </div>
+</div>
         <div class='border rounded-lg p-3 bg-white'>
       <h3 class='text-md font-semibold mb-2'>Offene Schichten</h3>
       <div class='flex items-center justify-between mb-2 gap-2 flex-wrap'>
