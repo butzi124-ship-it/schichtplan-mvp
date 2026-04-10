@@ -321,9 +321,9 @@ function getReplacementSummaryForSource(sourceType, sourceId) {
 
   const normalized = entries.map(([, entry]) => {
     if (entry.mode === "cancel") {
-      return `${entry.weekFrom} bis ${entry.weekTo}: AUSFALL`;
+      return `${formatDateDisplay(entry.weekFrom)} bis ${formatDateDisplay(entry.weekTo)}: AUSFALL`;
     }
-    return `${entry.weekFrom} bis ${entry.weekTo}: ${entry.replacementUser}`;
+    return `${formatDateDisplay(entry.weekFrom)} bis ${formatDateDisplay(entry.weekTo)}: ${entry.replacementUser}`;
   });
 
   return normalized.join("<br>");
@@ -494,6 +494,22 @@ function isoDate(d) {
 
 function todayIso() {
   return isoDate(new Date());
+}
+
+function formatDateDisplay(iso) {
+  if (!iso || !iso.includes("-")) return iso || "";
+  const [y, m, d] = iso.split("-");
+  return `${d}.${m}.${y.slice(2)}`;
+}
+
+function getWeekdayName(iso) {
+  if (!iso) return "";
+  const date = new Date(`${iso}T00:00:00`);
+  return ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][date.getDay()];
+}
+
+function formatDateWithWeekday(iso) {
+  return `${getWeekdayName(iso)} ${formatDateDisplay(iso)}`;
 }
 
 function inRange(date, from, to) {
@@ -697,7 +713,7 @@ function renderOverviewPlan(weeksToShow = 12) {
         const m3 = assignedMeta(`${dateIso}-mf-2`, s3.options);
         body += `<tr class="border-b">
           <td class="p-2 font-semibold">${weekLabel}</td>
-          <td class="p-2">${dayName}<div class="text-[11px] text-slate-500">${dateIso}</div></td>
+          <td class="p-2">${dayName}<div class="text-[11px] text-slate-500">${formatDateDisplay(dateIso)}</div></td>
           <td class="p-2 ${m1.cls} ${m1.borderCls} ${m1.ringCls} font-semibold text-center">${m1.label}</td>
           <td class="p-2 font-semibold text-center bg-white">05:00-11:00</td>
           <td class="p-2 ${m2.cls} ${m2.borderCls} ${m2.ringCls} font-semibold text-center">${m2.label}</td>
@@ -713,7 +729,7 @@ function renderOverviewPlan(weeksToShow = 12) {
         const m2 = assignedMeta(`${dateIso}-sa-1`, s2.options);
         body += `<tr class="border-b bg-amber-50">
           <td class="p-2 font-semibold">${weekLabel}</td>
-          <td class="p-2 font-semibold">${dayName}<div class="text-[11px] text-slate-500">${dateIso}</div></td>
+          <td class="p-2 font-semibold">${dayName}<div class="text-[11px] text-slate-500">${formatDateDisplay(dateIso)}</div></td>
           <td class="p-2 ${m1.cls} ${m1.borderCls} ${m1.ringCls} font-semibold text-center">${m1.label}</td>
           <td class="p-2 font-semibold text-center bg-amber-100">05:00-11:00 (Sa Morgen)</td>
           <td class="p-2 ${m2.cls} ${m2.borderCls} ${m2.ringCls} font-semibold text-center">${m2.label}</td>
@@ -728,7 +744,7 @@ function renderOverviewPlan(weeksToShow = 12) {
         const m2 = assignedMeta(`${dateIso}-su-1`, s2.options);
         body += `<tr class="border-b bg-amber-50">
           <td class="p-2 font-semibold">${weekLabel}</td>
-          <td class="p-2 font-semibold">${dayName}<div class="text-[11px] text-slate-500">${dateIso}</div></td>
+          <td class="p-2 font-semibold">${dayName}<div class="text-[11px] text-slate-500">${formatDateDisplay(dateIso)}</div></td>
           <td class="p-2 ${m1.cls} ${m1.borderCls} ${m1.ringCls} font-semibold text-center">${m1.label}</td>
           <td class="p-2 font-semibold text-center bg-blue-100">06:00-12:00 (So Morgen)</td>
           <td class="p-2 bg-slate-50" colspan="2"></td>
@@ -798,7 +814,7 @@ function renderMyShifts() {
       const reqKey = `${s.id}:${currentUser.name}`;
       const requested = !!state.saturdayEveningRequests[reqKey];
       return `<tr class="border-b">
-      <td class="p-2">${s.date}</td>
+      <td class="p-2">${formatDateWithWeekday(s.date)}</td>
       <td class="p-2">${s.label}</td>
       <td class="p-2">${s.start}–${s.end}</td>
       <td class="p-2">${status}</td>
@@ -818,7 +834,7 @@ function renderMyShifts() {
           const key = `${s.id}:${currentUser.name}`;
           const val = state.availability[key] || "";
           return `<tr class='border-b'>
-          <td class='p-2'>${s.date}</td>
+          <td class='p-2'>${formatDateWithWeekday(s.date)}</td>
           <td class='p-2'>${s.label}</td>
           <td class='p-2'>${s.start}–${s.end}</td>
           <td class='p-2'>
@@ -985,20 +1001,16 @@ function getWeekRanges(from, to) {
 
 function getShiftsOfUserInRange(userName, from, to) {
   return generateThreeMonths().filter((s) => {
-    return (
-      s.date >= from &&
-      s.date <= to &&
-      s.originalAssigned === userName
-    );
+    return s.date >= from && s.date <= to && s.originalAssigned === userName;
   });
 }
 
-async function chooseReplacementUser(absentUser, from, to, weekLabel = "") {
+function chooseReplacementUser(absentUser, from, to, weekLabel = "") {
   const available = activeUsers().filter((u) => u.name !== absentUser);
 
   if (!available.length) {
     alert("Keine anderen aktiven Mitarbeiter verfügbar.");
-    return null;
+    return Promise.resolve(null);
   }
 
   const host = getModalHost();
@@ -1010,7 +1022,7 @@ async function chooseReplacementUser(absentUser, from, to, weekLabel = "") {
           <h3 class="text-lg font-bold mb-2">Ersatz auswählen</h3>
           <p class="text-sm text-slate-700 mb-3">
             ${weekLabel ? `${weekLabel}<br>` : ""}
-            Wer ersetzt <b>${absentUser}</b> von <b>${from}</b> bis <b>${to}</b>?
+            Wer ersetzt <b>${absentUser}</b> von <b>${formatDateDisplay(from)}</b> bis <b>${formatDateDisplay(to)}</b>?
           </p>
 
           <select id="replacementUserSelect" class="border rounded p-2 w-full mb-4">
@@ -1054,7 +1066,7 @@ async function planAbsenceReplacement(type, entryId) {
   if (!entry) return;
 
   const full = await askYesNoCentered(
-    `Soll ein Mitarbeiter ${entry.user} für die komplette Zeit von ${entry.from} bis ${entry.to} ersetzen?`,
+    `Soll ein Mitarbeiter ${entry.user} für die komplette Zeit von ${formatDateDisplay(entry.from)} bis ${formatDateDisplay(entry.to)} ersetzen?`,
   );
   if (full === null) return;
 
@@ -1088,7 +1100,7 @@ async function planAbsenceReplacement(type, entryId) {
 
   for (let i = 0; i < weeks.length; i++) {
     const week = weeks[i];
-    const label = `Woche ${i + 1}: ${week.from} bis ${week.to}`;
+    const label = `Woche ${i + 1}: ${formatDateDisplay(week.from)} bis ${formatDateDisplay(week.to)}`;
     const choice = await chooseReplacementUser(
       entry.user,
       week.from,
@@ -1124,7 +1136,7 @@ function renderPlanningAbstinenz() {
     .reverse()
     .map(([key]) => {
       const [date, user] = key.split(":");
-      return `<tr class='border-b'><td class='p-2'>${date}</td><td class='p-2'>${user}</td><td class='p-2'>Kann nicht kommen</td></tr>`;
+      return `<tr class='border-b'><td class='p-2'>${formatDateWithWeekday(date)}</td><td class='p-2'>${user}</td><td class='p-2'>Kann nicht kommen</td></tr>`;
     })
     .join("");
 
@@ -1139,13 +1151,14 @@ function renderPlanningAbstinenz() {
     .slice(-20)
     .reverse()
     .map((v) => {
-      const hasPlan = getReplacementEntriesForSource("vacation", v.id).length > 0;
+      const hasPlan =
+        getReplacementEntriesForSource("vacation", v.id).length > 0;
       const summary = getReplacementSummaryForSource("vacation", v.id);
 
       return `<tr class='border-b'>
         <td class='p-2'>${v.user}</td>
-        <td class='p-2'>${v.from}</td>
-        <td class='p-2'>${v.to}</td>
+        <td class='p-2'>${formatDateDisplay(v.from)}</td>
+        <td class='p-2'>${formatDateDisplay(v.to)}</td>
         <td class='p-2 text-sm'>${summary}</td>
         <td class='p-2 whitespace-nowrap'>
           <button class='px-2 py-1 rounded bg-rose-700 text-white mr-2' onclick="deleteVacation('${v.id}')">Löschen</button>
@@ -1173,8 +1186,8 @@ function renderPlanningAbstinenz() {
 
       return `<tr class='border-b'>
         <td class='p-2'>${v.user}</td>
-        <td class='p-2'>${v.from}</td>
-        <td class='p-2'>${v.to}</td>
+        <td class='p-2'>${formatDateDisplay(v.from)}</td>
+        <td class='p-2'>${formatDateDisplay(v.to)}</td>
         <td class='p-2 text-sm'>${summary}</td>
         <td class='p-2 whitespace-nowrap'>
           <button class='px-2 py-1 rounded bg-rose-700 text-white mr-2' onclick="deleteSickLeave('${v.id}')">Löschen</button>
@@ -1200,7 +1213,7 @@ function renderPlanningAbstinenz() {
         .map((u) => `<option value="${u.name}">${u.name}</option>`)
         .join("");
       return `<tr class='border-b'>
-      <td class='p-2'>${s.date}</td><td class='p-2'>${s.label}</td><td class='p-2'>${s.start}–${s.end}</td>
+      <td class='p-2'>${formatDateWithWeekday(s.date)}</td><td class='p-2'>${s.label}</td><td class='p-2'>${s.start}–${s.end}</td>
       <td class='p-2'>${s.originalAssigned || "-"}</td>
       <td class='p-2'>
         <select id='sel-${s.id}' class='border rounded p-1'>${choices}</select>
@@ -1238,21 +1251,21 @@ function renderPlanningAbstinenz() {
     </div>
 
     <div class='grid grid-cols-1 gap-4'>
-  <div class='border rounded-lg p-3'>
-    <h4 class='font-semibold mb-2'>Geplante Urlaube</h4>
-    <div class='overflow-auto max-h-56'>
-      <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th><th class='p-2 text-left'>Ersatz</th><th class='p-2'></th></tr></thead>
-      <tbody>${vacationRows || '<tr><td class="p-2" colspan="5">Keine Einträge.</td></tr>'}</tbody></table>
+      <div class='border rounded-lg p-3'>
+        <h4 class='font-semibold mb-2'>Geplante Urlaube</h4>
+        <div class='overflow-auto max-h-56'>
+          <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th><th class='p-2 text-left'>Ersatz</th><th class='p-2'></th></tr></thead>
+          <tbody>${vacationRows || '<tr><td class="p-2" colspan="5">Keine Einträge.</td></tr>'}</tbody></table>
+        </div>
+      </div>
+      <div class='border rounded-lg p-3'>
+        <h4 class='font-semibold mb-2'>Krankmeldungen</h4>
+        <div class='overflow-auto max-h-56'>
+          <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th><th class='p-2 text-left'>Ersatz</th><th class='p-2'></th></tr></thead>
+          <tbody>${sickRows || '<tr><td class="p-2" colspan="5">Keine Einträge.</td></tr>'}</tbody></table>
+        </div>
+      </div>
     </div>
-  </div>
-  <div class='border rounded-lg p-3'>
-    <h4 class='font-semibold mb-2'>Krankmeldungen</h4>
-    <div class='overflow-auto max-h-56'>
-      <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th><th class='p-2 text-left'>Ersatz</th><th class='p-2'></th></tr></thead>
-      <tbody>${sickRows || '<tr><td class="p-2" colspan="5">Keine Einträge.</td></tr>'}</tbody></table>
-    </div>
-  </div>
-</div>
         <div class='border rounded-lg p-3 bg-white'>
       <h3 class='text-md font-semibold mb-2'>Offene Schichten</h3>
       <div class='flex items-center justify-between mb-2 gap-2 flex-wrap'>
@@ -1276,7 +1289,7 @@ function renderPlanningWochenende() {
       const shift = generateThreeMonths().find((s) => s.id === shiftId);
       if (!shift) return "";
       return `<tr class='border-b'>
-        <td class='p-2'>${shift.date}</td>
+        <td class='p-2'>${formatDateWithWeekday(shift.date)}</td>
         <td class='p-2'>${user}</td>
         <td class='p-2'>${shift.label} (${shift.start}–${shift.end})</td>
         <td class='p-2'><button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick="approveSaturdayRequest('${shiftId}','${user}')">Genehmigen</button></td>
@@ -1303,11 +1316,11 @@ function renderPlanningWochenende() {
       const weekendId = s.date.slice(0, 8);
       const divider =
         weekendId !== lastWeekend
-          ? `<tr class='bg-slate-200'><td class='p-2 font-semibold' colspan='7'>Wochenende ab ${s.date}</td></tr>`
+          ? `<tr class='bg-slate-200'><td class='p-2 font-semibold' colspan='7'>Wochenende ab ${formatDateDisplay(s.date)}</td></tr>`
           : "";
       lastWeekend = weekendId;
       return `${divider}<tr class='border-b'>
-      <td class='p-2'>${s.date}</td>
+      <td class='p-2'>${formatDateWithWeekday(s.date)}</td>
       <td class='p-2'>${s.label}</td>
       <td class='p-2'>${formatSlot(s.options)}</td>
       <td class='p-2'>${canUsers.length ? canUsers.map((n) => `<span class='px-1 rounded bg-emerald-100 text-emerald-700 mr-1'>${n}</span>`).join("") : "-"}</td>
@@ -1353,8 +1366,8 @@ function renderPlanningSchichttausch() {
       (swap, index) => `<tr class='border-b'>
       <td class='p-2'>${swap.userA}</td>
       <td class='p-2'>${swap.userB}</td>
-      <td class='p-2'>${swap.startDate}</td>
-      <td class='p-2'>${swap.endDate || "-"}</td>
+      <td class='p-2'>${formatDateDisplay(swap.startDate)}</td>
+      <td class='p-2'>${swap.endDate ? formatDateDisplay(swap.endDate) : "-"}</td>
       <td class='p-2'>${!swap.endDate || swap.endDate >= todayIso() ? "Aktiv/Geplant" : "Beendet"}</td>
       <td class='p-2'><button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="deleteSwap(${state.swaps.length - 1 - index})">Löschen</button></td>
     </tr>`,
@@ -1392,7 +1405,7 @@ function canAssignUserToShift(name, shiftId) {
   const absType = getCalendarAbsenceType(name, shift.date);
   if (absType) {
     alert(
-      `${name} ist am ${shift.date} als ${absType} gemeldet und kann nicht eingesetzt werden.`,
+      `${name} ist am ${formatDateDisplay(shift.date)} als ${absType} gemeldet und kann nicht eingesetzt werden.`,
     );
     return false;
   }
@@ -1921,7 +1934,6 @@ function editToolCentered(tool) {
     });
   });
 }
-
 function renderToolCreateForm(prefix = "tool") {
   const labels = getToolLabels();
   const manufacturers = getToolManufacturers();
@@ -2778,7 +2790,7 @@ function renderTodo() {
     .map((t) => {
       const overdue = t.deadline && nowIso > `${t.deadline}T23:59:59`;
       return `<tr class='border-b ${overdue ? "bg-rose-50" : ""}'>
-      <td class='p-2'>${t.title}</td><td class='p-2'>${t.assignee}</td><td class='p-2'>${t.deadline || "-"}</td>
+      <td class='p-2'>${t.title}</td><td class='p-2'>${t.assignee}</td><td class='p-2'>${t.deadline ? formatDateDisplay(t.deadline) : "-"}</td>
       <td class='p-2'>${t.doneAt ? "Erledigt" : "Offen"}</td>
       <td class='p-2'>
         ${
@@ -2795,7 +2807,7 @@ function renderTodo() {
   const doneRows = doneTasks
     .map(
       (t) => `<tr class='border-b bg-emerald-50'>
-      <td class='p-2'>✅ ${t.title}</td><td class='p-2'>${t.assignee}</td><td class='p-2'>${t.deadline || "-"}</td><td class='p-2'>${t.doneAt || "-"}</td>
+      <td class='p-2'>✅ ${t.title}</td><td class='p-2'>${t.assignee}</td><td class='p-2'>${t.deadline ? formatDateDisplay(t.deadline) : "-"}</td><td class='p-2'>${t.doneAt || "-"}</td>
       <td class='p-2'>${isAdmin ? `<button class='px-2 py-1 rounded bg-slate-900 text-white' onclick="deleteTask('${t.id}')">Löschen</button>` : "-"}</td>
     </tr>`,
     )
@@ -2898,7 +2910,7 @@ function renderConflicts() {
   const rows = Object.entries(state.conflicts)
     .map(
       ([id, c]) => `<tr class='border-b'>
-    <td class='p-2'>${c.date}</td><td class='p-2'>${c.user}</td><td class='p-2'>${c.text}</td>
+    <td class='p-2'>${formatDateWithWeekday(c.date)}</td><td class='p-2'>${c.user}</td><td class='p-2'>${c.text}</td>
     <td class='p-2'>${c.resolved ? "Ja" : "Nein"}</td>
     <td class='p-2'><button class='px-2 py-1 rounded bg-slate-900 text-white' onclick="setConflictResolved('${id}', ${c.resolved ? "false" : "true"})">${c.resolved ? "Auf Nein" : "Als gelöst markieren"}</button></td>
   </tr>`,
@@ -3138,7 +3150,7 @@ function renderAvailability() {
     .map((s) => {
       const key = `${s.id}:${currentUser.name}`;
       const val = state.availability[key] || "";
-      return `<tr class='border-b'><td class='p-2'>${s.date}</td><td class='p-2'>${s.label}</td><td class='p-2'>${s.options.join(" / ")}</td>
+      return `<tr class='border-b'><td class='p-2'>${formatDateWithWeekday(s.date)}</td><td class='p-2'>${s.label}</td><td class='p-2'>${s.options.join(" / ")}</td>
       <td class='p-2'>
         <select class='border rounded p-1' onchange="setAvailability('${s.id}', this.value)">
           <option value="" ${val === "" ? "selected" : ""}>-</option>
@@ -3168,7 +3180,7 @@ function renderClosure() {
   const rows = myShifts
     .map((s) => {
       const done = state.checklists[s.id] ? "✅" : "⏳";
-      return `<tr class='border-b'><td class='p-2'>${s.date}</td><td class='p-2'>${s.label}</td><td class='p-2'>${s.start}–${s.end}</td><td class='p-2'>${done}</td>
+      return `<tr class='border-b'><td class='p-2'>${formatDateWithWeekday(s.date)}</td><td class='p-2'>${s.label}</td><td class='p-2'>${s.start}–${s.end}</td><td class='p-2'>${done}</td>
       <td class='p-2'><button class='px-2 py-1 rounded bg-indigo-700 text-white' onclick="openChecklist('${s.id}')">Checklist starten</button></td></tr>`;
     })
     .join("");
