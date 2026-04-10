@@ -1,4 +1,3 @@
-// Version V_0.2
 const USERS = [
   { name: "Lavdrim", slot: "A", type: "core" },
   { name: "Roger", slot: "B", type: "core" },
@@ -258,7 +257,7 @@ function tabNeedsAttention(tab) {
   if (tab === "planung") return generateThreeMonths().some((s) => s.open);
   if (tab === "todo") return state.tasks.some((t) => t.status !== "done");
   if (tab === "werkzeuge" && currentUser?.role === "admin")
-        return state.tools.some((t) => shouldOrderTool(t));
+    return state.tools.some((t) => shouldOrderTool(t));
   if (tab === "bestellstatistik" && currentUser?.role === "admin")
     return (state.orderHistory || []).length > 0;
   if (tab === "konflikte")
@@ -306,6 +305,36 @@ function generateThreeMonths() {
   return shifts;
 }
 
+function getReplacementForShift(shiftId) {
+  return state.absenceReplacements?.[shiftId] || null;
+}
+
+function applyReplacementToShift(shiftId, replacementEntry) {
+  if (!state.absenceReplacements) state.absenceReplacements = {};
+  state.absenceReplacements[shiftId] = replacementEntry;
+
+  if (replacementEntry.mode === "cancel") {
+    state.shiftCancellations[shiftId] = true;
+    delete state.assignments[shiftId];
+    return;
+  }
+
+  delete state.shiftCancellations[shiftId];
+  state.assignments[shiftId] = replacementEntry.replacementUser;
+}
+
+function clearReplacementPlanForSource(sourceType, sourceId) {
+  if (!state.absenceReplacements) return;
+  Object.keys(state.absenceReplacements).forEach((shiftId) => {
+    const entry = state.absenceReplacements[shiftId];
+    if (entry?.sourceType === sourceType && entry?.sourceId === sourceId) {
+      delete state.absenceReplacements[shiftId];
+      delete state.shiftCancellations[shiftId];
+      delete state.assignments[shiftId];
+    }
+  });
+}
+
 function buildShift(date, id, template) {
   const defaultAssigned = chooseDefault(template.options);
   const swappedDefault = defaultAssigned
@@ -313,16 +342,17 @@ function buildShift(date, id, template) {
     : defaultAssigned;
   const isOptional = template.options.length > 1;
   const manualAssigned = state.assignments[id] || null;
+  const replacement = getReplacementForShift(id);
   const absenceKey = `${date}:${swappedDefault}`;
   const calendarAbsenceType = getCalendarAbsenceType(swappedDefault, date);
   const manualAbsent = !!state.absences[absenceKey];
   const absent = manualAbsent || !!calendarAbsenceType;
-  const canceled = !!state.shiftCancellations[id];
+  const canceled = !!state.shiftCancellations[id] || replacement?.mode === "cancel";
   const assigned = canceled
     ? null
-    : !isOptional && !absent
+    : replacement?.replacementUser || (!isOptional && !absent
       ? swappedDefault
-      : manualAssigned || (isOptional ? swappedDefault : null);
+      : manualAssigned || (isOptional ? swappedDefault : null));
   return {
     id,
     date,
@@ -461,6 +491,10 @@ function getCalendarAbsenceType(name, date) {
 }
 
 function resolveAssigned(shiftId, options) {
+  const replacement = getReplacementForShift(shiftId);
+  if (replacement?.mode === "cancel") return null;
+  if (replacement?.replacementUser) return replacement.replacementUser;
+
   const date = shiftId.slice(0, 10);
   const defaultAssigned = chooseDefault(options);
   const swappedDefault = defaultAssigned
@@ -508,7 +542,7 @@ function getPrimaryAbsenceInfo(shiftId, options) {
 }
 
 function assignedMeta(shiftId, options) {
-  if (state.shiftCancellations?.[shiftId]) {
+  if (state.shiftCancellations?.[shiftId] || getReplacementForShift(shiftId)?.mode === "cancel") {
     return { label: "AUSFALL", cls: "bg-rose-200 text-rose-900", borderCls: "border-rose-500", ringCls: "border-2" };
   }
 
@@ -758,13 +792,6 @@ function renderMyShifts() {
     <div class='overflow-auto max-h-[35vh] border rounded-lg'>
       <table class='w-full text-sm'><thead class='sticky top-0 bg-slate-100'><tr><th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Zeit</th><th class='p-2 text-left'>Kannst du?</th></tr></thead>
       <tbody>${weekendRows || '<tr><td class="p-2" colspan="4">Keine Wochenend-Schichten.</td></tr>'}</tbody></table>
-          </div>
-    ${
-      isSpringer(currentUser.name)
-        ? `<h3 class='font-semibold mt-4 mb-2'>Wochenende-Verfügbarkeit (Samstag/Sonntag)</h3>
-    <div class='overflow-auto max-h-[35vh] border rounded-lg'>
-      <table class='w-full text-sm'><thead class='sticky top-0 bg-slate-100'><tr><th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Zeit</th><th class='p-2 text-left'>Kannst du?</th></tr></thead>
-      <tbody>${weekendRows || '<tr><td class="p-2" colspan="4">Keine Wochenend-Schichten.</td></tr>'}</tbody></table>
     </div>`
         : ""
     }
@@ -903,36 +930,6 @@ function getShiftsOfUserInRange(userName, from, to) {
   return generateThreeMonths().filter(
     (s) => s.date >= from && s.date <= to && resolveAssigned(s.id, s.options) === userName,
   );
-}
-
-function clearReplacementPlanForSource(sourceType, sourceId) {
-  if (!state.absenceReplacements) return;
-  Object.keys(state.absenceReplacements).forEach((shiftId) => {
-    const entry = state.absenceReplacements[shiftId];
-    if (entry?.sourceType === sourceType && entry?.sourceId === sourceId) {
-      delete state.absenceReplacements[shiftId];
-      delete state.shiftCancellations[shiftId];
-      delete state.assignments[shiftId];
-    }
-  });
-}
-
-function applyReplacementToShift(shiftId, replacementEntry) {
-  if (!state.absenceReplacements) state.absenceReplacements = {};
-  state.absenceReplacements[shiftId] = replacementEntry;
-
-  if (replacementEntry.mode === "cancel") {
-    state.shiftCancellations[shiftId] = true;
-    delete state.assignments[shiftId];
-    return;
-  }
-
-  delete state.shiftCancellations[shiftId];
-  state.assignments[shiftId] = replacementEntry.replacementUser;
-}
-
-function getReplacementForShift(shiftId) {
-  return state.absenceReplacements?.[shiftId] || null;
 }
 
 async function chooseReplacementUser(absentUser, from, to, weekLabel = "") {
@@ -1134,7 +1131,7 @@ function renderPlanningAbstinenz() {
         </div>
       </div>
     </div>
-        <div class='border rounded-lg p-3 bg-white'>
+    <div class='border rounded-lg p-3 bg-white'>
       <h3 class='text-md font-semibold mb-2'>Offene Schichten</h3>
       <div class='flex items-center justify-between mb-2 gap-2 flex-wrap'>
         <p class='text-sm text-slate-500'>Pro Tag kannst du entscheiden: ganze Schicht übernehmen lassen oder Ausfall markieren.</p>
@@ -1439,7 +1436,7 @@ function resetManualAssignments(silent = false) {
     }
   });
   persist();
-    if (!silent) {
+  if (!silent) {
     render();
     alert(
       "Manuelle Zuordnungen (aktuelle/zukünftige Schichten) wurden zurückgesetzt.",
@@ -1768,7 +1765,7 @@ function editToolCentered(tool) {
         </div>
       </div>
     </div>`;
-        host.querySelector("#modalSave")?.addEventListener("click", () => {
+    host.querySelector("#modalSave")?.addEventListener("click", () => {
       const payload = {
         label: host.querySelector("#editLabel")?.value?.trim() || "",
         diameter: host.querySelector("#editDiameter")?.value?.trim() || "",
@@ -2040,6 +2037,7 @@ async function bookToolChange(toolId) {
   persist();
   render();
 }
+
 async function editTool(toolId) {
   const tool = state.tools.find((t) => t.id === toolId);
   if (!tool || currentUser.role !== "admin") return;
@@ -2323,6 +2321,7 @@ function renderOrderStats() {
     </div>
   </div>`;
 }
+
 function renderTools() {
   const labels = getToolLabels();
   const holders = getToolHolders();
@@ -2568,7 +2567,8 @@ function renderTools() {
       </div>
       <p class='text-xs text-slate-500'>Gib alle Werte vollständig ein und klicke dann auf „Filter anwenden“.</p>
     </div>
-        <div class='border-2 border-slate-300 rounded-xl p-3'>
+
+    <div class='border-2 border-slate-300 rounded-xl p-3'>
       <h3 class='text-lg font-bold mb-2'>3) Werkzeugbestand</h3>
       <div class='overflow-auto max-h-[35vh] border rounded-lg'>
         <table class='w-full text-sm'>
@@ -2749,6 +2749,7 @@ function reassignTaskPrompt(taskId) {
   persist();
   render();
 }
+
 function maybeTaskReminder() {
   if (!currentUser || currentUser.role !== "employee") return;
   const now = new Date();
@@ -3003,6 +3004,7 @@ function renderStats() {
     </div>
   </div>`;
 }
+
 function renderAvailability() {
   const shifts = generateThreeMonths().filter((s) => s.options.length > 1);
   const rows = shifts
@@ -3192,6 +3194,7 @@ function stopDowntimeTimer() {
   persist();
   render();
 }
+
 function maybeShowShiftEndChecklist() {
   if (!currentUser || currentUser.role !== "employee") return;
   const shift = getCurrentShiftForUser(currentUser.name);
