@@ -335,24 +335,66 @@ function clearReplacementPlanForSource(sourceType, sourceId) {
   });
 }
 
+function getReplacementEntriesForSource(sourceType, sourceId) {
+  return Object.entries(state.absenceReplacements || {}).filter(([, entry]) => {
+    return entry?.sourceType === sourceType && entry?.sourceId === sourceId;
+  });
+}
+
+function getReplacementSummaryForSource(sourceType, sourceId) {
+  const entries = getReplacementEntriesForSource(sourceType, sourceId);
+  if (!entries.length) return "Kein Ersatz geplant";
+
+  const normalized = entries.map(([, entry]) => {
+    if (entry.mode === "cancel") {
+      return `${entry.weekFrom} bis ${entry.weekTo}: AUSFALL`;
+    }
+    return `${entry.weekFrom} bis ${entry.weekTo}: ${entry.replacementUser}`;
+  });
+
+  return normalized.join("<br>");
+}
+
+function clearAbsenceReplacementPlan(sourceType, sourceId) {
+  clearReplacementPlanForSource(sourceType, sourceId);
+  persist();
+  render();
+}
+
 function buildShift(date, id, template) {
   const defaultAssigned = chooseDefault(template.options);
   const swappedDefault = defaultAssigned
     ? applySwap(date, defaultAssigned)
     : defaultAssigned;
+
   const isOptional = template.options.length > 1;
   const manualAssigned = state.assignments[id] || null;
   const replacement = getReplacementForShift(id);
+
   const absenceKey = `${date}:${swappedDefault}`;
   const calendarAbsenceType = getCalendarAbsenceType(swappedDefault, date);
   const manualAbsent = !!state.absences[absenceKey];
   const absent = manualAbsent || !!calendarAbsenceType;
-  const canceled = !!state.shiftCancellations[id] || replacement?.mode === "cancel";
-  const assigned = canceled
-    ? null
-    : replacement?.replacementUser || (!isOptional && !absent
-      ? swappedDefault
-      : manualAssigned || (isOptional ? swappedDefault : null));
+
+  const canceled =
+    !!state.shiftCancellations[id] || replacement?.mode === "cancel";
+
+  let assigned = null;
+
+  if (canceled) {
+    assigned = null;
+  } else if (replacement?.mode === "replace" && replacement?.replacementUser) {
+    assigned = replacement.replacementUser;
+  } else if (!isOptional && !absent) {
+    assigned = swappedDefault;
+  } else {
+    assigned = manualAssigned || (isOptional ? swappedDefault : null);
+  }
+
+  const open =
+    canceled ||
+    (!assigned && (absent || !assigned || assigned === "NONE"));
+
   return {
     id,
     date,
@@ -361,8 +403,10 @@ function buildShift(date, id, template) {
     end: template.end,
     options: template.options,
     assigned,
+    originalAssigned: swappedDefault,
     absenceType: calendarAbsenceType || (manualAbsent ? "abwesend" : null),
-    open: canceled || absent || !assigned || assigned === "NONE",
+    replacement,
+    open,
   };
 }
 
@@ -934,71 +978,59 @@ function getShiftsOfUserInRange(userName, from, to) {
 
 async function chooseReplacementUser(absentUser, from, to, weekLabel = "") {
   const available = activeUsers().filter((u) => u.name !== absentUser);
+
   if (!available.length) {
     alert("Keine anderen aktiven Mitarbeiter verfügbar.");
     return null;
   }
 
-  const hint = available.map((u) => u.name).join(", ");
-  const answer = prompt(
-    `${weekLabel ? weekLabel + "\n" : ""}Wer ersetzt ${absentUser} von ${from} bis ${to}?\n\nVerfügbare Mitarbeiter:\n${hint}\n\nDu kannst auch AUSFALL eingeben.`,
-    available[0].name,
-  );
+  const host = getModalHost();
 
-  if (answer === null) return null;
+  return new Promise((resolve) => {
+    host.innerHTML = `
+      <div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-4">
+          <h3 class="text-lg font-bold mb-2">Ersatz auswählen</h3>
+          <p class="text-sm text-slate-700 mb-3">
+            ${weekLabel ? `${weekLabel}<br>` : ""}
+            Wer ersetzt <b>${absentUser}</b> von <b>${from}</b> bis <b>${to}</b>?
+          </p>
 
-  const value = answer.trim();
-  if (!value) return null;
-  if (value.toUpperCase() === "AUSFALL") {
-    return { mode: "cancel", replacementUser: null };
-  }
+          <select id="replacementUserSelect" class="border rounded p-2 w-full mb-4">
+            ${available
+              .map((u) => `<option value="${u.name}">${u.name}</option>`)
+              .join("")}
+            <option value="AUSFALL">AUSFALL</option>
+          </select>
 
-  const found = available.find(
-    (u) => u.name.toLowerCase() === value.toLowerCase(),
-  );
-  if (!found) {
-    alert("Mitarbeiter nicht gefunden.");
-    return null;
-  }
+          <div class="flex justify-end gap-2">
+            <button id="replacementCancel" class="px-3 py-1 rounded bg-slate-200">Abbrechen</button>
+            <button id="replacementSave" class="px-3 py-1 rounded bg-slate-900 text-white">Speichern</button>
+          </div>
+        </div>
+      </div>
+    `;
 
-  return { mode: "replace", replacementUser: found.name };
-}
-
-async function planAbsenceReplacement(type, entryId) {
-  const list = type === "vacation" ? state.vacations : state.sickLeaves;
-  const entry = list.find((v) => v.id === entryId);
-  if (!entry) return;
-
-  const full = await askYesNoCentered(
-    `Soll ein Mitarbeiter ${entry.user} für die komplette Zeit von ${entry.from} bis ${entry.to} ersetzen?`,
-  );
-  if (full === null) return;
-
-  clearReplacementPlanForSource(type, entryId);
-
-  if (full) {
-    const choice = await chooseReplacementUser(entry.user, entry.from, entry.to);
-    if (!choice) return;
-
-    const shifts = getShiftsOfUserInRange(entry.user, entry.from, entry.to);
-    shifts.forEach((shift) => {
-      applyReplacementToShift(shift.id, {
-        sourceType: type,
-        sourceId: entryId,
-        absentUser: entry.user,
-        from: entry.from,
-        to: entry.to,
-        mode: choice.mode,
-        replacementUser: choice.replacementUser,
-        weekFrom: entry.from,
-        weekTo: entry.to,
-      });
+    host.querySelector("#replacementCancel")?.addEventListener("click", () => {
+      host.innerHTML = "";
+      resolve(null);
     });
 
-    persist();
-    render();
-    return;
-  }
+    host.querySelector("#replacementSave")?.addEventListener("click", () => {
+      const value =
+        host.querySelector("#replacementUserSelect")?.value || "";
+
+      host.innerHTML = "";
+
+      if (value === "AUSFALL") {
+        resolve({ mode: "cancel", replacementUser: null });
+        return;
+      }
+
+      resolve({ mode: "replace", replacementUser: value });
+    });
+  });
+}
 
   const weeks = getWeekRanges(entry.from, entry.to);
 
@@ -1050,26 +1082,54 @@ function renderPlanningAbstinenz() {
     .join("");
 
   const vacationRows = state.vacations
-    .slice(-20)
-    .reverse()
-    .map((v) => {
-      const hasPlan = Object.values(state.absenceReplacements || {}).some(
-        (r) => r?.sourceType === "vacation" && r?.sourceId === v.id,
-      );
-      return `<tr class='border-b'><td class='p-2'>${v.user}</td><td class='p-2'>${v.from}</td><td class='p-2'>${v.to}</td><td class='p-2 whitespace-nowrap'><button class='px-2 py-1 rounded bg-rose-700 text-white mr-2' onclick="deleteVacation('${v.id}')">Löschen</button><button class='px-2 py-1 rounded ${hasPlan ? "bg-emerald-700" : "bg-blue-700"} text-white' onclick="planAbsenceReplacement('vacation','${v.id}')">${hasPlan ? "Ersetzen bearbeiten" : "Ersetzen"}</button></td></tr>`;
-    })
-    .join("");
+  .slice(-20)
+  .reverse()
+  .map((v) => {
+    const hasPlan = getReplacementEntriesForSource("vacation", v.id).length > 0;
+    const summary = getReplacementSummaryForSource("vacation", v.id);
+
+    return `<tr class='border-b'>
+      <td class='p-2'>${v.user}</td>
+      <td class='p-2'>${v.from}</td>
+      <td class='p-2'>${v.to}</td>
+      <td class='p-2 text-sm'>${summary}</td>
+      <td class='p-2 whitespace-nowrap'>
+        <button class='px-2 py-1 rounded bg-rose-700 text-white mr-2' onclick="deleteVacation('${v.id}')">Löschen</button>
+        <button class='px-2 py-1 rounded ${hasPlan ? "bg-emerald-700" : "bg-blue-700"} text-white mr-2' onclick="planAbsenceReplacement('vacation','${v.id}')">${hasPlan ? "Bearbeiten" : "Ersetzen"}</button>
+        ${
+          hasPlan
+            ? `<button class='px-2 py-1 rounded bg-slate-700 text-white' onclick="clearAbsenceReplacementPlan('vacation','${v.id}')">Ersatz löschen</button>`
+            : ""
+        }
+      </td>
+    </tr>`;
+  })
+  .join("");
 
   const sickRows = state.sickLeaves
-    .slice(-20)
-    .reverse()
-    .map((v) => {
-      const hasPlan = Object.values(state.absenceReplacements || {}).some(
-        (r) => r?.sourceType === "sick" && r?.sourceId === v.id,
-      );
-      return `<tr class='border-b'><td class='p-2'>${v.user}</td><td class='p-2'>${v.from}</td><td class='p-2'>${v.to}</td><td class='p-2 whitespace-nowrap'><button class='px-2 py-1 rounded bg-rose-700 text-white mr-2' onclick="deleteSickLeave('${v.id}')">Löschen</button><button class='px-2 py-1 rounded ${hasPlan ? "bg-emerald-700" : "bg-blue-700"} text-white' onclick="planAbsenceReplacement('sick','${v.id}')">${hasPlan ? "Ersetzen bearbeiten" : "Ersetzen"}</button></td></tr>`;
-    })
-    .join("");
+  .slice(-20)
+  .reverse()
+  .map((v) => {
+    const hasPlan = getReplacementEntriesForSource("sick", v.id).length > 0;
+    const summary = getReplacementSummaryForSource("sick", v.id);
+
+    return `<tr class='border-b'>
+      <td class='p-2'>${v.user}</td>
+      <td class='p-2'>${v.from}</td>
+      <td class='p-2'>${v.to}</td>
+      <td class='p-2 text-sm'>${summary}</td>
+      <td class='p-2 whitespace-nowrap'>
+        <button class='px-2 py-1 rounded bg-rose-700 text-white mr-2' onclick="deleteSickLeave('${v.id}')">Löschen</button>
+        <button class='px-2 py-1 rounded ${hasPlan ? "bg-emerald-700" : "bg-blue-700"} text-white mr-2' onclick="planAbsenceReplacement('sick','${v.id}')">${hasPlan ? "Bearbeiten" : "Ersetzen"}</button>
+        ${
+          hasPlan
+            ? `<button class='px-2 py-1 rounded bg-slate-700 text-white' onclick="clearAbsenceReplacementPlan('sick','${v.id}')">Ersatz löschen</button>`
+            : ""
+        }
+      </td>
+    </tr>`;
+  })
+  .join("");
 
   const rows = openShifts
     .map((s) => {
@@ -1119,14 +1179,14 @@ function renderPlanningAbstinenz() {
       <div class='border rounded-lg p-3'>
         <h4 class='font-semibold mb-2'>Geplante Urlaube</h4>
         <div class='overflow-auto max-h-56'>
-          <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th><th class='p-2'></th></tr></thead>
+          <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th><th class='p-2 text-left'>Ersatz</th><th class='p-2'></th></tr></thead>
           <tbody>${vacationRows || '<tr><td class="p-2" colspan="4">Keine Einträge.</td></tr>'}</tbody></table>
         </div>
       </div>
       <div class='border rounded-lg p-3'>
         <h4 class='font-semibold mb-2'>Krankmeldungen</h4>
         <div class='overflow-auto max-h-56'>
-          <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th><th class='p-2'></th></tr></thead>
+          <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Von</th><th class='p-2 text-left'>Bis</th><th class='p-2 text-left'>Ersatz</th><th class='p-2'></th></tr></thead>
           <tbody>${sickRows || '<tr><td class="p-2" colspan="4">Keine Einträge.</td></tr>'}</tbody></table>
         </div>
       </div>
@@ -3321,3 +3381,4 @@ window.createTool = createTool;
 window.openCreateToolModal = openCreateToolModal;
 window.addToolLabel = addToolLabel;
 window.addToolManufacturer = addToolManufacturer;
+window.clearAbsenceReplacementPlan = clearAbsenceReplacementPlan;
