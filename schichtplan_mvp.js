@@ -984,12 +984,13 @@ function getWeekRanges(from, to) {
 }
 
 function getShiftsOfUserInRange(userName, from, to) {
-  return generateThreeMonths().filter(
-    (s) =>
+  return generateThreeMonths().filter((s) => {
+    return (
       s.date >= from &&
       s.date <= to &&
-      resolveAssigned(s.id, s.options) === userName,
-  );
+      s.originalAssigned === userName
+    );
+  });
 }
 
 async function chooseReplacementUser(absentUser, from, to, weekLabel = "") {
@@ -1200,7 +1201,7 @@ function renderPlanningAbstinenz() {
         .join("");
       return `<tr class='border-b'>
       <td class='p-2'>${s.date}</td><td class='p-2'>${s.label}</td><td class='p-2'>${s.start}–${s.end}</td>
-      <td class='p-2'>${s.assigned || "-"}</td>
+      <td class='p-2'>${s.originalAssigned || "-"}</td>
       <td class='p-2'>
         <select id='sel-${s.id}' class='border rounded p-1'>${choices}</select>
       </td>
