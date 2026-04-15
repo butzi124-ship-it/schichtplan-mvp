@@ -3,9 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Schichtplan Maschine 50 – 90 Tage Übersicht (3 Monate)</title>
+    <title>Schichtplan Maschine 50 – 90 Tage Übersicht</title>
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
+
   <body class="bg-slate-100 text-slate-900 min-h-screen">
     <div class="max-w-7xl mx-auto p-4 space-y-4">
       <header
@@ -24,6 +25,7 @@
             <p class="text-sm text-slate-500">90 Tage Übersicht</p>
           </div>
         </div>
+
         <div id="sessionInfo" class="text-sm font-medium"></div>
       </header>
 
@@ -31,59 +33,110 @@
         <div>
           <h2 class="font-semibold text-lg">Anmeldung</h2>
           <p class="text-sm text-slate-500">
-            Bitte mit Supabase-Benutzer anmelden.
+            Anmeldung über Supabase oder Test-Login.
           </p>
         </div>
 
-        <div class="grid md:grid-cols-3 gap-3">
-          <input
-            id="loginEmail"
-            type="email"
-            class="border rounded p-2"
-            placeholder="E-Mail"
-            autocomplete="username"
-          />
-          <input
-            id="loginPassword"
-            type="password"
-            class="border rounded p-2"
-            placeholder="Passwort"
-            autocomplete="current-password"
-          />
-          <button
-            class="px-3 py-2 rounded bg-slate-900 text-white"
-            onclick="loginWithSupabase()"
-          >
-            Anmelden
-          </button>
+        <div id="loginStatus" class="text-sm rounded border border-slate-200 bg-slate-50 p-3 text-slate-600">
+          Supabase wird geprüft ...
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="loginEmail">E-Mail</label>
+            <input
+              id="loginEmail"
+              type="email"
+              class="w-full border rounded p-2"
+              placeholder="name@firma.ch"
+              autocomplete="username"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-1" for="loginPassword">Passwort</label>
+            <input
+              id="loginPassword"
+              type="password"
+              class="w-full border rounded p-2"
+              placeholder="Passwort"
+              autocomplete="current-password"
+            />
+          </div>
         </div>
 
         <div class="flex flex-wrap gap-2">
           <button
+            type="button"
+            class="px-3 py-2 rounded bg-slate-900 text-white"
+            onclick="loginWithSupabase()"
+          >
+            Mit Supabase anmelden
+          </button>
+
+          <button
+            type="button"
             class="px-3 py-2 rounded bg-slate-200"
             onclick="fillLogin('admin')"
           >
-            Admin eintragen
+            Admin-Mail eintragen
           </button>
+
           <button
+            type="button"
             class="px-3 py-2 rounded bg-slate-200"
             onclick="fillLogin('employee')"
           >
-            Mitarbeiter eintragen
-          </button>
-          <button
-            class="px-3 py-2 rounded bg-rose-100 text-rose-700"
-            onclick="logoutSupabase()"
-          >
-            Supabase-Session löschen
+            Mitarbeiter-Mail eintragen
           </button>
         </div>
 
-        <div
-          id="loginStatus"
-          class="text-sm rounded border border-slate-200 bg-slate-50 p-3 text-slate-600"
-        >
-          Noch nicht angemeldet.
+        <div class="border-t pt-4">
+          <p class="text-sm font-medium mb-2">Lokaler Test-Login</p>
+          <div class="flex flex-wrap gap-2">
+            <button
+              class="px-3 py-2 rounded bg-slate-900 text-white"
+              onclick="loginAs('admin')"
+            >
+              Mido/Admin
+            </button>
+            <button
+              class="px-3 py-2 rounded bg-blue-700 text-white"
+              onclick="loginAs('Lavdrim')"
+            >
+              Lavdrim (A)
+            </button>
+            <button
+              class="px-3 py-2 rounded bg-blue-700 text-white"
+              onclick="loginAs('Roger')"
+            >
+              Roger (B)
+            </button>
+            <button
+              class="px-3 py-2 rounded bg-blue-700 text-white"
+              onclick="loginAs('Dashmir')"
+            >
+              Dashmir (C)
+            </button>
+            <button
+              class="px-3 py-2 rounded bg-emerald-700 text-white"
+              onclick="loginAs('Thomas')"
+            >
+              Thomas (D)
+            </button>
+            <button
+              class="px-3 py-2 rounded bg-emerald-700 text-white"
+              onclick="loginAs('Musa')"
+            >
+              Musa (E)
+            </button>
+            <button
+              class="px-3 py-2 rounded bg-emerald-700 text-white"
+              onclick="loginAs('Ardian')"
+            >
+              Ardian (F)
+            </button>
+          </div>
         </div>
       </section>
 
@@ -97,10 +150,8 @@
       window.SUPABASE_URL = "https://itntnpzqzyjfdnjdshvm.supabase.co";
       window.SUPABASE_PUBLISHABLE_KEY =
         "sb_publishable_8W69WsnRgMqEFsnUzDJFKQ_o936CsWs";
-
-      window.TEST_ADMIN_EMAIL = "";
-      window.TEST_EMPLOYEE_EMAIL = "";
     </script>
+
     <script src="./schichtplan_mvp.js"></script>
   </body>
 </html>
