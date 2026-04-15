@@ -27,51 +27,63 @@
         <div id="sessionInfo" class="text-sm font-medium"></div>
       </header>
 
-      <section id="loginBox" class="bg-white rounded-xl shadow p-4 space-y-3">
-        <h2 class="font-semibold text-lg">Anmeldung</h2>
-        <div class="flex flex-wrap gap-2">
+      <section id="loginBox" class="bg-white rounded-xl shadow p-4 space-y-4">
+        <div>
+          <h2 class="font-semibold text-lg">Anmeldung</h2>
+          <p class="text-sm text-slate-500">
+            Bitte mit Supabase-Benutzer anmelden.
+          </p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-3">
+          <input
+            id="loginEmail"
+            type="email"
+            class="border rounded p-2"
+            placeholder="E-Mail"
+            autocomplete="username"
+          />
+          <input
+            id="loginPassword"
+            type="password"
+            class="border rounded p-2"
+            placeholder="Passwort"
+            autocomplete="current-password"
+          />
           <button
             class="px-3 py-2 rounded bg-slate-900 text-white"
-            onclick="loginAs('admin')"
+            onclick="loginWithSupabase()"
           >
-            Mido/Admin
+            Anmelden
+          </button>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button
+            class="px-3 py-2 rounded bg-slate-200"
+            onclick="fillLogin('admin')"
+          >
+            Admin eintragen
           </button>
           <button
-            class="px-3 py-2 rounded bg-blue-700 text-white"
-            onclick="loginAs('Lavdrim')"
+            class="px-3 py-2 rounded bg-slate-200"
+            onclick="fillLogin('employee')"
           >
-            Lavdrim (A)
+            Mitarbeiter eintragen
           </button>
           <button
-            class="px-3 py-2 rounded bg-blue-700 text-white"
-            onclick="loginAs('Roger')"
+            class="px-3 py-2 rounded bg-rose-100 text-rose-700"
+            onclick="logoutSupabase()"
           >
-            Roger (B)
+            Supabase-Session löschen
           </button>
-          <button
-            class="px-3 py-2 rounded bg-blue-700 text-white"
-            onclick="loginAs('Dashmir')"
-          >
-            Dashmir (C)
-          </button>
-          <button
-            class="px-3 py-2 rounded bg-emerald-700 text-white"
-            onclick="loginAs('Thomas')"
-          >
-            Thomas (D)
-          </button>
-          <button
-            class="px-3 py-2 rounded bg-emerald-700 text-white"
-            onclick="loginAs('Musa')"
-          >
-            Musa (E)
-          </button>
-          <button
-            class="px-3 py-2 rounded bg-emerald-700 text-white"
-            onclick="loginAs('Ardian')"
-          >
-            Ardian (F)
-          </button>
+        </div>
+
+        <div
+          id="loginStatus"
+          class="text-sm rounded border border-slate-200 bg-slate-50 p-3 text-slate-600"
+        >
+          Noch nicht angemeldet.
         </div>
       </section>
 
@@ -83,7 +95,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
       window.SUPABASE_URL = "https://itntnpzqzyjfdnjdshvm.supabase.co";
-      window.SUPABASE_PUBLISHABLE_KEY = "sb_publishable_8W69WsnRgMqEFsnUzDJFKQ_o936CsWs";
+      window.SUPABASE_PUBLISHABLE_KEY =
+        "sb_publishable_8W69WsnRgMqEFsnUzDJFKQ_o936CsWs";
+
+      window.TEST_ADMIN_EMAIL = "";
+      window.TEST_EMPLOYEE_EMAIL = "";
     </script>
     <script src="./schichtplan_mvp.js"></script>
   </body>
