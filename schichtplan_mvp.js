@@ -162,6 +162,34 @@ async function loadToolsFromSupabase() {
   return (data || []).map(normalizeToolFromDb);
 }
 
+async function getCurrentEmployeeRecord() {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabaseClient.auth.getUser();
+
+  if (userError) {
+    console.error("Fehler bei auth.getUser():", userError);
+    return null;
+  }
+
+  if (!user) return null;
+
+  const { data, error } = await supabaseClient
+    .from("employees")
+    .select("*")
+    .eq("auth_user_id", user.id)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Fehler beim Laden des employees-Datensatzes:", error);
+    return null;
+  }
+
+  return data || null;
+}
+
 async function loginWithSupabase() {
   const email = document.getElementById("loginEmail")?.value?.trim() || "";
   const password = document.getElementById("loginPassword")?.value || "";
