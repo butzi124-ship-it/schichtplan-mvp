@@ -1,6 +1,6 @@
 const { createClient } = window.supabase;
 
-const supabase = createClient(
+const supabaseClient = createClient(
   window.SUPABASE_URL,
   window.SUPABASE_PUBLISHABLE_KEY,
 );
@@ -90,7 +90,7 @@ function fillLogin(type) {
 
 async function testSupabaseConnection() {
   try {
-    const { error } = await supabase.from("employees").select("id").limit(1);
+    const { error } = await supabaseClient.from("employees").select("id").limit(1);
 
     if (error) {
       console.error("Supabase-Test fehlgeschlagen:", error);
@@ -140,7 +140,7 @@ async function getCurrentEmployeeRecord() {
   const {
     data: { user },
     error: userError,
-  } = await supabase.auth.getUser();
+  } = await supabaseClient.auth.getUser();
 
   if (userError) {
     console.error("Fehler bei auth.getUser():", userError);
@@ -175,7 +175,7 @@ async function loginWithSupabase() {
 
   setLoginStatus("Anmeldung läuft ...");
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { error } = await supabaseClient.auth.signInWithPassword({
     email,
     password,
   });
@@ -190,7 +190,7 @@ async function loginWithSupabase() {
 }
 
 async function logoutSupabase() {
-  await supabase.auth.signOut();
+  await supabaseClient.auth.signOut();
   currentSupabaseUser = null;
   currentEmployeeRecord = null;
   currentUser = null;
@@ -207,7 +207,7 @@ async function syncSupabaseSessionToApp() {
   const {
     data: { user },
     error,
-  } = await supabase.auth.getUser();
+  } = await supabaseClient.auth.getUser();
 
   if (error) {
     console.error("Fehler beim Abrufen des angemeldeten Users:", error);
@@ -259,7 +259,7 @@ async function bootSupabase() {
 
   const {
     data: { session },
-  } = await supabase.auth.getSession();
+  } = await supabaseClient.auth.getSession();
 
   if (session?.user) {
     await syncSupabaseSessionToApp();
