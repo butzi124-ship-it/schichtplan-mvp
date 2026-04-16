@@ -9,6 +9,85 @@ let supabaseReady = false;
 let currentSupabaseUser = null;
 let currentEmployeeRecord = null;
 
+const USERS = [
+  { name: "Lavdrim", slot: "A", type: "core" },
+  { name: "Roger", slot: "B", type: "core" },
+  { name: "Dashmir", slot: "C", type: "core" },
+  { name: "Thomas", slot: "D", type: "springer" },
+  { name: "Musa", slot: "E", type: "springer" },
+  { name: "Ardian", slot: "F", type: "springer" },
+];
+const SLOT_CODES = ["A", "B", "C", "D", "E", "F"];
+const DEFAULT_SLOT_ASSIGNMENTS = {
+  A: "Lavdrim",
+  B: "Roger",
+  C: "Dashmir",
+  D: "Thomas",
+  E: "Musa",
+  F: "Ardian",
+};
+const DEFAULT_TOOL_LABELS = [
+  "Schaftfräser",
+  "Trochodialfräser",
+  "Radiusfräser",
+  "Kugelfräser",
+  "Bohrer",
+  "NC Anbohrer",
+  "Gewindebohrer",
+  "Gewindefräser",
+  "Gewindeformer",
+  "Gewindewirbler",
+  "Ausdrehkopf",
+];
+const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
+const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
+
+const STORAGE_KEY = "schichtplan_mvp_v_0_2";
+const state = loadState();
+let currentUser = null;
+let currentTab = "schichtplan";
+let statsViewPeriod = "week";
+
+const WEEK_TEMPLATES = [
+  makeWeek("A", "B", "C", "A", "B"),
+  makeWeek("B", "C", "A", "B", "C"),
+  makeWeek("C", "A", "B", "C", "A"),
+  makeWeek("A", "B", "C", "A", "B"),
+  makeWeek("B", "C", "A", "B", "C"),
+  makeWeek("C", "A", "B", "C", "A"),
+];
+const ROTATION_ANCHOR_MONDAY = "2026-01-05";
+const PLANNING_SUBTABS = [
+  { id: "personal", label: "Personal" },
+  { id: "abstinenz", label: "Abstinenz" },
+  { id: "wochenende", label: "Wochenendeinsätze" },
+  { id: "schichttausch", label: "Schichttausch" },
+];
+
+function setLoginStatus(message, isError = false) {
+  const el = document.getElementById("loginStatus");
+  if (!el) return;
+  el.textContent = message;
+  el.className = isError
+    ? "text-sm rounded border border-rose-200 bg-rose-50 p-3 text-rose-700"
+    : "text-sm rounded border border-slate-200 bg-slate-50 p-3 text-slate-600";
+}
+
+function fillLogin(type) {
+  const emailInput = document.getElementById("loginEmail");
+  const passwordInput = document.getElementById("loginPassword");
+  if (!emailInput || !passwordInput) return;
+
+  if (type === "admin" && window.TEST_ADMIN_EMAIL) {
+    emailInput.value = window.TEST_ADMIN_EMAIL;
+  }
+  if (type === "employee" && window.TEST_EMPLOYEE_EMAIL) {
+    emailInput.value = window.TEST_EMPLOYEE_EMAIL;
+  }
+
+  passwordInput.focus();
+}
+
 async function testSupabaseConnection() {
   try {
     const { error } = await supabaseClient
@@ -1436,7 +1515,8 @@ function renderPlanningWochenende() {
       </tr>`;
     })
     .join("");
-    let lastWeekend = "";
+
+  let lastWeekend = "";
   const optionalRows = generateThreeMonths()
     .filter((s) => s.options.length > 1)
     .slice(0, 120)
@@ -1491,7 +1571,6 @@ function renderPlanningWochenende() {
     </div>
   </div>`;
 }
-
 function renderPlanningSchichttausch() {
   const corePersonOptions = activeUsers()
     .filter((u) => u.type === "core")
@@ -1750,6 +1829,7 @@ function resetPlanCurrentFuture() {
   render();
   alert("Gesamtplan wurde auf den Ursprungsplan zurückgesetzt.");
 }
+
 function updateSlotAssignment(slot) {
   const select = document.getElementById(`slot-${slot}`);
   if (!select) return;
@@ -1924,7 +2004,6 @@ function normalizeToolData(data) {
     insertEdges: data.insertTool ? data.insertEdges : 0,
   };
 }
-
 function createTool() {
   if (currentUser.role !== "admin")
     return alert("Nur Admin darf Werkzeuge anlegen.");
@@ -2072,6 +2151,450 @@ function editToolCentered(tool) {
     });
   });
 }
+
+function renderToolCreateForm(prefix = "tool") {
+  const labels = getToolLabels();
+  const manufacturers = getToolManufacturers();
+  const holders = getToolHolders();
+
+  const labelOptions = labels
+    .map((l) => `<option value="${l}">${l}</option>`)
+    .join("");
+  const manufacturerOptions = manufacturers
+    .map((m) => `<option value="${m}">${m}</option>`)
+    .join("");
+  const holderOptions = holders
+    .map((h) => `<option value="${h}">${h}</option>`)
+    .join("");
+
+  return `<div class='grid md:grid-cols-2 gap-3'>
+    <input id='${prefix}TNumber' class='border rounded p-2' placeholder='T-Nummer (z.B. 134)' />
+    <select id='${prefix}Label' class='border rounded p-2'>${labelOptions}</select>
+    <input id='${prefix}Diameter' class='border rounded p-2' placeholder='Durchmesser' />
+    <select id='${prefix}ThreadPrefix' class='border rounded p-2'>
+      <option value=''>Kennung (nur Gewinde)</option>
+      <option value='M'>M</option>
+      <option value='MF'>MF</option>
+      <option value='G'>G</option>
+      <option value='UNF'>UNF</option>
+      <option value='UNC'>UNC</option>
+      <option value='Mx'>Mx</option>
+    </select>
+    <input id='${prefix}ThreadPitch' class='border rounded p-2' placeholder='Steigung P (nur MF)' />
+    <input id='${prefix}Shelf' class='border rounded p-2' placeholder='A00' />
+    <input id='${prefix}Article' class='border rounded p-2' placeholder='Artikel Nr.' />
+    <select id='${prefix}Holder' class='border rounded p-2'>${holderOptions}</select>
+    <input id='${prefix}Stock' type='number' class='border rounded p-2' placeholder='Bestand' />
+    <input id='${prefix}MinStock' type='number' class='border rounded p-2' placeholder='Mindestbestand' />
+    <input id='${prefix}OptimalStock' type='number' class='border rounded p-2' placeholder='Optimale Stückzahl' />
+    <select id='${prefix}Manufacturer' class='border rounded p-2'>${manufacturerOptions}</select>
+    <label class='flex items-center gap-2 text-sm md:col-span-2'><input id='${prefix}InsertTool' type='checkbox' onchange='toggleInsertToolFieldsById("${prefix}InsertTool","${prefix}InsertEdges")' /> Wendeplattenwerkzeug</label>
+    <input id='${prefix}InsertEdges' type='number' class='border rounded p-2 md:col-span-2' placeholder='Anzahl Schneiden' disabled />
+  </div>`;
+}
+
+function openCreateToolModal() {
+  if (currentUser?.role !== "admin") return;
+  const host = getModalHost();
+  host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-auto p-4">
+      <div class='flex items-center justify-between mb-4 gap-3'>
+        <h3 class="text-lg font-bold">Neues Werkzeug anlegen</h3>
+        <button id="toolCreateCloseTop" class="px-3 py-1 rounded bg-slate-200">Schließen</button>
+      </div>
+      <div class='space-y-4'>
+        <div class='border rounded-lg p-3 bg-slate-50'>
+          ${renderToolCreateForm("tool")}
+        </div>
+        <div class='flex justify-between gap-2 flex-wrap'>
+          <div class='flex gap-2 flex-wrap'>
+            <button class='px-3 py-2 rounded bg-slate-700 text-white' onclick='addToolLabel()'>Bezeichnung hinzufügen</button>
+            <button class='px-3 py-2 rounded bg-slate-700 text-white' onclick='addToolManufacturer()'>Hersteller hinzufügen</button>
+          </div>
+          <div class='flex gap-2'>
+            <button id="toolCreateCloseBottom" class="px-3 py-2 rounded bg-slate-200">Abbrechen</button>
+            <button id="toolCreateSave" class="px-3 py-2 rounded bg-slate-900 text-white">Werkzeug speichern</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  const close = () => {
+    host.innerHTML = "";
+  };
+
+  host.querySelector("#toolCreateCloseTop")?.addEventListener("click", close);
+  host
+    .querySelector("#toolCreateCloseBottom")
+    ?.addEventListener("click", close);
+  host.querySelector("#toolCreateSave")?.addEventListener("click", () => {
+    const data = collectToolFormData(document);
+    const validation = validateToolData(data);
+    if (!validation.ok) return alert(validation.message);
+
+    state.tools.push({
+      id: `tool-${Date.now()}`,
+      ...normalizeToolData(data),
+    });
+    persist();
+    close();
+    render();
+  });
+}
+
+function suggestedOrderQty(tool) {
+  const stock = Number(tool.stock || 0);
+  const optimal = Number(tool.optimalStock || 0);
+  const minStock = Number(tool.minStock || 0);
+
+  const baseFromOptimal = Math.max(0, optimal - stock);
+  const statSuggestion = getOptimalQtySuggestion(tool);
+
+  if (Number.isFinite(statSuggestion) && statSuggestion > 0) {
+    return Math.max(baseFromOptimal, statSuggestion);
+  }
+
+  if (baseFromOptimal > 0) return baseFromOptimal;
+
+  if (stock <= minStock) {
+    return Math.max(1, minStock - stock + 1);
+  }
+
+  return 0;
+}
+
+function effectiveOrderQty(tool) {
+  const override = Number(state.toolOrderOverrides?.[tool.id]);
+  if (Number.isFinite(override) && override >= 0) return override;
+  return suggestedOrderQty(tool);
+}
+
+function setToolOrderOverride(toolId, value) {
+  if (currentUser.role !== "admin") return;
+  const qty = Math.max(0, Number(value || 0));
+  if (!state.toolOrderOverrides) state.toolOrderOverrides = {};
+  state.toolOrderOverrides[toolId] = qty;
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (tool?.ordered) tool.orderedQty = qty;
+  persist();
+}
+
+function archiveOrderEvent(tool, qty, action) {
+  if (!state.orderArchive) state.orderArchive = [];
+  if (!state.orderHistory) state.orderHistory = [];
+  const entry = {
+    id: `order-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    at: new Date().toISOString(),
+    action,
+    toolId: tool.id,
+    tNumber: tool.tNumber,
+    label: tool.label,
+    size: formatToolSize(tool),
+    manufacturer: tool.manufacturer || "Ohne Hersteller",
+    articleNo: tool.articleNo,
+    shelf: tool.shelf,
+    qty: Number(qty || 0),
+    user: currentUser?.name || "System",
+  };
+  state.orderArchive.unshift(entry);
+  state.orderHistory.unshift(entry);
+}
+
+function cleanupOrderArchive() {
+  if (!state.orderArchive) state.orderArchive = [];
+  const now = Date.now();
+  const sixWeeksMs = 6 * 7 * 24 * 60 * 60 * 1000;
+  state.orderArchive = state.orderArchive.filter(
+    (e) => now - new Date(e.at).getTime() <= sixWeeksMs,
+  );
+}
+
+function markToolOrdered(toolId, ordered) {
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool || currentUser.role !== "admin") return;
+  tool.ordered = ordered;
+  tool.orderedQty = ordered ? Math.max(1, effectiveOrderQty(tool)) : 0;
+  if (ordered) archiveOrderEvent(tool, tool.orderedQty, "mark_ordered");
+  persist();
+  render();
+}
+
+async function restockTool(toolId) {
+  if (currentUser.role !== "admin") return;
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool) return;
+
+  let add = 0;
+  if (tool.ordered && Number(tool.orderedQty || 0) > 0) {
+    const full = await askYesNoCentered("Bestellte Menge einlagern?");
+    if (full) {
+      add = Number(tool.orderedQty || 0);
+    } else {
+      add = await askNumberCentered(
+        "Einzulagernde Menge eingeben:",
+        String(tool.orderedQty || 1),
+      );
+      if (add === null) return;
+    }
+  } else {
+    add = await askNumberCentered("Werkzeug einlagern (Anzahl):", "1");
+    if (add === null) return;
+  }
+
+  if (!Number.isFinite(add) || add <= 0) return;
+
+  tool.stock += add;
+
+  if (tool.ordered && Number(tool.orderedQty || 0) > 0) {
+    tool.orderedQty = Math.max(0, Number(tool.orderedQty || 0) - add);
+    if (tool.orderedQty === 0) tool.ordered = false;
+  }
+
+  if (tool.stock >= tool.minStock && Number(tool.orderedQty || 0) === 0)
+    tool.ordered = false;
+
+  archiveOrderEvent(tool, add, "restock");
+  persist();
+  render();
+}
+
+async function bookToolChange(toolId) {
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool) return;
+
+  const takeOut = await askYesNoCentered("Werkzeug Entnahme?");
+  let qty = 0;
+
+  if (takeOut) {
+    const defaultQty =
+      tool.insertTool && Number(tool.insertEdges || 0) > 0
+        ? String(tool.insertEdges)
+        : "1";
+    qty = await askNumberCentered("Entnahmemenge eingeben:", defaultQty);
+    if (qty === null) return;
+    if (!Number.isFinite(qty) || qty <= 0)
+      return alert("Bitte eine gültige Entnahmemenge eingeben.");
+    tool.stock = Math.max(0, tool.stock - qty);
+  }
+
+  state.toolJournal.unshift({
+    id: `journal-${Date.now()}`,
+    user: currentUser.name,
+    at: new Date().toISOString().slice(0, 16).replace("T", " "),
+    toolId: tool.id,
+    tNumber: tool.tNumber,
+    qty,
+    action: takeOut
+      ? `Werkzeugwechsel + Entnahme ${qty}`
+      : "Werkzeugwechsel ohne Entnahme",
+  });
+
+  persist();
+  render();
+}
+
+async function editTool(toolId) {
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool || currentUser.role !== "admin") return;
+  const data = await editToolCentered(tool);
+  if (!data) return;
+
+  const isThreadTool = isThreadToolLabel(data.label);
+  if (
+    !data.label ||
+    !data.diameter ||
+    !/^[A-Z]\d{2}$/.test(data.shelf) ||
+    !data.articleNo ||
+    !["HSK 100", "HSK 63"].includes(data.holder)
+  ) {
+    return alert(
+      "Bitte Felder korrekt ausfüllen (A-Z + 2-stellige Zahl für Fach, Aufnahme HSK 100 oder HSK 63).",
+    );
+  }
+  if (isThreadTool && !data.threadPrefix)
+    return alert("Bitte Gewindekennung wählen.");
+  if (isThreadTool && data.threadPrefix === "MF" && !data.threadPitch)
+    return alert("Bitte bei MF die Steigung (P) angeben.");
+  if (!isThreadTool && !Number.isFinite(Number(data.diameter)))
+    return alert("Bitte gültigen numerischen Durchmesser eingeben.");
+  if (
+    data.insertTool &&
+    (!Number.isFinite(Number(data.insertEdges)) ||
+      Number(data.insertEdges) <= 0)
+  )
+    return alert("Bitte Anzahl der Schneiden > 0 eingeben.");
+
+  data.diameter = isThreadTool ? data.diameter : Number(data.diameter);
+  data.threadPitch =
+    isThreadTool && data.threadPrefix === "MF" ? data.threadPitch : "";
+  if (!isThreadTool) data.threadPrefix = "";
+
+  Object.assign(tool, data);
+  if (tool.stock >= tool.minStock && Number(tool.orderedQty || 0) === 0)
+    tool.ordered = false;
+  persist();
+  render();
+}
+async function deleteTool(toolId) {
+  if (currentUser.role !== "admin") return;
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool) return;
+  const yes = await askYesNoCentered(
+    `Werkzeug T ${tool.tNumber} wirklich löschen?`,
+  );
+  if (!yes) return;
+  state.tools = state.tools.filter((t) => t.id !== toolId);
+  state.toolJournal = state.toolJournal.filter((j) => j.toolId !== toolId);
+  persist();
+  render();
+}
+
+function undoToolJournalEntry(entryId) {
+  const idx = state.toolJournal.findIndex((j) => j.id === entryId);
+  if (idx === -1) return;
+  const entry = state.toolJournal[idx];
+  const tool = state.tools.find((t) => t.id === entry.toolId);
+  if (tool && Number(entry.qty) > 0) {
+    tool.stock += Number(entry.qty);
+    if (tool.stock >= tool.minStock && Number(tool.orderedQty || 0) === 0)
+      tool.ordered = false;
+  }
+  state.toolJournal.splice(idx, 1);
+  persist();
+  render();
+}
+
+function resetToolFilters() {
+  state.toolFilters = {
+    search: "",
+    label: "",
+    tNumber: "",
+    diameter: "",
+    holder: "",
+  };
+  persist();
+  render();
+}
+
+function applyToolFilters() {
+  const search = document.getElementById("toolSearch")?.value || "";
+  const label = document.getElementById("toolFilterLabel")?.value || "";
+  const tNumber = document.getElementById("toolFilterT")?.value || "";
+  const diameter = document.getElementById("toolFilterD")?.value || "";
+  const holder = document.getElementById("toolFilterHolder")?.value || "";
+  state.toolFilters = { search, label, tNumber, diameter, holder };
+  persist();
+  render();
+}
+
+function getOrderCandidateGroups() {
+  return state.tools
+    .filter((t) => shouldOrderTool(t) || t.ordered)
+    .reduce((acc, tool) => {
+      const maker = (tool.manufacturer || "").trim() || "Ohne Hersteller";
+      if (!acc[maker]) acc[maker] = [];
+      acc[maker].push(tool);
+      return acc;
+    }, {});
+}
+
+function ensureSelectedOrderListManufacturer(groups) {
+  const makers = Object.keys(groups).sort((a, b) => a.localeCompare(b));
+  if (!makers.length) {
+    state.selectedOrderListManufacturer = "";
+    return "";
+  }
+  if (!makers.includes(state.selectedOrderListManufacturer || "")) {
+    state.selectedOrderListManufacturer = makers[0];
+  }
+  return state.selectedOrderListManufacturer;
+}
+
+function openOrderListPopup() {
+  state.orderListPopupOpen = true;
+  const groups = getOrderCandidateGroups();
+  ensureSelectedOrderListManufacturer(groups);
+  persist();
+  render();
+}
+
+function closeOrderListPopup() {
+  state.orderListPopupOpen = false;
+  render();
+}
+
+function setOrderListManufacturer(value) {
+  state.selectedOrderListManufacturer = value || "";
+  persist();
+  render();
+}
+
+function setOrderStatsView(view) {
+  if (!["week", "month", "year"].includes(view)) return;
+  state.orderStatsView = view;
+  persist();
+  render();
+}
+
+function getOrderStatsRange(view) {
+  const now = new Date();
+  const start = new Date(now);
+  const end = new Date(now);
+  if (view === "week") {
+    start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+    end.setDate(start.getDate() + 6);
+  } else if (view === "month") {
+    start.setDate(1);
+    end.setMonth(start.getMonth() + 1, 0);
+  } else {
+    start.setMonth(0, 1);
+    end.setMonth(11, 31);
+  }
+  return { start, end };
+}
+
+function buildOrderFrequency(view) {
+  const { start, end } = getOrderStatsRange(view);
+  const rows = (state.orderHistory || []).filter((e) => {
+    const d = new Date(e.at);
+    return (
+      d >= start &&
+      d <= end &&
+      (e.action === "mark_ordered" || e.action === "restock")
+    );
+  });
+
+  const map = {};
+  rows.forEach((e) => {
+    const key = `${e.toolId}`;
+    if (!map[key]) {
+      map[key] = {
+        toolId: e.toolId,
+        label: e.label,
+        size: e.size,
+        manufacturer: e.manufacturer,
+        articleNo: e.articleNo,
+        count: 0,
+        qtyTotal: 0,
+      };
+    }
+    map[key].count += 1;
+    map[key].qtyTotal += Number(e.qty || 0);
+  });
+
+  return Object.values(map).sort((a, b) => b.count - a.count);
+}
+
+function getOptimalQtySuggestion(tool) {
+  const yearData = buildOrderFrequency("year").find(
+    (r) => r.toolId === tool.id,
+  );
+  if (!yearData || yearData.count < 6) return null;
+  const avg = Math.ceil(yearData.qtyTotal / yearData.count);
+  return Math.max(1, avg);
+}
+
 function shouldShowOptimalQtySuggestion(tool) {
   const suggestion = getOptimalQtySuggestion(tool);
   if (!Number.isFinite(suggestion) || suggestion <= 0) return false;
