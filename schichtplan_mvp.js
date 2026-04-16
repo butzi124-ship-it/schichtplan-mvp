@@ -2219,73 +2219,91 @@ function askNumberCentered(message, initialValue = "1") {
   });
 }
 
-function editToolCentered(tool) {
-  const host = getModalHost();
-  return new Promise((resolve) => {
-    host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-4">
-        <h3 class="text-lg font-bold mb-3">Werkzeug bearbeiten – T ${tool.tNumber}</h3>
-        <div class="grid md:grid-cols-2 gap-2 mb-4">
-          <input id="editLabel" class="border rounded p-2" value="${tool.label}" />
-          <input id="editDiameter" class="border rounded p-2" value="${tool.diameter}" />
-          <select id="editThreadPrefix" class="border rounded p-2">
-            <option value="" ${!tool.threadPrefix ? "selected" : ""}>Kennung (nur Gewinde)</option>
-            <option value="M" ${tool.threadPrefix === "M" ? "selected" : ""}>M</option>
-            <option value="MF" ${tool.threadPrefix === "MF" ? "selected" : ""}>MF</option>
-            <option value="G" ${tool.threadPrefix === "G" ? "selected" : ""}>G</option>
-            <option value="UNF" ${tool.threadPrefix === "UNF" ? "selected" : ""}>UNF</option>
-            <option value="UNC" ${tool.threadPrefix === "UNC" ? "selected" : ""}>UNC</option>
-            <option value="Mx" ${tool.threadPrefix === "Mx" ? "selected" : ""}>Mx</option>
-          </select>
-          <input id="editThreadPitch" class="border rounded p-2" value="${tool.threadPitch || ""}" placeholder="Steigung P (nur MF)" />
-          <input id="editShelf" class="border rounded p-2" value="${tool.shelf}" />
-          <input id="editArticleNo" class="border rounded p-2" value="${tool.articleNo}" />
-          <select id="editHolder" class="border rounded p-2">
-            <option value="HSK 100" ${tool.holder === "HSK 100" ? "selected" : ""}>HSK 100</option>
-            <option value="HSK 63" ${tool.holder === "HSK 63" ? "selected" : ""}>HSK 63</option>
-          </select>
-          <input id="editManufacturer" class="border rounded p-2" value="${tool.manufacturer}" />
-          <input id="editStock" type="number" class="border rounded p-2" value="${tool.stock}" />
-          <input id="editMinStock" type="number" class="border rounded p-2" value="${tool.minStock}" />
-          <input id="editOptimalStock" type="number" class="border rounded p-2" value="${tool.optimalStock || 0}" />
-          <label class="flex items-center gap-2 text-sm"><input id="editInsertTool" type="checkbox" ${tool.insertTool ? "checked" : ""}/> Wendeplattenwerkzeug</label>
-          <input id="editInsertEdges" type="number" class="border rounded p-2" value="${tool.insertEdges || 0}" placeholder="Anzahl Schneiden" />
-        </div>
-        <div class="flex justify-end gap-2">
-          <button id="modalNo" class="px-3 py-1 rounded bg-slate-200">Abbrechen</button>
-          <button id="modalSave" class="px-3 py-1 rounded bg-slate-900 text-white">Speichern</button>
-        </div>
-      </div>
-    </div>`;
-    host.querySelector("#modalSave")?.addEventListener("click", () => {
-      const payload = {
-        label: host.querySelector("#editLabel")?.value?.trim() || "",
-        diameter: host.querySelector("#editDiameter")?.value?.trim() || "",
-        threadPrefix: host.querySelector("#editThreadPrefix")?.value || "",
-        threadPitch:
-          host.querySelector("#editThreadPitch")?.value?.trim() || "",
-        shelf:
-          host.querySelector("#editShelf")?.value?.trim().toUpperCase() || "",
-        articleNo: host.querySelector("#editArticleNo")?.value?.trim() || "",
-        holder: host.querySelector("#editHolder")?.value || "",
-        manufacturer:
-          host.querySelector("#editManufacturer")?.value?.trim() || "",
-        stock: Number(host.querySelector("#editStock")?.value || 0),
-        minStock: Number(host.querySelector("#editMinStock")?.value || 0),
-        optimalStock: Number(
-          host.querySelector("#editOptimalStock")?.value || 0,
-        ),
-        insertTool: !!host.querySelector("#editInsertTool")?.checked,
-        insertEdges: Number(host.querySelector("#editInsertEdges")?.value || 0),
-      };
-      host.innerHTML = "";
-      resolve(payload);
-    });
-    host.querySelector("#modalNo")?.addEventListener("click", () => {
-      host.innerHTML = "";
-      resolve(null);
-    });
-  });
+async function editTool(toolId) {
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool || currentUser.role !== "admin") return;
+
+  const data = await editToolCentered(tool);
+  if (!data) return;
+
+  const isThreadTool = isThreadToolLabel(data.label);
+  const isRadiusTool = isRadiusToolLabel(data.label);
+
+  if (
+    !data.label ||
+    !data.diameter ||
+    !/^[A-Z]\d{2}$/.test(data.shelf) ||
+    !data.articleNo ||
+    !["HSK 100", "HSK 63"].includes(data.holder)
+  ) {
+    return alert(
+      "Bitte Felder korrekt ausfüllen (A-Z + 2-stellige Zahl für Fach, Aufnahme HSK 100 oder HSK 63).",
+    );
+  }
+
+  if (isThreadTool && !data.threadPrefix) {
+    return alert("Bitte Gewindekennung wählen.");
+  }
+
+  if (isThreadTool && data.threadPrefix === "MF" && !data.threadPitch) {
+    return alert("Bitte bei MF die Steigung (P) angeben.");
+  }
+
+  if (isRadiusTool && !data.cornerRadius) {
+    return alert("Bitte Schneidenradius eingeben.");
+  }
+
+  if (!isThreadTool && !Number.isFinite(Number(data.diameter))) {
+    return alert("Bitte gültigen numerischen Durchmesser eingeben.");
+  }
+
+  if (
+    data.insertTool &&
+    (!Number.isFinite(Number(data.insertEdges)) ||
+      Number(data.insertEdges) <= 0)
+  ) {
+    return alert("Bitte Anzahl der Schneiden > 0 eingeben.");
+  }
+
+  const payload = {
+    label: data.label,
+    diameter: String(data.diameter),
+    thread_prefix: isThreadTool ? data.threadPrefix || null : null,
+    thread_pitch:
+      isThreadTool && data.threadPrefix === "MF"
+        ? data.threadPitch || null
+        : null,
+    corner_radius: isRadiusTool ? data.cornerRadius || null : null,
+    shelf: data.shelf,
+    article_no: data.articleNo,
+    holder: data.holder,
+    stock: Number(data.stock || 0),
+    min_stock: Number(data.minStock || 0),
+    optimal_stock: Number(data.optimalStock || 0),
+    manufacturer: data.manufacturer || null,
+    insert_tool: !!data.insertTool,
+    insert_edges: data.insertTool ? Number(data.insertEdges || 0) : 0,
+  };
+
+  const { data: updated, error } = await supabaseClient
+    .from("tools")
+    .update(payload)
+    .eq("id", toolId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Fehler beim Bearbeiten des Werkzeugs:", error);
+    return alert(`Werkzeug konnte nicht gespeichert werden: ${error.message}`);
+  }
+
+  const index = state.tools.findIndex((t) => t.id === toolId);
+  if (index !== -1) {
+    state.tools[index] = normalizeToolFromDb(updated);
+  }
+
+  persist();
+  render();
 }
 
 function renderToolCreateForm(prefix = "tool") {
@@ -2498,22 +2516,48 @@ function cleanupOrderArchive() {
   );
 }
 
-function markToolOrdered(toolId, ordered) {
+async function markToolOrdered(toolId, ordered) {
   const tool = state.tools.find((t) => t.id === toolId);
   if (!tool || currentUser.role !== "admin") return;
-  tool.ordered = ordered;
-  tool.orderedQty = ordered ? Math.max(1, effectiveOrderQty(tool)) : 0;
-  if (ordered) archiveOrderEvent(tool, tool.orderedQty, "mark_ordered");
+
+  const nextOrderedQty = ordered ? Math.max(1, effectiveOrderQty(tool)) : 0;
+
+  const { data: updated, error } = await supabaseClient
+    .from("tools")
+    .update({
+      ordered: !!ordered,
+      ordered_qty: Number(nextOrderedQty || 0),
+    })
+    .eq("id", toolId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Fehler beim Markieren als bestellt:", error);
+    return alert(`Bestellstatus konnte nicht gespeichert werden: ${error.message}`);
+  }
+
+  const index = state.tools.findIndex((t) => t.id === toolId);
+  if (index !== -1) {
+    state.tools[index] = normalizeToolFromDb(updated);
+  }
+
+  if (ordered) {
+    archiveOrderEvent(state.tools[index], state.tools[index].orderedQty, "mark_ordered");
+  }
+
   persist();
   render();
 }
 
 async function restockTool(toolId) {
   if (currentUser.role !== "admin") return;
+
   const tool = state.tools.find((t) => t.id === toolId);
   if (!tool) return;
 
   let add = 0;
+
   if (tool.ordered && Number(tool.orderedQty || 0) > 0) {
     const full = await askYesNoCentered("Bestellte Menge einlagern?");
     if (full) {
@@ -2532,17 +2576,42 @@ async function restockTool(toolId) {
 
   if (!Number.isFinite(add) || add <= 0) return;
 
-  tool.stock += add;
+  const nextStock = Number(tool.stock || 0) + Number(add || 0);
+
+  let nextOrderedQty = Number(tool.orderedQty || 0);
+  let nextOrdered = !!tool.ordered;
 
   if (tool.ordered && Number(tool.orderedQty || 0) > 0) {
-    tool.orderedQty = Math.max(0, Number(tool.orderedQty || 0) - add);
-    if (tool.orderedQty === 0) tool.ordered = false;
+    nextOrderedQty = Math.max(0, Number(tool.orderedQty || 0) - Number(add || 0));
+    if (nextOrderedQty === 0) nextOrdered = false;
   }
 
-  if (tool.stock >= tool.minStock && Number(tool.orderedQty || 0) === 0)
-    tool.ordered = false;
+  if (nextStock >= Number(tool.minStock || 0) && nextOrderedQty === 0) {
+    nextOrdered = false;
+  }
 
-  archiveOrderEvent(tool, add, "restock");
+  const { data: updated, error } = await supabaseClient
+    .from("tools")
+    .update({
+      stock: nextStock,
+      ordered: nextOrdered,
+      ordered_qty: nextOrderedQty,
+    })
+    .eq("id", toolId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Fehler beim Einlagern des Werkzeugs:", error);
+    return alert(`Einlagerung konnte nicht gespeichert werden: ${error.message}`);
+  }
+
+  const index = state.tools.findIndex((t) => t.id === toolId);
+  if (index !== -1) {
+    state.tools[index] = normalizeToolFromDb(updated);
+  }
+
+  archiveOrderEvent(state.tools[index], add, "restock");
   persist();
   render();
 }
@@ -2626,14 +2695,25 @@ async function editTool(toolId) {
 }
 async function deleteTool(toolId) {
   if (currentUser.role !== "admin") return;
+
   const tool = state.tools.find((t) => t.id === toolId);
   if (!tool) return;
+
   const yes = await askYesNoCentered(
     `Werkzeug T ${tool.tNumber} wirklich löschen?`,
   );
   if (!yes) return;
+
+  const { error } = await supabaseClient.from("tools").delete().eq("id", toolId);
+
+  if (error) {
+    console.error("Fehler beim Löschen des Werkzeugs:", error);
+    return alert(`Werkzeug konnte nicht gelöscht werden: ${error.message}`);
+  }
+
   state.tools = state.tools.filter((t) => t.id !== toolId);
   state.toolJournal = state.toolJournal.filter((j) => j.toolId !== toolId);
+
   persist();
   render();
 }
