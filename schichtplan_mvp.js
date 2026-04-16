@@ -125,6 +125,28 @@ async function loadEmployeesFromSupabase() {
   return data || [];
 }
 
+function normalizeToolFromDb(row) {
+  return {
+    id: row.id,
+    tNumber: row.t_number,
+    label: row.label,
+    diameter: row.diameter,
+    threadPrefix: row.thread_prefix || "",
+    threadPitch: row.thread_pitch || "",
+    shelf: row.shelf,
+    articleNo: row.article_no,
+    holder: row.holder,
+    stock: Number(row.stock || 0),
+    minStock: Number(row.min_stock || 0),
+    optimalStock: Number(row.optimal_stock || 0),
+    manufacturer: row.manufacturer || "",
+    ordered: !!row.ordered,
+    orderedQty: Number(row.ordered_qty || 0),
+    insertTool: !!row.insert_tool,
+    insertEdges: Number(row.insert_edges || 0),
+  };
+}
+
 async function loadToolsFromSupabase() {
   const { data, error } = await supabaseClient
     .from("tools")
@@ -136,7 +158,7 @@ async function loadToolsFromSupabase() {
     return [];
   }
 
-  return data || [];
+  return (data || []).map(normalizeToolFromDb);
 }
 
 async function getCurrentEmployeeRecord() {
@@ -269,11 +291,16 @@ async function bootSupabase() {
     return;
   }
 
-  const employees = await loadEmployeesFromSupabase();
+    const employees = await loadEmployeesFromSupabase();
   const tools = await loadToolsFromSupabase();
+
+  state.tools = tools;
+  persist();
 
   console.log("Employees aus Supabase:", employees);
   console.log("Tools aus Supabase:", tools);
+
+  if (currentUser) render();
 }
 
 function allUsers() {
@@ -2004,7 +2031,7 @@ function normalizeToolData(data) {
     insertEdges: data.insertTool ? data.insertEdges : 0,
   };
 }
-function createTool() {
+async function createTool() {
   if (currentUser.role !== "admin")
     return alert("Nur Admin darf Werkzeuge anlegen.");
 
@@ -2012,11 +2039,40 @@ function createTool() {
   const validation = validateToolData(data);
   if (!validation.ok) return alert(validation.message);
 
-  state.tools.push({
-    id: `tool-${Date.now()}`,
-    ...normalizeToolData(data),
-  });
+  const normalized = normalizeToolData(data);
 
+  const payload = {
+    t_number: String(normalized.tNumber),
+    label: normalized.label,
+    diameter: String(normalized.diameter),
+    thread_prefix: normalized.threadPrefix || null,
+    thread_pitch: normalized.threadPitch || null,
+    shelf: normalized.shelf,
+    article_no: normalized.articleNo,
+    holder: normalized.holder,
+    stock: Number(normalized.stock || 0),
+    min_stock: Number(normalized.minStock || 0),
+    optimal_stock: Number(normalized.optimalStock || 0),
+    manufacturer: normalized.manufacturer || null,
+    ordered: !!normalized.ordered,
+    ordered_qty: Number(normalized.orderedQty || 0),
+    insert_tool: !!normalized.insertTool,
+    insert_edges: Number(normalized.insertEdges || 0),
+    created_by_employee_id: currentEmployeeRecord?.id || null,
+  };
+
+  const { data: inserted, error } = await supabaseClient
+    .from("tools")
+    .insert(payload)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Fehler beim Anlegen des Werkzeugs in Supabase:", error);
+    return alert(`Werkzeug konnte nicht gespeichert werden: ${error.message}`);
+  }
+
+  state.tools.push(normalizeToolFromDb(inserted));
   persist();
   render();
 }
