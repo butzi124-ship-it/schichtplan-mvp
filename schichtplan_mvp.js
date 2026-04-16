@@ -317,7 +317,7 @@ async function bootSupabase() {
     return;
   }
 
-    const employees = await loadEmployeesFromSupabase();
+      const employees = await loadEmployeesFromSupabase();
   const tools = await loadToolsFromSupabase();
 
   state.tools = tools;
@@ -325,6 +325,8 @@ async function bootSupabase() {
 
   console.log("Employees aus Supabase:", employees);
   console.log("Tools aus Supabase:", tools);
+
+  if (currentUser) render();
 
   if (currentUser) render();
 }
@@ -1972,6 +1974,37 @@ function formatToolSize(tool) {
     return `${base} P${tool.threadPitch}`;
   return base;
 }
+function isRadiusToolLabel(label) {
+  return label === "Radiusfräser";
+}
+
+function updateToolTypeFields(prefix = "tool") {
+  const labelEl = document.getElementById(`${prefix}Label`);
+  const threadPrefixWrap = document.getElementById(`${prefix}ThreadPrefixWrap`);
+  const threadPitchWrap = document.getElementById(`${prefix}ThreadPitchWrap`);
+  const cornerRadiusWrap = document.getElementById(`${prefix}CornerRadiusWrap`);
+
+  const label = labelEl?.value || "";
+  const isThread = isThreadToolLabel(label);
+  const isRadius = isRadiusToolLabel(label);
+
+  if (threadPrefixWrap) threadPrefixWrap.style.display = isThread ? "" : "none";
+  if (threadPitchWrap)
+    threadPitchWrap.style.display =
+      isThread && labelEl?.value && document.getElementById(`${prefix}ThreadPrefix`)?.value === "MF"
+        ? ""
+        : "none";
+  if (cornerRadiusWrap) cornerRadiusWrap.style.display = isRadius ? "" : "none";
+}
+
+function updateThreadPitchVisibility(prefix = "tool") {
+  const label = document.getElementById(`${prefix}Label`)?.value || "";
+  const threadPrefix = document.getElementById(`${prefix}ThreadPrefix`)?.value || "";
+  const threadPitchWrap = document.getElementById(`${prefix}ThreadPitchWrap`);
+
+  const visible = isThreadToolLabel(label) && threadPrefix === "MF";
+  if (threadPitchWrap) threadPitchWrap.style.display = visible ? "" : "none";
+}
 
 function collectToolFormData(root = document) {
   return {
@@ -1980,6 +2013,7 @@ function collectToolFormData(root = document) {
     diameter: root.getElementById("toolDiameter")?.value?.trim(),
     threadPrefix: root.getElementById("toolThreadPrefix")?.value || "",
     threadPitch: root.getElementById("toolThreadPitch")?.value?.trim() || "",
+    cornerRadius: root.getElementById("toolCornerRadius")?.value?.trim() || "",
     shelf: root.getElementById("toolShelf")?.value?.trim().toUpperCase(),
     articleNo: root.getElementById("toolArticle")?.value?.trim(),
     holder: root.getElementById("toolHolder")?.value,
@@ -1994,6 +2028,8 @@ function collectToolFormData(root = document) {
 
 function validateToolData(data) {
   const isThreadTool = isThreadToolLabel(data.label);
+  const isRadiusTool = isRadiusToolLabel(data.label);
+
   if (
     !data.tNumber ||
     !data.label ||
@@ -2008,21 +2044,32 @@ function validateToolData(data) {
         "Bitte Felder korrekt ausfüllen (A-Z + 2-stellige Zahl für Fach, Aufnahme HSK 100 oder HSK 63).",
     };
   }
+
   if (isThreadTool && !data.threadPrefix) {
     return { ok: false, message: "Bitte Gewindekennung wählen." };
   }
+
   if (isThreadTool && data.threadPrefix === "MF" && !data.threadPitch) {
     return {
       ok: false,
       message: "Bitte bei MF die Steigung (P) angeben.",
     };
   }
+
+  if (isRadiusTool && !data.cornerRadius) {
+    return {
+      ok: false,
+      message: "Bitte Schneidenradius eingeben.",
+    };
+  }
+
   if (!isThreadTool && !Number.isFinite(Number(data.diameter))) {
     return {
       ok: false,
       message: "Bitte gültigen numerischen Durchmesser eingeben.",
     };
   }
+
   if (
     data.insertTool &&
     (!Number.isFinite(data.insertEdges) || data.insertEdges <= 0)
@@ -2032,6 +2079,7 @@ function validateToolData(data) {
       message: "Bitte Anzahl der Schneiden > 0 eingeben.",
     };
   }
+
   return { ok: true };
 }
 
@@ -2073,6 +2121,7 @@ async function createTool() {
     diameter: String(normalized.diameter),
     thread_prefix: normalized.threadPrefix || null,
     thread_pitch: normalized.threadPitch || null,
+    corner_radius: normalized.cornerRadius || null,
     shelf: normalized.shelf,
     article_no: normalized.articleNo,
     holder: normalized.holder,
@@ -2251,18 +2300,33 @@ function renderToolCreateForm(prefix = "tool") {
 
   return `<div class='grid md:grid-cols-2 gap-3'>
     <input id='${prefix}TNumber' class='border rounded p-2' placeholder='T-Nummer (z.B. 134)' />
-    <select id='${prefix}Label' class='border rounded p-2'>${labelOptions}</select>
-    <input id='${prefix}Diameter' class='border rounded p-2' placeholder='Durchmesser' />
-    <select id='${prefix}ThreadPrefix' class='border rounded p-2'>
-      <option value=''>Kennung (nur Gewinde)</option>
-      <option value='M'>M</option>
-      <option value='MF'>MF</option>
-      <option value='G'>G</option>
-      <option value='UNF'>UNF</option>
-      <option value='UNC'>UNC</option>
-      <option value='Mx'>Mx</option>
+
+    <select id='${prefix}Label' class='border rounded p-2' onchange='updateToolTypeFields("${prefix}")'>
+      ${labelOptions}
     </select>
-    <input id='${prefix}ThreadPitch' class='border rounded p-2' placeholder='Steigung P (nur MF)' />
+
+    <input id='${prefix}Diameter' class='border rounded p-2' placeholder='Durchmesser' />
+
+    <div id='${prefix}ThreadPrefixWrap' style='display:none;'>
+      <select id='${prefix}ThreadPrefix' class='border rounded p-2 w-full' onchange='updateThreadPitchVisibility("${prefix}")'>
+        <option value=''>Kennung (nur Gewinde)</option>
+        <option value='M'>M</option>
+        <option value='MF'>MF</option>
+        <option value='G'>G</option>
+        <option value='UNF'>UNF</option>
+        <option value='UNC'>UNC</option>
+        <option value='Mx'>Mx</option>
+      </select>
+    </div>
+
+    <div id='${prefix}ThreadPitchWrap' style='display:none;'>
+      <input id='${prefix}ThreadPitch' class='border rounded p-2 w-full' placeholder='Steigung P (nur MF)' />
+    </div>
+
+    <div id='${prefix}CornerRadiusWrap' style='display:none;'>
+      <input id='${prefix}CornerRadius' class='border rounded p-2 w-full' placeholder='Schneidenradius' />
+    </div>
+
     <input id='${prefix}Shelf' class='border rounded p-2' placeholder='A00' />
     <input id='${prefix}Article' class='border rounded p-2' placeholder='Artikel Nr.' />
     <select id='${prefix}Holder' class='border rounded p-2'>${holderOptions}</select>
@@ -2302,6 +2366,8 @@ function openCreateToolModal() {
     </div>
   </div>`;
 
+  updateToolTypeFields("tool");
+
   const close = () => {
     host.innerHTML = "";
   };
@@ -2310,15 +2376,50 @@ function openCreateToolModal() {
   host
     .querySelector("#toolCreateCloseBottom")
     ?.addEventListener("click", close);
-  host.querySelector("#toolCreateSave")?.addEventListener("click", () => {
+
+  host.querySelector("#toolCreateSave")?.addEventListener("click", async () => {
+    if (currentUser.role !== "admin")
+      return alert("Nur Admin darf Werkzeuge anlegen.");
+
     const data = collectToolFormData(document);
     const validation = validateToolData(data);
     if (!validation.ok) return alert(validation.message);
 
-    state.tools.push({
-      id: `tool-${Date.now()}`,
-      ...normalizeToolData(data),
-    });
+    const normalized = normalizeToolData(data);
+
+    const payload = {
+      t_number: String(normalized.tNumber),
+      label: normalized.label,
+      diameter: String(normalized.diameter),
+      thread_prefix: normalized.threadPrefix || null,
+      thread_pitch: normalized.threadPitch || null,
+      corner_radius: normalized.cornerRadius || null,
+      shelf: normalized.shelf,
+      article_no: normalized.articleNo,
+      holder: normalized.holder,
+      stock: Number(normalized.stock || 0),
+      min_stock: Number(normalized.minStock || 0),
+      optimal_stock: Number(normalized.optimalStock || 0),
+      manufacturer: normalized.manufacturer || null,
+      ordered: !!normalized.ordered,
+      ordered_qty: Number(normalized.orderedQty || 0),
+      insert_tool: !!normalized.insertTool,
+      insert_edges: Number(normalized.insertEdges || 0),
+      created_by_employee_id: currentEmployeeRecord?.id || null,
+    };
+
+    const { data: inserted, error } = await supabaseClient
+      .from("tools")
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Fehler beim Anlegen des Werkzeugs in Supabase:", error);
+      return alert(`Werkzeug konnte nicht gespeichert werden: ${error.message}`);
+    }
+
+    state.tools.push(normalizeToolFromDb(inserted));
     persist();
     close();
     render();
