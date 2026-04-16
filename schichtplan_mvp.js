@@ -9,88 +9,12 @@ let supabaseReady = false;
 let currentSupabaseUser = null;
 let currentEmployeeRecord = null;
 
-const USERS = [
-  { name: "Lavdrim", slot: "A", type: "core" },
-  { name: "Roger", slot: "B", type: "core" },
-  { name: "Dashmir", slot: "C", type: "core" },
-  { name: "Thomas", slot: "D", type: "springer" },
-  { name: "Musa", slot: "E", type: "springer" },
-  { name: "Ardian", slot: "F", type: "springer" },
-];
-const SLOT_CODES = ["A", "B", "C", "D", "E", "F"];
-const DEFAULT_SLOT_ASSIGNMENTS = {
-  A: "Lavdrim",
-  B: "Roger",
-  C: "Dashmir",
-  D: "Thomas",
-  E: "Musa",
-  F: "Ardian",
-};
-const DEFAULT_TOOL_LABELS = [
-  "Schaftfräser",
-  "Trochodialfräser",
-  "Radiusfräser",
-  "Kugelfräser",
-  "Bohrer",
-  "NC Anbohrer",
-  "Gewindebohrer",
-  "Gewindefräser",
-  "Gewindeformer",
-  "Gewindewirbler",
-  "Ausdrehkopf",
-];
-const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
-const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
-
-const STORAGE_KEY = "schichtplan_mvp_v_0_2";
-const state = loadState();
-let currentUser = null;
-let currentTab = "schichtplan";
-let statsViewPeriod = "week";
-
-const WEEK_TEMPLATES = [
-  makeWeek("A", "B", "C", "A", "B"),
-  makeWeek("B", "C", "A", "B", "C"),
-  makeWeek("C", "A", "B", "C", "A"),
-  makeWeek("A", "B", "C", "A", "B"),
-  makeWeek("B", "C", "A", "B", "C"),
-  makeWeek("C", "A", "B", "C", "A"),
-];
-const ROTATION_ANCHOR_MONDAY = "2026-01-05";
-const PLANNING_SUBTABS = [
-  { id: "personal", label: "Personal" },
-  { id: "abstinenz", label: "Abstinenz" },
-  { id: "wochenende", label: "Wochenendeinsätze" },
-  { id: "schichttausch", label: "Schichttausch" },
-];
-
-function setLoginStatus(message, isError = false) {
-  const el = document.getElementById("loginStatus");
-  if (!el) return;
-  el.textContent = message;
-  el.className = isError
-    ? "text-sm rounded border border-rose-200 bg-rose-50 p-3 text-rose-700"
-    : "text-sm rounded border border-slate-200 bg-slate-50 p-3 text-slate-600";
-}
-
-function fillLogin(type) {
-  const emailInput = document.getElementById("loginEmail");
-  const passwordInput = document.getElementById("loginPassword");
-  if (!emailInput || !passwordInput) return;
-
-  if (type === "admin" && window.TEST_ADMIN_EMAIL) {
-    emailInput.value = window.TEST_ADMIN_EMAIL;
-  }
-  if (type === "employee" && window.TEST_EMPLOYEE_EMAIL) {
-    emailInput.value = window.TEST_EMPLOYEE_EMAIL;
-  }
-
-  passwordInput.focus();
-}
-
 async function testSupabaseConnection() {
   try {
-    const { error } = await supabaseClient.from("employees").select("id").limit(1);
+    const { error } = await supabaseClient
+      .from("employees")
+      .select("id")
+      .limit(1);
 
     if (error) {
       console.error("Supabase-Test fehlgeschlagen:", error);
@@ -109,7 +33,7 @@ async function testSupabaseConnection() {
 }
 
 async function loadEmployeesFromSupabase() {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("employees")
     .select("*")
     .order("display_name", { ascending: true });
@@ -123,7 +47,7 @@ async function loadEmployeesFromSupabase() {
 }
 
 async function loadToolsFromSupabase() {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("tools")
     .select("*")
     .order("t_number", { ascending: true });
@@ -149,7 +73,7 @@ async function getCurrentEmployeeRecord() {
 
   if (!user) return null;
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("employees")
     .select("*")
     .eq("auth_user_id", user.id)
