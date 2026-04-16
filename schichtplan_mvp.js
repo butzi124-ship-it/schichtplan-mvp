@@ -133,28 +133,6 @@ function normalizeToolFromDb(row) {
     diameter: row.diameter,
     threadPrefix: row.thread_prefix || "",
     threadPitch: row.thread_pitch || "",
-    shelf: row.shelf,
-    articleNo: row.article_no,
-    holder: row.holder,
-    stock: Number(row.stock || 0),
-    minStock: Number(row.min_stock || 0),
-    optimalStock: Number(row.optimal_stock || 0),
-    manufacturer: row.manufacturer || "",
-    ordered: !!row.ordered,
-    orderedQty: Number(row.ordered_qty || 0),
-    insertTool: !!row.insert_tool,
-    insertEdges: Number(row.insert_edges || 0),
-  };
-}
-
-function normalizeToolFromDb(row) {
-  return {
-    id: row.id,
-    tNumber: row.t_number,
-    label: row.label,
-    diameter: row.diameter,
-    threadPrefix: row.thread_prefix || "",
-    threadPitch: row.thread_pitch || "",
     cornerRadius: row.corner_radius || "",
     shelf: row.shelf,
     articleNo: row.article_no,
@@ -182,37 +160,6 @@ async function loadToolsFromSupabase() {
   }
 
   return (data || []).map(normalizeToolFromDb);
-}
-
-  return (data || []).map(normalizeToolFromDb);
-}
-
-async function getCurrentEmployeeRecord() {
-  const {
-    data: { user },
-    error: userError,
-  } = await supabaseClient.auth.getUser();
-
-  if (userError) {
-    console.error("Fehler bei auth.getUser():", userError);
-    return null;
-  }
-
-  if (!user) return null;
-
-  const { data, error } = await supabaseClient
-    .from("employees")
-    .select("*")
-    .eq("auth_user_id", user.id)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (error) {
-    console.error("Fehler beim Laden des employees-Datensatzes:", error);
-    return null;
-  }
-
-  return data || null;
 }
 
 async function loginWithSupabase() {
@@ -327,8 +274,7 @@ async function bootSupabase() {
   console.log("Tools aus Supabase:", tools);
 
   if (currentUser) render();
-
-  if (currentUser) render();
+  
 }
 
 function allUsers() {
@@ -2085,13 +2031,16 @@ function validateToolData(data) {
 
 function normalizeToolData(data) {
   const isThreadTool = isThreadToolLabel(data.label);
+  const isRadiusTool = isRadiusToolLabel(data.label);
+
   return {
     tNumber: data.tNumber,
     label: data.label,
-    diameter: isThreadTool ? data.diameter : Number(data.diameter),
+    diameter: isThreadTool ? data.diameter : String(data.diameter),
     threadPrefix: isThreadTool ? data.threadPrefix : "",
     threadPitch:
       isThreadTool && data.threadPrefix === "MF" ? data.threadPitch : "",
+    cornerRadius: isRadiusTool ? data.cornerRadius : "",
     shelf: data.shelf,
     articleNo: data.articleNo,
     holder: data.holder,
