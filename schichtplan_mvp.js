@@ -213,32 +213,32 @@ async function loginWithSupabase() {
   }
 
   async function getCurrentEmployeeRecord() {
-  const {
-    data: { user },
-    error: userError,
-  } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseClient.auth.getUser();
 
-  if (userError) {
-    console.error("Fehler bei auth.getUser():", userError);
-    return null;
+    if (userError) {
+      console.error("Fehler bei auth.getUser():", userError);
+      return null;
+    }
+
+    if (!user) return null;
+
+    const { data, error } = await supabaseClient
+      .from("employees")
+      .select("*")
+      .eq("auth_user_id", user.id)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Fehler beim Laden des employees-Datensatzes:", error);
+      return null;
+    }
+
+    return data || null;
   }
-
-  if (!user) return null;
-
-  const { data, error } = await supabaseClient
-    .from("employees")
-    .select("*")
-    .eq("auth_user_id", user.id)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (error) {
-    console.error("Fehler beim Laden des employees-Datensatzes:", error);
-    return null;
-  }
-
-  return data || null;
-}
 
   await syncSupabaseSessionToApp();
 }
@@ -290,6 +290,10 @@ async function syncSupabaseSessionToApp() {
     role: currentEmployeeRecord.role,
   };
 
+  const tools = await loadToolsFromSupabase();
+  state.tools = tools;
+  persist();
+
   document.getElementById("loginBox")?.classList.add("hidden");
   setLoginStatus(
     `Angemeldet als ${currentEmployeeRecord.display_name} (${currentEmployeeRecord.role}).`,
@@ -297,6 +301,7 @@ async function syncSupabaseSessionToApp() {
 
   console.log("Supabase-User:", currentSupabaseUser);
   console.log("Employees-Datensatz:", currentEmployeeRecord);
+  console.log("Tools nach Login geladen:", tools);
 
   render();
 }
@@ -320,7 +325,7 @@ async function bootSupabase() {
     return;
   }
 
-      const employees = await loadEmployeesFromSupabase();
+  const employees = await loadEmployeesFromSupabase();
   const tools = await loadToolsFromSupabase();
 
   state.tools = tools;
@@ -330,7 +335,6 @@ async function bootSupabase() {
   console.log("Tools aus Supabase:", tools);
 
   if (currentUser) render();
-  
 }
 
 function allUsers() {
@@ -669,8 +673,7 @@ function buildShift(date, id, template) {
   }
 
   const open =
-    canceled ||
-    (!assigned && (absent || !assigned || assigned === "NONE"));
+    canceled || (!assigned && (absent || !assigned || assigned === "NONE"));
 
   return {
     id,
@@ -1348,7 +1351,11 @@ async function planAbsenceReplacement(type, entryId) {
   clearReplacementPlanForSource(type, entryId);
 
   if (full) {
-    const choice = await chooseReplacementUser(entry.user, entry.from, entry.to);
+    const choice = await chooseReplacementUser(
+      entry.user,
+      entry.from,
+      entry.to,
+    );
     if (!choice) return;
 
     const shifts = getShiftsOfUserInRange(entry.user, entry.from, entry.to);
@@ -1993,7 +2000,9 @@ function updateToolTypeFields(prefix = "tool") {
   if (threadPrefixWrap) threadPrefixWrap.style.display = isThread ? "" : "none";
   if (threadPitchWrap)
     threadPitchWrap.style.display =
-      isThread && labelEl?.value && document.getElementById(`${prefix}ThreadPrefix`)?.value === "MF"
+      isThread &&
+      labelEl?.value &&
+      document.getElementById(`${prefix}ThreadPrefix`)?.value === "MF"
         ? ""
         : "none";
   if (cornerRadiusWrap) cornerRadiusWrap.style.display = isRadius ? "" : "none";
@@ -2001,7 +2010,8 @@ function updateToolTypeFields(prefix = "tool") {
 
 function updateThreadPitchVisibility(prefix = "tool") {
   const label = document.getElementById(`${prefix}Label`)?.value || "";
-  const threadPrefix = document.getElementById(`${prefix}ThreadPrefix`)?.value || "";
+  const threadPrefix =
+    document.getElementById(`${prefix}ThreadPrefix`)?.value || "";
   const threadPitchWrap = document.getElementById(`${prefix}ThreadPitchWrap`);
 
   const visible = isThreadToolLabel(label) && threadPrefix === "MF";
@@ -2439,7 +2449,9 @@ function openCreateToolModal() {
 
     if (error) {
       console.error("Fehler beim Anlegen des Werkzeugs in Supabase:", error);
-      return alert(`Werkzeug konnte nicht gespeichert werden: ${error.message}`);
+      return alert(
+        `Werkzeug konnte nicht gespeichert werden: ${error.message}`,
+      );
     }
 
     state.tools.push(normalizeToolFromDb(inserted));
@@ -2534,7 +2546,9 @@ async function markToolOrdered(toolId, ordered) {
 
   if (error) {
     console.error("Fehler beim Markieren als bestellt:", error);
-    return alert(`Bestellstatus konnte nicht gespeichert werden: ${error.message}`);
+    return alert(
+      `Bestellstatus konnte nicht gespeichert werden: ${error.message}`,
+    );
   }
 
   const index = state.tools.findIndex((t) => t.id === toolId);
@@ -2543,7 +2557,11 @@ async function markToolOrdered(toolId, ordered) {
   }
 
   if (ordered) {
-    archiveOrderEvent(state.tools[index], state.tools[index].orderedQty, "mark_ordered");
+    archiveOrderEvent(
+      state.tools[index],
+      state.tools[index].orderedQty,
+      "mark_ordered",
+    );
   }
 
   persist();
@@ -2582,7 +2600,10 @@ async function restockTool(toolId) {
   let nextOrdered = !!tool.ordered;
 
   if (tool.ordered && Number(tool.orderedQty || 0) > 0) {
-    nextOrderedQty = Math.max(0, Number(tool.orderedQty || 0) - Number(add || 0));
+    nextOrderedQty = Math.max(
+      0,
+      Number(tool.orderedQty || 0) - Number(add || 0),
+    );
     if (nextOrderedQty === 0) nextOrdered = false;
   }
 
@@ -2603,7 +2624,9 @@ async function restockTool(toolId) {
 
   if (error) {
     console.error("Fehler beim Einlagern des Werkzeugs:", error);
-    return alert(`Einlagerung konnte nicht gespeichert werden: ${error.message}`);
+    return alert(
+      `Einlagerung konnte nicht gespeichert werden: ${error.message}`,
+    );
   }
 
   const index = state.tools.findIndex((t) => t.id === toolId);
@@ -2704,7 +2727,10 @@ async function deleteTool(toolId) {
   );
   if (!yes) return;
 
-  const { error } = await supabaseClient.from("tools").delete().eq("id", toolId);
+  const { error } = await supabaseClient
+    .from("tools")
+    .delete()
+    .eq("id", toolId);
 
   if (error) {
     console.error("Fehler beim Löschen des Werkzeugs:", error);
