@@ -147,6 +147,29 @@ function normalizeToolFromDb(row) {
   };
 }
 
+function normalizeToolFromDb(row) {
+  return {
+    id: row.id,
+    tNumber: row.t_number,
+    label: row.label,
+    diameter: row.diameter,
+    threadPrefix: row.thread_prefix || "",
+    threadPitch: row.thread_pitch || "",
+    cornerRadius: row.corner_radius || "",
+    shelf: row.shelf,
+    articleNo: row.article_no,
+    holder: row.holder,
+    stock: Number(row.stock || 0),
+    minStock: Number(row.min_stock || 0),
+    optimalStock: Number(row.optimal_stock || 0),
+    manufacturer: row.manufacturer || "",
+    ordered: !!row.ordered,
+    orderedQty: Number(row.ordered_qty || 0),
+    insertTool: !!row.insert_tool,
+    insertEdges: Number(row.insert_edges || 0),
+  };
+}
+
 async function loadToolsFromSupabase() {
   const { data, error } = await supabaseClient
     .from("tools")
@@ -157,6 +180,9 @@ async function loadToolsFromSupabase() {
     console.error("Fehler beim Laden von tools:", error);
     return [];
   }
+
+  return (data || []).map(normalizeToolFromDb);
+}
 
   return (data || []).map(normalizeToolFromDb);
 }
