@@ -2234,76 +2234,123 @@ async function editToolCentered(tool) {
 
   return new Promise((resolve) => {
     host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-auto p-4">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-auto p-5">
         <div class='flex items-center justify-between mb-4 gap-3'>
           <h3 class="text-lg font-bold">Werkzeug bearbeiten – T ${tool.tNumber}</h3>
           <button id="toolEditCloseTop" class="px-3 py-1 rounded bg-slate-200">Schließen</button>
         </div>
 
-        <div class='grid md:grid-cols-2 gap-3'>
-          <input id='editTNumber' class='border rounded p-2 bg-slate-100' value="${tool.tNumber}" disabled />
+        <div class='grid md:grid-cols-2 gap-4'>
+          <label class='text-sm font-medium'>
+            T-Nummer
+            <input id='editTNumber' class='border rounded p-2 w-full mt-1 bg-slate-100' value="${tool.tNumber}" disabled />
+          </label>
 
-          <select id='editLabel' class='border rounded p-2' onchange='updateEditToolTypeFields()'>
-            ${getToolLabels()
-              .map(
-                (l) =>
-                  `<option value="${l}" ${tool.label === l ? "selected" : ""}>${l}</option>`,
-              )
-              .join("")}
-          </select>
+          <label class='text-sm font-medium'>
+            Bezeichnung
+            <select id='editLabel' class='border rounded p-2 w-full mt-1' onchange='updateEditToolTypeFields()'>
+              ${getToolLabels()
+                .map(
+                  (l) =>
+                    `<option value="${l}" ${tool.label === l ? "selected" : ""}>${l}</option>`,
+                )
+                .join("")}
+            </select>
+          </label>
 
-          <input id='editDiameter' class='border rounded p-2' placeholder='Durchmesser' value="${tool.diameter ?? ""}" />
+          <label class='text-sm font-medium'>
+            Durchmesser
+            <input id='editDiameter' class='border rounded p-2 w-full mt-1' placeholder='Durchmesser' value="${tool.diameter ?? ""}" />
+          </label>
 
           <div id='editThreadPrefixWrap' style='display:none;'>
-            <select id='editThreadPrefix' class='border rounded p-2 w-full' onchange='updateEditThreadPitchVisibility()'>
-              <option value=''>Kennung (nur Gewinde)</option>
-              <option value='M' ${tool.threadPrefix === "M" ? "selected" : ""}>M</option>
-              <option value='MF' ${tool.threadPrefix === "MF" ? "selected" : ""}>MF</option>
-              <option value='G' ${tool.threadPrefix === "G" ? "selected" : ""}>G</option>
-              <option value='UNF' ${tool.threadPrefix === "UNF" ? "selected" : ""}>UNF</option>
-              <option value='UNC' ${tool.threadPrefix === "UNC" ? "selected" : ""}>UNC</option>
-              <option value='Mx' ${tool.threadPrefix === "Mx" ? "selected" : ""}>Mx</option>
-            </select>
+            <label class='text-sm font-medium block'>
+              Gewindekennung
+              <select id='editThreadPrefix' class='border rounded p-2 w-full mt-1' onchange='updateEditThreadPitchVisibility()'>
+                <option value=''>Kennung wählen</option>
+                <option value='M' ${tool.threadPrefix === "M" ? "selected" : ""}>M</option>
+                <option value='MF' ${tool.threadPrefix === "MF" ? "selected" : ""}>MF</option>
+                <option value='G' ${tool.threadPrefix === "G" ? "selected" : ""}>G</option>
+                <option value='UNF' ${tool.threadPrefix === "UNF" ? "selected" : ""}>UNF</option>
+                <option value='UNC' ${tool.threadPrefix === "UNC" ? "selected" : ""}>UNC</option>
+                <option value='Mx' ${tool.threadPrefix === "Mx" ? "selected" : ""}>Mx</option>
+              </select>
+            </label>
           </div>
 
           <div id='editThreadPitchWrap' style='display:none;'>
-            <input id='editThreadPitch' class='border rounded p-2 w-full' placeholder='Steigung P (nur MF)' value="${tool.threadPitch || ""}" />
+            <label class='text-sm font-medium block'>
+              Steigung
+              <input id='editThreadPitch' class='border rounded p-2 w-full mt-1' placeholder='Steigung P (nur MF)' value="${tool.threadPitch || ""}" />
+            </label>
           </div>
 
           <div id='editCornerRadiusWrap' style='display:none;'>
-            <input id='editCornerRadius' class='border rounded p-2 w-full' placeholder='Schneidenradius' value="${tool.cornerRadius || ""}" />
+            <label class='text-sm font-medium block'>
+              Schneidenradius
+              <input id='editCornerRadius' class='border rounded p-2 w-full mt-1' placeholder='Schneidenradius' value="${tool.cornerRadius || ""}" />
+            </label>
           </div>
 
-          <input id='editShelf' class='border rounded p-2' placeholder='A00' value="${tool.shelf || ""}" />
-          <input id='editArticleNo' class='border rounded p-2' placeholder='Artikel Nr.' value="${tool.articleNo || ""}" />
+          <label class='text-sm font-medium'>
+            Lagerfach
+            <input id='editShelf' class='border rounded p-2 w-full mt-1' placeholder='A00' value="${tool.shelf || ""}" />
+          </label>
 
-          <select id='editHolder' class='border rounded p-2'>
-            <option value='HSK 100' ${tool.holder === "HSK 100" ? "selected" : ""}>HSK 100</option>
-            <option value='HSK 63' ${tool.holder === "HSK 63" ? "selected" : ""}>HSK 63</option>
-          </select>
+          <label class='text-sm font-medium'>
+            Artikelnummer
+            <input id='editArticleNo' class='border rounded p-2 w-full mt-1' placeholder='Artikel Nr.' value="${tool.articleNo || ""}" />
+          </label>
 
-          <select id='editManufacturer' class='border rounded p-2'>
-            ${getToolManufacturers()
-              .map(
-                (m) =>
-                  `<option value="${m}" ${tool.manufacturer === m ? "selected" : ""}>${m}</option>`,
-              )
-              .join("")}
-          </select>
+          <label class='text-sm font-medium'>
+            Aufnahme
+            <select id='editHolder' class='border rounded p-2 w-full mt-1'>
+              <option value='HSK 100' ${tool.holder === "HSK 100" ? "selected" : ""}>HSK 100</option>
+              <option value='HSK 63' ${tool.holder === "HSK 63" ? "selected" : ""}>HSK 63</option>
+            </select>
+          </label>
 
-          <input id='editStock' type='number' class='border rounded p-2' placeholder='Bestand' value="${tool.stock ?? 0}" />
-          <input id='editMinStock' type='number' class='border rounded p-2' placeholder='Mindestbestand' value="${tool.minStock ?? 0}" />
-          <input id='editOptimalStock' type='number' class='border rounded p-2' placeholder='Optimale Stückzahl' value="${tool.optimalStock ?? 0}" />
+          <label class='text-sm font-medium'>
+            Hersteller
+            <select id='editManufacturer' class='border rounded p-2 w-full mt-1'>
+              ${getToolManufacturers()
+                .map(
+                  (m) =>
+                    `<option value="${m}" ${tool.manufacturer === m ? "selected" : ""}>${m}</option>`,
+                )
+                .join("")}
+            </select>
+          </label>
+
+          <label class='text-sm font-medium'>
+            Bestand
+            <input id='editStock' type='number' class='border rounded p-2 w-full mt-1' placeholder='Bestand' value="${tool.stock ?? 0}" />
+          </label>
+
+          <label class='text-sm font-medium'>
+            Mindestbestand
+            <input id='editMinStock' type='number' class='border rounded p-2 w-full mt-1' placeholder='Mindestbestand' value="${tool.minStock ?? 0}" />
+          </label>
+
+          <label class='text-sm font-medium'>
+            Optimale Stückzahl
+            <input id='editOptimalStock' type='number' class='border rounded p-2 w-full mt-1' placeholder='Optimale Stückzahl' value="${tool.optimalStock ?? 0}" />
+          </label>
+
+          <div></div>
 
           <label class='flex items-center gap-2 text-sm md:col-span-2'>
             <input id='editInsertTool' type='checkbox' ${tool.insertTool ? "checked" : ""} onchange='toggleInsertToolFieldsById("editInsertTool","editInsertEdges")' />
             Wendeplattenwerkzeug
           </label>
 
-          <input id='editInsertEdges' type='number' class='border rounded p-2 md:col-span-2' placeholder='Anzahl Schneiden' value="${tool.insertEdges ?? 0}" ${tool.insertTool ? "" : "disabled"} />
+          <label class='text-sm font-medium md:col-span-2'>
+            Anzahl Schneiden
+            <input id='editInsertEdges' type='number' class='border rounded p-2 w-full mt-1' placeholder='Anzahl Schneiden' value="${tool.insertEdges ?? 0}" ${tool.insertTool ? "" : "disabled"} />
+          </label>
         </div>
 
-        <div class='flex justify-end gap-2 mt-4'>
+        <div class='flex justify-end gap-2 mt-5'>
           <button id="toolEditCloseBottom" class="px-3 py-2 rounded bg-slate-200">Abbrechen</button>
           <button id="toolEditSave" class="px-3 py-2 rounded bg-slate-900 text-white">Speichern</button>
         </div>
@@ -2322,38 +2369,27 @@ async function editToolCentered(tool) {
       resolve(null);
     });
 
-    host
-      .querySelector("#toolEditCloseBottom")
-      ?.addEventListener("click", () => {
-        close();
-        resolve(null);
-      });
+    host.querySelector("#toolEditCloseBottom")?.addEventListener("click", () => {
+      close();
+      resolve(null);
+    });
 
     host.querySelector("#toolEditSave")?.addEventListener("click", () => {
       const data = {
         label: document.getElementById("editLabel")?.value || "",
         diameter: document.getElementById("editDiameter")?.value?.trim() || "",
         threadPrefix: document.getElementById("editThreadPrefix")?.value || "",
-        threadPitch:
-          document.getElementById("editThreadPitch")?.value?.trim() || "",
-        cornerRadius:
-          document.getElementById("editCornerRadius")?.value?.trim() || "",
-        shelf:
-          document.getElementById("editShelf")?.value?.trim().toUpperCase() ||
-          "",
-        articleNo:
-          document.getElementById("editArticleNo")?.value?.trim() || "",
+        threadPitch: document.getElementById("editThreadPitch")?.value?.trim() || "",
+        cornerRadius: document.getElementById("editCornerRadius")?.value?.trim() || "",
+        shelf: document.getElementById("editShelf")?.value?.trim().toUpperCase() || "",
+        articleNo: document.getElementById("editArticleNo")?.value?.trim() || "",
         holder: document.getElementById("editHolder")?.value || "",
         manufacturer: document.getElementById("editManufacturer")?.value || "",
         stock: Number(document.getElementById("editStock")?.value || 0),
         minStock: Number(document.getElementById("editMinStock")?.value || 0),
-        optimalStock: Number(
-          document.getElementById("editOptimalStock")?.value || 0,
-        ),
+        optimalStock: Number(document.getElementById("editOptimalStock")?.value || 0),
         insertTool: !!document.getElementById("editInsertTool")?.checked,
-        insertEdges: Number(
-          document.getElementById("editInsertEdges")?.value || 0,
-        ),
+        insertEdges: Number(document.getElementById("editInsertEdges")?.value || 0),
       };
 
       close();
