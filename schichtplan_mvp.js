@@ -8,6 +8,7 @@ const supabaseClient = createClient(
 let supabaseReady = false;
 let currentSupabaseUser = null;
 let currentEmployeeRecord = null;
+let toolMaterials = [];
 
 const USERS = [
   { name: "Lavdrim", slot: "A", type: "core" },
@@ -134,6 +135,7 @@ function normalizeToolFromDb(row) {
     threadPrefix: row.thread_prefix || "",
     threadPitch: row.thread_pitch || "",
     cornerRadius: row.corner_radius || "",
+    materialId: row.material_id || null,
     shelf: row.shelf,
     articleNo: row.article_no,
     holder: row.holder,
@@ -188,6 +190,28 @@ async function getCurrentEmployeeRecord() {
   }
 
   return data || null;
+}
+
+async function loadToolMaterialsFromSupabase() {
+  const { data, error } = await supabaseClient
+    .from("tool_materials")
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+
+  if (error) {
+    console.error("Fehler beim Laden von tool_materials:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+function getToolMaterialNameById(materialId) {
+  if (!materialId) return "-";
+  const found = toolMaterials.find((m) => m.id === materialId);
+  return found?.name || "-";
 }
 
 async function loginWithSupabase() {
@@ -2026,6 +2050,7 @@ function collectToolFormData(root = document) {
     threadPrefix: root.getElementById("toolThreadPrefix")?.value || "",
     threadPitch: root.getElementById("toolThreadPitch")?.value?.trim() || "",
     cornerRadius: root.getElementById("toolCornerRadius")?.value?.trim() || "",
+    materialId: root.getElementById("toolMaterial")?.value || "",
     shelf: root.getElementById("toolShelf")?.value?.trim().toUpperCase(),
     articleNo: root.getElementById("toolArticle")?.value?.trim(),
     holder: root.getElementById("toolHolder")?.value,
@@ -2107,6 +2132,7 @@ function normalizeToolData(data) {
     threadPitch:
       isThreadTool && data.threadPrefix === "MF" ? data.threadPitch : "",
     cornerRadius: isRadiusTool ? data.cornerRadius : "",
+    materialId: data.materialId || null,
     shelf: data.shelf,
     articleNo: data.articleNo,
     holder: data.holder,
@@ -2131,25 +2157,26 @@ async function createTool() {
   const normalized = normalizeToolData(data);
 
   const payload = {
-    t_number: String(normalized.tNumber),
-    label: normalized.label,
-    diameter: String(normalized.diameter),
-    thread_prefix: normalized.threadPrefix || null,
-    thread_pitch: normalized.threadPitch || null,
-    corner_radius: normalized.cornerRadius || null,
-    shelf: normalized.shelf,
-    article_no: normalized.articleNo,
-    holder: normalized.holder,
-    stock: Number(normalized.stock || 0),
-    min_stock: Number(normalized.minStock || 0),
-    optimal_stock: Number(normalized.optimalStock || 0),
-    manufacturer: normalized.manufacturer || null,
-    ordered: !!normalized.ordered,
-    ordered_qty: Number(normalized.orderedQty || 0),
-    insert_tool: !!normalized.insertTool,
-    insert_edges: Number(normalized.insertEdges || 0),
-    created_by_employee_id: currentEmployeeRecord?.id || null,
-  };
+  t_number: String(normalized.tNumber),
+  label: normalized.label,
+  diameter: String(normalized.diameter),
+  thread_prefix: normalized.threadPrefix || null,
+  thread_pitch: normalized.threadPitch || null,
+  corner_radius: normalized.cornerRadius || null,
+  material_id: normalized.materialId || null,
+  shelf: normalized.shelf,
+  article_no: normalized.articleNo,
+  holder: normalized.holder,
+  stock: Number(normalized.stock || 0),
+  min_stock: Number(normalized.minStock || 0),
+  optimal_stock: Number(normalized.optimalStock || 0),
+  manufacturer: normalized.manufacturer || null,
+  ordered: !!normalized.ordered,
+  ordered_qty: Number(normalized.orderedQty || 0),
+  insert_tool: !!normalized.insertTool,
+  insert_edges: Number(normalized.insertEdges || 0),
+  created_by_employee_id: currentEmployeeRecord?.id || null,
+};
 
   const { data: inserted, error } = await supabaseClient
     .from("tools")
@@ -2293,6 +2320,19 @@ async function editToolCentered(tool) {
           </div>
 
           <label class='text-sm font-medium'>
+  Schneidwerkstoff
+  <select id='editMaterial' class='border rounded p-2 w-full mt-1'>
+    <option value=''>Schneidwerkstoff wählen</option>
+    ${toolMaterials
+      .map(
+        (m) =>
+          `<option value="${m.id}" ${tool.materialId === m.id ? "selected" : ""}>${m.name}</option>`,
+      )
+      .join("")}
+  </select>
+</label>
+
+          <label class='text-sm font-medium'>
             Lagerfach
             <input id='editShelf' class='border rounded p-2 w-full mt-1' placeholder='A00' value="${tool.shelf || ""}" />
           </label>
@@ -2376,21 +2416,22 @@ async function editToolCentered(tool) {
 
     host.querySelector("#toolEditSave")?.addEventListener("click", () => {
       const data = {
-        label: document.getElementById("editLabel")?.value || "",
-        diameter: document.getElementById("editDiameter")?.value?.trim() || "",
-        threadPrefix: document.getElementById("editThreadPrefix")?.value || "",
-        threadPitch: document.getElementById("editThreadPitch")?.value?.trim() || "",
-        cornerRadius: document.getElementById("editCornerRadius")?.value?.trim() || "",
-        shelf: document.getElementById("editShelf")?.value?.trim().toUpperCase() || "",
-        articleNo: document.getElementById("editArticleNo")?.value?.trim() || "",
-        holder: document.getElementById("editHolder")?.value || "",
-        manufacturer: document.getElementById("editManufacturer")?.value || "",
-        stock: Number(document.getElementById("editStock")?.value || 0),
-        minStock: Number(document.getElementById("editMinStock")?.value || 0),
-        optimalStock: Number(document.getElementById("editOptimalStock")?.value || 0),
-        insertTool: !!document.getElementById("editInsertTool")?.checked,
-        insertEdges: Number(document.getElementById("editInsertEdges")?.value || 0),
-      };
+  label: document.getElementById("editLabel")?.value || "",
+  diameter: document.getElementById("editDiameter")?.value?.trim() || "",
+  threadPrefix: document.getElementById("editThreadPrefix")?.value || "",
+  threadPitch: document.getElementById("editThreadPitch")?.value?.trim() || "",
+  cornerRadius: document.getElementById("editCornerRadius")?.value?.trim() || "",
+  materialId: document.getElementById("editMaterial")?.value || "",
+  shelf: document.getElementById("editShelf")?.value?.trim().toUpperCase() || "",
+  articleNo: document.getElementById("editArticleNo")?.value?.trim() || "",
+  holder: document.getElementById("editHolder")?.value || "",
+  manufacturer: document.getElementById("editManufacturer")?.value || "",
+  stock: Number(document.getElementById("editStock")?.value || 0),
+  minStock: Number(document.getElementById("editMinStock")?.value || 0),
+  optimalStock: Number(document.getElementById("editOptimalStock")?.value || 0),
+  insertTool: !!document.getElementById("editInsertTool")?.checked,
+  insertEdges: Number(document.getElementById("editInsertEdges")?.value || 0),
+};
 
       close();
       resolve(data);
@@ -2469,24 +2510,25 @@ async function editTool(toolId) {
   }
 
   const payload = {
-    label: data.label,
-    diameter: String(data.diameter),
-    thread_prefix: isThreadTool ? data.threadPrefix || null : null,
-    thread_pitch:
-      isThreadTool && data.threadPrefix === "MF"
-        ? data.threadPitch || null
-        : null,
-    corner_radius: isRadiusTool ? data.cornerRadius || null : null,
-    shelf: data.shelf,
-    article_no: data.articleNo,
-    holder: data.holder,
-    stock: Number(data.stock || 0),
-    min_stock: Number(data.minStock || 0),
-    optimal_stock: Number(data.optimalStock || 0),
-    manufacturer: data.manufacturer || null,
-    insert_tool: !!data.insertTool,
-    insert_edges: data.insertTool ? Number(data.insertEdges || 0) : 0,
-  };
+  label: data.label,
+  diameter: String(data.diameter),
+  thread_prefix: isThreadTool ? data.threadPrefix || null : null,
+  thread_pitch:
+    isThreadTool && data.threadPrefix === "MF"
+      ? data.threadPitch || null
+      : null,
+  corner_radius: isRadiusTool ? data.cornerRadius || null : null,
+  material_id: data.materialId || null,
+  shelf: data.shelf,
+  article_no: data.articleNo,
+  holder: data.holder,
+  stock: Number(data.stock || 0),
+  min_stock: Number(data.minStock || 0),
+  optimal_stock: Number(data.optimalStock || 0),
+  manufacturer: data.manufacturer || null,
+  insert_tool: !!data.insertTool,
+  insert_edges: data.insertTool ? Number(data.insertEdges || 0) : 0,
+};
 
   const { data: updated, error } = await supabaseClient
     .from("tools")
@@ -2523,6 +2565,9 @@ function renderToolCreateForm(prefix = "tool") {
   const holderOptions = holders
     .map((h) => `<option value="${h}">${h}</option>`)
     .join("");
+  const materialOptions = toolMaterials
+    .map((m) => `<option value="${m.id}">${m.name}</option>`)
+    .join("");
 
   return `<div class='grid md:grid-cols-2 gap-3'>
     <input id='${prefix}TNumber' class='border rounded p-2' placeholder='T-Nummer (z.B. 134)' />
@@ -2552,6 +2597,11 @@ function renderToolCreateForm(prefix = "tool") {
     <div id='${prefix}CornerRadiusWrap' style='display:none;'>
       <input id='${prefix}CornerRadius' class='border rounded p-2 w-full' placeholder='Schneidenradius' />
     </div>
+
+    <select id='${prefix}Material' class='border rounded p-2'>
+      <option value=''>Schneidwerkstoff wählen</option>
+      ${materialOptions}
+    </select>
 
     <input id='${prefix}Shelf' class='border rounded p-2' placeholder='A00' />
     <input id='${prefix}Article' class='border rounded p-2' placeholder='Artikel Nr.' />
@@ -2614,25 +2664,26 @@ function openCreateToolModal() {
     const normalized = normalizeToolData(data);
 
     const payload = {
-      t_number: String(normalized.tNumber),
-      label: normalized.label,
-      diameter: String(normalized.diameter),
-      thread_prefix: normalized.threadPrefix || null,
-      thread_pitch: normalized.threadPitch || null,
-      corner_radius: normalized.cornerRadius || null,
-      shelf: normalized.shelf,
-      article_no: normalized.articleNo,
-      holder: normalized.holder,
-      stock: Number(normalized.stock || 0),
-      min_stock: Number(normalized.minStock || 0),
-      optimal_stock: Number(normalized.optimalStock || 0),
-      manufacturer: normalized.manufacturer || null,
-      ordered: !!normalized.ordered,
-      ordered_qty: Number(normalized.orderedQty || 0),
-      insert_tool: !!normalized.insertTool,
-      insert_edges: Number(normalized.insertEdges || 0),
-      created_by_employee_id: currentEmployeeRecord?.id || null,
-    };
+  t_number: String(normalized.tNumber),
+  label: normalized.label,
+  diameter: String(normalized.diameter),
+  thread_prefix: normalized.threadPrefix || null,
+  thread_pitch: normalized.threadPitch || null,
+  corner_radius: normalized.cornerRadius || null,
+  material_id: normalized.materialId || null,
+  shelf: normalized.shelf,
+  article_no: normalized.articleNo,
+  holder: normalized.holder,
+  stock: Number(normalized.stock || 0),
+  min_stock: Number(normalized.minStock || 0),
+  optimal_stock: Number(normalized.optimalStock || 0),
+  manufacturer: normalized.manufacturer || null,
+  ordered: !!normalized.ordered,
+  ordered_qty: Number(normalized.orderedQty || 0),
+  insert_tool: !!normalized.insertTool,
+  insert_edges: Number(normalized.insertEdges || 0),
+  created_by_employee_id: currentEmployeeRecord?.id || null,
+};
 
     const { data: inserted, error } = await supabaseClient
       .from("tools")
@@ -3190,7 +3241,7 @@ function renderTools() {
   const tools = state.tools.filter((t) => {
     const bySearch =
       !search ||
-      `${t.tNumber} ${t.label} ${t.diameter} ${t.articleNo} ${t.holder || ""} ${t.manufacturer || ""}`
+      `${t.tNumber} ${t.label} ${t.diameter} ${t.articleNo} ${t.holder || ""} ${t.manufacturer || ""} ${getToolMaterialNameById(t.materialId)}`
         .toLowerCase()
         .includes(search);
     const byLabel = !filterLabel || t.label === filterLabel;
@@ -3206,6 +3257,7 @@ function renderTools() {
       <td class='p-2'>T ${t.tNumber}</td>
       <td class='p-2'>${t.label}</td>
       <td class='p-2'>${formatToolSize(t)}</td>
+      <td class='p-2'>${getToolMaterialNameById(t.materialId)}</td>
       <td class='p-2'>${t.shelf}</td>
       <td class='p-2'>${t.articleNo}</td>
       <td class='p-2'>${t.holder || "-"}</td>
@@ -3242,6 +3294,7 @@ function renderTools() {
     <td class='p-2'>T ${t.tNumber}</td>
     <td class='p-2'>${t.label}</td>
     <td class='p-2'>${formatToolSize(t)}</td>
+    <td class='p-2'>${getToolMaterialNameById(t.materialId)}</td>
     <td class='p-2'>${t.articleNo || "-"}</td>
     <td class='p-2 whitespace-nowrap'><button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="markToolOrdered('${t.id}', true)">Bestellt markieren</button></td>
   </tr>`,
@@ -3254,6 +3307,7 @@ function renderTools() {
     <div class='grid md:grid-cols-2 gap-x-6 gap-y-2 text-sm'>
       <div><span class='font-semibold'>Bezeichnung:</span> ${t.label}</div>
       <div><span class='font-semibold'>Durchmesser:</span> ${formatToolSize(t)}</div>
+      <div><span class='font-semibold'>Schneidwerkstoff:</span> ${getToolMaterialNameById(t.materialId)}</div>
       <div><span class='font-semibold'>Steigung:</span> ${t.threadPrefix === "MF" && t.threadPitch ? `P ${t.threadPitch}` : "-"}</div>
       <div><span class='font-semibold'>Menge:</span> ${t.orderedQty || effectiveOrderQty(t)}</div>
       <div><span class='font-semibold'>Artikelnummer:</span> ${t.articleNo}</div>
@@ -3293,6 +3347,7 @@ function renderTools() {
         <td class='p-2'>T ${t.tNumber}</td>
         <td class='p-2'>${t.label}</td>
         <td class='p-2'>${formatToolSize(t)}</td>
+        <td class='p-2'>${getToolMaterialNameById(t.materialId)}</td>
         <td class='p-2'>${t.articleNo || "-"}</td>
         <td class='p-2'>${t.stock}/${t.minStock}</td>
         <td class='p-2'>
@@ -3338,12 +3393,13 @@ function renderTools() {
                 <th class='p-2 text-left'>T</th>
                 <th class='p-2 text-left'>Bezeichnung</th>
                 <th class='p-2 text-left'>Größe</th>
+                <th class='p-2 text-left'>Werkstoff</th>
                 <th class='p-2 text-left'>Artikelnummer</th>
                 <th class='p-2 text-left'>Bestand</th>
                 <th class='p-2 text-left'>Menge</th>
               </tr>
             </thead>
-            <tbody>${selectedManufacturerRows || '<tr><td class="p-2" colspan="6">Keine bestellrelevanten Werkzeuge für diesen Hersteller.</td></tr>'}</tbody>
+            <tbody>${selectedManufacturerRows || '<tr><td class="p-2" colspan="7">Keine bestellrelevanten Werkzeuge für diesen Hersteller.</td></tr>'}</tbody>
           </table>
         </div>`
           : '<div class="text-sm text-slate-500">Keine bestellrelevanten Werkzeuge.</div>'
@@ -3360,6 +3416,7 @@ function renderTools() {
       (t) => `<tr class='border-b'>
       <td class='p-2'>${t.label}</td>
       <td class='p-2'>${formatToolSize(t)}</td>
+      <td class='p-2'>${getToolMaterialNameById(t.materialId)}</td>
       <td class='p-2'>${t.optimalStock || 0}</td>
       <td class='p-2'>${getOptimalQtySuggestion(t)}</td>
       <td class='p-2'>
@@ -3415,9 +3472,9 @@ function renderTools() {
       <div class='overflow-auto max-h-[35vh] border rounded-lg'>
         <table class='w-full text-sm'>
           <thead class='bg-slate-100 sticky top-0'>
-            <tr><th class='p-2 text-left'>T</th><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Ø</th><th class='p-2 text-left'>Fach</th><th class='p-2 text-left'>Artikel Nr.</th><th class='p-2 text-left'>Aufnahme</th><th class='p-2 text-left'>Bestand</th><th class='p-2 text-left'>Min</th><th class='p-2 text-left'>Hersteller</th><th class='p-2 text-left'>Status</th><th class='p-2'></th></tr>
+            <tr><th class='p-2 text-left'>T</th><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Ø</th><th class='p-2 text-left'>Werkstoff</th><th class='p-2 text-left'>Fach</th><th class='p-2 text-left'>Artikel Nr.</th><th class='p-2 text-left'>Aufnahme</th><th class='p-2 text-left'>Bestand</th><th class='p-2 text-left'>Min</th><th class='p-2 text-left'>Hersteller</th><th class='p-2 text-left'>Status</th><th class='p-2'></th></tr>
           </thead>
-          <tbody>${toolRows || '<tr><td class="p-2" colspan="11">Keine Werkzeuge.</td></tr>'}</tbody>
+          <tbody>${toolRows || '<tr><td class="p-2" colspan="12">Keine Werkzeuge.</td></tr>'}</tbody>
         </table>
       </div>
     </div>
@@ -3430,8 +3487,8 @@ function renderTools() {
         <div class='border rounded p-3 bg-white overflow-auto'>
           <h4 class='font-semibold mb-2'>Werkzeug To-Do (bei Mindestbestand oder darunter)</h4>
           <table class='w-full text-sm'>
-            <thead class='bg-slate-100'><tr><th class='p-2 text-left'>T</th><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Größe</th><th class='p-2 text-left'>Artikelnummer</th><th class='p-2'></th></tr></thead>
-            <tbody>${todoRows || '<tr><td class="p-2" colspan="5">Keine offenen To-Dos.</td></tr>'}</tbody>
+            <thead class='bg-slate-100'><tr><th class='p-2 text-left'>T</th><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Größe</th><th class='p-2 text-left'>Werkstoff</th><th class='p-2 text-left'>Artikelnummer</th><th class='p-2'></th></tr></thead>
+            <tbody>${todoRows || '<tr><td class="p-2" colspan="6">Keine offenen To-Dos.</td></tr>'}</tbody>
           </table>
         </div>
         <div class='border rounded p-3 bg-white'>
@@ -3450,8 +3507,8 @@ function renderTools() {
       <div class='mt-3 border rounded p-3 bg-slate-50'>
         <h4 class='font-semibold mb-2'>Vorschläge für optimale Bestellmenge</h4>
         <table class='w-full text-sm'>
-          <thead class='bg-slate-100'><tr><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Größe</th><th class='p-2 text-left'>Aktuell optimal</th><th class='p-2 text-left'>Vorschlag</th><th class='p-2'></th></tr></thead>
-          <tbody>${suggestionRows || '<tr><td class="p-2" colspan="5">Noch keine aussagekräftigen Vorschläge vorhanden.</td></tr>'}</tbody>
+          <thead class='bg-slate-100'><tr><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Größe</th><th class='p-2 text-left'>Werkstoff</th><th class='p-2 text-left'>Aktuell optimal</th><th class='p-2 text-left'>Vorschlag</th><th class='p-2'></th></tr></thead>
+          <tbody>${suggestionRows || '<tr><td class="p-2" colspan="6">Noch keine aussagekräftigen Vorschläge vorhanden.</td></tr>'}</tbody>
         </table>
       </div>
     </div>`
