@@ -314,7 +314,10 @@ async function syncSupabaseSessionToApp() {
     role: currentEmployeeRecord.role,
   };
 
+  const materials = await loadToolMaterialsFromSupabase();
   const tools = await loadToolsFromSupabase();
+
+  toolMaterials = materials;
   state.tools = tools;
   persist();
 
@@ -325,44 +328,44 @@ async function syncSupabaseSessionToApp() {
 
   console.log("Supabase-User:", currentSupabaseUser);
   console.log("Employees-Datensatz:", currentEmployeeRecord);
+  console.log("Tool-Materials nach Login geladen:", materials);
   console.log("Tools nach Login geladen:", tools);
 
   render();
 }
 
-sync function bootSupabase
+async function bootSupabase() {
+  supabaseReady = await testSupabaseConnection();
 
-function makeWeek(early, late, night, satPrimary, satSecondary) {
-  return {
-    mondayToFriday: [
-      { label: "Früh", start: "05:00", end: "13:00", options: [early] },
-      { label: "Spät", start: "13:00", end: "21:00", options: [late] },
-      { label: "Nacht", start: "21:00", end: "05:00", options: [night] },
-    ],
-    saturday: [
-      {
-        label: "Samstag S1",
-        start: "05:00",
-        end: "16:00",
-        options: [satPrimary, "D"],
-      },
-      {
-        label: "Samstag S2",
-        start: "16:00",
-        end: "05:00",
-        options: [satSecondary, "NONE"],
-      },
-    ],
-    sunday: [
-      { label: "Sonntag Tag", start: "06:00", end: "18:00", options: [late] },
-      {
-        label: "Sonntag Abend",
-        start: "18:00",
-        end: "05:00",
-        options: [early],
-      },
-    ],
-  };
+  if (!supabaseReady) {
+    console.warn(
+      "Supabase ist aktuell nicht bereit. App läuft vorerst lokal weiter.",
+    );
+    return;
+  }
+
+  const {
+    data: { session },
+  } = await supabaseClient.auth.getSession();
+
+  if (session?.user) {
+    await syncSupabaseSessionToApp();
+    return;
+  }
+
+  const employees = await loadEmployeesFromSupabase();
+  const materials = await loadToolMaterialsFromSupabase();
+  const tools = await loadToolsFromSupabase();
+
+  toolMaterials = materials;
+  state.tools = tools;
+  persist();
+
+  console.log("Employees aus Supabase:", employees);
+  console.log("Tool-Materials aus Supabase:", materials);
+  console.log("Tools aus Supabase:", tools);
+
+  if (currentUser) render();
 }
 
 function loadState() {
