@@ -4156,6 +4156,7 @@ function approveSaturdayRequest(shiftId, user) {
 
 render();
 bootSupabase();
+
 window.loginWithSupabase = loginWithSupabase;
 window.logoutSupabase = logoutSupabase;
 window.fillLogin = fillLogin;
