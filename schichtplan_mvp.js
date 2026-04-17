@@ -330,44 +330,7 @@ async function syncSupabaseSessionToApp() {
   render();
 }
 
-async function bootSupabase() {
-  supabaseReady = await testSupabaseConnection();
-
-  if (!supabaseReady) {
-    console.warn(
-      "Supabase ist aktuell nicht bereit. App läuft vorerst lokal weiter.",
-    );
-    return;
-  }
-
-  const {
-    data: { session },
-  } = await supabaseClient.auth.getSession();
-
-  if (session?.user) {
-    await syncSupabaseSessionToApp();
-    return;
-  }
-
-  const employees = await loadEmployeesFromSupabase();
-  const tools = await loadToolsFromSupabase();
-
-  state.tools = tools;
-  persist();
-
-  console.log("Employees aus Supabase:", employees);
-  console.log("Tools aus Supabase:", tools);
-
-  if (currentUser) render();
-}
-
-function allUsers() {
-  return [...USERS, ...(state.extraUsers || [])];
-}
-
-function activeUsers() {
-  return allUsers().filter((u) => !state.inactiveUsers?.[u.name]);
-}
+sync function bootSupabase
 
 function makeWeek(early, late, night, satPrimary, satSecondary) {
   return {
