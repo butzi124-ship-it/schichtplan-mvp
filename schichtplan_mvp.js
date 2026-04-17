@@ -49,6 +49,44 @@ let currentUser = null;
 let currentTab = "schichtplan";
 let statsViewPeriod = "week";
 
+function makeWeek(early, late, night, satPrimary, satSecondary) {
+  return {
+    mondayToFriday: [
+      { label: "Früh", start: "05:00", end: "11:00", options: [early] },
+      { label: "Spät", start: "13:00", end: "19:00", options: [late] },
+      { label: "Nacht", start: "21:00", end: "03:00", options: [night] },
+    ],
+    saturday: [
+      {
+        label: "Samstag Morgen",
+        start: "05:00",
+        end: "11:00",
+        options: [satPrimary],
+      },
+      {
+        label: "Samstag Abend",
+        start: "16:00",
+        end: "22:00",
+        options: [satSecondary, "D", "E", "F"],
+      },
+    ],
+    sunday: [
+      {
+        label: "Sonntag Morgen",
+        start: "06:00",
+        end: "12:00",
+        options: ["D", "E", "F"],
+      },
+      {
+        label: "Sonntag Nacht",
+        start: "18:00",
+        end: "24:00",
+        options: [night],
+      },
+    ],
+  };
+}
+
 const WEEK_TEMPLATES = [
   makeWeek("A", "B", "C", "A", "B"),
   makeWeek("B", "C", "A", "B", "C"),
@@ -57,7 +95,9 @@ const WEEK_TEMPLATES = [
   makeWeek("B", "C", "A", "B", "C"),
   makeWeek("C", "A", "B", "C", "A"),
 ];
+
 const ROTATION_ANCHOR_MONDAY = "2026-01-05";
+
 const PLANNING_SUBTABS = [
   { id: "personal", label: "Personal" },
   { id: "abstinenz", label: "Abstinenz" },
@@ -2123,26 +2163,26 @@ async function createTool() {
   const normalized = normalizeToolData(data);
 
   const payload = {
-  t_number: String(normalized.tNumber),
-  label: normalized.label,
-  diameter: String(normalized.diameter),
-  thread_prefix: normalized.threadPrefix || null,
-  thread_pitch: normalized.threadPitch || null,
-  corner_radius: normalized.cornerRadius || null,
-  material_id: normalized.materialId || null,
-  shelf: normalized.shelf,
-  article_no: normalized.articleNo,
-  holder: normalized.holder,
-  stock: Number(normalized.stock || 0),
-  min_stock: Number(normalized.minStock || 0),
-  optimal_stock: Number(normalized.optimalStock || 0),
-  manufacturer: normalized.manufacturer || null,
-  ordered: !!normalized.ordered,
-  ordered_qty: Number(normalized.orderedQty || 0),
-  insert_tool: !!normalized.insertTool,
-  insert_edges: Number(normalized.insertEdges || 0),
-  created_by_employee_id: currentEmployeeRecord?.id || null,
-};
+    t_number: String(normalized.tNumber),
+    label: normalized.label,
+    diameter: String(normalized.diameter),
+    thread_prefix: normalized.threadPrefix || null,
+    thread_pitch: normalized.threadPitch || null,
+    corner_radius: normalized.cornerRadius || null,
+    material_id: normalized.materialId || null,
+    shelf: normalized.shelf,
+    article_no: normalized.articleNo,
+    holder: normalized.holder,
+    stock: Number(normalized.stock || 0),
+    min_stock: Number(normalized.minStock || 0),
+    optimal_stock: Number(normalized.optimalStock || 0),
+    manufacturer: normalized.manufacturer || null,
+    ordered: !!normalized.ordered,
+    ordered_qty: Number(normalized.orderedQty || 0),
+    insert_tool: !!normalized.insertTool,
+    insert_edges: Number(normalized.insertEdges || 0),
+    created_by_employee_id: currentEmployeeRecord?.id || null,
+  };
 
   const { data: inserted, error } = await supabaseClient
     .from("tools")
@@ -2375,28 +2415,39 @@ async function editToolCentered(tool) {
       resolve(null);
     });
 
-    host.querySelector("#toolEditCloseBottom")?.addEventListener("click", () => {
-      close();
-      resolve(null);
-    });
+    host
+      .querySelector("#toolEditCloseBottom")
+      ?.addEventListener("click", () => {
+        close();
+        resolve(null);
+      });
 
     host.querySelector("#toolEditSave")?.addEventListener("click", () => {
       const data = {
         label: document.getElementById("editLabel")?.value || "",
         diameter: document.getElementById("editDiameter")?.value?.trim() || "",
         threadPrefix: document.getElementById("editThreadPrefix")?.value || "",
-        threadPitch: document.getElementById("editThreadPitch")?.value?.trim() || "",
-        cornerRadius: document.getElementById("editCornerRadius")?.value?.trim() || "",
+        threadPitch:
+          document.getElementById("editThreadPitch")?.value?.trim() || "",
+        cornerRadius:
+          document.getElementById("editCornerRadius")?.value?.trim() || "",
         materialId: document.getElementById("editMaterial")?.value || "",
-        shelf: document.getElementById("editShelf")?.value?.trim().toUpperCase() || "",
-        articleNo: document.getElementById("editArticleNo")?.value?.trim() || "",
+        shelf:
+          document.getElementById("editShelf")?.value?.trim().toUpperCase() ||
+          "",
+        articleNo:
+          document.getElementById("editArticleNo")?.value?.trim() || "",
         holder: document.getElementById("editHolder")?.value || "",
         manufacturer: document.getElementById("editManufacturer")?.value || "",
         stock: Number(document.getElementById("editStock")?.value || 0),
         minStock: Number(document.getElementById("editMinStock")?.value || 0),
-        optimalStock: Number(document.getElementById("editOptimalStock")?.value || 0),
+        optimalStock: Number(
+          document.getElementById("editOptimalStock")?.value || 0,
+        ),
         insertTool: !!document.getElementById("editInsertTool")?.checked,
-        insertEdges: Number(document.getElementById("editInsertEdges")?.value || 0),
+        insertEdges: Number(
+          document.getElementById("editInsertEdges")?.value || 0,
+        ),
       };
 
       close();
@@ -2476,25 +2527,25 @@ async function editTool(toolId) {
   }
 
   const payload = {
-  label: data.label,
-  diameter: String(data.diameter),
-  thread_prefix: isThreadTool ? data.threadPrefix || null : null,
-  thread_pitch:
-    isThreadTool && data.threadPrefix === "MF"
-      ? data.threadPitch || null
-      : null,
-  corner_radius: isRadiusTool ? data.cornerRadius || null : null,
-  material_id: data.materialId || null,
-  shelf: data.shelf,
-  article_no: data.articleNo,
-  holder: data.holder,
-  stock: Number(data.stock || 0),
-  min_stock: Number(data.minStock || 0),
-  optimal_stock: Number(data.optimalStock || 0),
-  manufacturer: data.manufacturer || null,
-  insert_tool: !!data.insertTool,
-  insert_edges: data.insertTool ? Number(data.insertEdges || 0) : 0,
-};
+    label: data.label,
+    diameter: String(data.diameter),
+    thread_prefix: isThreadTool ? data.threadPrefix || null : null,
+    thread_pitch:
+      isThreadTool && data.threadPrefix === "MF"
+        ? data.threadPitch || null
+        : null,
+    corner_radius: isRadiusTool ? data.cornerRadius || null : null,
+    material_id: data.materialId || null,
+    shelf: data.shelf,
+    article_no: data.articleNo,
+    holder: data.holder,
+    stock: Number(data.stock || 0),
+    min_stock: Number(data.minStock || 0),
+    optimal_stock: Number(data.optimalStock || 0),
+    manufacturer: data.manufacturer || null,
+    insert_tool: !!data.insertTool,
+    insert_edges: data.insertTool ? Number(data.insertEdges || 0) : 0,
+  };
 
   const { data: updated, error } = await supabaseClient
     .from("tools")
@@ -2654,26 +2705,26 @@ function openCreateToolModal() {
     const normalized = normalizeToolData(data);
 
     const payload = {
-  t_number: String(normalized.tNumber),
-  label: normalized.label,
-  diameter: String(normalized.diameter),
-  thread_prefix: normalized.threadPrefix || null,
-  thread_pitch: normalized.threadPitch || null,
-  corner_radius: normalized.cornerRadius || null,
-  material_id: normalized.materialId || null,
-  shelf: normalized.shelf,
-  article_no: normalized.articleNo,
-  holder: normalized.holder,
-  stock: Number(normalized.stock || 0),
-  min_stock: Number(normalized.minStock || 0),
-  optimal_stock: Number(normalized.optimalStock || 0),
-  manufacturer: normalized.manufacturer || null,
-  ordered: !!normalized.ordered,
-  ordered_qty: Number(normalized.orderedQty || 0),
-  insert_tool: !!normalized.insertTool,
-  insert_edges: Number(normalized.insertEdges || 0),
-  created_by_employee_id: currentEmployeeRecord?.id || null,
-};
+      t_number: String(normalized.tNumber),
+      label: normalized.label,
+      diameter: String(normalized.diameter),
+      thread_prefix: normalized.threadPrefix || null,
+      thread_pitch: normalized.threadPitch || null,
+      corner_radius: normalized.cornerRadius || null,
+      material_id: normalized.materialId || null,
+      shelf: normalized.shelf,
+      article_no: normalized.articleNo,
+      holder: normalized.holder,
+      stock: Number(normalized.stock || 0),
+      min_stock: Number(normalized.minStock || 0),
+      optimal_stock: Number(normalized.optimalStock || 0),
+      manufacturer: normalized.manufacturer || null,
+      ordered: !!normalized.ordered,
+      ordered_qty: Number(normalized.orderedQty || 0),
+      insert_tool: !!normalized.insertTool,
+      insert_edges: Number(normalized.insertEdges || 0),
+      created_by_employee_id: currentEmployeeRecord?.id || null,
+    };
 
     const { data: inserted, error } = await supabaseClient
       .from("tools")
