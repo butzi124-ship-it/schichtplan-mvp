@@ -2320,17 +2320,17 @@ async function editToolCentered(tool) {
           </div>
 
           <label class='text-sm font-medium'>
-  Schneidwerkstoff
-  <select id='editMaterial' class='border rounded p-2 w-full mt-1'>
-    <option value=''>Schneidwerkstoff wählen</option>
-    ${toolMaterials
-      .map(
-        (m) =>
-          `<option value="${m.id}" ${tool.materialId === m.id ? "selected" : ""}>${m.name}</option>`,
-      )
-      .join("")}
-  </select>
-</label>
+            Schneidwerkstoff
+            <select id='editMaterial' class='border rounded p-2 w-full mt-1'>
+              <option value=''>Schneidwerkstoff wählen</option>
+              ${toolMaterials
+                .map(
+                  (m) =>
+                    `<option value="${m.id}" ${tool.materialId === m.id ? "selected" : ""}>${m.name}</option>`,
+                )
+                .join("")}
+            </select>
+          </label>
 
           <label class='text-sm font-medium'>
             Lagerfach
@@ -2416,22 +2416,22 @@ async function editToolCentered(tool) {
 
     host.querySelector("#toolEditSave")?.addEventListener("click", () => {
       const data = {
-  label: document.getElementById("editLabel")?.value || "",
-  diameter: document.getElementById("editDiameter")?.value?.trim() || "",
-  threadPrefix: document.getElementById("editThreadPrefix")?.value || "",
-  threadPitch: document.getElementById("editThreadPitch")?.value?.trim() || "",
-  cornerRadius: document.getElementById("editCornerRadius")?.value?.trim() || "",
-  materialId: document.getElementById("editMaterial")?.value || "",
-  shelf: document.getElementById("editShelf")?.value?.trim().toUpperCase() || "",
-  articleNo: document.getElementById("editArticleNo")?.value?.trim() || "",
-  holder: document.getElementById("editHolder")?.value || "",
-  manufacturer: document.getElementById("editManufacturer")?.value || "",
-  stock: Number(document.getElementById("editStock")?.value || 0),
-  minStock: Number(document.getElementById("editMinStock")?.value || 0),
-  optimalStock: Number(document.getElementById("editOptimalStock")?.value || 0),
-  insertTool: !!document.getElementById("editInsertTool")?.checked,
-  insertEdges: Number(document.getElementById("editInsertEdges")?.value || 0),
-};
+        label: document.getElementById("editLabel")?.value || "",
+        diameter: document.getElementById("editDiameter")?.value?.trim() || "",
+        threadPrefix: document.getElementById("editThreadPrefix")?.value || "",
+        threadPitch: document.getElementById("editThreadPitch")?.value?.trim() || "",
+        cornerRadius: document.getElementById("editCornerRadius")?.value?.trim() || "",
+        materialId: document.getElementById("editMaterial")?.value || "",
+        shelf: document.getElementById("editShelf")?.value?.trim().toUpperCase() || "",
+        articleNo: document.getElementById("editArticleNo")?.value?.trim() || "",
+        holder: document.getElementById("editHolder")?.value || "",
+        manufacturer: document.getElementById("editManufacturer")?.value || "",
+        stock: Number(document.getElementById("editStock")?.value || 0),
+        minStock: Number(document.getElementById("editMinStock")?.value || 0),
+        optimalStock: Number(document.getElementById("editOptimalStock")?.value || 0),
+        insertTool: !!document.getElementById("editInsertTool")?.checked,
+        insertEdges: Number(document.getElementById("editInsertEdges")?.value || 0),
+      };
 
       close();
       resolve(data);
@@ -2551,68 +2551,92 @@ async function editTool(toolId) {
   render();
 }
 
-function renderToolCreateForm(prefix = "tool") {
-  const labels = getToolLabels();
-  const manufacturers = getToolManufacturers();
-  const holders = getToolHolders();
+async function editTool(toolId) {
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool || currentUser.role !== "admin") return;
 
-  const labelOptions = labels
-    .map((l) => `<option value="${l}">${l}</option>`)
-    .join("");
-  const manufacturerOptions = manufacturers
-    .map((m) => `<option value="${m}">${m}</option>`)
-    .join("");
-  const holderOptions = holders
-    .map((h) => `<option value="${h}">${h}</option>`)
-    .join("");
-  const materialOptions = toolMaterials
-    .map((m) => `<option value="${m.id}">${m.name}</option>`)
-    .join("");
+  const data = await editToolCentered(tool);
+  if (!data) return;
 
-  return `<div class='grid md:grid-cols-2 gap-3'>
-    <input id='${prefix}TNumber' class='border rounded p-2' placeholder='T-Nummer (z.B. 134)' />
+  const isThreadTool = isThreadToolLabel(data.label);
+  const isRadiusTool = isRadiusToolLabel(data.label);
 
-    <select id='${prefix}Label' class='border rounded p-2' onchange='updateToolTypeFields("${prefix}")'>
-      ${labelOptions}
-    </select>
+  if (
+    !data.label ||
+    !data.diameter ||
+    !/^[A-Z]\d{2}$/.test(data.shelf) ||
+    !data.articleNo ||
+    !["HSK 100", "HSK 63"].includes(data.holder)
+  ) {
+    return alert(
+      "Bitte Felder korrekt ausfüllen (A-Z + 2-stellige Zahl für Fach, Aufnahme HSK 100 oder HSK 63).",
+    );
+  }
 
-    <input id='${prefix}Diameter' class='border rounded p-2' placeholder='Durchmesser' />
+  if (isThreadTool && !data.threadPrefix) {
+    return alert("Bitte Gewindekennung wählen.");
+  }
 
-    <div id='${prefix}ThreadPrefixWrap' style='display:none;'>
-      <select id='${prefix}ThreadPrefix' class='border rounded p-2 w-full' onchange='updateThreadPitchVisibility("${prefix}")'>
-        <option value=''>Kennung (nur Gewinde)</option>
-        <option value='M'>M</option>
-        <option value='MF'>MF</option>
-        <option value='G'>G</option>
-        <option value='UNF'>UNF</option>
-        <option value='UNC'>UNC</option>
-        <option value='Mx'>Mx</option>
-      </select>
-    </div>
+  if (isThreadTool && data.threadPrefix === "MF" && !data.threadPitch) {
+    return alert("Bitte bei MF die Steigung (P) angeben.");
+  }
 
-    <div id='${prefix}ThreadPitchWrap' style='display:none;'>
-      <input id='${prefix}ThreadPitch' class='border rounded p-2 w-full' placeholder='Steigung P (nur MF)' />
-    </div>
+  if (isRadiusTool && !data.cornerRadius) {
+    return alert("Bitte Schneidenradius eingeben.");
+  }
 
-    <div id='${prefix}CornerRadiusWrap' style='display:none;'>
-      <input id='${prefix}CornerRadius' class='border rounded p-2 w-full' placeholder='Schneidenradius' />
-    </div>
+  if (!isThreadTool && !Number.isFinite(Number(data.diameter))) {
+    return alert("Bitte gültigen numerischen Durchmesser eingeben.");
+  }
 
-    <select id='${prefix}Material' class='border rounded p-2'>
-      <option value=''>Schneidwerkstoff wählen</option>
-      ${materialOptions}
-    </select>
+  if (
+    data.insertTool &&
+    (!Number.isFinite(Number(data.insertEdges)) ||
+      Number(data.insertEdges) <= 0)
+  ) {
+    return alert("Bitte Anzahl der Schneiden > 0 eingeben.");
+  }
 
-    <input id='${prefix}Shelf' class='border rounded p-2' placeholder='A00' />
-    <input id='${prefix}Article' class='border rounded p-2' placeholder='Artikel Nr.' />
-    <select id='${prefix}Holder' class='border rounded p-2'>${holderOptions}</select>
-    <input id='${prefix}Stock' type='number' class='border rounded p-2' placeholder='Bestand' />
-    <input id='${prefix}MinStock' type='number' class='border rounded p-2' placeholder='Mindestbestand' />
-    <input id='${prefix}OptimalStock' type='number' class='border rounded p-2' placeholder='Optimale Stückzahl' />
-    <select id='${prefix}Manufacturer' class='border rounded p-2'>${manufacturerOptions}</select>
-    <label class='flex items-center gap-2 text-sm md:col-span-2'><input id='${prefix}InsertTool' type='checkbox' onchange='toggleInsertToolFieldsById("${prefix}InsertTool","${prefix}InsertEdges")' /> Wendeplattenwerkzeug</label>
-    <input id='${prefix}InsertEdges' type='number' class='border rounded p-2 md:col-span-2' placeholder='Anzahl Schneiden' disabled />
-  </div>`;
+  const payload = {
+    label: data.label,
+    diameter: String(data.diameter),
+    thread_prefix: isThreadTool ? data.threadPrefix || null : null,
+    thread_pitch:
+      isThreadTool && data.threadPrefix === "MF"
+        ? data.threadPitch || null
+        : null,
+    corner_radius: isRadiusTool ? data.cornerRadius || null : null,
+    material_id: data.materialId || null,
+    shelf: data.shelf,
+    article_no: data.articleNo,
+    holder: data.holder,
+    stock: Number(data.stock || 0),
+    min_stock: Number(data.minStock || 0),
+    optimal_stock: Number(data.optimalStock || 0),
+    manufacturer: data.manufacturer || null,
+    insert_tool: !!data.insertTool,
+    insert_edges: data.insertTool ? Number(data.insertEdges || 0) : 0,
+  };
+
+  const { data: updated, error } = await supabaseClient
+    .from("tools")
+    .update(payload)
+    .eq("id", toolId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Fehler beim Bearbeiten des Werkzeugs:", error);
+    return alert(`Werkzeug konnte nicht gespeichert werden: ${error.message}`);
+  }
+
+  const index = state.tools.findIndex((t) => t.id === toolId);
+  if (index !== -1) {
+    state.tools[index] = normalizeToolFromDb(updated);
+  }
+
+  persist();
+  render();
 }
 
 function openCreateToolModal() {
