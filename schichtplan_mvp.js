@@ -276,34 +276,6 @@ async function loginWithSupabase() {
     return;
   }
 
-  async function getCurrentEmployeeRecord() {
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseClient.auth.getUser();
-
-    if (userError) {
-      console.error("Fehler bei auth.getUser():", userError);
-      return null;
-    }
-
-    if (!user) return null;
-
-    const { data, error } = await supabaseClient
-      .from("employees")
-      .select("*")
-      .eq("auth_user_id", user.id)
-      .eq("is_active", true)
-      .maybeSingle();
-
-    if (error) {
-      console.error("Fehler beim Laden des employees-Datensatzes:", error);
-      return null;
-    }
-
-    return data || null;
-  }
-
   await syncSupabaseSessionToApp();
 }
 
@@ -406,6 +378,52 @@ async function bootSupabase() {
   console.log("Tools aus Supabase:", tools);
 
   if (currentUser) render();
+}
+
+function allUsers() {
+  return [...USERS, ...(state.extraUsers || [])];
+}
+
+function activeUsers() {
+  return allUsers().filter((u) => !state.inactiveUsers?.[u.name]);
+}
+
+function makeWeek(early, late, night, satPrimary, satSecondary) {
+  return {
+    mondayToFriday: [
+      { label: "Früh", start: "05:00", end: "11:00", options: [early] },
+      { label: "Spät", start: "13:00", end: "19:00", options: [late] },
+      { label: "Nacht", start: "21:00", end: "03:00", options: [night] },
+    ],
+    saturday: [
+      {
+        label: "Samstag Morgen",
+        start: "05:00",
+        end: "11:00",
+        options: [satPrimary],
+      },
+      {
+        label: "Samstag Abend",
+        start: "16:00",
+        end: "22:00",
+        options: [satSecondary, "D", "E", "F"],
+      },
+    ],
+    sunday: [
+      {
+        label: "Sonntag Morgen",
+        start: "06:00",
+        end: "12:00",
+        options: ["D", "E", "F"],
+      },
+      {
+        label: "Sonntag Nacht",
+        start: "18:00",
+        end: "24:00",
+        options: [night],
+      },
+    ],
+  };
 }
 
 function loadState() {
@@ -2568,94 +2586,6 @@ async function editTool(toolId) {
   render();
 }
 
-async function editTool(toolId) {
-  const tool = state.tools.find((t) => t.id === toolId);
-  if (!tool || currentUser.role !== "admin") return;
-
-  const data = await editToolCentered(tool);
-  if (!data) return;
-
-  const isThreadTool = isThreadToolLabel(data.label);
-  const isRadiusTool = isRadiusToolLabel(data.label);
-
-  if (
-    !data.label ||
-    !data.diameter ||
-    !/^[A-Z]\d{2}$/.test(data.shelf) ||
-    !data.articleNo ||
-    !["HSK 100", "HSK 63"].includes(data.holder)
-  ) {
-    return alert(
-      "Bitte Felder korrekt ausfüllen (A-Z + 2-stellige Zahl für Fach, Aufnahme HSK 100 oder HSK 63).",
-    );
-  }
-
-  if (isThreadTool && !data.threadPrefix) {
-    return alert("Bitte Gewindekennung wählen.");
-  }
-
-  if (isThreadTool && data.threadPrefix === "MF" && !data.threadPitch) {
-    return alert("Bitte bei MF die Steigung (P) angeben.");
-  }
-
-  if (isRadiusTool && !data.cornerRadius) {
-    return alert("Bitte Schneidenradius eingeben.");
-  }
-
-  if (!isThreadTool && !Number.isFinite(Number(data.diameter))) {
-    return alert("Bitte gültigen numerischen Durchmesser eingeben.");
-  }
-
-  if (
-    data.insertTool &&
-    (!Number.isFinite(Number(data.insertEdges)) ||
-      Number(data.insertEdges) <= 0)
-  ) {
-    return alert("Bitte Anzahl der Schneiden > 0 eingeben.");
-  }
-
-  const payload = {
-    label: data.label,
-    diameter: String(data.diameter),
-    thread_prefix: isThreadTool ? data.threadPrefix || null : null,
-    thread_pitch:
-      isThreadTool && data.threadPrefix === "MF"
-        ? data.threadPitch || null
-        : null,
-    corner_radius: isRadiusTool ? data.cornerRadius || null : null,
-    material_id: data.materialId || null,
-    shelf: data.shelf,
-    article_no: data.articleNo,
-    holder: data.holder,
-    stock: Number(data.stock || 0),
-    min_stock: Number(data.minStock || 0),
-    optimal_stock: Number(data.optimalStock || 0),
-    manufacturer: data.manufacturer || null,
-    insert_tool: !!data.insertTool,
-    insert_edges: data.insertTool ? Number(data.insertEdges || 0) : 0,
-  };
-
-  const { data: updated, error } = await supabaseClient
-    .from("tools")
-    .update(payload)
-    .eq("id", toolId)
-    .select()
-    .single();
-
-  if (error) {
-    console.error("Fehler beim Bearbeiten des Werkzeugs:", error);
-    return alert(`Werkzeug konnte nicht gespeichert werden: ${error.message}`);
-  }
-
-  const index = state.tools.findIndex((t) => t.id === toolId);
-  if (index !== -1) {
-    state.tools[index] = normalizeToolFromDb(updated);
-  }
-
-  persist();
-  render();
-}
-
 function openCreateToolModal() {
   if (currentUser?.role !== "admin") return;
   const host = getModalHost();
@@ -2959,48 +2889,6 @@ async function bookToolChange(toolId) {
   render();
 }
 
-async function editTool(toolId) {
-  const tool = state.tools.find((t) => t.id === toolId);
-  if (!tool || currentUser.role !== "admin") return;
-  const data = await editToolCentered(tool);
-  if (!data) return;
-
-  const isThreadTool = isThreadToolLabel(data.label);
-  if (
-    !data.label ||
-    !data.diameter ||
-    !/^[A-Z]\d{2}$/.test(data.shelf) ||
-    !data.articleNo ||
-    !["HSK 100", "HSK 63"].includes(data.holder)
-  ) {
-    return alert(
-      "Bitte Felder korrekt ausfüllen (A-Z + 2-stellige Zahl für Fach, Aufnahme HSK 100 oder HSK 63).",
-    );
-  }
-  if (isThreadTool && !data.threadPrefix)
-    return alert("Bitte Gewindekennung wählen.");
-  if (isThreadTool && data.threadPrefix === "MF" && !data.threadPitch)
-    return alert("Bitte bei MF die Steigung (P) angeben.");
-  if (!isThreadTool && !Number.isFinite(Number(data.diameter)))
-    return alert("Bitte gültigen numerischen Durchmesser eingeben.");
-  if (
-    data.insertTool &&
-    (!Number.isFinite(Number(data.insertEdges)) ||
-      Number(data.insertEdges) <= 0)
-  )
-    return alert("Bitte Anzahl der Schneiden > 0 eingeben.");
-
-  data.diameter = isThreadTool ? data.diameter : Number(data.diameter);
-  data.threadPitch =
-    isThreadTool && data.threadPrefix === "MF" ? data.threadPitch : "";
-  if (!isThreadTool) data.threadPrefix = "";
-
-  Object.assign(tool, data);
-  if (tool.stock >= tool.minStock && Number(tool.orderedQty || 0) === 0)
-    tool.ordered = false;
-  persist();
-  render();
-}
 async function deleteTool(toolId) {
   if (currentUser.role !== "admin") return;
 
