@@ -1976,6 +1976,178 @@ function addToolManufacturer() {
   render();
 }
 
+async function addToolMaterial() {
+  if (currentUser.role !== "admin") return;
+
+  const name = prompt("Neuen Schneidwerkstoff eingeben:");
+  if (!name) return;
+
+  const cleanName = name.trim();
+  if (!cleanName) return;
+
+  if (
+    toolMaterials.some((m) => m.name.toLowerCase() === cleanName.toLowerCase())
+  ) {
+    return alert("Dieser Schneidwerkstoff existiert bereits.");
+  }
+
+  const nextSort =
+    toolMaterials.reduce(
+      (max, m) => Math.max(max, Number(m.sort_order || 0)),
+      0,
+    ) + 10;
+
+  const { data, error } = await supabaseClient
+    .from("tool_materials")
+    .insert({
+      name: cleanName,
+      sort_order: nextSort,
+      is_active: true,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Fehler beim Anlegen des Schneidwerkstoffs:", error);
+    return alert(
+      `Schneidwerkstoff konnte nicht gespeichert werden: ${error.message}`,
+    );
+  }
+
+  toolMaterials.push(data);
+  toolMaterials.sort(
+    (a, b) =>
+      Number(a.sort_order || 0) - Number(b.sort_order || 0) ||
+      String(a.name || "").localeCompare(String(b.name || "")),
+  );
+
+  render();
+}
+
+async function renameToolMaterial(materialId) {
+  if (currentUser.role !== "admin") return;
+
+  const material = toolMaterials.find((m) => m.id === materialId);
+  if (!material) return;
+
+  const nextName = prompt("Schneidwerkstoff umbenennen:", material.name || "");
+  if (!nextName) return;
+
+  const cleanName = nextName.trim();
+  if (!cleanName) return;
+
+  if (
+    toolMaterials.some(
+      (m) =>
+        m.id !== materialId &&
+        String(m.name || "").toLowerCase() === cleanName.toLowerCase(),
+    )
+  ) {
+    return alert("Dieser Schneidwerkstoff existiert bereits.");
+  }
+
+  const { data, error } = await supabaseClient
+    .from("tool_materials")
+    .update({
+      name: cleanName,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", materialId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Fehler beim Umbenennen des Schneidwerkstoffs:", error);
+    return alert(
+      `Schneidwerkstoff konnte nicht umbenannt werden: ${error.message}`,
+    );
+  }
+
+  const index = toolMaterials.findIndex((m) => m.id === materialId);
+  if (index !== -1) {
+    toolMaterials[index] = data;
+  }
+
+  toolMaterials.sort(
+    (a, b) =>
+      Number(a.sort_order || 0) - Number(b.sort_order || 0) ||
+      String(a.name || "").localeCompare(String(b.name || "")),
+  );
+
+  render();
+}
+
+async function deactivateToolMaterial(materialId) {
+  if (currentUser.role !== "admin") return;
+
+  const material = toolMaterials.find((m) => m.id === materialId);
+  if (!material) return;
+
+  const linkedTools = state.tools.filter((t) => t.materialId === materialId);
+  const message = linkedTools.length
+    ? `Schneidwerkstoff "${material.name}" wirklich deaktivieren?\n\nEr ist noch bei ${linkedTools.length} Werkzeug(en) hinterlegt. Bestehende Werkzeuge behalten den Wert, aber der Werkstoff ist künftig nicht mehr auswählbar.`
+    : `Schneidwerkstoff "${material.name}" wirklich deaktivieren?`;
+
+  const ok = confirm(message);
+  if (!ok) return;
+
+  const { error } = await supabaseClient
+    .from("tool_materials")
+    .update({
+      is_active: false,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", materialId);
+
+  if (error) {
+    console.error("Fehler beim Deaktivieren des Schneidwerkstoffs:", error);
+    return alert(
+      `Schneidwerkstoff konnte nicht deaktiviert werden: ${error.message}`,
+    );
+  }
+
+  toolMaterials = toolMaterials.filter((m) => m.id !== materialId);
+  render();
+}
+
+function renderToolMaterialsAdmin() {
+  const rows = toolMaterials
+    .map(
+      (m) => `<tr class='border-b'>
+        <td class='p-2'>${m.name || "-"}</td>
+        <td class='p-2'>${Number(m.sort_order || 0)}</td>
+        <td class='p-2 whitespace-nowrap'>
+          <button class='px-2 py-1 rounded bg-amber-600 text-white mr-2' onclick="renameToolMaterial('${m.id}')">Bearbeiten</button>
+          <button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="deactivateToolMaterial('${m.id}')">Deaktivieren</button>
+        </td>
+      </tr>`,
+    )
+    .join("");
+
+  return `<div class='border-2 border-slate-300 rounded-xl p-3 bg-slate-50'>
+    <div class='flex items-center justify-between gap-3 flex-wrap mb-3'>
+      <div>
+        <h3 class='text-lg font-bold mb-1'>Schneidwerkstoffe</h3>
+        <p class='text-sm text-slate-500'>Admin kann Schneidwerkstoffe anlegen, umbenennen und deaktivieren.</p>
+      </div>
+      <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='addToolMaterial()'>Schneidwerkstoff hinzufügen</button>
+    </div>
+
+    <div class='overflow-auto border rounded-lg bg-white max-h-[30vh]'>
+      <table class='w-full text-sm'>
+        <thead class='bg-slate-100 sticky top-0'>
+          <tr>
+            <th class='p-2 text-left'>Name</th>
+            <th class='p-2 text-left'>Sortierung</th>
+            <th class='p-2'></th>
+          </tr>
+        </thead>
+        <tbody>${rows || '<tr><td class="p-2" colspan="3">Keine Schneidwerkstoffe vorhanden.</td></tr>'}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
 function isThreadToolLabel(label) {
   return [
     "Gewindebohrer",
@@ -3399,7 +3571,8 @@ function renderTools() {
           <button class='px-3 py-2 rounded bg-slate-700 text-white' onclick='addToolManufacturer()'>Hersteller hinzufügen</button>
         </div>
       </div>
-    </div>`
+    </div>
+    ${renderToolMaterialsAdmin()}`
         : ""
     }
 
@@ -4180,3 +4353,6 @@ window.addToolLabel = addToolLabel;
 window.addToolManufacturer = addToolManufacturer;
 window.updateEditToolTypeFields = updateEditToolTypeFields;
 window.updateEditThreadPitchVisibility = updateEditThreadPitchVisibility;
+window.addToolMaterial = addToolMaterial;
+window.renameToolMaterial = renameToolMaterial;
+window.deactivateToolMaterial = deactivateToolMaterial;
