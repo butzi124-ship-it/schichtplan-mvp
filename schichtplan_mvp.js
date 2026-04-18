@@ -2914,16 +2914,42 @@ async function deleteTool(toolId) {
   render();
 }
 
-function undoToolJournalEntry(entryId) {
+async function undoToolJournalEntry(entryId) {
   const idx = state.toolJournal.findIndex((j) => j.id === entryId);
   if (idx === -1) return;
+
   const entry = state.toolJournal[idx];
   const tool = state.tools.find((t) => t.id === entry.toolId);
+
   if (tool && Number(entry.qty) > 0) {
-    tool.stock += Number(entry.qty);
-    if (tool.stock >= tool.minStock && Number(tool.orderedQty || 0) === 0)
-      tool.ordered = false;
+    const nextStock = Number(tool.stock || 0) + Number(entry.qty || 0);
+
+    const { data, error } = await supabaseClient
+      .from("tools")
+      .update({
+        stock: nextStock,
+      })
+      .eq("id", tool.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error(
+        "Fehler beim Rückgängig machen des Journal-Eintrags:",
+        error,
+      );
+      return alert(
+        `Rückgängig konnte nicht gespeichert werden: ${error.message}`,
+      );
+    }
+
+    const updatedTool = normalizeToolFromDb(data);
+    const toolIndex = state.tools.findIndex((t) => t.id === tool.id);
+    if (toolIndex !== -1) {
+      state.tools[toolIndex] = updatedTool;
+    }
   }
+
   state.toolJournal.splice(idx, 1);
   persist();
   render();
