@@ -2866,19 +2866,54 @@ async function bookToolChange(toolId) {
       tool.insertTool && Number(tool.insertEdges || 0) > 0
         ? String(tool.insertEdges)
         : "1";
+
     qty = await askNumberCentered("Entnahmemenge eingeben:", defaultQty);
     if (qty === null) return;
-    if (!Number.isFinite(qty) || qty <= 0)
+
+    if (!Number.isFinite(qty) || qty <= 0) {
       return alert("Bitte eine gültige Entnahmemenge eingeben.");
-    tool.stock = Math.max(0, tool.stock - qty);
+    }
+
+    if (Number(tool.stock || 0) < Number(qty || 0)) {
+      return alert("Nicht genügend Bestand vorhanden.");
+    }
+  }
+
+  let updatedTool = tool;
+
+  if (takeOut && qty > 0) {
+    const nextStock = Math.max(0, Number(tool.stock || 0) - Number(qty || 0));
+
+    const { data, error } = await supabaseClient
+      .from("tools")
+      .update({
+        stock: nextStock,
+      })
+      .eq("id", toolId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Fehler bei Werkzeug-Entnahme:", error);
+      return alert(
+        `Entnahme konnte nicht gespeichert werden: ${error.message}`,
+      );
+    }
+
+    updatedTool = normalizeToolFromDb(data);
+
+    const index = state.tools.findIndex((t) => t.id === toolId);
+    if (index !== -1) {
+      state.tools[index] = updatedTool;
+    }
   }
 
   state.toolJournal.unshift({
     id: `journal-${Date.now()}`,
     user: currentUser.name,
     at: new Date().toISOString().slice(0, 16).replace("T", " "),
-    toolId: tool.id,
-    tNumber: tool.tNumber,
+    toolId: updatedTool.id,
+    tNumber: updatedTool.tNumber,
     qty,
     action: takeOut
       ? `Werkzeugwechsel + Entnahme ${qty}`
