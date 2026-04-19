@@ -2304,6 +2304,74 @@ function normalizeToolData(data) {
     insertEdges: data.insertTool ? data.insertEdges : 0,
   };
 }
+
+function renderToolCreateForm(prefix = "tool") {
+  const labels = getToolLabels();
+  const manufacturers = getToolManufacturers();
+  const holders = getToolHolders();
+
+  const labelOptions = labels
+    .map((l) => `<option value="${l}">${l}</option>`)
+    .join("");
+  const manufacturerOptions = manufacturers
+    .map((m) => `<option value="${m}">${m}</option>`)
+    .join("");
+  const holderOptions = holders
+    .map((h) => `<option value="${h}">${h}</option>`)
+    .join("");
+  const materialOptions = toolMaterials
+    .map((m) => `<option value="${m.id}">${m.name}</option>`)
+    .join("");
+
+  return `<div class='grid md:grid-cols-2 gap-3'>
+    <input id='${prefix}TNumber' class='border rounded p-2' placeholder='T-Nummer (z.B. 134)' />
+
+    <select id='${prefix}Label' class='border rounded p-2' onchange='updateToolTypeFields("${prefix}")'>
+      ${labelOptions}
+    </select>
+
+    <input id='${prefix}Diameter' class='border rounded p-2' placeholder='Durchmesser' />
+
+    <div id='${prefix}ThreadPrefixWrap' style='display:none;'>
+      <select id='${prefix}ThreadPrefix' class='border rounded p-2 w-full' onchange='updateThreadPitchVisibility("${prefix}")'>
+        <option value=''>Kennung (nur Gewinde)</option>
+        <option value='M'>M</option>
+        <option value='MF'>MF</option>
+        <option value='G'>G</option>
+        <option value='UNF'>UNF</option>
+        <option value='UNC'>UNC</option>
+        <option value='Mx'>Mx</option>
+      </select>
+    </div>
+
+    <div id='${prefix}ThreadPitchWrap' style='display:none;'>
+      <input id='${prefix}ThreadPitch' class='border rounded p-2 w-full' placeholder='Steigung P (nur MF)' />
+    </div>
+
+    <div id='${prefix}CornerRadiusWrap' style='display:none;'>
+      <input id='${prefix}CornerRadius' class='border rounded p-2 w-full' placeholder='Schneidenradius' />
+    </div>
+
+    <select id='${prefix}Material' class='border rounded p-2'>
+      <option value=''>Schneidwerkstoff wählen</option>
+      ${materialOptions}
+    </select>
+
+    <input id='${prefix}Shelf' class='border rounded p-2' placeholder='A00' />
+    <input id='${prefix}Article' class='border rounded p-2' placeholder='Artikel Nr.' />
+    <select id='${prefix}Holder' class='border rounded p-2'>${holderOptions}</select>
+    <input id='${prefix}Stock' type='number' class='border rounded p-2' placeholder='Bestand' />
+    <input id='${prefix}MinStock' type='number' class='border rounded p-2' placeholder='Mindestbestand' />
+    <input id='${prefix}OptimalStock' type='number' class='border rounded p-2' placeholder='Optimale Stückzahl' />
+    <select id='${prefix}Manufacturer' class='border rounded p-2'>${manufacturerOptions}</select>
+    <label class='flex items-center gap-2 text-sm md:col-span-2'>
+      <input id='${prefix}InsertTool' type='checkbox' onchange='toggleInsertToolFieldsById("${prefix}InsertTool","${prefix}InsertEdges")' />
+      Wendeplattenwerkzeug
+    </label>
+    <input id='${prefix}InsertEdges' type='number' class='border rounded p-2 md:col-span-2' placeholder='Anzahl Schneiden' disabled />
+  </div>`;
+}
+
 async function createTool() {
   if (currentUser.role !== "admin")
     return alert("Nur Admin darf Werkzeuge anlegen.");
