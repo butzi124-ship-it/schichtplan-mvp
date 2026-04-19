@@ -3635,12 +3635,10 @@ function renderTools() {
         </div>
         <div class='flex gap-2 flex-wrap'>
           <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='openCreateToolModal()'>Neues Werkzeug erfassen</button>
-          <button class='px-3 py-2 rounded bg-slate-700 text-white' onclick='addToolLabel()'>Bezeichnung hinzufügen</button>
-          <button class='px-3 py-2 rounded bg-slate-700 text-white' onclick='addToolManufacturer()'>Hersteller hinzufügen</button>
         </div>
       </div>
     </div>
-    ${renderToolMaterialsAdmin()}`
+    ${renderToolMasterDataAdmin()}`
         : ""
     }
 
