@@ -2148,6 +2148,72 @@ function renderToolMaterialsAdmin() {
   </div>`;
 }
 
+function renderToolMasterDataAdmin() {
+  const labelRows = getToolLabels()
+    .map(
+      (name) => `<tr class='border-b'>
+        <td class='p-2'>${name}</td>
+        <td class='p-2 text-slate-500'>Bezeichnung</td>
+      </tr>`,
+    )
+    .join("");
+
+  const manufacturerRows = getToolManufacturers()
+    .map(
+      (name) => `<tr class='border-b'>
+        <td class='p-2'>${name}</td>
+        <td class='p-2 text-slate-500'>Hersteller</td>
+      </tr>`,
+    )
+    .join("");
+
+  const materialRows = toolMaterials
+    .map(
+      (m) => `<tr class='border-b'>
+        <td class='p-2'>${m.name || "-"}</td>
+        <td class='p-2 text-slate-500'>Schneidwerkstoff</td>
+      </tr>`,
+    )
+    .join("");
+
+  return `<div class='border-2 border-slate-300 rounded-xl p-3 bg-slate-50'>
+    <div class='flex items-center justify-between gap-3 flex-wrap mb-3'>
+      <div>
+        <h3 class='text-lg font-bold mb-1'>Stammdaten für Werkzeuge</h3>
+        <p class='text-sm text-slate-500'>Hier können Bezeichnungen, Hersteller und Schneidwerkstoffe ergänzt und eingesehen werden.</p>
+      </div>
+      <div class='flex gap-2 flex-wrap'>
+        <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='addToolLabel()'>Bezeichnung hinzufügen</button>
+        <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='addToolManufacturer()'>Hersteller hinzufügen</button>
+        <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='addToolMaterial()'>Schneidwerkstoff hinzufügen</button>
+      </div>
+    </div>
+
+    <div class='grid md:grid-cols-3 gap-4'>
+      <div class='border rounded-lg bg-white overflow-auto max-h-[28vh]'>
+        <div class='p-2 font-semibold border-b bg-slate-100'>Bezeichnungen</div>
+        <table class='w-full text-sm'>
+          <tbody>${labelRows || '<tr><td class="p-2">Keine Bezeichnungen vorhanden.</td></tr>'}</tbody>
+        </table>
+      </div>
+
+      <div class='border rounded-lg bg-white overflow-auto max-h-[28vh]'>
+        <div class='p-2 font-semibold border-b bg-slate-100'>Hersteller</div>
+        <table class='w-full text-sm'>
+          <tbody>${manufacturerRows || '<tr><td class="p-2">Keine Hersteller vorhanden.</td></tr>'}</tbody>
+        </table>
+      </div>
+
+      <div class='border rounded-lg bg-white overflow-auto max-h-[28vh]'>
+        <div class='p-2 font-semibold border-b bg-slate-100'>Schneidwerkstoffe</div>
+        <table class='w-full text-sm'>
+          <tbody>${materialRows || '<tr><td class="p-2">Keine Schneidwerkstoffe vorhanden.</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+}
+
 function isThreadToolLabel(label) {
   return [
     "Gewindebohrer",
