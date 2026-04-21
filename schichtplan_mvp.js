@@ -254,6 +254,149 @@ function getToolMaterialNameById(materialId) {
   return found?.name || "-";
 }
 
+async function loadPlanningDataFromSupabase() {
+  const [
+    assignmentsRes,
+    absencesRes,
+    vacationsRes,
+    sickLeavesRes,
+    availabilityRes,
+    swapsRes,
+    cancellationsRes,
+    saturdayRequestsRes,
+    replacementsRes,
+  ] = await Promise.all([
+    supabaseClient
+      .from("planner_assignments")
+      .select("*")
+      .order("shift_date", { ascending: true }),
+    supabaseClient
+      .from("planner_absences")
+      .select("*")
+      .order("absence_date", { ascending: true }),
+    supabaseClient
+      .from("planner_vacations")
+      .select("*")
+      .order("from_date", { ascending: true }),
+    supabaseClient
+      .from("planner_sick_leaves")
+      .select("*")
+      .order("from_date", { ascending: true }),
+    supabaseClient
+      .from("planner_availability")
+      .select("*")
+      .order("shift_date", { ascending: true }),
+    supabaseClient
+      .from("planner_swaps")
+      .select("*")
+      .order("start_date", { ascending: true }),
+    supabaseClient
+      .from("planner_shift_cancellations")
+      .select("*")
+      .order("shift_date", { ascending: true }),
+    supabaseClient
+      .from("planner_saturday_requests")
+      .select("*")
+      .order("shift_date", { ascending: true }),
+    supabaseClient
+      .from("planner_absence_replacements")
+      .select("*")
+      .order("shift_date", { ascending: true }),
+  ]);
+
+  const responses = [
+    ["planner_assignments", assignmentsRes],
+    ["planner_absences", absencesRes],
+    ["planner_vacations", vacationsRes],
+    ["planner_sick_leaves", sickLeavesRes],
+    ["planner_availability", availabilityRes],
+    ["planner_swaps", swapsRes],
+    ["planner_shift_cancellations", cancellationsRes],
+    ["planner_saturday_requests", saturdayRequestsRes],
+    ["planner_absence_replacements", replacementsRes],
+  ];
+
+  const firstError = responses.find(([, res]) => res.error)?.[1]?.error;
+  if (firstError) {
+    console.error("Fehler beim Laden der Planungsdaten:", firstError);
+    return null;
+  }
+
+  const assignments = {};
+  (assignmentsRes.data || []).forEach((row) => {
+    assignments[row.shift_id] = row.assigned_user;
+  });
+
+  const absences = {};
+  (absencesRes.data || []).forEach((row) => {
+    absences[row.absence_key] = true;
+  });
+
+  const vacations = (vacationsRes.data || []).map((row) => ({
+    id: row.id,
+    user: row.user_name,
+    from: row.from_date,
+    to: row.to_date,
+  }));
+
+  const sickLeaves = (sickLeavesRes.data || []).map((row) => ({
+    id: row.id,
+    user: row.user_name,
+    from: row.from_date,
+    to: row.to_date,
+  }));
+
+  const availability = {};
+  (availabilityRes.data || []).forEach((row) => {
+    availability[row.availability_key] = row.status;
+  });
+
+  const swaps = (swapsRes.data || []).map((row) => ({
+    id: row.id,
+    userA: row.user_a,
+    userB: row.user_b,
+    startDate: row.start_date,
+    endDate: row.end_date || null,
+  }));
+
+  const shiftCancellations = {};
+  (cancellationsRes.data || []).forEach((row) => {
+    shiftCancellations[row.shift_id] = true;
+  });
+
+  const saturdayEveningRequests = {};
+  (saturdayRequestsRes.data || []).forEach((row) => {
+    saturdayEveningRequests[row.request_key] = true;
+  });
+
+  const absenceReplacements = {};
+  (replacementsRes.data || []).forEach((row) => {
+    absenceReplacements[row.shift_id] = {
+      sourceType: row.source_type,
+      sourceId: row.source_id,
+      absentUser: row.absent_user,
+      from: row.from_date,
+      to: row.to_date,
+      mode: row.mode,
+      replacementUser: row.replacement_user,
+      weekFrom: row.week_from,
+      weekTo: row.week_to,
+    };
+  });
+
+  return {
+    assignments,
+    absences,
+    vacations,
+    sickLeaves,
+    availability,
+    swaps,
+    shiftCancellations,
+    saturdayEveningRequests,
+    absenceReplacements,
+  };
+}
+
 async function loginWithSupabase() {
   const email = document.getElementById("loginEmail")?.value?.trim() || "";
   const password = document.getElementById("loginPassword")?.value || "";
@@ -328,9 +471,23 @@ async function syncSupabaseSessionToApp() {
 
   const materials = await loadToolMaterialsFromSupabase();
   const tools = await loadToolsFromSupabase();
+  const planning = await loadPlanningDataFromSupabase();
 
   toolMaterials = materials;
   state.tools = tools;
+
+  if (planning) {
+    state.assignments = planning.assignments;
+    state.absences = planning.absences;
+    state.vacations = planning.vacations;
+    state.sickLeaves = planning.sickLeaves;
+    state.availability = planning.availability;
+    state.swaps = planning.swaps;
+    state.shiftCancellations = planning.shiftCancellations;
+    state.saturdayEveningRequests = planning.saturdayEveningRequests;
+    state.absenceReplacements = planning.absenceReplacements;
+  }
+
   persist();
 
   document.getElementById("loginBox")?.classList.add("hidden");
@@ -342,6 +499,7 @@ async function syncSupabaseSessionToApp() {
   console.log("Employees-Datensatz:", currentEmployeeRecord);
   console.log("Tool-Materials nach Login geladen:", materials);
   console.log("Tools nach Login geladen:", tools);
+  console.log("Planungsdaten nach Login geladen:", planning);
 
   render();
 }
@@ -368,14 +526,29 @@ async function bootSupabase() {
   const employees = await loadEmployeesFromSupabase();
   const materials = await loadToolMaterialsFromSupabase();
   const tools = await loadToolsFromSupabase();
+  const planning = await loadPlanningDataFromSupabase();
 
   toolMaterials = materials;
   state.tools = tools;
+
+  if (planning) {
+    state.assignments = planning.assignments;
+    state.absences = planning.absences;
+    state.vacations = planning.vacations;
+    state.sickLeaves = planning.sickLeaves;
+    state.availability = planning.availability;
+    state.swaps = planning.swaps;
+    state.shiftCancellations = planning.shiftCancellations;
+    state.saturdayEveningRequests = planning.saturdayEveningRequests;
+    state.absenceReplacements = planning.absenceReplacements;
+  }
+
   persist();
 
   console.log("Employees aus Supabase:", employees);
   console.log("Tool-Materials aus Supabase:", materials);
   console.log("Tools aus Supabase:", tools);
+  console.log("Planungsdaten aus Supabase:", planning);
 
   if (currentUser) render();
 }
