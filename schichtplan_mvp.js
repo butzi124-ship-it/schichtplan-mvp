@@ -3473,13 +3473,23 @@ async function bookToolChange(toolId) {
     const nextStock = Math.max(0, Number(tool.stock || 0) - Number(qty || 0));
 
     const { data, error } = await supabaseClient
-      .from("tools")
-      .update({
-        stock: nextStock,
-      })
-      .eq("id", toolId)
-      .select()
-      .single();
+  .from("tools")
+  .update({
+    stock: nextStock,
+  })
+  .eq("id", toolId)
+  .select()
+  .maybeSingle();
+
+if (error) {
+  console.error("Fehler bei Werkzeug-Entnahme:", error);
+  return alert(`Entnahme konnte nicht gespeichert werden: ${error.message}`);
+}
+
+if (!data) {
+  console.error("Keine Werkzeugzeile nach Entnahme zurückgegeben.", { toolId, nextStock });
+  return alert("Entnahme wurde nicht bestätigt. Bitte Seite neu laden und erneut versuchen.");
+}
 
     if (error) {
       console.error("Fehler bei Werkzeug-Entnahme:", error);
