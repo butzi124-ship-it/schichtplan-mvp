@@ -1944,30 +1944,100 @@ function readAdminCalendarForm() {
   return { user, from, to };
 }
 
-function addVacation() {
+async function addVacation() {
   const data = readAdminCalendarForm();
   if (!data) return;
-  state.vacations.push({ id: `vac-${Date.now()}`, ...data });
+
+  const payload = {
+    user_name: data.user,
+    from_date: data.from,
+    to_date: data.to,
+    created_by_employee_id: currentEmployeeRecord?.id || null,
+  };
+
+  const { data: inserted, error } = await supabaseClient
+    .from("planner_vacations")
+    .insert(payload)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Fehler beim Speichern von Urlaub:", error);
+    return alert(`Urlaub konnte nicht gespeichert werden: ${error.message}`);
+  }
+
+  state.vacations.push({
+    id: inserted.id,
+    user: inserted.user_name,
+    from: inserted.from_date,
+    to: inserted.to_date,
+  });
+
   persist();
   render();
 }
 
-function addSickLeave() {
+async function addSickLeave() {
   const data = readAdminCalendarForm();
   if (!data) return;
-  state.sickLeaves.push({ id: `sick-${Date.now()}`, ...data });
+
+  const payload = {
+    user_name: data.user,
+    from_date: data.from,
+    to_date: data.to,
+    created_by_employee_id: currentEmployeeRecord?.id || null,
+  };
+
+  const { data: inserted, error } = await supabaseClient
+    .from("planner_sick_leaves")
+    .insert(payload)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Fehler beim Speichern von Krankmeldung:", error);
+    return alert(`Krankmeldung konnte nicht gespeichert werden: ${error.message}`);
+  }
+
+  state.sickLeaves.push({
+    id: inserted.id,
+    user: inserted.user_name,
+    from: inserted.from_date,
+    to: inserted.to_date,
+  });
+
   persist();
   render();
 }
 
-function deleteVacation(id) {
+async function deleteVacation(id) {
+  const { error } = await supabaseClient
+    .from("planner_vacations")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("Fehler beim Löschen von Urlaub:", error);
+    return alert(`Urlaub konnte nicht gelöscht werden: ${error.message}`);
+  }
+
   state.vacations = state.vacations.filter((v) => v.id !== id);
   clearReplacementPlanForSource("vacation", id);
   persist();
   render();
 }
 
-function deleteSickLeave(id) {
+async function deleteSickLeave(id) {
+  const { error } = await supabaseClient
+    .from("planner_sick_leaves")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("Fehler beim Löschen von Krankmeldung:", error);
+    return alert(`Krankmeldung konnte nicht gelöscht werden: ${error.message}`);
+  }
+
   state.sickLeaves = state.sickLeaves.filter((s) => s.id !== id);
   clearReplacementPlanForSource("sick", id);
   persist();
