@@ -3805,7 +3805,6 @@ function renderOrderStats() {
 
 function renderTools() {
   const labels = getToolLabels();
-  const holders = getToolHolders();
   const filters = state.toolFilters || {
     search: "",
     label: "",
@@ -3818,6 +3817,7 @@ function renderTools() {
   const filterT = filters.tNumber || "";
   const filterD = filters.diameter || "";
   const filterHolder = filters.holder || "";
+  const isAdmin = currentUser?.role === "admin";
 
   const filterLabelOptions = labels
     .map(
@@ -3840,29 +3840,32 @@ function renderTools() {
   });
 
   const toolRows = tools
-    .map(
-      (t) => `<tr class='border-b'>
-      <td class='p-2'>T ${t.tNumber}</td>
-      <td class='p-2'>${t.label}</td>
-      <td class='p-2'>${formatToolSize(t)}</td>
-      <td class='p-2'>${getToolMaterialNameById(t.materialId)}</td>
-      <td class='p-2'>${t.shelf}</td>
-      <td class='p-2'>${t.articleNo}</td>
-      <td class='p-2'>${t.holder || "-"}</td>
-      <td class='p-2'>${t.stock}</td>
-      <td class='p-2'>${t.minStock}</td>
-      <td class='p-2'>${t.manufacturer || "-"}</td>
-      <td class='p-2'>${t.ordered ? "Bestellt" : "-"}</td>
-      <td class='p-2'>
-        <button class='px-2 py-1 rounded bg-emerald-700 text-white mr-1' onclick="bookToolChange('${t.id}')">Wechsel</button>
-        ${
-          currentUser.role === "admin"
-            ? `<button class='px-2 py-1 rounded bg-amber-600 text-white mr-1' onclick="editTool('${t.id}')">Bearbeiten</button><button class='px-2 py-1 rounded bg-rose-700 text-white mr-1' onclick="deleteTool('${t.id}')">Löschen</button>`
-            : ""
-        }
-      </td>
-    </tr>`,
-    )
+    .map((t) => {
+      const statusText = t.ordered ? "Bestellt" : "-";
+
+      return `<tr class='border-b'>
+        <td class='p-2'>T ${t.tNumber}</td>
+        <td class='p-2'>${t.label}</td>
+        <td class='p-2'>${formatToolSize(t)}</td>
+        ${isAdmin ? `<td class='p-2'>${getToolMaterialNameById(t.materialId)}</td>` : ""}
+        <td class='p-2'>${t.shelf}</td>
+        <td class='p-2'>${t.articleNo}</td>
+        ${isAdmin ? `<td class='p-2'>${t.holder || "-"}</td>` : ""}
+        <td class='p-2'>${t.stock}</td>
+        <td class='p-2'>${t.minStock}</td>
+        ${isAdmin ? `<td class='p-2'>${t.manufacturer || "-"}</td>` : ""}
+        <td class='p-2'>${statusText}</td>
+        <td class='p-2 whitespace-nowrap'>
+          <button class='px-2 py-1 rounded bg-emerald-700 text-white mr-1' onclick="bookToolChange('${t.id}')">Wechsel</button>
+          ${
+            isAdmin
+              ? `<button class='px-2 py-1 rounded bg-amber-600 text-white mr-1' onclick="editTool('${t.id}')">Bearbeiten</button>
+                 <button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="deleteTool('${t.id}')">Löschen</button>`
+              : ""
+          }
+        </td>
+      </tr>`;
+    })
     .join("");
 
   const todoTools = state.tools.filter((t) => shouldOrderTool(t) && !t.ordered);
@@ -3879,33 +3882,35 @@ function renderTools() {
   const todoRows = todoTools
     .map(
       (t) => `<tr class='border-b'>
-    <td class='p-2'>T ${t.tNumber}</td>
-    <td class='p-2'>${t.label}</td>
-    <td class='p-2'>${formatToolSize(t)}</td>
-    <td class='p-2'>${getToolMaterialNameById(t.materialId)}</td>
-    <td class='p-2'>${t.articleNo || "-"}</td>
-    <td class='p-2 whitespace-nowrap'><button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="markToolOrdered('${t.id}', true)">Bestellt markieren</button></td>
-  </tr>`,
+        <td class='p-2'>T ${t.tNumber}</td>
+        <td class='p-2'>${t.label}</td>
+        <td class='p-2'>${formatToolSize(t)}</td>
+        <td class='p-2'>${getToolMaterialNameById(t.materialId)}</td>
+        <td class='p-2'>${t.articleNo || "-"}</td>
+        <td class='p-2 whitespace-nowrap'>
+          <button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="markToolOrdered('${t.id}', true)">Bestellt markieren</button>
+        </td>
+      </tr>`,
     )
     .join("");
 
   const orderedCards = orderedTools
     .map(
       (t) => `<div class='border rounded-lg p-3 bg-emerald-50 space-y-3'>
-    <div class='grid md:grid-cols-2 gap-x-6 gap-y-2 text-sm'>
-      <div><span class='font-semibold'>Bezeichnung:</span> ${t.label}</div>
-      <div><span class='font-semibold'>Durchmesser:</span> ${formatToolSize(t)}</div>
-      <div><span class='font-semibold'>Schneidwerkstoff:</span> ${getToolMaterialNameById(t.materialId)}</div>
-      <div><span class='font-semibold'>Steigung:</span> ${t.threadPrefix === "MF" && t.threadPitch ? `P ${t.threadPitch}` : "-"}</div>
-      <div><span class='font-semibold'>Menge:</span> ${t.orderedQty || effectiveOrderQty(t)}</div>
-      <div><span class='font-semibold'>Artikelnummer:</span> ${t.articleNo}</div>
-      <div><span class='font-semibold'>Lagerfach:</span> ${t.shelf}</div>
-    </div>
-    <div class='flex flex-col sm:flex-row gap-2'>
-      <button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="markToolOrdered('${t.id}', false)">Bestellt</button>
-      <button class='px-2 py-1 rounded bg-slate-700 text-white' onclick="restockTool('${t.id}')">Einlagern</button>
-    </div>
-  </div>`,
+        <div class='grid md:grid-cols-2 gap-x-6 gap-y-2 text-sm'>
+          <div><span class='font-semibold'>Bezeichnung:</span> ${t.label}</div>
+          <div><span class='font-semibold'>Durchmesser:</span> ${formatToolSize(t)}</div>
+          <div><span class='font-semibold'>Schneidwerkstoff:</span> ${getToolMaterialNameById(t.materialId)}</div>
+          <div><span class='font-semibold'>Steigung:</span> ${t.threadPrefix === "MF" && t.threadPitch ? `P ${t.threadPitch}` : "-"}</div>
+          <div><span class='font-semibold'>Menge:</span> ${t.orderedQty || effectiveOrderQty(t)}</div>
+          <div><span class='font-semibold'>Artikelnummer:</span> ${t.articleNo}</div>
+          <div><span class='font-semibold'>Lagerfach:</span> ${t.shelf}</div>
+        </div>
+        <div class='flex flex-col sm:flex-row gap-2'>
+          <button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="markToolOrdered('${t.id}', false)">Bestellt</button>
+          <button class='px-2 py-1 rounded bg-slate-700 text-white' onclick="restockTool('${t.id}')">Einlagern</button>
+        </div>
+      </div>`,
     )
     .join("");
 
@@ -3913,12 +3918,12 @@ function renderTools() {
     .slice(0, 80)
     .map(
       (j) => `<tr class='border-b'>
-    <td class='p-2'>${j.at}</td>
-    <td class='p-2'>${j.user}</td>
-    <td class='p-2'>T ${j.tNumber}</td>
-    <td class='p-2'>${j.action}</td>
-    <td class='p-2'><button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="undoToolJournalEntry('${j.id}')">Rückgängig</button></td>
-  </tr>`,
+        <td class='p-2'>${j.at}</td>
+        <td class='p-2'>${j.user}</td>
+        <td class='p-2'>T ${j.tNumber}</td>
+        <td class='p-2'>${j.action}</td>
+        <td class='p-2'><button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="undoToolJournalEntry('${j.id}')">Rückgängig</button></td>
+      </tr>`,
     )
     .join("");
 
@@ -3953,47 +3958,47 @@ function renderTools() {
 
   const orderListPopup = state.orderListPopupOpen
     ? `<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-6xl max-h-[88vh] overflow-auto p-4">
-      <div class="flex items-center justify-between mb-3 gap-3">
-        <h3 class="text-lg font-bold">Bestellliste nach Hersteller</h3>
-        <button class="px-2 py-1 rounded bg-slate-200" onclick="closeOrderListPopup()">Schließen</button>
-      </div>
-      ${
-        availableManufacturers.length
-          ? `<div class='border rounded p-3 mb-4 bg-slate-50'>
-          <div class='grid md:grid-cols-[280px,1fr] gap-3 items-end'>
-            <label class='text-sm font-medium'>Hersteller auswählen
-              <select class='border rounded p-2 w-full mt-1' onchange="setOrderListManufacturer(this.value)">
-                ${manufacturerOptionsForPopup}
-              </select>
-            </label>
-            <div class='text-sm text-slate-500'>Es wird immer nur ein Hersteller gleichzeitig angezeigt.</div>
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-6xl max-h-[88vh] overflow-auto p-4">
+          <div class="flex items-center justify-between mb-3 gap-3">
+            <h3 class="text-lg font-bold">Bestellliste nach Hersteller</h3>
+            <button class="px-2 py-1 rounded bg-slate-200" onclick="closeOrderListPopup()">Schließen</button>
           </div>
+          ${
+            availableManufacturers.length
+              ? `<div class='border rounded p-3 mb-4 bg-slate-50'>
+                  <div class='grid md:grid-cols-[280px,1fr] gap-3 items-end'>
+                    <label class='text-sm font-medium'>Hersteller auswählen
+                      <select class='border rounded p-2 w-full mt-1' onchange="setOrderListManufacturer(this.value)">
+                        ${manufacturerOptionsForPopup}
+                      </select>
+                    </label>
+                    <div class='text-sm text-slate-500'>Es wird immer nur ein Hersteller gleichzeitig angezeigt.</div>
+                  </div>
+                </div>
+                <div class='border rounded p-3 bg-white'>
+                  <div class='flex items-center justify-between mb-2'>
+                    <h4 class='font-semibold text-base'>${selectedManufacturer}</h4>
+                    <span class='text-xs text-slate-500'>${selectedManufacturerTools.length} Werkzeug(e)</span>
+                  </div>
+                  <table class='w-full text-sm'>
+                    <thead class='bg-slate-100'>
+                      <tr>
+                        <th class='p-2 text-left'>T</th>
+                        <th class='p-2 text-left'>Bezeichnung</th>
+                        <th class='p-2 text-left'>Größe</th>
+                        <th class='p-2 text-left'>Werkstoff</th>
+                        <th class='p-2 text-left'>Artikelnummer</th>
+                        <th class='p-2 text-left'>Bestand</th>
+                        <th class='p-2 text-left'>Menge</th>
+                      </tr>
+                    </thead>
+                    <tbody>${selectedManufacturerRows || '<tr><td class="p-2" colspan="7">Keine bestellrelevanten Werkzeuge für diesen Hersteller.</td></tr>'}</tbody>
+                  </table>
+                </div>`
+              : '<div class="text-sm text-slate-500">Keine bestellrelevanten Werkzeuge.</div>'
+          }
         </div>
-        <div class='border rounded p-3 bg-white'>
-          <div class='flex items-center justify-between mb-2'>
-            <h4 class='font-semibold text-base'>${selectedManufacturer}</h4>
-            <span class='text-xs text-slate-500'>${selectedManufacturerTools.length} Werkzeug(e)</span>
-          </div>
-          <table class='w-full text-sm'>
-            <thead class='bg-slate-100'>
-              <tr>
-                <th class='p-2 text-left'>T</th>
-                <th class='p-2 text-left'>Bezeichnung</th>
-                <th class='p-2 text-left'>Größe</th>
-                <th class='p-2 text-left'>Werkstoff</th>
-                <th class='p-2 text-left'>Artikelnummer</th>
-                <th class='p-2 text-left'>Bestand</th>
-                <th class='p-2 text-left'>Menge</th>
-              </tr>
-            </thead>
-            <tbody>${selectedManufacturerRows || '<tr><td class="p-2" colspan="7">Keine bestellrelevanten Werkzeuge für diesen Hersteller.</td></tr>'}</tbody>
-          </table>
-        </div>`
-          : '<div class="text-sm text-slate-500">Keine bestellrelevanten Werkzeuge.</div>'
-      }
-    </div>
-  </div>`
+      </div>`
     : "";
 
   const suggestionTools = state.tools.filter((t) =>
@@ -4002,39 +4007,66 @@ function renderTools() {
   const suggestionRows = suggestionTools
     .map(
       (t) => `<tr class='border-b'>
-      <td class='p-2'>${t.label}</td>
-      <td class='p-2'>${formatToolSize(t)}</td>
-      <td class='p-2'>${getToolMaterialNameById(t.materialId)}</td>
-      <td class='p-2'>${t.optimalStock || 0}</td>
-      <td class='p-2'>${getOptimalQtySuggestion(t)}</td>
-      <td class='p-2'>
-        <div class='flex gap-2'>
-          <button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick="applyOptimalQtySuggestion('${t.id}')">Übernehmen</button>
-          <button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="rejectOptimalQtySuggestion('${t.id}')">Ablehnen</button>
-        </div>
-      </td>
-    </tr>`,
+        <td class='p-2'>${t.label}</td>
+        <td class='p-2'>${formatToolSize(t)}</td>
+        <td class='p-2'>${getToolMaterialNameById(t.materialId)}</td>
+        <td class='p-2'>${t.optimalStock || 0}</td>
+        <td class='p-2'>${getOptimalQtySuggestion(t)}</td>
+        <td class='p-2'>
+          <div class='flex gap-2'>
+            <button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick="applyOptimalQtySuggestion('${t.id}')">Übernehmen</button>
+            <button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="rejectOptimalQtySuggestion('${t.id}')">Ablehnen</button>
+          </div>
+        </td>
+      </tr>`,
     )
     .join("");
+
+  const stockTableHeader = isAdmin
+    ? `<tr>
+        <th class='p-2 text-left'>T</th>
+        <th class='p-2 text-left'>Bezeichnung</th>
+        <th class='p-2 text-left'>Ø</th>
+        <th class='p-2 text-left'>Werkstoff</th>
+        <th class='p-2 text-left'>Fach</th>
+        <th class='p-2 text-left'>Artikel Nr.</th>
+        <th class='p-2 text-left'>Aufnahme</th>
+        <th class='p-2 text-left'>Bestand</th>
+        <th class='p-2 text-left'>Min</th>
+        <th class='p-2 text-left'>Hersteller</th>
+        <th class='p-2 text-left'>Status</th>
+        <th class='p-2'></th>
+      </tr>`
+    : `<tr>
+        <th class='p-2 text-left'>T</th>
+        <th class='p-2 text-left'>Bezeichnung</th>
+        <th class='p-2 text-left'>Ø</th>
+        <th class='p-2 text-left'>Fach</th>
+        <th class='p-2 text-left'>Artikel Nr.</th>
+        <th class='p-2 text-left'>Bestand</th>
+        <th class='p-2 text-left'>Min</th>
+        <th class='p-2 text-left'>Status</th>
+        <th class='p-2'></th>
+      </tr>`;
 
   return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
     <h2 class='text-xl font-bold mb-1'>Werkzeugverwaltung</h2>
     <p class='text-sm text-slate-600 mb-2'>Alle Bereiche sind getrennt dargestellt: Stammdaten, Bestand, To-Do, Bestellt und Journal.</p>
 
     ${
-      currentUser.role === "admin"
+      isAdmin
         ? `<div class='border-2 border-slate-300 rounded-xl p-3 bg-slate-50'>
-      <div class='flex items-center justify-between gap-3 flex-wrap'>
-        <div>
-          <h3 class='text-lg font-bold mb-1'>1) Neues Werkzeug anlegen</h3>
-          <p class='text-sm text-slate-500'>Die Dateneingabe öffnet sich in einem separaten Eingabefenster.</p>
-        </div>
-        <div class='flex gap-2 flex-wrap'>
-          <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='openCreateToolModal()'>Neues Werkzeug erfassen</button>
-        </div>
-      </div>
-    </div>
-    ${renderToolMasterDataAdmin()}`
+            <div class='flex items-center justify-between gap-3 flex-wrap'>
+              <div>
+                <h3 class='text-lg font-bold mb-1'>1) Neues Werkzeug anlegen</h3>
+                <p class='text-sm text-slate-500'>Die Dateneingabe öffnet sich in einem separaten Eingabefenster.</p>
+              </div>
+              <div class='flex gap-2 flex-wrap'>
+                <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='openCreateToolModal()'>Neues Werkzeug erfassen</button>
+              </div>
+            </div>
+          </div>
+          ${renderToolMasterDataAdmin()}`
         : ""
     }
 
@@ -4047,7 +4079,11 @@ function renderTools() {
         </select>
         <input id='toolFilterT' class='border rounded p-1' placeholder='Filter T-Nummer' value='${filterT}' />
         <input id='toolFilterD' class='border rounded p-1' placeholder='Filter Durchmesser' value='${filterD}' />
-        <select id='toolFilterHolder' class='border rounded p-1'><option value='' ${filterHolder ? "" : "selected"}>Alle Aufnahmen</option><option value='HSK 100' ${filterHolder === "HSK 100" ? "selected" : ""}>HSK 100</option><option value='HSK 63' ${filterHolder === "HSK 63" ? "selected" : ""}>HSK 63</option></select>
+        <select id='toolFilterHolder' class='border rounded p-1'>
+          <option value='' ${filterHolder ? "" : "selected"}>Alle Aufnahmen</option>
+          <option value='HSK 100' ${filterHolder === "HSK 100" ? "selected" : ""}>HSK 100</option>
+          <option value='HSK 63' ${filterHolder === "HSK 63" ? "selected" : ""}>HSK 63</option>
+        </select>
         <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick='applyToolFilters()'>Filter anwenden</button>
         <button class='px-2 py-1 rounded bg-slate-700 text-white' onclick='resetToolFilters()'>Filter zurücksetzen</button>
       </div>
@@ -4059,53 +4095,82 @@ function renderTools() {
       <div class='overflow-auto max-h-[35vh] border rounded-lg'>
         <table class='w-full text-sm'>
           <thead class='bg-slate-100 sticky top-0'>
-            <tr><th class='p-2 text-left'>T</th><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Ø</th><th class='p-2 text-left'>Werkstoff</th><th class='p-2 text-left'>Fach</th><th class='p-2 text-left'>Artikel Nr.</th><th class='p-2 text-left'>Aufnahme</th><th class='p-2 text-left'>Bestand</th><th class='p-2 text-left'>Min</th><th class='p-2 text-left'>Hersteller</th><th class='p-2 text-left'>Status</th><th class='p-2'></th></tr>
+            ${stockTableHeader}
           </thead>
-          <tbody>${toolRows || '<tr><td class="p-2" colspan="12">Keine Werkzeuge.</td></tr>'}</tbody>
+          <tbody>${toolRows || `<tr><td class="p-2" colspan="${isAdmin ? 12 : 9}">Keine Werkzeuge.</td></tr>`}</tbody>
         </table>
       </div>
     </div>
 
     ${
-      currentUser.role === "admin"
+      isAdmin
         ? `<div class='border-2 border-slate-300 rounded-xl p-3'>
-      <h3 class='text-lg font-bold mb-2'>4) Admin-Bestandsaktionen</h3>
-      <div class='grid md:grid-cols-2 gap-3'>
-        <div class='border rounded p-3 bg-white overflow-auto'>
-          <h4 class='font-semibold mb-2'>Werkzeug To-Do (bei Mindestbestand oder darunter)</h4>
-          <table class='w-full text-sm'>
-            <thead class='bg-slate-100'><tr><th class='p-2 text-left'>T</th><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Größe</th><th class='p-2 text-left'>Werkstoff</th><th class='p-2 text-left'>Artikelnummer</th><th class='p-2'></th></tr></thead>
-            <tbody>${todoRows || '<tr><td class="p-2" colspan="6">Keine offenen To-Dos.</td></tr>'}</tbody>
-          </table>
-        </div>
-        <div class='border rounded p-3 bg-white'>
-          <h4 class='font-semibold mb-2'>Bestellt</h4>
-          <div class='space-y-3'>
-            ${orderedCards || '<div class="text-sm text-slate-500">Keine bestellten Werkzeuge.</div>'}
-          </div>
-        </div>
-      </div>
+            <h3 class='text-lg font-bold mb-2'>4) Admin-Bestandsaktionen</h3>
+            <div class='grid md:grid-cols-2 gap-3'>
+              <div class='border rounded p-3 bg-white overflow-auto'>
+                <h4 class='font-semibold mb-2'>Werkzeug To-Do (bei Mindestbestand oder darunter)</h4>
+                <table class='w-full text-sm'>
+                  <thead class='bg-slate-100'>
+                    <tr>
+                      <th class='p-2 text-left'>T</th>
+                      <th class='p-2 text-left'>Bezeichnung</th>
+                      <th class='p-2 text-left'>Größe</th>
+                      <th class='p-2 text-left'>Werkstoff</th>
+                      <th class='p-2 text-left'>Artikelnummer</th>
+                      <th class='p-2'></th>
+                    </tr>
+                  </thead>
+                  <tbody>${todoRows || '<tr><td class="p-2" colspan="6">Keine offenen To-Dos.</td></tr>'}</tbody>
+                </table>
+              </div>
+              <div class='border rounded p-3 bg-white'>
+                <h4 class='font-semibold mb-2'>Bestellt</h4>
+                <div class='space-y-3'>
+                  ${orderedCards || '<div class="text-sm text-slate-500">Keine bestellten Werkzeuge.</div>'}
+                </div>
+              </div>
+            </div>
 
-      <div class='mt-3 border rounded p-3 bg-slate-50'>
-        <h4 class='font-semibold mb-2'>Bestellliste nach Hersteller</h4>
-        <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick='openOrderListPopup()'>Bestellliste anzeigen</button>
-      </div>
+            <div class='mt-3 border rounded p-3 bg-slate-50'>
+              <h4 class='font-semibold mb-2'>Bestellliste nach Hersteller</h4>
+              <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick='openOrderListPopup()'>Bestellliste anzeigen</button>
+            </div>
 
-      <div class='mt-3 border rounded p-3 bg-slate-50'>
-        <h4 class='font-semibold mb-2'>Vorschläge für optimale Bestellmenge</h4>
-        <table class='w-full text-sm'>
-          <thead class='bg-slate-100'><tr><th class='p-2 text-left'>Bezeichnung</th><th class='p-2 text-left'>Größe</th><th class='p-2 text-left'>Werkstoff</th><th class='p-2 text-left'>Aktuell optimal</th><th class='p-2 text-left'>Vorschlag</th><th class='p-2'></th></tr></thead>
-          <tbody>${suggestionRows || '<tr><td class="p-2" colspan="6">Noch keine aussagekräftigen Vorschläge vorhanden.</td></tr>'}</tbody>
-        </table>
-      </div>
-    </div>`
+            <div class='mt-3 border rounded p-3 bg-slate-50'>
+              <h4 class='font-semibold mb-2'>Vorschläge für optimale Bestellmenge</h4>
+              <table class='w-full text-sm'>
+                <thead class='bg-slate-100'>
+                  <tr>
+                    <th class='p-2 text-left'>Bezeichnung</th>
+                    <th class='p-2 text-left'>Größe</th>
+                    <th class='p-2 text-left'>Werkstoff</th>
+                    <th class='p-2 text-left'>Aktuell optimal</th>
+                    <th class='p-2 text-left'>Vorschlag</th>
+                    <th class='p-2'></th>
+                  </tr>
+                </thead>
+                <tbody>${suggestionRows || '<tr><td class="p-2" colspan="6">Noch keine aussagekräftigen Vorschläge vorhanden.</td></tr>'}</tbody>
+              </table>
+            </div>
+          </div>`
         : ""
     }
 
     <div class='border-2 border-slate-300 rounded-xl p-3'>
       <h3 class='text-lg font-bold mb-2'>5) Schichtjournal – Werkzeugwechsel</h3>
       <div class='overflow-auto max-h-[25vh]'>
-        <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Zeit</th><th class='p-2 text-left'>Wer</th><th class='p-2 text-left'>T-Nr</th><th class='p-2 text-left'>Was</th><th class='p-2'></th></tr></thead><tbody>${journalRows || '<tr><td class="p-2" colspan="5">Keine Einträge.</td></tr>'}</tbody></table>
+        <table class='w-full text-sm'>
+          <thead class='bg-slate-100 sticky top-0'>
+            <tr>
+              <th class='p-2 text-left'>Zeit</th>
+              <th class='p-2 text-left'>Wer</th>
+              <th class='p-2 text-left'>T-Nr</th>
+              <th class='p-2 text-left'>Was</th>
+              <th class='p-2'></th>
+            </tr>
+          </thead>
+          <tbody>${journalRows || '<tr><td class="p-2" colspan="5">Keine Einträge.</td></tr>'}</tbody>
+        </table>
       </div>
     </div>
 
