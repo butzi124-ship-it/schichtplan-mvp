@@ -1257,7 +1257,8 @@ async function assignShift(shiftId) {
     return alert("Schicht konnte nicht gefunden werden.");
   }
 
-  const { error: assignmentError } = await supabaseClient
+  // 🔹 In DB schreiben
+  const { error: insertError } = await supabaseClient
     .from("planner_assignments")
     .upsert(
       {
@@ -1269,26 +1270,18 @@ async function assignShift(shiftId) {
       { onConflict: "shift_id" },
     );
 
-  if (assignmentError) {
-    console.error("Fehler bei Schichtzuweisung:", assignmentError);
-    return alert(`Zuweisung fehlgeschlagen: ${assignmentError.message}`);
+  if (insertError) {
+    console.error("Fehler bei Zuweisung:", insertError);
+    return alert(`Zuweisung fehlgeschlagen: ${insertError.message}`);
   }
 
-  const { error: cancellationDeleteError } = await supabaseClient
+  // 🔹 Falls vorher als Ausfall markiert → entfernen
+  await supabaseClient
     .from("planner_shift_cancellations")
     .delete()
     .eq("shift_id", shiftId);
 
-  if (cancellationDeleteError) {
-    console.error(
-      "Fehler beim Entfernen eines bestehenden Ausfalls:",
-      cancellationDeleteError,
-    );
-    return alert(
-      `Zuweisung gespeichert, aber Ausfall konnte nicht entfernt werden: ${cancellationDeleteError.message}`,
-    );
-  }
-
+  // 🔹 Lokal aktualisieren
   delete state.shiftCancellations[shiftId];
   state.assignments[shiftId] = name;
 
