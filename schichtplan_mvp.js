@@ -4956,6 +4956,7 @@ async function markAbsent(shiftId, date, userName) {
     return alert(`Abwesenheit konnte nicht gespeichert werden: ${error.message}`);
   }
 
+  // lokal weiterführen (für UI)
   state.absences[absenceKey] = true;
 
   persist();
