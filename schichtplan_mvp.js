@@ -1343,6 +1343,8 @@ async function cancelShift(shiftId) {
 }
 
 function renderMyShifts() {
+  const isSpringerUser = isSpringer(currentUser.name);
+
   const shifts = generateThreeMonths()
     .filter((s) => s.assigned === currentUser.name)
     .slice(0, 90);
@@ -1366,7 +1368,11 @@ function renderMyShifts() {
         <td class="p-2">${s.start}–${s.end}</td>
         <td class="p-2">${status}</td>
         <td class="p-2">
-          <button class='px-2 py-1 bg-amber-200 rounded mr-2' onclick="markAbsent('${s.id}','${s.date}','${currentUser.name}')">Abwesenheit</button>
+          ${
+            !isSpringerUser
+              ? `<button class='px-2 py-1 bg-amber-200 rounded mr-2' onclick="markAbsent('${s.id}','${s.date}','${currentUser.name}')">Abwesenheit</button>`
+              : ""
+          }
           ${
             saturdayEvening
               ? `<button class='px-2 py-1 rounded ${requested ? "bg-emerald-200" : "bg-blue-200"}' onclick="requestSaturdayEvening('${s.id}')">${requested ? "Eingetragen" : "Sa-Abend eintragen"}</button>`
@@ -1377,9 +1383,9 @@ function renderMyShifts() {
     })
     .join("");
 
-  const weekendRows = isSpringer(currentUser.name)
+  const weekendRows = isSpringerUser
     ? generateThreeMonths()
-        .filter((s) => s.id.includes("-sa-") || s.id.includes("-su-"))
+        .filter((s) => s.id.includes("-sa-1") || s.id.includes("-su-0"))
         .slice(0, 90)
         .map((s) => {
           const key = `${s.id}:${currentUser.name}`;
@@ -1421,7 +1427,7 @@ function renderMyShifts() {
     </div>
 
     ${
-      isSpringer(currentUser.name)
+      isSpringerUser
         ? `<div>
             <h3 class='text-lg font-semibold mb-3'>Wochenend-Verfügbarkeit</h3>
             <div class='overflow-auto border rounded-lg'>
@@ -1434,7 +1440,7 @@ function renderMyShifts() {
                     <th class='p-2 text-left'>Verfügbarkeit</th>
                   </tr>
                 </thead>
-                <tbody>${weekendRows || `<tr><td class='p-2' colspan='4'>Keine Wochenendschichten gefunden.</td></tr>`}</tbody>
+                <tbody>${weekendRows || `<tr><td class='p-2' colspan='4'>Keine relevanten Wochenendschichten gefunden.</td></tr>`}</tbody>
               </table>
             </div>
           </div>`
