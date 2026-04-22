@@ -1243,52 +1243,100 @@ function renderSchedule() {
   </div>`;
 }
 
-async function assignShift(shiftId, name, date) {
+async function assignShift(shiftId) {
   if (!supabaseReady) return;
 
-  const payload = {
-    shift_id: shiftId,
-    shift_date: date,
-    assigned_user: name,
-    created_by_employee_id: currentEmployeeRecord?.id || null,
-  };
+  const select = document.getElementById(`sel-${shiftId}`);
+  if (!select) return;
 
-  const { data, error } = await supabaseClient
-    .from("planner_assignments")
-    .upsert(payload, { onConflict: "shift_id" })
-    .select()
-    .maybeSingle();
+  const name = select.value;
+  if (!canAssignUserToShift(name, shiftId)) return;
 
-  if (error) {
-    console.error("Fehler bei Schichtzuweisung:", error);
-    return alert(`Zuweisung fehlgeschlagen: ${error.message}`);
+  const shift = getShiftById(shiftId);
+  if (!shift) {
+    return alert("Schicht konnte nicht gefunden werden.");
   }
 
+  const { error: assignmentError } = await supabaseClient
+    .from("planner_assignments")
+    .upsert(
+      {
+        shift_id: shiftId,
+        shift_date: shift.date,
+        assigned_user: name,
+        created_by_employee_id: currentEmployeeRecord?.id || null,
+      },
+      { onConflict: "shift_id" },
+    );
+
+  if (assignmentError) {
+    console.error("Fehler bei Schichtzuweisung:", assignmentError);
+    return alert(`Zuweisung fehlgeschlagen: ${assignmentError.message}`);
+  }
+
+  const { error: cancellationDeleteError } = await supabaseClient
+    .from("planner_shift_cancellations")
+    .delete()
+    .eq("shift_id", shiftId);
+
+  if (cancellationDeleteError) {
+    console.error(
+      "Fehler beim Entfernen eines bestehenden Ausfalls:",
+      cancellationDeleteError,
+    );
+    return alert(
+      `Zuweisung gespeichert, aber Ausfall konnte nicht entfernt werden: ${cancellationDeleteError.message}`,
+    );
+  }
+
+  delete state.shiftCancellations[shiftId];
   state.assignments[shiftId] = name;
 
   persist();
   render();
 }
 
-async function cancelShift(shiftId, date) {
+async function cancelShift(shiftId) {
   if (!supabaseReady) return;
 
-  const payload = {
-    shift_id: shiftId,
-    shift_date: date,
-    created_by_employee_id: currentEmployeeRecord?.id || null,
-  };
+  const shift = getShiftById(shiftId);
+  if (!shift) {
+    return alert("Schicht konnte nicht gefunden werden.");
+  }
 
-  const { error } = await supabaseClient
+  const { error: cancellationError } = await supabaseClient
     .from("planner_shift_cancellations")
-    .upsert(payload, { onConflict: "shift_id" });
+    .upsert(
+      {
+        shift_id: shiftId,
+        shift_date: shift.date,
+        created_by_employee_id: currentEmployeeRecord?.id || null,
+      },
+      { onConflict: "shift_id" },
+    );
 
-  if (error) {
-    console.error("Fehler beim Schichtausfall:", error);
-    return alert(`Schicht konnte nicht gestrichen werden: ${error.message}`);
+  if (cancellationError) {
+    console.error("Fehler beim Schichtausfall:", cancellationError);
+    return alert(`Schicht konnte nicht gestrichen werden: ${cancellationError.message}`);
+  }
+
+  const { error: assignmentDeleteError } = await supabaseClient
+    .from("planner_assignments")
+    .delete()
+    .eq("shift_id", shiftId);
+
+  if (assignmentDeleteError) {
+    console.error(
+      "Fehler beim Entfernen einer bestehenden Zuweisung:",
+      assignmentDeleteError,
+    );
+    return alert(
+      `Ausfall gespeichert, aber Zuweisung konnte nicht entfernt werden: ${assignmentDeleteError.message}`,
+    );
   }
 
   state.shiftCancellations[shiftId] = true;
+  delete state.assignments[shiftId];
 
   persist();
   render();
@@ -4824,27 +4872,30 @@ function checkbox(id, label) {
   return `<label class='flex items-center gap-2'><input id='${id}' type='checkbox' class='w-4 h-4'/> ${label}</label>`;
 }
 
-async function markAbsent(key, name, date, type = "abwesend") {
+async function markAbsent(shiftId, date, userName) {
   if (!supabaseReady) return;
 
-  const payload = {
-    absence_key: key,
-    absence_date: date,
-    user_name: name,
-    absence_type: type,
-    created_by_employee_id: currentEmployeeRecord?.id || null,
-  };
+  const absenceKey = `${date}:${userName}`;
 
   const { error } = await supabaseClient
     .from("planner_absences")
-    .upsert(payload, { onConflict: "absence_key" });
+    .upsert(
+      {
+        absence_key: absenceKey,
+        absence_date: date,
+        user_name: userName,
+        absence_type: "abwesend",
+        created_by_employee_id: currentEmployeeRecord?.id || null,
+      },
+      { onConflict: "absence_key" },
+    );
 
   if (error) {
     console.error("Fehler bei Abwesenheit:", error);
     return alert(`Abwesenheit konnte nicht gespeichert werden: ${error.message}`);
   }
 
-  state.absences[key] = true;
+  state.absences[absenceKey] = true;
 
   persist();
   render();
