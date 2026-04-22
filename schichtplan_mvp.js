@@ -1346,6 +1346,7 @@ function renderMyShifts() {
   const shifts = generateThreeMonths()
     .filter((s) => s.assigned === currentUser.name)
     .slice(0, 90);
+
   const rows = shifts
     .map((s) => {
       const status =
@@ -1354,19 +1355,25 @@ function renderMyShifts() {
           : s.open
             ? '<span class="text-red-600 font-semibold">OFFEN</span>'
             : '<span class="text-emerald-700">Besetzt</span>';
+
       const saturdayEvening = s.id.includes("-sa-1");
       const reqKey = `${s.id}:${currentUser.name}`;
       const requested = !!state.saturdayEveningRequests[reqKey];
+
       return `<tr class="border-b">
-      <td class="p-2">${formatDateWithWeekday(s.date)}</td>
-      <td class="p-2">${s.label}</td>
-      <td class="p-2">${s.start}–${s.end}</td>
-      <td class="p-2">${status}</td>
-      <td class="p-2">
-        <button class='px-2 py-1 bg-amber-200 rounded mr-2' onclick="markAbsent('${s.id}','${s.date}','${currentUser.name}')">Abwesenheit</button>
-        ${saturdayEvening ? `<button class='px-2 py-1 rounded ${requested ? "bg-emerald-200" : "bg-blue-200"}' onclick="requestSaturdayEvening('${s.id}')">${requested ? "Eingetragen" : "Sa-Abend eintragen"}</button>` : ""}
-      </td>
-    </tr>`;
+        <td class="p-2">${formatDateWithWeekday(s.date)}</td>
+        <td class="p-2">${s.label}</td>
+        <td class="p-2">${s.start}–${s.end}</td>
+        <td class="p-2">${status}</td>
+        <td class="p-2">
+          <button class='px-2 py-1 bg-amber-200 rounded mr-2' onclick="markAbsent('${s.id}','${s.date}','${currentUser.name}')">Abwesenheit</button>
+          ${
+            saturdayEvening
+              ? `<button class='px-2 py-1 rounded ${requested ? "bg-emerald-200" : "bg-blue-200"}' onclick="requestSaturdayEvening('${s.id}')">${requested ? "Eingetragen" : "Sa-Abend eintragen"}</button>`
+              : ""
+          }
+        </td>
+      </tr>`;
     })
     .join("");
 
@@ -1377,36 +1384,60 @@ function renderMyShifts() {
         .map((s) => {
           const key = `${s.id}:${currentUser.name}`;
           const val = state.availability[key] || "";
+
           return `<tr class='border-b'>
-          <td class='p-2'>${formatDateWithWeekday(s.date)}</td>
-          <td class='p-2'>${s.label}</td>
-          <td class='p-2'>${s.start}–${s.end}</td>
-          <td class='p-2'>
-            <select class='border rounded p-1' onchange="setWeekendAvailability('${s.id}', this.value)">
-              <option value='' ${val === "" ? "selected" : ""}>-</option>
-              <option value='yes' ${val === "yes" ? "selected" : ""}>Kann</option>
-              <option value='no' ${val === "no" ? "selected" : ""}>Kann nicht</option>
-            </select>
-          </td>
-        </tr>`;
+            <td class='p-2'>${formatDateWithWeekday(s.date)}</td>
+            <td class='p-2'>${s.label}</td>
+            <td class='p-2'>${s.start}–${s.end}</td>
+            <td class='p-2'>
+              <select class='border rounded p-1' onchange="setWeekendAvailability('${s.id}', '${currentUser.name}', '${s.date}', this.value)">
+                <option value='' ${val === "" ? "selected" : ""}>-</option>
+                <option value='yes' ${val === "yes" ? "selected" : ""}>Kann</option>
+                <option value='no' ${val === "no" ? "selected" : ""}>Kann nicht</option>
+              </select>
+            </td>
+          </tr>`;
         })
         .join("")
     : "";
 
-  return `<div class='bg-white rounded-xl shadow p-4'>
-    <h2 class='text-lg font-semibold mb-3'>Meine individuellen Schichten (90 Tage)</h2>
-    <div class='overflow-auto max-h-[65vh] border rounded-lg'>
-      <table class='w-full text-sm'><thead class='sticky top-0 bg-slate-100'><tr>
-        <th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Zeit</th><th class='p-2 text-left'>Status</th><th class='p-2 text-left'>Aktionen</th>
-      </tr></thead><tbody>${rows || '<tr><td class="p-2" colspan="5">Keine Schichten gefunden.</td></tr>'}</tbody></table>
+  return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
+    <div>
+      <h2 class='text-lg font-semibold mb-3'>Meine Schichten (90 Tage)</h2>
+      <div class='overflow-auto border rounded-lg'>
+        <table class='w-full text-sm'>
+          <thead class='bg-slate-100'>
+            <tr>
+              <th class='p-2 text-left'>Datum</th>
+              <th class='p-2 text-left'>Schicht</th>
+              <th class='p-2 text-left'>Zeit</th>
+              <th class='p-2 text-left'>Status</th>
+              <th class='p-2 text-left'>Aktionen</th>
+            </tr>
+          </thead>
+          <tbody>${rows || `<tr><td class='p-2' colspan='5'>Keine Schichten gefunden.</td></tr>`}</tbody>
+        </table>
+      </div>
     </div>
+
     ${
       isSpringer(currentUser.name)
-        ? `<h3 class='font-semibold mt-4 mb-2'>Wochenende-Verfügbarkeit (Samstag/Sonntag)</h3>
-    <div class='overflow-auto max-h-[35vh] border rounded-lg'>
-      <table class='w-full text-sm'><thead class='sticky top-0 bg-slate-100'><tr><th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Zeit</th><th class='p-2 text-left'>Kannst du?</th></tr></thead>
-      <tbody>${weekendRows || '<tr><td class="p-2" colspan="4">Keine Wochenend-Schichten.</td></tr>'}</tbody></table>
-    </div>`
+        ? `<div>
+            <h3 class='text-lg font-semibold mb-3'>Wochenend-Verfügbarkeit</h3>
+            <div class='overflow-auto border rounded-lg'>
+              <table class='w-full text-sm'>
+                <thead class='bg-slate-100'>
+                  <tr>
+                    <th class='p-2 text-left'>Datum</th>
+                    <th class='p-2 text-left'>Schicht</th>
+                    <th class='p-2 text-left'>Zeit</th>
+                    <th class='p-2 text-left'>Verfügbarkeit</th>
+                  </tr>
+                </thead>
+                <tbody>${weekendRows || `<tr><td class='p-2' colspan='4'>Keine Wochenendschichten gefunden.</td></tr>`}</tbody>
+              </table>
+            </div>
+          </div>`
         : ""
     }
   </div>`;
@@ -1418,8 +1449,32 @@ function requestSaturdayEvening(shiftId) {
   render();
 }
 
-function setWeekendAvailability(shiftId, value) {
-  state.availability[`${shiftId}:${currentUser.name}`] = value;
+async function setWeekendAvailability(shiftId, userName, date, status) {
+  if (!supabaseReady) return;
+
+  const availabilityKey = `${shiftId}:${userName}`;
+
+  const { error } = await supabaseClient
+    .from("planner_availability")
+    .upsert(
+      {
+        availability_key: availabilityKey,
+        shift_id: shiftId,
+        shift_date: date,
+        user_name: userName,
+        status: status, // "yes" oder "no"
+        created_by_employee_id: currentEmployeeRecord?.id || null,
+      },
+      { onConflict: "availability_key" },
+    );
+
+  if (error) {
+    console.error("Fehler bei Verfügbarkeit:", error);
+    return alert(`Verfügbarkeit konnte nicht gespeichert werden: ${error.message}`);
+  }
+
+  state.availability[availabilityKey] = status;
+
   persist();
   render();
 }
