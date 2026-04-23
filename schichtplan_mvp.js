@@ -1,5 +1,7 @@
 const { createClient } = window.supabase;
 
+const ROTATION_ANCHOR_MONDAY = "2026-01-05";
+
 const supabaseClient = createClient(
   window.SUPABASE_URL,
   window.SUPABASE_PUBLISHABLE_KEY,
