@@ -17,59 +17,6 @@ let currentTab = "schichtplan";
 let statsViewPeriod = "week";
 
 function makeWeek(early, late, night, satPrimary, satSecondary) {
-  ...
-}
-
-const WEEK_TEMPLATES = [
-  ...
-];
-
-const ROTATION_ANCHOR_MONDAY = "2026-01-05";
-
-const PLANNING_SUBTABS = [
-  ...
-];
-
-const USERS = [
-  { name: "Lavdrim", slot: "A", type: "core" },
-  { name: "Roger", slot: "B", type: "core" },
-  { name: "Dashmir", slot: "C", type: "core" },
-  { name: "Thomas", slot: "D", type: "springer" },
-  { name: "Musa", slot: "E", type: "springer" },
-  { name: "Ardian", slot: "F", type: "springer" },
-];
-const SLOT_CODES = ["A", "B", "C", "D", "E", "F"];
-const DEFAULT_SLOT_ASSIGNMENTS = {
-  A: "Lavdrim",
-  B: "Roger",
-  C: "Dashmir",
-  D: "Thomas",
-  E: "Musa",
-  F: "Ardian",
-};
-const DEFAULT_TOOL_LABELS = [
-  "Schaftfräser",
-  "Trochodialfräser",
-  "Radiusfräser",
-  "Kugelfräser",
-  "Bohrer",
-  "NC Anbohrer",
-  "Gewindebohrer",
-  "Gewindefräser",
-  "Gewindeformer",
-  "Gewindewirbler",
-  "Ausdrehkopf",
-];
-const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
-const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
-
-const STORAGE_KEY = "schichtplan_mvp_v_0_2";
-const state = loadState();
-let currentUser = null;
-let currentTab = "schichtplan";
-let statsViewPeriod = "week";
-
-function makeWeek(early, late, night, satPrimary, satSecondary) {
   return {
     mondayToFriday: [
       { label: "Früh", start: "05:00", end: "11:00", options: [early] },
