@@ -1333,7 +1333,6 @@ async function cancelShift(shiftId) {
       {
         shift_id: shiftId,
         shift_date: shift.date,
-        cancelled: true,
         created_by_employee_id: currentEmployeeRecord?.id || null,
       },
       { onConflict: "shift_id" },
@@ -1344,11 +1343,17 @@ async function cancelShift(shiftId) {
     return alert(`Stornierung fehlgeschlagen: ${error.message}`);
   }
 
-  // evtl. vorhandene Zuweisung entfernen
-  await supabaseClient
+  const { error: deleteError } = await supabaseClient
     .from("planner_assignments")
     .delete()
     .eq("shift_id", shiftId);
+
+  if (deleteError) {
+    console.error("Fehler beim Entfernen der Zuweisung:", deleteError);
+    return alert(
+      `Ausfall gespeichert, aber Zuweisung konnte nicht entfernt werden: ${deleteError.message}`,
+    );
+  }
 
   delete state.assignments[shiftId];
   state.shiftCancellations[shiftId] = true;
