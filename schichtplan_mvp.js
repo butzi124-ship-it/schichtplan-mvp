@@ -1,7 +1,5 @@
 const { createClient } = window.supabase;
 
-const ROTATION_ANCHOR_MONDAY = "2026-01-05";
-
 const supabaseClient = createClient(
   window.SUPABASE_URL,
   window.SUPABASE_PUBLISHABLE_KEY,
@@ -11,6 +9,26 @@ let supabaseReady = false;
 let currentSupabaseUser = null;
 let currentEmployeeRecord = null;
 let toolMaterials = [];
+
+const STORAGE_KEY = "schichtplan_mvp_v_0_2";
+const state = loadState();
+let currentUser = null;
+let currentTab = "schichtplan";
+let statsViewPeriod = "week";
+
+function makeWeek(early, late, night, satPrimary, satSecondary) {
+  ...
+}
+
+const WEEK_TEMPLATES = [
+  ...
+];
+
+const ROTATION_ANCHOR_MONDAY = "2026-01-05";
+
+const PLANNING_SUBTABS = [
+  ...
+];
 
 const USERS = [
   { name: "Lavdrim", slot: "A", type: "core" },
