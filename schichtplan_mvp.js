@@ -10,6 +10,39 @@ let currentSupabaseUser = null;
 let currentEmployeeRecord = null;
 let toolMaterials = [];
 
+const USERS = [
+  { name: "Lavdrim", slot: "A", type: "core" },
+  { name: "Roger", slot: "B", type: "core" },
+  { name: "Dashmir", slot: "C", type: "core" },
+  { name: "Thomas", slot: "D", type: "springer" },
+  { name: "Musa", slot: "E", type: "springer" },
+  { name: "Ardian", slot: "F", type: "springer" },
+];
+const SLOT_CODES = ["A", "B", "C", "D", "E", "F"];
+const DEFAULT_SLOT_ASSIGNMENTS = {
+  A: "Lavdrim",
+  B: "Roger",
+  C: "Dashmir",
+  D: "Thomas",
+  E: "Musa",
+  F: "Ardian",
+};
+const DEFAULT_TOOL_LABELS = [
+  "Schaftfräser",
+  "Trochodialfräser",
+  "Radiusfräser",
+  "Kugelfräser",
+  "Bohrer",
+  "NC Anbohrer",
+  "Gewindebohrer",
+  "Gewindefräser",
+  "Gewindeformer",
+  "Gewindewirbler",
+  "Ausdrehkopf",
+];
+const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
+const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
+
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -71,44 +104,6 @@ const PLANNING_SUBTABS = [
   { id: "wochenende", label: "Wochenendeinsätze" },
   { id: "schichttausch", label: "Schichttausch" },
 ];
-
-function makeWeek(early, late, night, satPrimary, satSecondary) {
-  return {
-    mondayToFriday: [
-      { label: "Früh", start: "05:00", end: "11:00", options: [early] },
-      { label: "Spät", start: "13:00", end: "19:00", options: [late] },
-      { label: "Nacht", start: "21:00", end: "03:00", options: [night] },
-    ],
-    saturday: [
-      {
-        label: "Samstag Morgen",
-        start: "05:00",
-        end: "11:00",
-        options: [satPrimary],
-      },
-      {
-        label: "Samstag Abend",
-        start: "16:00",
-        end: "22:00",
-        options: [satSecondary, "D", "E", "F"],
-      },
-    ],
-    sunday: [
-      {
-        label: "Sonntag Morgen",
-        start: "06:00",
-        end: "12:00",
-        options: [late],
-      },
-      {
-        label: "Sonntag Nacht",
-        start: "18:00",
-        end: "24:00",
-        options: [night],
-      },
-    ],
-  };
-}
 
 function setLoginStatus(message, isError = false) {
   const el = document.getElementById("loginStatus");
