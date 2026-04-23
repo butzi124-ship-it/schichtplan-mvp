@@ -89,6 +89,62 @@ function makeWeek(early, late, night, satPrimary, satSecondary) {
   };
 }
 
+const WEEK_TEMPLATES = [
+  makeWeek("A", "B", "C", "A", "B"),
+  makeWeek("B", "C", "A", "B", "C"),
+  makeWeek("C", "A", "B", "C", "A"),
+  makeWeek("A", "B", "C", "A", "B"),
+  makeWeek("B", "C", "A", "B", "C"),
+  makeWeek("C", "A", "B", "C", "A"),
+];
+
+const ROTATION_ANCHOR_MONDAY = "2026-01-05";
+
+const PLANNING_SUBTABS = [
+  { id: "personal", label: "Personal" },
+  { id: "abstinenz", label: "Abstinenz" },
+  { id: "wochenende", label: "Wochenendeinsätze" },
+  { id: "schichttausch", label: "Schichttausch" },
+];
+
+function makeWeek(early, late, night, satPrimary, satSecondary) {
+  return {
+    mondayToFriday: [
+      { label: "Früh", start: "05:00", end: "11:00", options: [early] },
+      { label: "Spät", start: "13:00", end: "19:00", options: [late] },
+      { label: "Nacht", start: "21:00", end: "03:00", options: [night] },
+    ],
+    saturday: [
+      {
+        label: "Samstag Morgen",
+        start: "05:00",
+        end: "11:00",
+        options: [satPrimary],
+      },
+      {
+        label: "Samstag Abend",
+        start: "16:00",
+        end: "22:00",
+        options: [satSecondary, "D", "E", "F"],
+      },
+    ],
+    sunday: [
+      {
+        label: "Sonntag Morgen",
+        start: "06:00",
+        end: "12:00",
+        options: [late],
+      },
+      {
+        label: "Sonntag Nacht",
+        start: "18:00",
+        end: "24:00",
+        options: [night],
+      },
+    ],
+  };
+}
+
 function setLoginStatus(message, isError = false) {
   const el = document.getElementById("loginStatus");
   if (!el) return;
