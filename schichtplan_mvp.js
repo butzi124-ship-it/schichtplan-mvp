@@ -1289,12 +1289,9 @@ async function assignShift(shiftId) {
   if (!canAssignUserToShift(name, shiftId)) return;
 
   const shift = getShiftById(shiftId);
-  if (!shift) {
-    return alert("Schicht konnte nicht gefunden werden.");
-  }
+  if (!shift) return;
 
-  // 🔹 In DB schreiben
-  const { error: insertError } = await supabaseClient
+  const { error } = await supabaseClient
     .from("planner_assignments")
     .upsert(
       {
@@ -1306,18 +1303,17 @@ async function assignShift(shiftId) {
       { onConflict: "shift_id" },
     );
 
-  if (insertError) {
-    console.error("Fehler bei Zuweisung:", insertError);
-    return alert(`Zuweisung fehlgeschlagen: ${insertError.message}`);
+  if (error) {
+    console.error("Fehler bei Zuweisung:", error);
+    return alert(`Zuweisung fehlgeschlagen: ${error.message}`);
   }
 
-  // 🔹 Falls vorher als Ausfall markiert → entfernen
+  // falls vorher storniert → entfernen
   await supabaseClient
     .from("planner_shift_cancellations")
     .delete()
     .eq("shift_id", shiftId);
 
-  // 🔹 Lokal aktualisieren
   delete state.shiftCancellations[shiftId];
   state.assignments[shiftId] = name;
 
@@ -1329,43 +1325,33 @@ async function cancelShift(shiftId) {
   if (!supabaseReady) return;
 
   const shift = getShiftById(shiftId);
-  if (!shift) {
-    return alert("Schicht konnte nicht gefunden werden.");
-  }
+  if (!shift) return;
 
-  const { error: cancellationError } = await supabaseClient
+  const { error } = await supabaseClient
     .from("planner_shift_cancellations")
     .upsert(
       {
         shift_id: shiftId,
         shift_date: shift.date,
+        cancelled: true,
         created_by_employee_id: currentEmployeeRecord?.id || null,
       },
       { onConflict: "shift_id" },
     );
 
-  if (cancellationError) {
-    console.error("Fehler beim Schichtausfall:", cancellationError);
-    return alert(`Schicht konnte nicht gestrichen werden: ${cancellationError.message}`);
+  if (error) {
+    console.error("Fehler beim Stornieren:", error);
+    return alert(`Stornierung fehlgeschlagen: ${error.message}`);
   }
 
-  const { error: assignmentDeleteError } = await supabaseClient
+  // evtl. vorhandene Zuweisung entfernen
+  await supabaseClient
     .from("planner_assignments")
     .delete()
     .eq("shift_id", shiftId);
 
-  if (assignmentDeleteError) {
-    console.error(
-      "Fehler beim Entfernen einer bestehenden Zuweisung:",
-      assignmentDeleteError,
-    );
-    return alert(
-      `Ausfall gespeichert, aber Zuweisung konnte nicht entfernt werden: ${assignmentDeleteError.message}`,
-    );
-  }
-
-  state.shiftCancellations[shiftId] = true;
   delete state.assignments[shiftId];
+  state.shiftCancellations[shiftId] = true;
 
   persist();
   render();
