@@ -1124,6 +1124,7 @@ function renderOverviewPlan(weeksToShow = 12) {
   monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
   const anchor = new Date(`${ROTATION_ANCHOR_MONDAY}T00:00:00`);
   const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+  const isAdmin = currentUser?.role === "admin";
 
   const dayNames = [
     "Montag",
@@ -1134,6 +1135,25 @@ function renderOverviewPlan(weeksToShow = 12) {
     "Samstag",
     "Sonntag",
   ];
+
+  function renderShiftCell(shiftId, options) {
+    const meta = assignedMeta(shiftId, options);
+    const hasManualAssignment = !!state.assignments?.[shiftId];
+    const hasManualCancellation = !!state.shiftCancellations?.[shiftId];
+    const hasReplacement = !!state.absenceReplacements?.[shiftId];
+    const isManual =
+      hasManualAssignment || hasManualCancellation || hasReplacement;
+
+    return `<div class="flex flex-col items-center gap-1">
+      <span>${meta.label}</span>
+      ${
+        isAdmin && isManual
+          ? `<button class="px-1.5 py-0.5 rounded bg-slate-800 text-white text-[10px] leading-none" onclick="clearManualShift('${shiftId}')">Zurück</button>`
+          : ""
+      }
+    </div>`;
+  }
+
   let body = "";
 
   for (let w = 0; w < weeksToShow; w++) {
@@ -1147,15 +1167,15 @@ function renderOverviewPlan(weeksToShow = 12) {
       startSunday.setDate(startSunday.getDate() - 1);
       const prevTemplateIndex = (templateWeekIndex + 5) % 6;
       const prevTemplate = WEEK_TEMPLATES[prevTemplateIndex];
-      const startMeta = assignedMeta(
-        `${isoDate(startSunday)}-su-1`,
-        prevTemplate.sunday[1].options,
-      );
+      const startShiftId = `${isoDate(startSunday)}-su-1`;
+
       body += `<tr class="border-b bg-amber-50">
         <td class="p-2"></td>
         <td class="p-2 font-semibold">Start (Sonntag)</td>
         <td class="p-2 bg-slate-50" colspan="4"></td>
-        <td class="p-2 ${startMeta.cls} ${startMeta.borderCls} ${startMeta.ringCls} font-semibold text-center">${startMeta.label}</td>
+        <td class="p-2 font-semibold text-center ${assignedMeta(startShiftId, prevTemplate.sunday[1].options).cls} ${assignedMeta(startShiftId, prevTemplate.sunday[1].options).borderCls} ${assignedMeta(startShiftId, prevTemplate.sunday[1].options).ringCls}">
+          ${renderShiftCell(startShiftId, prevTemplate.sunday[1].options)}
+        </td>
         <td class="p-2 font-semibold text-center">18:00-24:00</td>
       </tr>`;
     }
@@ -1170,31 +1190,42 @@ function renderOverviewPlan(weeksToShow = 12) {
         const s2 = template.mondayToFriday[1];
         const s3 = template.mondayToFriday[2];
         const dateIso = isoDate(date);
-        const m1 = assignedMeta(`${dateIso}-mf-0`, s1.options);
-        const m2 = assignedMeta(`${dateIso}-mf-1`, s2.options);
-        const m3 = assignedMeta(`${dateIso}-mf-2`, s3.options);
+
+        const id1 = `${dateIso}-mf-0`;
+        const id2 = `${dateIso}-mf-1`;
+        const id3 = `${dateIso}-mf-2`;
+
+        const m1 = assignedMeta(id1, s1.options);
+        const m2 = assignedMeta(id2, s2.options);
+        const m3 = assignedMeta(id3, s3.options);
+
         body += `<tr class="border-b">
           <td class="p-2 font-semibold">${weekLabel}</td>
           <td class="p-2">${dayName}<div class="text-[11px] text-slate-500">${formatDateDisplay(dateIso)}</div></td>
-          <td class="p-2 ${m1.cls} ${m1.borderCls} ${m1.ringCls} font-semibold text-center">${m1.label}</td>
+          <td class="p-2 ${m1.cls} ${m1.borderCls} ${m1.ringCls} font-semibold text-center">${renderShiftCell(id1, s1.options)}</td>
           <td class="p-2 font-semibold text-center bg-white">05:00-11:00</td>
-          <td class="p-2 ${m2.cls} ${m2.borderCls} ${m2.ringCls} font-semibold text-center">${m2.label}</td>
+          <td class="p-2 ${m2.cls} ${m2.borderCls} ${m2.ringCls} font-semibold text-center">${renderShiftCell(id2, s2.options)}</td>
           <td class="p-2 font-semibold text-center bg-white">13:00-19:00</td>
-          <td class="p-2 ${m3.cls} ${m3.borderCls} ${m3.ringCls} font-semibold text-center">${m3.label}</td>
+          <td class="p-2 ${m3.cls} ${m3.borderCls} ${m3.ringCls} font-semibold text-center">${renderShiftCell(id3, s3.options)}</td>
           <td class="p-2 font-semibold text-center bg-white">21:00-03:00</td>
         </tr>`;
       } else if (dayIndex === 5) {
         const s1 = template.saturday[0];
         const s2 = template.saturday[1];
         const dateIso = isoDate(date);
-        const m1 = assignedMeta(`${dateIso}-sa-0`, s1.options);
-        const m2 = assignedMeta(`${dateIso}-sa-1`, s2.options);
+
+        const id1 = `${dateIso}-sa-0`;
+        const id2 = `${dateIso}-sa-1`;
+
+        const m1 = assignedMeta(id1, s1.options);
+        const m2 = assignedMeta(id2, s2.options);
+
         body += `<tr class="border-b bg-amber-50">
           <td class="p-2 font-semibold">${weekLabel}</td>
           <td class="p-2 font-semibold">${dayName}<div class="text-[11px] text-slate-500">${formatDateDisplay(dateIso)}</div></td>
-          <td class="p-2 ${m1.cls} ${m1.borderCls} ${m1.ringCls} font-semibold text-center">${m1.label}</td>
+          <td class="p-2 ${m1.cls} ${m1.borderCls} ${m1.ringCls} font-semibold text-center">${renderShiftCell(id1, s1.options)}</td>
           <td class="p-2 font-semibold text-center bg-amber-100">05:00-11:00 (Sa Morgen)</td>
-          <td class="p-2 ${m2.cls} ${m2.borderCls} ${m2.ringCls} font-semibold text-center">${m2.label}</td>
+          <td class="p-2 ${m2.cls} ${m2.borderCls} ${m2.ringCls} font-semibold text-center">${renderShiftCell(id2, s2.options)}</td>
           <td class="p-2 font-semibold text-center bg-amber-200">16:00-22:00 (Sa Abend)</td>
           <td class="p-2 bg-slate-50" colspan="2"></td>
         </tr>`;
@@ -1202,15 +1233,20 @@ function renderOverviewPlan(weeksToShow = 12) {
         const s1 = template.sunday[0];
         const s2 = template.sunday[1];
         const dateIso = isoDate(date);
-        const m1 = assignedMeta(`${dateIso}-su-0`, s1.options);
-        const m2 = assignedMeta(`${dateIso}-su-1`, s2.options);
+
+        const id1 = `${dateIso}-su-0`;
+        const id2 = `${dateIso}-su-1`;
+
+        const m1 = assignedMeta(id1, s1.options);
+        const m2 = assignedMeta(id2, s2.options);
+
         body += `<tr class="border-b bg-amber-50">
           <td class="p-2 font-semibold">${weekLabel}</td>
           <td class="p-2 font-semibold">${dayName}<div class="text-[11px] text-slate-500">${formatDateDisplay(dateIso)}</div></td>
-          <td class="p-2 ${m1.cls} ${m1.borderCls} ${m1.ringCls} font-semibold text-center">${m1.label}</td>
+          <td class="p-2 ${m1.cls} ${m1.borderCls} ${m1.ringCls} font-semibold text-center">${renderShiftCell(id1, s1.options)}</td>
           <td class="p-2 font-semibold text-center bg-blue-100">06:00-12:00 (So Morgen)</td>
           <td class="p-2 bg-slate-50" colspan="2"></td>
-          <td class="p-2 ${m2.cls} ${m2.borderCls} ${m2.ringCls} font-semibold text-center">${m2.label}</td>
+          <td class="p-2 ${m2.cls} ${m2.borderCls} ${m2.ringCls} font-semibold text-center">${renderShiftCell(id2, s2.options)}</td>
           <td class="p-2 font-semibold text-center bg-white">18:00-24:00</td>
         </tr>`;
       }
@@ -1228,7 +1264,7 @@ function renderOverviewPlan(weeksToShow = 12) {
           <th class='p-2 text-center'>S2</th>
           <th class='p-2 text-center'>Spätschicht</th>
           <th class='p-2 text-center'>S3</th>
-          <th class='p-2 text-center'>Nachschicht</th>
+          <th class='p-2 text-center'>Nachtschicht</th>
         </tr>
       </thead>
       <tbody>${body}</tbody>
@@ -1330,6 +1366,58 @@ async function cancelShift(shiftId) {
 
   state.shiftCancellations[shiftId] = true;
   delete state.assignments[shiftId];
+
+  persist();
+  render();
+}
+
+async function clearManualShift(shiftId) {
+  if (currentUser?.role !== "admin") return;
+  if (!supabaseReady) return;
+
+  const shift = getShiftById(shiftId);
+  if (!shift) {
+    return alert("Schicht konnte nicht gefunden werden.");
+  }
+
+  const ok = confirm(
+    `Manuelle Planung für ${formatDateWithWeekday(shift.date)} – ${shift.label} zurücksetzen?`,
+  );
+  if (!ok) return;
+
+  const [assignmentDelete, cancellationDelete, replacementDelete] =
+    await Promise.all([
+      supabaseClient
+        .from("planner_assignments")
+        .delete()
+        .eq("shift_id", shiftId),
+      supabaseClient
+        .from("planner_shift_cancellations")
+        .delete()
+        .eq("shift_id", shiftId),
+      supabaseClient
+        .from("planner_absence_replacements")
+        .delete()
+        .eq("shift_id", shiftId),
+    ]);
+
+  const firstError =
+    assignmentDelete.error ||
+    cancellationDelete.error ||
+    replacementDelete.error;
+
+  if (firstError) {
+    console.error("Fehler beim Zurücksetzen der Schicht:", firstError);
+    return alert(
+      `Schicht konnte nicht zurückgesetzt werden: ${firstError.message}`,
+    );
+  }
+
+  delete state.assignments[shiftId];
+  delete state.shiftCancellations[shiftId];
+  if (state.absenceReplacements) {
+    delete state.absenceReplacements[shiftId];
+  }
 
   persist();
   render();
@@ -5043,3 +5131,4 @@ window.updateEditThreadPitchVisibility = updateEditThreadPitchVisibility;
 window.addToolMaterial = addToolMaterial;
 window.renameToolMaterial = renameToolMaterial;
 window.deactivateToolMaterial = deactivateToolMaterial;
+window.clearManualShift = clearManualShift;
