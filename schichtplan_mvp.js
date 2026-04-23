@@ -825,51 +825,38 @@ function clearAbsenceReplacementPlan(sourceType, sourceId) {
   render();
 }
 
-function buildShift(date, id, template) {
-  const defaultAssigned = chooseDefault(template.options);
-  const swappedDefault = defaultAssigned
-    ? applySwap(date, defaultAssigned)
-    : defaultAssigned;
+function buildShift(dateObj, type, idx, options, start, end, label) {
+  const id = `${isoDate(dateObj)}-${type}-${idx}`;
 
-  const isOptional = template.options.length > 1;
-  const manualAssigned = state.assignments[id] || null;
-  const replacement = getReplacementForShift(id);
+  const manualAssigned = state.assignments[id];
+  const isCancelled = !!state.shiftCancellations[id];
 
-  const absenceKey = `${date}:${swappedDefault}`;
-  const calendarAbsenceType = getCalendarAbsenceType(swappedDefault, date);
-  const manualAbsent = !!state.absences[absenceKey];
-  const absent = manualAbsent || !!calendarAbsenceType;
-
-  const canceled =
-    !!state.shiftCancellations[id] || replacement?.mode === "cancel";
+  // 🔹 DEFAULT nur für A/B/C
+  const defaultSlot = options[0];
+  const defaultName =
+    ["A", "B", "C"].includes(defaultSlot)
+      ? slotToName(defaultSlot)
+      : null;
 
   let assigned = null;
 
-  if (canceled) {
+  if (manualAssigned) {
+    assigned = manualAssigned;
+  } else if (isCancelled) {
     assigned = null;
-  } else if (replacement?.mode === "replace" && replacement?.replacementUser) {
-    assigned = replacement.replacementUser;
-  } else if (!isOptional && !absent) {
-    assigned = swappedDefault;
   } else {
-    assigned = manualAssigned || (isOptional ? swappedDefault : null);
+    assigned = defaultName;
   }
-
-  const open =
-    canceled || (!assigned && (absent || !assigned || assigned === "NONE"));
 
   return {
     id,
-    date,
-    label: template.label,
-    start: template.start,
-    end: template.end,
-    options: template.options,
+    date: isoDate(dateObj),
+    start,
+    end,
+    label,
+    options,
     assigned,
-    originalAssigned: swappedDefault,
-    absenceType: calendarAbsenceType || (manualAbsent ? "abwesend" : null),
-    replacement,
-    open,
+    open: !assigned && !isCancelled,
   };
 }
 
