@@ -75,7 +75,7 @@ function makeWeek(early, late, night, satPrimary, satSecondary) {
         label: "Sonntag Morgen",
         start: "06:00",
         end: "12:00",
-        options: ["D", "E", "F"],
+        options: [late],
       },
       {
         label: "Sonntag Nacht",
@@ -86,24 +86,6 @@ function makeWeek(early, late, night, satPrimary, satSecondary) {
     ],
   };
 }
-
-const WEEK_TEMPLATES = [
-  makeWeek("A", "B", "C", "A", "B"),
-  makeWeek("B", "C", "A", "B", "C"),
-  makeWeek("C", "A", "B", "C", "A"),
-  makeWeek("A", "B", "C", "A", "B"),
-  makeWeek("B", "C", "A", "B", "C"),
-  makeWeek("C", "A", "B", "C", "A"),
-];
-
-const ROTATION_ANCHOR_MONDAY = "2026-01-05";
-
-const PLANNING_SUBTABS = [
-  { id: "personal", label: "Personal" },
-  { id: "abstinenz", label: "Abstinenz" },
-  { id: "wochenende", label: "Wochenendeinsätze" },
-  { id: "schichttausch", label: "Schichttausch" },
-];
 
 function setLoginStatus(message, isError = false) {
   const el = document.getElementById("loginStatus");
