@@ -1863,17 +1863,27 @@ async function deleteManualAbsence(date, userName) {
 }
 
 function renderPlanningAbstinenz() {
-  const rows = Object.entries(state.absences || {})
-    .map(([key, type]) => {
+  const openShifts = generateThreeMonths().filter((s) => s.open);
+
+  const absenceRows = Object.entries(state.absences || {})
+    .slice(-100)
+    .reverse()
+    .map(([key, value]) => {
       const [date, user] = key.split(":");
+      const typeLabel =
+        value === "urlaub"
+          ? "Urlaub"
+          : value === "krank"
+            ? "Krank"
+            : "Kann nicht kommen";
 
       return `<tr class='border-b'>
         <td class='p-2'>${formatDateWithWeekday(date)}</td>
         <td class='p-2'>${user}</td>
-        <td class='p-2'>${type === "no" ? "Kann nicht kommen" : type}</td>
+        <td class='p-2'>${typeLabel}</td>
         <td class='p-2'>
           <button 
-            class='px-2 py-1 rounded bg-red-600 text-white'
+            class='px-2 py-1 rounded bg-rose-700 text-white'
             onclick="deleteManualAbsence('${date}','${user}')"
           >
             Löschen
@@ -1883,25 +1893,189 @@ function renderPlanningAbstinenz() {
     })
     .join("");
 
-  return `<div class='border rounded-lg p-3 bg-white'>
-    <h3 class='text-md font-semibold mb-2'>Klärung Abstinenz</h3>
-    <div class='overflow-auto'>
-      <table class='w-full text-sm'>
-        <thead class='bg-slate-100'>
-          <tr>
-            <th class='p-2 text-left'>Datum</th>
-            <th class='p-2 text-left'>Mitarbeiter</th>
-            <th class='p-2 text-left'>Typ</th>
-            <th class='p-2 text-left'>Aktion</th>
-          </tr>
-        </thead>
-        <tbody>
+  const monthValue = `${new Date().getFullYear()}-${String(
+    new Date().getMonth() + 1,
+  ).padStart(2, "0")}`;
+
+  const personOptions = activeUsers()
+    .map((u) => `<option value='${u.name}'>${u.name}</option>`)
+    .join("");
+
+  const vacationRows = state.vacations
+    .slice(-20)
+    .reverse()
+    .map((v) => {
+      const hasPlan =
+        getReplacementEntriesForSource("vacation", v.id).length > 0;
+      const summary = getReplacementSummaryForSource("vacation", v.id);
+
+      return `<tr class='border-b'>
+        <td class='p-2'>${v.user}</td>
+        <td class='p-2'>${formatDateDisplay(v.from)}</td>
+        <td class='p-2'>${formatDateDisplay(v.to)}</td>
+        <td class='p-2 text-sm'>${summary}</td>
+        <td class='p-2 whitespace-nowrap'>
+          <button class='px-2 py-1 rounded bg-rose-700 text-white mr-2' onclick="deleteVacation('${v.id}')">Löschen</button>
+          <button class='px-2 py-1 rounded ${
+            hasPlan ? "bg-emerald-700" : "bg-blue-700"
+          } text-white mr-2' onclick="planAbsenceReplacement('vacation','${v.id}')">${
+            hasPlan ? "Bearbeiten" : "Ersetzen"
+          }</button>
           ${
-            rows ||
-            `<tr><td class='p-2' colspan='4'>Keine Einträge.</td></tr>`
+            hasPlan
+              ? `<button class='px-2 py-1 rounded bg-slate-700 text-white' onclick="clearAbsenceReplacementPlan('vacation','${v.id}')">Ersatz löschen</button>`
+              : ""
           }
-        </tbody>
-      </table>
+        </td>
+      </tr>`;
+    })
+    .join("");
+
+  const sickRows = state.sickLeaves
+    .slice(-20)
+    .reverse()
+    .map((v) => {
+      const hasPlan = getReplacementEntriesForSource("sick", v.id).length > 0;
+      const summary = getReplacementSummaryForSource("sick", v.id);
+
+      return `<tr class='border-b'>
+        <td class='p-2'>${v.user}</td>
+        <td class='p-2'>${formatDateDisplay(v.from)}</td>
+        <td class='p-2'>${formatDateDisplay(v.to)}</td>
+        <td class='p-2 text-sm'>${summary}</td>
+        <td class='p-2 whitespace-nowrap'>
+          <button class='px-2 py-1 rounded bg-rose-700 text-white mr-2' onclick="deleteSickLeave('${v.id}')">Löschen</button>
+          <button class='px-2 py-1 rounded ${
+            hasPlan ? "bg-emerald-700" : "bg-blue-700"
+          } text-white mr-2' onclick="planAbsenceReplacement('sick','${v.id}')">${
+            hasPlan ? "Bearbeiten" : "Ersetzen"
+          }</button>
+          ${
+            hasPlan
+              ? `<button class='px-2 py-1 rounded bg-slate-700 text-white' onclick="clearAbsenceReplacementPlan('sick','${v.id}')">Ersatz löschen</button>`
+              : ""
+          }
+        </td>
+      </tr>`;
+    })
+    .join("");
+
+  const rows = openShifts
+    .map((s) => {
+      const choices = activeUsers()
+        .filter((u) => u.name !== s.assigned)
+        .map((u) => `<option value="${u.name}">${u.name}</option>`)
+        .join("");
+
+      return `<tr class='border-b'>
+        <td class='p-2'>${formatDateWithWeekday(s.date)}</td>
+        <td class='p-2'>${s.label}</td>
+        <td class='p-2'>${s.start}–${s.end}</td>
+        <td class='p-2'>${s.originalAssigned || "-"}</td>
+        <td class='p-2'>
+          <select id='sel-${s.id}' class='border rounded p-1'>${choices}</select>
+        </td>
+        <td class='p-2 space-x-1'>
+          <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick="assignShift('${s.id}')">Übernehmen</button>
+          <button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="cancelShift('${s.id}')">Ausfall</button>
+        </td>
+      </tr>`;
+    })
+    .join("");
+
+  return `<div class='space-y-4'>
+    <div class='grid md:grid-cols-2 gap-4'>
+      <div class='border rounded-lg p-3 bg-slate-50'>
+        <h3 class='font-semibold mb-2'>Klärung Abstinenz</h3>
+        <div class='overflow-auto max-h-56'>
+          <table class='w-full text-sm'>
+            <thead class='bg-white sticky top-0'>
+              <tr>
+                <th class='p-2 text-left'>Datum</th>
+                <th class='p-2 text-left'>Mitarbeiter</th>
+                <th class='p-2 text-left'>Typ</th>
+                <th class='p-2 text-left'>Aktion</th>
+              </tr>
+            </thead>
+            <tbody>${absenceRows || '<tr><td class="p-2" colspan="4">Keine Meldungen.</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class='border rounded-lg p-3 bg-slate-50 space-y-3'>
+        <h3 class='font-semibold'>Urlaub / Krankmeldung eintragen</h3>
+        <div class='grid grid-cols-2 gap-2 text-sm'>
+          <label>Monat<input id='adminMonth' type='month' value='${monthValue}' class='border rounded p-1 w-full'/></label>
+          <label>Mitarbeiter<select id='adminCalUser' class='border rounded p-1 w-full'>${personOptions}</select></label>
+          <label>Von<input id='adminFrom' type='date' value='${todayIso()}' class='border rounded p-1 w-full'/></label>
+          <label>Bis<input id='adminTo' type='date' value='${todayIso()}' class='border rounded p-1 w-full'/></label>
+        </div>
+        <div class='flex gap-2 flex-wrap'>
+          <button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick='addVacation()'>Urlaub speichern</button>
+          <button class='px-2 py-1 rounded bg-amber-700 text-white' onclick='addSickLeave()'>Krank speichern</button>
+        </div>
+      </div>
+    </div>
+
+    <div class='grid grid-cols-1 gap-4'>
+      <div class='border rounded-lg p-3'>
+        <h4 class='font-semibold mb-2'>Geplante Urlaube</h4>
+        <div class='overflow-auto max-h-56'>
+          <table class='w-full text-sm'>
+            <thead class='bg-slate-100 sticky top-0'>
+              <tr>
+                <th class='p-2 text-left'>Mitarbeiter</th>
+                <th class='p-2 text-left'>Von</th>
+                <th class='p-2 text-left'>Bis</th>
+                <th class='p-2 text-left'>Ersatz</th>
+                <th class='p-2'></th>
+              </tr>
+            </thead>
+            <tbody>${vacationRows || '<tr><td class="p-2" colspan="5">Keine Einträge.</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class='border rounded-lg p-3'>
+        <h4 class='font-semibold mb-2'>Krankmeldungen</h4>
+        <div class='overflow-auto max-h-56'>
+          <table class='w-full text-sm'>
+            <thead class='bg-slate-100 sticky top-0'>
+              <tr>
+                <th class='p-2 text-left'>Mitarbeiter</th>
+                <th class='p-2 text-left'>Von</th>
+                <th class='p-2 text-left'>Bis</th>
+                <th class='p-2 text-left'>Ersatz</th>
+                <th class='p-2'></th>
+              </tr>
+            </thead>
+            <tbody>${sickRows || '<tr><td class="p-2" colspan="5">Keine Einträge.</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class='border rounded-lg p-3 bg-white'>
+      <h3 class='text-md font-semibold mb-2'>Offene Schichten</h3>
+      <div class='flex items-center justify-between mb-2 gap-2 flex-wrap'>
+        <p class='text-sm text-slate-500'>Pro Tag kannst du entscheiden: ganze Schicht übernehmen lassen oder Ausfall markieren.</p>
+        <button class='px-2 py-1 rounded bg-slate-800 text-white text-sm' onclick='resetManualAssignments()'>Zuordnungen zurücksetzen (aktuelle+zukünftige)</button>
+      </div>
+      <div class='overflow-auto max-h-[55vh]'>
+        <table class='w-full text-sm'>
+          <thead class='bg-slate-100 sticky top-0'>
+            <tr>
+              <th class='p-2 text-left'>Datum</th>
+              <th class='p-2 text-left'>Schicht</th>
+              <th class='p-2 text-left'>Zeit</th>
+              <th class='p-2 text-left'>Vorher</th>
+              <th class='p-2 text-left'>Übernahme durch</th>
+              <th class='p-2'>Aktion</th>
+            </tr>
+          </thead>
+          <tbody>${rows || '<tr><td class="p-2" colspan="6">Keine offenen Schichten.</td></tr>'}</tbody>
+        </table>
+      </div>
     </div>
   </div>`;
 }
