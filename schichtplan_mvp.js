@@ -1433,10 +1433,6 @@ function renderMyShifts() {
             ? '<span class="text-red-600 font-semibold">OFFEN</span>'
             : '<span class="text-emerald-700">Besetzt</span>';
 
-      const saturdayEvening = s.id.includes("-sa-1");
-      const reqKey = `${s.id}:${currentUser.name}`;
-      const requested = !!state.saturdayEveningRequests[reqKey];
-
       return `<tr class="border-b">
         <td class="p-2">${formatDateWithWeekday(s.date)}</td>
         <td class="p-2">${s.label}</td>
@@ -1446,12 +1442,7 @@ function renderMyShifts() {
           ${
             !isSpringerUser
               ? `<button class='px-2 py-1 bg-amber-200 rounded mr-2' onclick="markAbsent('${s.id}','${s.date}','${currentUser.name}')">Abwesenheit</button>`
-              : ""
-          }
-          ${
-            saturdayEvening
-              ? `<button class='px-2 py-1 rounded ${requested ? "bg-emerald-200" : "bg-blue-200"}' onclick="requestSaturdayEvening('${s.id}')">${requested ? "Eingetragen" : "Sa-Abend eintragen"}</button>`
-              : ""
+              : "-"
           }
         </td>
       </tr>`;
@@ -1535,7 +1526,6 @@ async function setWeekendAvailability(shiftId, userName, date, status) {
 
   const availabilityKey = `${shiftId}:${userName}`;
 
-  // 🔹 leeren = löschen
   if (!status) {
     const { error } = await supabaseClient
       .from("planner_availability")
@@ -1544,7 +1534,7 @@ async function setWeekendAvailability(shiftId, userName, date, status) {
 
     if (error) {
       console.error("Fehler beim Löschen der Verfügbarkeit:", error);
-      return alert(`Fehler: ${error.message}`);
+      return alert(`Verfügbarkeit konnte nicht gelöscht werden: ${error.message}`);
     }
 
     delete state.availability[availabilityKey];
@@ -1553,7 +1543,6 @@ async function setWeekendAvailability(shiftId, userName, date, status) {
     return;
   }
 
-  // 🔹 speichern
   const { error } = await supabaseClient
     .from("planner_availability")
     .upsert(
@@ -1562,7 +1551,7 @@ async function setWeekendAvailability(shiftId, userName, date, status) {
         shift_id: shiftId,
         shift_date: date,
         user_name: userName,
-        status: status, // "yes" | "no"
+        status,
         created_by_employee_id: currentEmployeeRecord?.id || null,
       },
       { onConflict: "availability_key" },
@@ -1574,7 +1563,6 @@ async function setWeekendAvailability(shiftId, userName, date, status) {
   }
 
   state.availability[availabilityKey] = status;
-
   persist();
   render();
 }
@@ -2002,73 +1990,95 @@ function renderPlanningAbstinenz() {
   </div>`;
 }
 
+function isPrimaryCoreAbsentForShift(shift) {
+  const primary = shift.originalAssigned;
+  if (!primary || !isCoreEmployee(primary)) return false;
+
+  const manualAbsent = !!state.absences?.[`${shift.date}:${primary}`];
+  const calendarAbsent = !!getCalendarAbsenceType(primary, shift.date);
+
+  return manualAbsent || calendarAbsent;
+}
+
 function renderPlanningWochenende() {
-  const saturdayRequestRows = Object.entries(state.saturdayEveningRequests)
-    .filter(([, requested]) => requested)
-    .map(([key]) => {
-      const [shiftId, user] = key.split(":");
-      const shift = generateThreeMonths().find((s) => s.id === shiftId);
-      if (!shift) return "";
+  const weekendShifts = generateThreeMonths().filter(
+    (s) => s.id.includes("-sa-1") || s.id.includes("-su-0"),
+  );
+
+  const optionalRows = weekendShifts
+    .map((s) => {
+      const primary = s.originalAssigned || "-";
+      const primaryAbsent = isPrimaryCoreAbsentForShift(s);
+
+      const yesUsers = activeUsers()
+        .filter((u) => u.type === "springer")
+        .filter((u) => state.availability[`${s.id}:${u.name}`] === "yes")
+        .map((u) => u.name);
+
+      const noUsers = activeUsers()
+        .filter((u) => u.type === "springer")
+        .filter((u) => state.availability[`${s.id}:${u.name}`] === "no")
+        .map((u) => u.name);
+
+      const options = yesUsers
+        .map((name) => `<option value='${name}'>${name}</option>`)
+        .join("");
+
+      const canAssign = primaryAbsent && yesUsers.length > 0;
+
       return `<tr class='border-b'>
-        <td class='p-2'>${formatDateWithWeekday(shift.date)}</td>
-        <td class='p-2'>${user}</td>
-        <td class='p-2'>${shift.label} (${shift.start}–${shift.end})</td>
-        <td class='p-2'><button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick="approveSaturdayRequest('${shiftId}','${user}')">Genehmigen</button></td>
+        <td class='p-2'>${formatDateWithWeekday(s.date)}</td>
+        <td class='p-2'>${s.label}</td>
+        <td class='p-2'>${primary}</td>
+        <td class='p-2'>
+          ${
+            primaryAbsent
+              ? "<span class='px-2 py-1 rounded bg-emerald-100 text-emerald-800'>abwesend</span>"
+              : "<span class='px-2 py-1 rounded bg-slate-100 text-slate-600'>nicht abwesend</span>"
+          }
+        </td>
+        <td class='p-2'>${yesUsers.length ? yesUsers.join(", ") : "-"}</td>
+        <td class='p-2'>${noUsers.length ? noUsers.join(", ") : "-"}</td>
+        <td class='p-2'>
+          ${
+            canAssign
+              ? `<select id='opt-${s.id}' class='border rounded p-1'>${options}</select>`
+              : `<select class='border rounded p-1 bg-slate-100 text-slate-400' disabled><option>-</option></select>`
+          }
+        </td>
+        <td class='p-2'>
+          ${
+            canAssign
+              ? `<button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="assignOptionalShift('${s.id}')">Einteilen</button>`
+              : `<span class='text-xs text-slate-500'>Nur bei Abwesenheit A/B/C</span>`
+          }
+        </td>
       </tr>`;
     })
     .join("");
 
-  let lastWeekend = "";
-  const optionalRows = generateThreeMonths()
-    .filter((s) => s.options.length > 1)
-    .slice(0, 120)
-    .map((s) => {
-      const canUsers = activeUsers()
-        .filter((u) => state.availability[`${s.id}:${u.name}`] === "yes")
-        .map((u) => u.name);
-      const cantUsers = activeUsers()
-        .filter((u) => state.availability[`${s.id}:${u.name}`] === "no")
-        .map((u) => u.name);
-      const options = (
-        canUsers.length ? canUsers : activeUsers().map((u) => u.name)
-      )
-        .map((name) => `<option value="${name}">${name}</option>`)
-        .join("");
-      const weekendId = s.date.slice(0, 8);
-      const divider =
-        weekendId !== lastWeekend
-          ? `<tr class='bg-slate-200'><td class='p-2 font-semibold' colspan='7'>Wochenende ab ${formatDateDisplay(s.date)}</td></tr>`
-          : "";
-      lastWeekend = weekendId;
-      return `${divider}<tr class='border-b'>
-      <td class='p-2'>${formatDateWithWeekday(s.date)}</td>
-      <td class='p-2'>${s.label}</td>
-      <td class='p-2'>${formatSlot(s.options)}</td>
-      <td class='p-2'>${canUsers.length ? canUsers.map((n) => `<span class='px-1 rounded bg-emerald-100 text-emerald-700 mr-1'>${n}</span>`).join("") : "-"}</td>
-      <td class='p-2'>${cantUsers.length ? cantUsers.map((n) => `<span class='px-1 rounded bg-rose-100 text-rose-700 mr-1'>${n}</span>`).join("") : "-"}</td>
-      <td class='p-2'><select id='opt-${s.id}' class='border rounded p-1'>${options}</select></td>
-      <td class='p-2'><button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="assignOptionalShift('${s.id}')">Einteilen</button></td>
-    </tr>`;
-    })
-    .join("");
-
   return `<div class='space-y-4'>
-    <div class='border rounded-lg p-3 bg-slate-50'>
-      <h3 class='font-semibold mb-2'>Samstag Abend</h3>
-      <div class='overflow-auto max-h-56'>
-        <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Schicht</th><th class='p-2'></th></tr></thead>
-        <tbody>${saturdayRequestRows || '<tr><td class="p-2" colspan="4">Keine Anfragen.</td></tr>'}</tbody></table>
-      </div>
-    </div>
-
     <div class='border rounded-lg p-3 bg-white'>
       <h3 class='text-md font-semibold mb-2'>Wochenende</h3>
-      <p class='text-sm text-slate-500 mb-2'>Zugesagt = grün, nicht zugesagt = rot. Beide Gruppen bleiben einsetzbar. Wochenenden sind getrennt dargestellt.</p>
+      <p class='text-sm text-slate-500 mb-2'>
+        Springer melden nur „Kann“ oder „Kann nicht“. Der Admin teilt ein. Eine Einteilung ist nur möglich, wenn der ursprüngliche A/B/C-Mitarbeiter abwesend gemeldet ist.
+      </p>
       <div class='overflow-auto max-h-[60vh]'>
-        <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr>
-          <th class='p-2 text-left'>Datum</th><th class='p-2 text-left'>Schicht</th><th class='p-2 text-left'>Option</th><th class='p-2 text-left'>Kann</th><th class='p-2 text-left'>Kann nicht</th><th class='p-2 text-left'>Einteilen</th><th class='p-2'></th>
-        </tr></thead>
-        <tbody>${optionalRows || '<tr><td class="p-2" colspan="7">Keine Wochenend-Schichten.</td></tr>'}</tbody></table>
+        <table class='w-full text-sm'>
+          <thead class='bg-slate-100 sticky top-0'>
+            <tr>
+              <th class='p-2 text-left'>Datum</th>
+              <th class='p-2 text-left'>Schicht</th>
+              <th class='p-2 text-left'>A/B/C</th>
+              <th class='p-2 text-left'>Status A/B/C</th>
+              <th class='p-2 text-left'>Kann</th>
+              <th class='p-2 text-left'>Kann nicht</th>
+              <th class='p-2 text-left'>Auswahl</th>
+              <th class='p-2 text-left'>Einteilen</th>
+            </tr>
+          </thead>
+          <tbody>${optionalRows || '<tr><td class="p-2" colspan="8">Keine Wochenend-Schichten.</td></tr>'}</tbody>
+        </table>
       </div>
     </div>
   </div>`;
@@ -5075,13 +5085,48 @@ async function markAbsent(shiftId, date, userName) {
   render();
 }
 
-function assignOptionalShift(shiftId) {
+async function assignOptionalShift(shiftId) {
+  if (!supabaseReady) return;
+
+  const shift = getShiftById(shiftId);
+  if (!shift) return alert("Schicht konnte nicht gefunden werden.");
+
+  if (!isPrimaryCoreAbsentForShift(shift)) {
+    return alert("Einteilung nicht möglich: Der A/B/C-Mitarbeiter ist nicht abwesend gemeldet.");
+  }
+
   const select = document.getElementById(`opt-${shiftId}`);
   if (!select) return;
+
   const name = select.value;
+  if (!name) return alert("Bitte Springer auswählen.");
+
+  if (!isSpringer(name)) {
+    return alert("Für diese Funktion dürfen nur Springer eingeteilt werden.");
+  }
+
   if (!canAssignUserToShift(name, shiftId)) return;
+
+  const { error } = await supabaseClient
+    .from("planner_assignments")
+    .upsert(
+      {
+        shift_id: shiftId,
+        shift_date: shift.date,
+        assigned_user: name,
+        created_by_employee_id: currentEmployeeRecord?.id || null,
+      },
+      { onConflict: "shift_id" },
+    );
+
+  if (error) {
+    console.error("Fehler bei Springer-Einteilung:", error);
+    return alert(`Einteilung konnte nicht gespeichert werden: ${error.message}`);
+  }
+
   delete state.shiftCancellations[shiftId];
   state.assignments[shiftId] = name;
+
   persist();
   render();
 }
