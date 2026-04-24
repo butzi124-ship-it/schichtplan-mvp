@@ -1422,7 +1422,7 @@ function renderMyShifts() {
 
   const shifts = generateThreeMonths()
     .filter((s) => s.assigned === currentUser.name)
-    .slice(0, 90);
+    .slice(0, 180);
 
   const rows = shifts
     .map((s) => {
@@ -1452,7 +1452,7 @@ function renderMyShifts() {
   const weekendRows = isSpringerUser
     ? generateThreeMonths()
         .filter((s) => s.id.includes("-sa-1") || s.id.includes("-su-0"))
-        .slice(0, 90)
+        .slice(0, 180)
         .map((s) => {
           const key = `${s.id}:${currentUser.name}`;
           const val = state.availability[key] || "";
