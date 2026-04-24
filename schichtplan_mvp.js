@@ -2000,6 +2000,47 @@ function isPrimaryCoreAbsentForShift(shift) {
   return manualAbsent || calendarAbsent;
 }
 
+function getSuggestedSpringerForShift(shift) {
+  if (!shift) return null;
+
+  const availableSpringer = activeUsers()
+    .filter((u) => u.type === "springer")
+    .filter((u) => state.availability[`${shift.id}:${u.name}`] === "yes")
+    .filter((u) => canAssignUserToShift(u.name, shift.id, true));
+
+  if (!availableSpringer.length) return null;
+
+  const shifts = generateThreeMonths();
+
+  const ranked = availableSpringer
+    .map((u) => {
+      const weekendCount = shifts.filter(
+        (s) =>
+          s.assigned === u.name &&
+          (s.id.includes("-sa-") || s.id.includes("-su-")),
+      ).length;
+
+      const totalCount = shifts.filter((s) => s.assigned === u.name).length;
+
+      return {
+        name: u.name,
+        weekendCount,
+        totalCount,
+      };
+    })
+    .sort((a, b) => {
+      if (a.weekendCount !== b.weekendCount) {
+        return a.weekendCount - b.weekendCount;
+      }
+      if (a.totalCount !== b.totalCount) {
+        return a.totalCount - b.totalCount;
+      }
+      return a.name.localeCompare(b.name);
+    });
+
+  return ranked[0]?.name || null;
+}
+
 function renderPlanningWochenende() {
   const weekendShifts = generateThreeMonths().filter(
     (s) => s.id.includes("-sa-1") || s.id.includes("-su-0"),
@@ -2020,8 +2061,13 @@ function renderPlanningWochenende() {
         .filter((u) => state.availability[`${s.id}:${u.name}`] === "no")
         .map((u) => u.name);
 
+      const suggested = getSuggestedSpringerForShift(s);
+
       const options = yesUsers
-        .map((name) => `<option value='${name}'>${name}</option>`)
+        .map(
+          (name) =>
+            `<option value='${name}' ${name === suggested ? "selected" : ""}>${name}${name === suggested ? " · Vorschlag" : ""}</option>`,
+        )
         .join("");
 
       const canAssign = primaryAbsent && yesUsers.length > 0;
@@ -2039,6 +2085,13 @@ function renderPlanningWochenende() {
         </td>
         <td class='p-2'>${yesUsers.length ? yesUsers.join(", ") : "-"}</td>
         <td class='p-2'>${noUsers.length ? noUsers.join(", ") : "-"}</td>
+        <td class='p-2 font-semibold'>
+          ${
+            suggested
+              ? `<span class='px-2 py-1 rounded bg-blue-100 text-blue-800'>${suggested}</span>`
+              : "-"
+          }
+        </td>
         <td class='p-2'>
           ${
             canAssign
@@ -2046,10 +2099,11 @@ function renderPlanningWochenende() {
               : `<select class='border rounded p-1 bg-slate-100 text-slate-400' disabled><option>-</option></select>`
           }
         </td>
-        <td class='p-2'>
+        <td class='p-2 whitespace-nowrap'>
           ${
             canAssign
-              ? `<button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="assignOptionalShift('${s.id}')">Einteilen</button>`
+              ? `<button class='px-2 py-1 rounded bg-blue-700 text-white mr-2' onclick="assignOptionalShift('${s.id}')">Auswahl einteilen</button>
+                 <button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick="assignSuggestedSpringer('${s.id}')">Vorschlag nehmen</button>`
               : `<span class='text-xs text-slate-500'>Nur bei Abwesenheit A/B/C</span>`
           }
         </td>
@@ -2061,7 +2115,7 @@ function renderPlanningWochenende() {
     <div class='border rounded-lg p-3 bg-white'>
       <h3 class='text-md font-semibold mb-2'>Wochenende</h3>
       <p class='text-sm text-slate-500 mb-2'>
-        Springer melden nur „Kann“ oder „Kann nicht“. Der Admin teilt ein. Eine Einteilung ist nur möglich, wenn der ursprüngliche A/B/C-Mitarbeiter abwesend gemeldet ist.
+        Springer melden „Kann“ oder „Kann nicht“. Der Admin teilt ein. Der Vorschlag bevorzugt verfügbare Springer mit den wenigsten Wochenend-Einsätzen.
       </p>
       <div class='overflow-auto max-h-[60vh]'>
         <table class='w-full text-sm'>
@@ -2073,16 +2127,18 @@ function renderPlanningWochenende() {
               <th class='p-2 text-left'>Status A/B/C</th>
               <th class='p-2 text-left'>Kann</th>
               <th class='p-2 text-left'>Kann nicht</th>
+              <th class='p-2 text-left'>Vorschlag</th>
               <th class='p-2 text-left'>Auswahl</th>
               <th class='p-2 text-left'>Einteilen</th>
             </tr>
           </thead>
-          <tbody>${optionalRows || '<tr><td class="p-2" colspan="8">Keine Wochenend-Schichten.</td></tr>'}</tbody>
+          <tbody>${optionalRows || '<tr><td class="p-2" colspan="9">Keine Wochenend-Schichten.</td></tr>'}</tbody>
         </table>
       </div>
     </div>
   </div>`;
 }
+
 function renderPlanningSchichttausch() {
   const corePersonOptions = activeUsers()
     .filter((u) => u.type === "core")
@@ -2129,21 +2185,28 @@ function renderPlanningSchichttausch() {
   </div>`;
 }
 
-function canAssignUserToShift(name, shiftId) {
+function canAssignUserToShift(name, shiftId, silent = false) {
   const shift = getShiftById(shiftId);
   if (!shift) return true;
+
   const absType = getCalendarAbsenceType(name, shift.date);
   if (absType) {
-    alert(
-      `${name} ist am ${formatDateDisplay(shift.date)} als ${absType} gemeldet und kann nicht eingesetzt werden.`,
-    );
+    if (!silent) {
+      alert(
+        `${name} ist am ${formatDateDisplay(shift.date)} als ${absType} gemeldet und kann nicht eingesetzt werden.`,
+      );
+    }
     return false;
   }
+
   const restCheck = checkRestTimeRule(name, shiftId);
   if (!restCheck.ok) {
-    alert(restCheck.message);
+    if (!silent) {
+      alert(restCheck.message);
+    }
     return false;
   }
+
   return true;
 }
 
@@ -5131,6 +5194,49 @@ async function assignOptionalShift(shiftId) {
   render();
 }
 
+async function assignSuggestedSpringer(shiftId) {
+  if (!supabaseReady) return;
+
+  const shift = getShiftById(shiftId);
+  if (!shift) return alert("Schicht konnte nicht gefunden werden.");
+
+  if (!isPrimaryCoreAbsentForShift(shift)) {
+    return alert(
+      "Einteilung nicht möglich: Der A/B/C-Mitarbeiter ist nicht abwesend gemeldet.",
+    );
+  }
+
+  const suggested = getSuggestedSpringerForShift(shift);
+  if (!suggested) {
+    return alert("Kein verfügbarer Springer gefunden.");
+  }
+
+  if (!canAssignUserToShift(suggested, shiftId)) return;
+
+  const { error } = await supabaseClient
+    .from("planner_assignments")
+    .upsert(
+      {
+        shift_id: shiftId,
+        shift_date: shift.date,
+        assigned_user: suggested,
+        created_by_employee_id: currentEmployeeRecord?.id || null,
+      },
+      { onConflict: "shift_id" },
+    );
+
+  if (error) {
+    console.error("Fehler bei automatischer Springer-Einteilung:", error);
+    return alert(`Einteilung konnte nicht gespeichert werden: ${error.message}`);
+  }
+
+  delete state.shiftCancellations[shiftId];
+  state.assignments[shiftId] = suggested;
+
+  persist();
+  render();
+}
+
 function approveSaturdayRequest(shiftId, user) {
   if (!canAssignUserToShift(user, shiftId)) return;
   delete state.shiftCancellations[shiftId];
@@ -5208,3 +5314,4 @@ window.addToolMaterial = addToolMaterial;
 window.renameToolMaterial = renameToolMaterial;
 window.deactivateToolMaterial = deactivateToolMaterial;
 window.clearManualShift = clearManualShift;
+window.assignSuggestedSpringer = assignSuggestedSpringer;
