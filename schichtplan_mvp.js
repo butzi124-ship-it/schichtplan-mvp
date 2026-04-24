@@ -2442,18 +2442,43 @@ function resetManualAssignments(silent = false) {
   }
 }
 
-function resetPlanCurrentFuture() {
+async function resetPlanCurrentFuture() {
   if (
     !confirm(
       "Gesamtplan wirklich für aktuelle und zukünftige Schichten auf Ursprung zurücksetzen?",
     )
-  )
+  ) {
     return;
+  }
+
+  if (!supabaseReady) {
+    return alert("Supabase ist nicht bereit. Zurücksetzen nicht möglich.");
+  }
+
+  const today = todayIso();
+
+  const deletes = await Promise.all([
+    supabaseClient.from("planner_assignments").delete().gte("shift_date", today),
+    supabaseClient.from("planner_absences").delete().gte("absence_date", today),
+    supabaseClient.from("planner_vacations").delete().gte("to_date", today),
+    supabaseClient.from("planner_sick_leaves").delete().gte("to_date", today),
+    supabaseClient.from("planner_availability").delete().gte("shift_date", today),
+    supabaseClient.from("planner_swaps").delete().or(`end_date.is.null,end_date.gte.${today}`),
+    supabaseClient.from("planner_shift_cancellations").delete().gte("shift_date", today),
+    supabaseClient.from("planner_saturday_requests").delete().gte("shift_date", today),
+    supabaseClient.from("planner_absence_replacements").delete().gte("shift_date", today),
+  ]);
+
+  const firstError = deletes.find((res) => res.error)?.error;
+  if (firstError) {
+    console.error("Fehler beim Zurücksetzen des Plans:", firstError);
+    return alert(`Gesamtplan konnte nicht vollständig zurückgesetzt werden: ${firstError.message}`);
+  }
+
   state.assignments = {};
   state.shiftCancellations = {};
   state.absences = {};
   state.swaps = [];
-  state.shiftCancellations = {};
   state.absenceReplacements = {};
   state.saturdayEveningRequests = {};
   state.vacations = [];
@@ -2470,9 +2495,10 @@ function resetPlanCurrentFuture() {
   state.inactiveUsers = {};
   state.slotAssignments = { ...DEFAULT_SLOT_ASSIGNMENTS };
   state.planningSubTab = "personal";
+
   persist();
   render();
-  alert("Gesamtplan wurde auf den Ursprungsplan zurückgesetzt.");
+  alert("Gesamtplan wurde für aktuelle und zukünftige Schichten zurückgesetzt.");
 }
 
 function updateSlotAssignment(slot) {
