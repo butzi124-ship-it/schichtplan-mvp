@@ -1535,6 +1535,25 @@ async function setWeekendAvailability(shiftId, userName, date, status) {
 
   const availabilityKey = `${shiftId}:${userName}`;
 
+  // 🔹 leeren = löschen
+  if (!status) {
+    const { error } = await supabaseClient
+      .from("planner_availability")
+      .delete()
+      .eq("availability_key", availabilityKey);
+
+    if (error) {
+      console.error("Fehler beim Löschen der Verfügbarkeit:", error);
+      return alert(`Fehler: ${error.message}`);
+    }
+
+    delete state.availability[availabilityKey];
+    persist();
+    render();
+    return;
+  }
+
+  // 🔹 speichern
   const { error } = await supabaseClient
     .from("planner_availability")
     .upsert(
@@ -1543,7 +1562,7 @@ async function setWeekendAvailability(shiftId, userName, date, status) {
         shift_id: shiftId,
         shift_date: date,
         user_name: userName,
-        status: status, // "yes" oder "no"
+        status: status, // "yes" | "no"
         created_by_employee_id: currentEmployeeRecord?.id || null,
       },
       { onConflict: "availability_key" },
@@ -1558,6 +1577,24 @@ async function setWeekendAvailability(shiftId, userName, date, status) {
 
   persist();
   render();
+}
+
+async function loadAvailabilityFromSupabase() {
+  const { data, error } = await supabaseClient
+    .from("planner_availability")
+    .select("*");
+
+  if (error) {
+    console.error("Fehler beim Laden der Verfügbarkeit:", error);
+    return {};
+  }
+
+  const map = {};
+  (data || []).forEach((row) => {
+    map[row.availability_key] = row.status;
+  });
+
+  return map;
 }
 
 function renderPlanning() {
