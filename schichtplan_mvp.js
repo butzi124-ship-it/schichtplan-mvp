@@ -1865,66 +1865,60 @@ async function deleteManualAbsence(date, userName) {
 function renderPlanningAbstinenz() {
   const openShifts = generateThreeMonths().filter((s) => s.open);
 
-  // 🔹 MANUELLE ABWESENHEITEN
+  const monthValue = `${new Date().getFullYear()}-${String(
+    new Date().getMonth() + 1,
+  ).padStart(2, "0")}`;
+
+  const personOptions = activeUsers()
+    .map((u) => `<option value='${u.name}'>${u.name}</option>`)
+    .join("");
+
   const absenceRows = Object.entries(state.absences || {})
     .slice(-100)
     .reverse()
     .map(([key, value]) => {
       const [date, user] = key.split(":");
-      S;
       return `<tr class='border-b'>
         <td class='p-2'>${formatDateWithWeekday(date)}</td>
         <td class='p-2'>${user}</td>
         <td class='p-2'>Kann nicht kommen</td>
         <td class='p-2'>
-          <button 
-            class='px-2 py-1 rounded bg-red-600 text-white'
-            onclick="deleteManualAbsence('${date}','${user}')"
-          >
-            Löschen
-          </button>
+          <button class='px-2 py-1 rounded bg-red-600 text-white' onclick="deleteManualAbsence('${date}','${user}')">Löschen</button>
         </td>
       </tr>`;
     })
     .join("");
 
-  // 🔹 URLAUB
   const vacationRows = state.vacations
     .slice(-20)
     .reverse()
-    .map((v) => {
-      return `<tr class='border-b'>
+    .map(
+      (v) => `<tr class='border-b'>
         <td class='p-2'>${v.user}</td>
         <td class='p-2'>${formatDateDisplay(v.from)}</td>
         <td class='p-2'>${formatDateDisplay(v.to)}</td>
         <td class='p-2'>
-          <button class='px-2 py-1 rounded bg-red-600 text-white' onclick="deleteVacation('${v.id}')">
-            Löschen
-          </button>
+          <button class='px-2 py-1 rounded bg-red-600 text-white' onclick="deleteVacation('${v.id}')">Löschen</button>
         </td>
-      </tr>`;
-    })
+      </tr>`,
+    )
     .join("");
 
-  // 🔹 KRANK
   const sickRows = state.sickLeaves
     .slice(-20)
     .reverse()
-    .map((v) => {
-      return `<tr class='border-b'>
+    .map(
+      (v) => `<tr class='border-b'>
         <td class='p-2'>${v.user}</td>
         <td class='p-2'>${formatDateDisplay(v.from)}</td>
         <td class='p-2'>${formatDateDisplay(v.to)}</td>
         <td class='p-2'>
-          <button class='px-2 py-1 rounded bg-red-600 text-white' onclick="deleteSickLeave('${v.id}')">
-            Löschen
-          </button>
+          <button class='px-2 py-1 rounded bg-red-600 text-white' onclick="deleteSickLeave('${v.id}')">Löschen</button>
         </td>
-      </tr>`;
-    })
+      </tr>`,
+    )
     .join("");
 
-  // 🔹 OFFENE SCHICHTEN
   const openRows = openShifts
     .map((s) => {
       const options = activeUsers()
@@ -1940,12 +1934,8 @@ function renderPlanningAbstinenz() {
           <select id='sel-${s.id}' class='border rounded p-1'>${options}</select>
         </td>
         <td class='p-2'>
-          <button class='px-2 py-1 rounded bg-blue-700 text-white mr-2' onclick="assignShift('${s.id}')">
-            Übernehmen
-          </button>
-          <button class='px-2 py-1 rounded bg-red-700 text-white' onclick="cancelShift('${s.id}')">
-            Ausfall
-          </button>
+          <button class='px-2 py-1 rounded bg-blue-700 text-white mr-2' onclick="assignShift('${s.id}')">Übernehmen</button>
+          <button class='px-2 py-1 rounded bg-red-700 text-white' onclick="cancelShift('${s.id}')">Ausfall</button>
         </td>
       </tr>`;
     })
@@ -1954,25 +1944,58 @@ function renderPlanningAbstinenz() {
   return `
   <div class='space-y-4'>
 
-    <!-- ABSTINENZ -->
-    <div class='border rounded-lg p-3 bg-white'>
-      <h3 class='font-semibold mb-2'>Klärung Abstinenz</h3>
-      <table class='w-full text-sm'>
-        <thead class='bg-slate-100'>
-          <tr>
-            <th class='p-2'>Datum</th>
-            <th class='p-2'>Mitarbeiter</th>
-            <th class='p-2'>Typ</th>
-            <th class='p-2'>Aktion</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${absenceRows || "<tr><td colspan='4'>Keine Einträge</td></tr>"}
-        </tbody>
-      </table>
+    <div class='grid md:grid-cols-2 gap-4'>
+      <div class='border rounded-lg p-3 bg-white'>
+        <h3 class='font-semibold mb-2'>Klärung Abstinenz</h3>
+        <table class='w-full text-sm'>
+          <thead class='bg-slate-100'>
+            <tr>
+              <th class='p-2'>Datum</th>
+              <th class='p-2'>Mitarbeiter</th>
+              <th class='p-2'>Typ</th>
+              <th class='p-2'>Aktion</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${absenceRows || "<tr><td class='p-2' colspan='4'>Keine Einträge</td></tr>"}
+          </tbody>
+        </table>
+      </div>
+
+      <div class='border rounded-lg p-3 bg-white'>
+        <h3 class='font-semibold mb-3'>Urlaub / Krankmeldung eintragen</h3>
+
+        <div class='grid grid-cols-2 gap-3 text-sm'>
+          <label>
+            Monat
+            <input id='adminMonth' type='month' value='${monthValue}' class='border rounded p-2 w-full mt-1'/>
+          </label>
+
+          <label>
+            Mitarbeiter
+            <select id='adminCalUser' class='border rounded p-2 w-full mt-1'>
+              ${personOptions}
+            </select>
+          </label>
+
+          <label>
+            Von
+            <input id='adminFrom' type='date' value='${todayIso()}' class='border rounded p-2 w-full mt-1'/>
+          </label>
+
+          <label>
+            Bis
+            <input id='adminTo' type='date' value='${todayIso()}' class='border rounded p-2 w-full mt-1'/>
+          </label>
+        </div>
+
+        <div class='flex gap-2 mt-4'>
+          <button class='px-3 py-2 rounded bg-emerald-700 text-white' onclick='addVacation()'>Urlaub speichern</button>
+          <button class='px-3 py-2 rounded bg-amber-700 text-white' onclick='addSickLeave()'>Krank speichern</button>
+        </div>
+      </div>
     </div>
 
-    <!-- URLAUB -->
     <div class='border rounded-lg p-3 bg-white'>
       <h3 class='font-semibold mb-2'>Geplante Urlaube</h3>
       <table class='w-full text-sm'>
@@ -1985,12 +2008,11 @@ function renderPlanningAbstinenz() {
           </tr>
         </thead>
         <tbody>
-          ${vacationRows || "<tr><td colspan='4'>Keine Einträge</td></tr>"}
+          ${vacationRows || "<tr><td class='p-2' colspan='4'>Keine Einträge</td></tr>"}
         </tbody>
       </table>
     </div>
 
-    <!-- KRANK -->
     <div class='border rounded-lg p-3 bg-white'>
       <h3 class='font-semibold mb-2'>Krankmeldungen</h3>
       <table class='w-full text-sm'>
@@ -2003,12 +2025,11 @@ function renderPlanningAbstinenz() {
           </tr>
         </thead>
         <tbody>
-          ${sickRows || "<tr><td colspan='4'>Keine Einträge</td></tr>"}
+          ${sickRows || "<tr><td class='p-2' colspan='4'>Keine Einträge</td></tr>"}
         </tbody>
       </table>
     </div>
 
-    <!-- OFFENE SCHICHTEN -->
     <div class='border rounded-lg p-3 bg-white'>
       <h3 class='font-semibold mb-2'>Offene Schichten</h3>
       <table class='w-full text-sm'>
@@ -2023,7 +2044,7 @@ function renderPlanningAbstinenz() {
           </tr>
         </thead>
         <tbody>
-          ${openRows || "<tr><td colspan='6'>Keine offenen Schichten</td></tr>"}
+          ${openRows || "<tr><td class='p-2' colspan='6'>Keine offenen Schichten</td></tr>"}
         </tbody>
       </table>
     </div>
