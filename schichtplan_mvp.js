@@ -932,13 +932,16 @@ const PERSON_COLORS = {
 };
 
 function personColorClasses(name) {
-  const emp = Object.values(state.employees || {}).find(
-    (e) => e.display_name === name,
-  );
+  const fixedColors = {
+    Lavdrim: "bg-green-200 text-green-900",
+    Roger: "bg-blue-200 text-blue-900",
+    Dashmir: "bg-yellow-200 text-yellow-900",
+    Thomas: "bg-purple-200 text-purple-900",
+    Musa: "bg-orange-200 text-orange-900",
+    Ardian: "bg-teal-200 text-teal-900",
+  };
 
-  const key = emp?.color_key || "gray";
-
-  const map = {
+  const colorByKey = {
     green: "bg-green-200 text-green-900",
     blue: "bg-blue-200 text-blue-900",
     yellow: "bg-yellow-200 text-yellow-900",
@@ -952,7 +955,12 @@ function personColorClasses(name) {
     gray: "bg-gray-200 text-gray-900",
   };
 
-  const raw = map[key] || map.gray;
+  const emp = Object.values(state.employees || {}).find(
+    (e) => e.display_name === name || e.name === name,
+  );
+
+  const fromDb = emp?.color_key ? colorByKey[emp.color_key] : null;
+  const raw = fromDb || fixedColors[name] || "bg-gray-200 text-gray-900";
 
   const parts = raw.split(" ");
 
