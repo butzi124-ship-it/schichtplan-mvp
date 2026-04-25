@@ -1294,17 +1294,15 @@ async function assignShift(shiftId) {
   const shift = getShiftById(shiftId);
   if (!shift) return;
 
-  const { error } = await supabaseClient
-    .from("planner_assignments")
-    .upsert(
-      {
-        shift_id: shiftId,
-        shift_date: shift.date,
-        assigned_user: name,
-        created_by_employee_id: currentEmployeeRecord?.id || null,
-      },
-      { onConflict: "shift_id" },
-    );
+  const { error } = await supabaseClient.from("planner_assignments").upsert(
+    {
+      shift_id: shiftId,
+      shift_date: shift.date,
+      assigned_user: name,
+      created_by_employee_id: currentEmployeeRecord?.id || null,
+    },
+    { onConflict: "shift_id" },
+  );
 
   if (error) {
     console.error("Fehler bei Zuweisung:", error);
@@ -1534,7 +1532,9 @@ async function setWeekendAvailability(shiftId, userName, date, status) {
 
     if (error) {
       console.error("Fehler beim Löschen der Verfügbarkeit:", error);
-      return alert(`Verfügbarkeit konnte nicht gelöscht werden: ${error.message}`);
+      return alert(
+        `Verfügbarkeit konnte nicht gelöscht werden: ${error.message}`,
+      );
     }
 
     delete state.availability[availabilityKey];
@@ -1543,23 +1543,23 @@ async function setWeekendAvailability(shiftId, userName, date, status) {
     return;
   }
 
-  const { error } = await supabaseClient
-    .from("planner_availability")
-    .upsert(
-      {
-        availability_key: availabilityKey,
-        shift_id: shiftId,
-        shift_date: date,
-        user_name: userName,
-        status,
-        created_by_employee_id: currentEmployeeRecord?.id || null,
-      },
-      { onConflict: "availability_key" },
-    );
+  const { error } = await supabaseClient.from("planner_availability").upsert(
+    {
+      availability_key: availabilityKey,
+      shift_id: shiftId,
+      shift_date: date,
+      user_name: userName,
+      status,
+      created_by_employee_id: currentEmployeeRecord?.id || null,
+    },
+    { onConflict: "availability_key" },
+  );
 
   if (error) {
     console.error("Fehler bei Verfügbarkeit:", error);
-    return alert(`Verfügbarkeit konnte nicht gespeichert werden: ${error.message}`);
+    return alert(
+      `Verfügbarkeit konnte nicht gespeichert werden: ${error.message}`,
+    );
   }
 
   state.availability[availabilityKey] = status;
@@ -1865,25 +1865,20 @@ async function deleteManualAbsence(date, userName) {
 function renderPlanningAbstinenz() {
   const openShifts = generateThreeMonths().filter((s) => s.open);
 
+  // 🔹 MANUELLE ABWESENHEITEN
   const absenceRows = Object.entries(state.absences || {})
     .slice(-100)
     .reverse()
     .map(([key, value]) => {
       const [date, user] = key.split(":");
-      const typeLabel =
-        value === "urlaub"
-          ? "Urlaub"
-          : value === "krank"
-            ? "Krank"
-            : "Kann nicht kommen";
-
+      S;
       return `<tr class='border-b'>
         <td class='p-2'>${formatDateWithWeekday(date)}</td>
         <td class='p-2'>${user}</td>
-        <td class='p-2'>${typeLabel}</td>
+        <td class='p-2'>Kann nicht kommen</td>
         <td class='p-2'>
           <button 
-            class='px-2 py-1 rounded bg-rose-700 text-white'
+            class='px-2 py-1 rounded bg-red-600 text-white'
             onclick="deleteManualAbsence('${date}','${user}')"
           >
             Löschen
@@ -1893,77 +1888,46 @@ function renderPlanningAbstinenz() {
     })
     .join("");
 
-  const monthValue = `${new Date().getFullYear()}-${String(
-    new Date().getMonth() + 1,
-  ).padStart(2, "0")}`;
-
-  const personOptions = activeUsers()
-    .map((u) => `<option value='${u.name}'>${u.name}</option>`)
-    .join("");
-
+  // 🔹 URLAUB
   const vacationRows = state.vacations
     .slice(-20)
     .reverse()
     .map((v) => {
-      const hasPlan =
-        getReplacementEntriesForSource("vacation", v.id).length > 0;
-      const summary = getReplacementSummaryForSource("vacation", v.id);
-
       return `<tr class='border-b'>
         <td class='p-2'>${v.user}</td>
         <td class='p-2'>${formatDateDisplay(v.from)}</td>
         <td class='p-2'>${formatDateDisplay(v.to)}</td>
-        <td class='p-2 text-sm'>${summary}</td>
-        <td class='p-2 whitespace-nowrap'>
-          <button class='px-2 py-1 rounded bg-rose-700 text-white mr-2' onclick="deleteVacation('${v.id}')">Löschen</button>
-          <button class='px-2 py-1 rounded ${
-            hasPlan ? "bg-emerald-700" : "bg-blue-700"
-          } text-white mr-2' onclick="planAbsenceReplacement('vacation','${v.id}')">${
-            hasPlan ? "Bearbeiten" : "Ersetzen"
-          }</button>
-          ${
-            hasPlan
-              ? `<button class='px-2 py-1 rounded bg-slate-700 text-white' onclick="clearAbsenceReplacementPlan('vacation','${v.id}')">Ersatz löschen</button>`
-              : ""
-          }
+        <td class='p-2'>
+          <button class='px-2 py-1 rounded bg-red-600 text-white' onclick="deleteVacation('${v.id}')">
+            Löschen
+          </button>
         </td>
       </tr>`;
     })
     .join("");
 
+  // 🔹 KRANK
   const sickRows = state.sickLeaves
     .slice(-20)
     .reverse()
     .map((v) => {
-      const hasPlan = getReplacementEntriesForSource("sick", v.id).length > 0;
-      const summary = getReplacementSummaryForSource("sick", v.id);
-
       return `<tr class='border-b'>
         <td class='p-2'>${v.user}</td>
         <td class='p-2'>${formatDateDisplay(v.from)}</td>
         <td class='p-2'>${formatDateDisplay(v.to)}</td>
-        <td class='p-2 text-sm'>${summary}</td>
-        <td class='p-2 whitespace-nowrap'>
-          <button class='px-2 py-1 rounded bg-rose-700 text-white mr-2' onclick="deleteSickLeave('${v.id}')">Löschen</button>
-          <button class='px-2 py-1 rounded ${
-            hasPlan ? "bg-emerald-700" : "bg-blue-700"
-          } text-white mr-2' onclick="planAbsenceReplacement('sick','${v.id}')">${
-            hasPlan ? "Bearbeiten" : "Ersetzen"
-          }</button>
-          ${
-            hasPlan
-              ? `<button class='px-2 py-1 rounded bg-slate-700 text-white' onclick="clearAbsenceReplacementPlan('sick','${v.id}')">Ersatz löschen</button>`
-              : ""
-          }
+        <td class='p-2'>
+          <button class='px-2 py-1 rounded bg-red-600 text-white' onclick="deleteSickLeave('${v.id}')">
+            Löschen
+          </button>
         </td>
       </tr>`;
     })
     .join("");
 
-  const rows = openShifts
+  // 🔹 OFFENE SCHICHTEN
+  const openRows = openShifts
     .map((s) => {
-      const choices = activeUsers()
-        .filter((u) => u.name !== s.assigned)
+      const options = activeUsers()
         .map((u) => `<option value="${u.name}">${u.name}</option>`)
         .join("");
 
@@ -1973,110 +1937,97 @@ function renderPlanningAbstinenz() {
         <td class='p-2'>${s.start}–${s.end}</td>
         <td class='p-2'>${s.originalAssigned || "-"}</td>
         <td class='p-2'>
-          <select id='sel-${s.id}' class='border rounded p-1'>${choices}</select>
+          <select id='sel-${s.id}' class='border rounded p-1'>${options}</select>
         </td>
-        <td class='p-2 space-x-1'>
-          <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick="assignShift('${s.id}')">Übernehmen</button>
-          <button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="cancelShift('${s.id}')">Ausfall</button>
+        <td class='p-2'>
+          <button class='px-2 py-1 rounded bg-blue-700 text-white mr-2' onclick="assignShift('${s.id}')">
+            Übernehmen
+          </button>
+          <button class='px-2 py-1 rounded bg-red-700 text-white' onclick="cancelShift('${s.id}')">
+            Ausfall
+          </button>
         </td>
       </tr>`;
     })
     .join("");
 
-  return `<div class='space-y-4'>
-    <div class='grid md:grid-cols-2 gap-4'>
-      <div class='border rounded-lg p-3 bg-slate-50'>
-        <h3 class='font-semibold mb-2'>Klärung Abstinenz</h3>
-        <div class='overflow-auto max-h-56'>
-          <table class='w-full text-sm'>
-            <thead class='bg-white sticky top-0'>
-              <tr>
-                <th class='p-2 text-left'>Datum</th>
-                <th class='p-2 text-left'>Mitarbeiter</th>
-                <th class='p-2 text-left'>Typ</th>
-                <th class='p-2 text-left'>Aktion</th>
-              </tr>
-            </thead>
-            <tbody>${absenceRows || '<tr><td class="p-2" colspan="4">Keine Meldungen.</td></tr>'}</tbody>
-          </table>
-        </div>
-      </div>
+  return `
+  <div class='space-y-4'>
 
-      <div class='border rounded-lg p-3 bg-slate-50 space-y-3'>
-        <h3 class='font-semibold'>Urlaub / Krankmeldung eintragen</h3>
-        <div class='grid grid-cols-2 gap-2 text-sm'>
-          <label>Monat<input id='adminMonth' type='month' value='${monthValue}' class='border rounded p-1 w-full'/></label>
-          <label>Mitarbeiter<select id='adminCalUser' class='border rounded p-1 w-full'>${personOptions}</select></label>
-          <label>Von<input id='adminFrom' type='date' value='${todayIso()}' class='border rounded p-1 w-full'/></label>
-          <label>Bis<input id='adminTo' type='date' value='${todayIso()}' class='border rounded p-1 w-full'/></label>
-        </div>
-        <div class='flex gap-2 flex-wrap'>
-          <button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick='addVacation()'>Urlaub speichern</button>
-          <button class='px-2 py-1 rounded bg-amber-700 text-white' onclick='addSickLeave()'>Krank speichern</button>
-        </div>
-      </div>
-    </div>
-
-    <div class='grid grid-cols-1 gap-4'>
-      <div class='border rounded-lg p-3'>
-        <h4 class='font-semibold mb-2'>Geplante Urlaube</h4>
-        <div class='overflow-auto max-h-56'>
-          <table class='w-full text-sm'>
-            <thead class='bg-slate-100 sticky top-0'>
-              <tr>
-                <th class='p-2 text-left'>Mitarbeiter</th>
-                <th class='p-2 text-left'>Von</th>
-                <th class='p-2 text-left'>Bis</th>
-                <th class='p-2 text-left'>Ersatz</th>
-                <th class='p-2'></th>
-              </tr>
-            </thead>
-            <tbody>${vacationRows || '<tr><td class="p-2" colspan="5">Keine Einträge.</td></tr>'}</tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class='border rounded-lg p-3'>
-        <h4 class='font-semibold mb-2'>Krankmeldungen</h4>
-        <div class='overflow-auto max-h-56'>
-          <table class='w-full text-sm'>
-            <thead class='bg-slate-100 sticky top-0'>
-              <tr>
-                <th class='p-2 text-left'>Mitarbeiter</th>
-                <th class='p-2 text-left'>Von</th>
-                <th class='p-2 text-left'>Bis</th>
-                <th class='p-2 text-left'>Ersatz</th>
-                <th class='p-2'></th>
-              </tr>
-            </thead>
-            <tbody>${sickRows || '<tr><td class="p-2" colspan="5">Keine Einträge.</td></tr>'}</tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
+    <!-- ABSTINENZ -->
     <div class='border rounded-lg p-3 bg-white'>
-      <h3 class='text-md font-semibold mb-2'>Offene Schichten</h3>
-      <div class='flex items-center justify-between mb-2 gap-2 flex-wrap'>
-        <p class='text-sm text-slate-500'>Pro Tag kannst du entscheiden: ganze Schicht übernehmen lassen oder Ausfall markieren.</p>
-        <button class='px-2 py-1 rounded bg-slate-800 text-white text-sm' onclick='resetManualAssignments()'>Zuordnungen zurücksetzen (aktuelle+zukünftige)</button>
-      </div>
-      <div class='overflow-auto max-h-[55vh]'>
-        <table class='w-full text-sm'>
-          <thead class='bg-slate-100 sticky top-0'>
-            <tr>
-              <th class='p-2 text-left'>Datum</th>
-              <th class='p-2 text-left'>Schicht</th>
-              <th class='p-2 text-left'>Zeit</th>
-              <th class='p-2 text-left'>Vorher</th>
-              <th class='p-2 text-left'>Übernahme durch</th>
-              <th class='p-2'>Aktion</th>
-            </tr>
-          </thead>
-          <tbody>${rows || '<tr><td class="p-2" colspan="6">Keine offenen Schichten.</td></tr>'}</tbody>
-        </table>
-      </div>
+      <h3 class='font-semibold mb-2'>Klärung Abstinenz</h3>
+      <table class='w-full text-sm'>
+        <thead class='bg-slate-100'>
+          <tr>
+            <th class='p-2'>Datum</th>
+            <th class='p-2'>Mitarbeiter</th>
+            <th class='p-2'>Typ</th>
+            <th class='p-2'>Aktion</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${absenceRows || "<tr><td colspan='4'>Keine Einträge</td></tr>"}
+        </tbody>
+      </table>
     </div>
+
+    <!-- URLAUB -->
+    <div class='border rounded-lg p-3 bg-white'>
+      <h3 class='font-semibold mb-2'>Geplante Urlaube</h3>
+      <table class='w-full text-sm'>
+        <thead class='bg-slate-100'>
+          <tr>
+            <th class='p-2'>Mitarbeiter</th>
+            <th class='p-2'>Von</th>
+            <th class='p-2'>Bis</th>
+            <th class='p-2'>Aktion</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${vacationRows || "<tr><td colspan='4'>Keine Einträge</td></tr>"}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- KRANK -->
+    <div class='border rounded-lg p-3 bg-white'>
+      <h3 class='font-semibold mb-2'>Krankmeldungen</h3>
+      <table class='w-full text-sm'>
+        <thead class='bg-slate-100'>
+          <tr>
+            <th class='p-2'>Mitarbeiter</th>
+            <th class='p-2'>Von</th>
+            <th class='p-2'>Bis</th>
+            <th class='p-2'>Aktion</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sickRows || "<tr><td colspan='4'>Keine Einträge</td></tr>"}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- OFFENE SCHICHTEN -->
+    <div class='border rounded-lg p-3 bg-white'>
+      <h3 class='font-semibold mb-2'>Offene Schichten</h3>
+      <table class='w-full text-sm'>
+        <thead class='bg-slate-100'>
+          <tr>
+            <th class='p-2'>Datum</th>
+            <th class='p-2'>Schicht</th>
+            <th class='p-2'>Zeit</th>
+            <th class='p-2'>Vorher</th>
+            <th class='p-2'>Übernehmen</th>
+            <th class='p-2'>Aktion</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${openRows || "<tr><td colspan='6'>Keine offenen Schichten</td></tr>"}
+        </tbody>
+      </table>
+    </div>
+
   </div>`;
 }
 
@@ -2414,7 +2365,9 @@ async function addSickLeave() {
 
   if (error) {
     console.error("Fehler beim Speichern von Krankmeldung:", error);
-    return alert(`Krankmeldung konnte nicht gespeichert werden: ${error.message}`);
+    return alert(
+      `Krankmeldung konnte nicht gespeichert werden: ${error.message}`,
+    );
   }
 
   state.sickLeaves.push({
@@ -2548,21 +2501,41 @@ async function resetPlanCurrentFuture() {
   const today = todayIso();
 
   const deletes = await Promise.all([
-    supabaseClient.from("planner_assignments").delete().gte("shift_date", today),
+    supabaseClient
+      .from("planner_assignments")
+      .delete()
+      .gte("shift_date", today),
     supabaseClient.from("planner_absences").delete().gte("absence_date", today),
     supabaseClient.from("planner_vacations").delete().gte("to_date", today),
     supabaseClient.from("planner_sick_leaves").delete().gte("to_date", today),
-    supabaseClient.from("planner_availability").delete().gte("shift_date", today),
-    supabaseClient.from("planner_swaps").delete().or(`end_date.is.null,end_date.gte.${today}`),
-    supabaseClient.from("planner_shift_cancellations").delete().gte("shift_date", today),
-    supabaseClient.from("planner_saturday_requests").delete().gte("shift_date", today),
-    supabaseClient.from("planner_absence_replacements").delete().gte("shift_date", today),
+    supabaseClient
+      .from("planner_availability")
+      .delete()
+      .gte("shift_date", today),
+    supabaseClient
+      .from("planner_swaps")
+      .delete()
+      .or(`end_date.is.null,end_date.gte.${today}`),
+    supabaseClient
+      .from("planner_shift_cancellations")
+      .delete()
+      .gte("shift_date", today),
+    supabaseClient
+      .from("planner_saturday_requests")
+      .delete()
+      .gte("shift_date", today),
+    supabaseClient
+      .from("planner_absence_replacements")
+      .delete()
+      .gte("shift_date", today),
   ]);
 
   const firstError = deletes.find((res) => res.error)?.error;
   if (firstError) {
     console.error("Fehler beim Zurücksetzen des Plans:", firstError);
-    return alert(`Gesamtplan konnte nicht vollständig zurückgesetzt werden: ${firstError.message}`);
+    return alert(
+      `Gesamtplan konnte nicht vollständig zurückgesetzt werden: ${firstError.message}`,
+    );
   }
 
   state.assignments = {};
@@ -2588,7 +2561,9 @@ async function resetPlanCurrentFuture() {
 
   persist();
   render();
-  alert("Gesamtplan wurde für aktuelle und zukünftige Schichten zurückgesetzt.");
+  alert(
+    "Gesamtplan wurde für aktuelle und zukünftige Schichten zurückgesetzt.",
+  );
 }
 
 function updateSlotAssignment(slot) {
@@ -3476,28 +3451,39 @@ async function editToolCentered(tool) {
       resolve(null);
     });
 
-    host.querySelector("#toolEditCloseBottom")?.addEventListener("click", () => {
-      close();
-      resolve(null);
-    });
+    host
+      .querySelector("#toolEditCloseBottom")
+      ?.addEventListener("click", () => {
+        close();
+        resolve(null);
+      });
 
     host.querySelector("#toolEditSave")?.addEventListener("click", () => {
       const data = {
         label: document.getElementById("editLabel")?.value || "",
         diameter: document.getElementById("editDiameter")?.value?.trim() || "",
         threadPrefix: document.getElementById("editThreadPrefix")?.value || "",
-        threadPitch: document.getElementById("editThreadPitch")?.value?.trim() || "",
-        cornerRadius: document.getElementById("editCornerRadius")?.value?.trim() || "",
+        threadPitch:
+          document.getElementById("editThreadPitch")?.value?.trim() || "",
+        cornerRadius:
+          document.getElementById("editCornerRadius")?.value?.trim() || "",
         materialId: document.getElementById("editMaterial")?.value || "",
-        shelf: document.getElementById("editShelf")?.value?.trim().toUpperCase() || "",
-        articleNo: document.getElementById("editArticleNo")?.value?.trim() || "",
+        shelf:
+          document.getElementById("editShelf")?.value?.trim().toUpperCase() ||
+          "",
+        articleNo:
+          document.getElementById("editArticleNo")?.value?.trim() || "",
         holder: document.getElementById("editHolder")?.value || "",
         manufacturer: document.getElementById("editManufacturer")?.value || "",
         stock: Number(document.getElementById("editStock")?.value || 0),
         minStock: Number(document.getElementById("editMinStock")?.value || 0),
-        optimalStock: Number(document.getElementById("editOptimalStock")?.value || 0),
+        optimalStock: Number(
+          document.getElementById("editOptimalStock")?.value || 0,
+        ),
         insertTool: !!document.getElementById("editInsertTool")?.checked,
-        insertEdges: Number(document.getElementById("editInsertEdges")?.value || 0),
+        insertEdges: Number(
+          document.getElementById("editInsertEdges")?.value || 0,
+        ),
       };
 
       close();
@@ -3917,23 +3903,30 @@ async function bookToolChange(toolId) {
     const nextStock = Math.max(0, Number(tool.stock || 0) - Number(qty || 0));
 
     const { data, error } = await supabaseClient
-  .from("tools")
-  .update({
-    stock: nextStock,
-  })
-  .eq("id", toolId)
-  .select()
-  .maybeSingle();
+      .from("tools")
+      .update({
+        stock: nextStock,
+      })
+      .eq("id", toolId)
+      .select()
+      .maybeSingle();
 
-if (error) {
-  console.error("Fehler bei Werkzeug-Entnahme:", error);
-  return alert(`Entnahme konnte nicht gespeichert werden: ${error.message}`);
-}
+    if (error) {
+      console.error("Fehler bei Werkzeug-Entnahme:", error);
+      return alert(
+        `Entnahme konnte nicht gespeichert werden: ${error.message}`,
+      );
+    }
 
-if (!data) {
-  console.error("Keine Werkzeugzeile nach Entnahme zurückgegeben.", { toolId, nextStock });
-  return alert("Entnahme wurde nicht bestätigt. Bitte Seite neu laden und erneut versuchen.");
-}
+    if (!data) {
+      console.error("Keine Werkzeugzeile nach Entnahme zurückgegeben.", {
+        toolId,
+        nextStock,
+      });
+      return alert(
+        "Entnahme wurde nicht bestätigt. Bitte Seite neu laden und erneut versuchen.",
+      );
+    }
 
     if (error) {
       console.error("Fehler bei Werkzeug-Entnahme:", error);
@@ -5239,22 +5232,22 @@ async function markAbsent(shiftId, date, userName) {
 
   const absenceKey = `${date}:${userName}`;
 
-  const { error } = await supabaseClient
-    .from("planner_absences")
-    .upsert(
-      {
-        absence_key: absenceKey,
-        absence_date: date,
-        user_name: userName,
-        absence_type: "abwesend",
-        created_by_employee_id: currentEmployeeRecord?.id || null,
-      },
-      { onConflict: "absence_key" },
-    );
+  const { error } = await supabaseClient.from("planner_absences").upsert(
+    {
+      absence_key: absenceKey,
+      absence_date: date,
+      user_name: userName,
+      absence_type: "abwesend",
+      created_by_employee_id: currentEmployeeRecord?.id || null,
+    },
+    { onConflict: "absence_key" },
+  );
 
   if (error) {
     console.error("Fehler bei Abwesenheit:", error);
-    return alert(`Abwesenheit konnte nicht gespeichert werden: ${error.message}`);
+    return alert(
+      `Abwesenheit konnte nicht gespeichert werden: ${error.message}`,
+    );
   }
 
   // lokal weiterführen (für UI)
@@ -5271,7 +5264,9 @@ async function assignOptionalShift(shiftId) {
   if (!shift) return alert("Schicht konnte nicht gefunden werden.");
 
   if (!isPrimaryCoreAbsentForShift(shift)) {
-    return alert("Einteilung nicht möglich: Der A/B/C-Mitarbeiter ist nicht abwesend gemeldet.");
+    return alert(
+      "Einteilung nicht möglich: Der A/B/C-Mitarbeiter ist nicht abwesend gemeldet.",
+    );
   }
 
   const select = document.getElementById(`opt-${shiftId}`);
@@ -5286,21 +5281,21 @@ async function assignOptionalShift(shiftId) {
 
   if (!canAssignUserToShift(name, shiftId)) return;
 
-  const { error } = await supabaseClient
-    .from("planner_assignments")
-    .upsert(
-      {
-        shift_id: shiftId,
-        shift_date: shift.date,
-        assigned_user: name,
-        created_by_employee_id: currentEmployeeRecord?.id || null,
-      },
-      { onConflict: "shift_id" },
-    );
+  const { error } = await supabaseClient.from("planner_assignments").upsert(
+    {
+      shift_id: shiftId,
+      shift_date: shift.date,
+      assigned_user: name,
+      created_by_employee_id: currentEmployeeRecord?.id || null,
+    },
+    { onConflict: "shift_id" },
+  );
 
   if (error) {
     console.error("Fehler bei Springer-Einteilung:", error);
-    return alert(`Einteilung konnte nicht gespeichert werden: ${error.message}`);
+    return alert(
+      `Einteilung konnte nicht gespeichert werden: ${error.message}`,
+    );
   }
 
   delete state.shiftCancellations[shiftId];
@@ -5329,21 +5324,21 @@ async function assignSuggestedSpringer(shiftId) {
 
   if (!canAssignUserToShift(suggested, shiftId)) return;
 
-  const { error } = await supabaseClient
-    .from("planner_assignments")
-    .upsert(
-      {
-        shift_id: shiftId,
-        shift_date: shift.date,
-        assigned_user: suggested,
-        created_by_employee_id: currentEmployeeRecord?.id || null,
-      },
-      { onConflict: "shift_id" },
-    );
+  const { error } = await supabaseClient.from("planner_assignments").upsert(
+    {
+      shift_id: shiftId,
+      shift_date: shift.date,
+      assigned_user: suggested,
+      created_by_employee_id: currentEmployeeRecord?.id || null,
+    },
+    { onConflict: "shift_id" },
+  );
 
   if (error) {
     console.error("Fehler bei automatischer Springer-Einteilung:", error);
-    return alert(`Einteilung konnte nicht gespeichert werden: ${error.message}`);
+    return alert(
+      `Einteilung konnte nicht gespeichert werden: ${error.message}`,
+    );
   }
 
   delete state.shiftCancellations[shiftId];
