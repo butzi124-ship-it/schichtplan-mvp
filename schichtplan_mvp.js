@@ -369,6 +369,15 @@ async function loadPlanningDataFromSupabase() {
     saturdayEveningRequests[row.request_key] = true;
   });
 
+  const { data: specialDaysData } = await supabaseClient
+    .from("planner_special_days")
+    .select("*");
+
+  state.specialDays = {};
+  (specialDaysData || []).forEach((d) => {
+    state.specialDays[d.day_date] = d;
+  });
+
   const absenceReplacements = {};
   (replacementsRes.data || []).forEach((row) => {
     absenceReplacements[row.shift_id] = {
@@ -825,54 +834,36 @@ function clearAbsenceReplacementPlan(sourceType, sourceId) {
   render();
 }
 
-function buildShift(date, id, template) {
-  const defaultAssigned = chooseDefault(template.options);
-  const swappedDefault = defaultAssigned
-    ? applySwap(date, defaultAssigned)
-    : defaultAssigned;
+function buildShift(date, slotCode, shiftDef) {
+  const id = `${date}-${slotCode}-${shiftDef.index}`;
+  const label = shiftDef.label;
+  const start = shiftDef.start;
+  const end = shiftDef.end;
 
-  const isOptional = template.options.length > 1;
-  const manualAssigned = state.assignments[id] || null;
-  const replacement = getReplacementForShift(id);
+  // 🔹 ursprüngliche Zuordnung (A/B/C Rotation)
+  const assigned = getAssignedUserForSlot(date, slotCode);
 
-  const absenceKey = swappedDefault ? `${date}:${swappedDefault}` : null;
-  const calendarAbsenceType = swappedDefault
-    ? getCalendarAbsenceType(swappedDefault, date)
-    : null;
-  const manualAbsent = absenceKey ? !!state.absences[absenceKey] : false;
-  const absent = manualAbsent || !!calendarAbsenceType;
+  // 🔹 prüfen ob Schicht offen ist (durch Abwesenheit etc.)
+  let open = false;
 
-  const canceled =
-    !!state.shiftCancellations[id] || replacement?.mode === "cancel";
-
-  let assigned = null;
-
-  if (canceled) {
-    assigned = null;
-  } else if (replacement?.mode === "replace" && replacement?.replacementUser) {
-    assigned = replacement.replacementUser;
-  } else if (manualAssigned) {
-    assigned = manualAssigned;
-  } else if (!isOptional && !absent) {
-    assigned = swappedDefault;
-  } else {
-    assigned = null;
+  const absType = getCalendarAbsenceType(assigned, date);
+  if (absType) {
+    open = true;
   }
 
-  const open = canceled || !assigned;
+  // 🔹 Sondertage prüfen (Feiertag / Brückentag / Betriebsferien)
+  const blocked = isBlockedDay(date);
 
   return {
     id,
     date,
-    label: template.label,
-    start: template.start,
-    end: template.end,
-    options: template.options,
-    assigned,
-    originalAssigned: swappedDefault,
-    absenceType: calendarAbsenceType || (manualAbsent ? "abwesend" : null),
-    replacement,
-    open,
+    label,
+    start,
+    end,
+    assigned: blocked ? null : assigned,
+    originalAssigned: blocked ? null : assigned,
+    open: blocked ? false : open,
+    blocked,
   };
 }
 
@@ -955,6 +946,17 @@ function weekStartFromMonday(baseDate, addWeeks) {
 
 function isoDate(d) {
   return d.toISOString().slice(0, 10);
+}
+
+function getSpecialDay(date) {
+  return state.specialDays?.[date] || null;
+}
+
+function isBlockedDay(date) {
+  const d = getSpecialDay(date);
+  if (!d) return false;
+
+  return d.type === "holiday" || d.type === "bridge" || d.type === "company";
 }
 
 function todayIso() {
@@ -1067,6 +1069,25 @@ function getPrimaryAbsenceInfo(shiftId, options) {
 }
 
 function assignedMeta(shiftId, options) {
+  const date = shiftId.slice(0, 10);
+  const specialDay = getSpecialDay(date);
+
+  if (specialDay) {
+    const label =
+      specialDay.type === "holiday"
+        ? `FEIERTAG${specialDay.label ? ` – ${specialDay.label}` : ""}`
+        : specialDay.type === "bridge"
+          ? `BRÜCKENTAG${specialDay.label ? ` – ${specialDay.label}` : ""}`
+          : `BETRIEBSFERIEN${specialDay.label ? ` – ${specialDay.label}` : ""}`;
+
+    return {
+      label,
+      cls: "bg-red-100 text-red-900",
+      borderCls: "border-red-500",
+      ringCls: "border-2",
+    };
+  }
+
   if (
     state.shiftCancellations?.[shiftId] ||
     getReplacementForShift(shiftId)?.mode === "cancel"
@@ -1095,6 +1116,7 @@ function assignedMeta(shiftId, options) {
         ringCls: "border-2",
       };
     }
+
     return {
       label: "-",
       cls: "bg-slate-100 text-slate-700",
@@ -1104,6 +1126,7 @@ function assignedMeta(shiftId, options) {
   }
 
   const assignedColors = personColorClasses(assignedName);
+
   if (absence?.name) {
     return {
       label: `${slotOfUser(assignedName)} • ${assignedName}`,
