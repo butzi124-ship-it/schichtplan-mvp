@@ -932,12 +932,37 @@ const PERSON_COLORS = {
 };
 
 function personColorClasses(name) {
-  const raw = PERSON_COLORS[name] || "bg-slate-100 text-slate-800";
+  const emp = Object.values(state.employees || {}).find(
+    (e) => e.display_name === name,
+  );
+
+  const key = emp?.color_key || "gray";
+
+  const map = {
+    green: "bg-green-200 text-green-900",
+    blue: "bg-blue-200 text-blue-900",
+    yellow: "bg-yellow-200 text-yellow-900",
+    purple: "bg-purple-200 text-purple-900",
+    orange: "bg-orange-200 text-orange-900",
+    teal: "bg-teal-200 text-teal-900",
+    cyan: "bg-cyan-200 text-cyan-900",
+    pink: "bg-pink-200 text-pink-900",
+    rose: "bg-rose-200 text-rose-900",
+    lime: "bg-lime-200 text-lime-900",
+    gray: "bg-gray-200 text-gray-900",
+  };
+
+  const raw = map[key] || map.gray;
+
   const parts = raw.split(" ");
-  const bg = parts.find((p) => p.startsWith("bg-")) || "bg-slate-100";
-  const text = parts.find((p) => p.startsWith("text-")) || "text-slate-800";
-  return { bg, text, raw: `${bg} ${text}` };
+
+  return {
+    bg: parts[0],
+    text: parts[1],
+    raw,
+  };
 }
+
 function personBorderClass(name) {
   const slot = slotOfUser(name);
   if (slot === "A") return "border-green-500";
@@ -2698,16 +2723,67 @@ function updateSlotAssignment(slot) {
   render();
 }
 
-function addEmployee() {
-  const name = document.getElementById("newEmployeeName")?.value?.trim();
-  const type = document.getElementById("newEmployeeType")?.value || "springer";
-  if (!name) return alert("Bitte Namen eingeben.");
-  if (allUsers().some((u) => u.name.toLowerCase() === name.toLowerCase()))
-    return alert("Mitarbeiter existiert bereits.");
-  const nextSlot = type === "core" ? "A" : "D";
-  state.extraUsers.push({ name, slot: nextSlot, type });
-  delete state.inactiveUsers[name];
-  persist();
+async function addEmployee() {
+  if (!supabaseReady) return;
+
+  const name = document.getElementById("empName").value.trim();
+  const colorKey = document.getElementById("empColor").value;
+
+  if (!name) {
+    alert("Name fehlt");
+    return;
+  }
+
+  const { error } = await supabaseClient.from("employees").insert([
+    {
+      display_name: name,
+      role: "employee",
+      employee_type: "core",
+      color_key: colorKey,
+    },
+  ]);
+
+  if (error) {
+    console.error(error);
+    alert(error.message);
+    return;
+  }
+
+  await loadEmployeesFromSupabase();
+  render();
+}
+
+function fillEmployeeForm(emp) {
+  document.getElementById("empName").value = emp.display_name;
+  document.getElementById("empColor").value = emp.color_key || "gray";
+}
+
+async function updateEmployee(id) {
+  if (!supabaseReady) return;
+
+  const name = document.getElementById("empName").value.trim();
+  const colorKey = document.getElementById("empColor").value;
+
+  if (!name) {
+    alert("Name fehlt");
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("employees")
+    .update({
+      display_name: name,
+      color_key: colorKey,
+    })
+    .eq("id", id);
+
+  if (error) {
+    console.error(error);
+    alert(error.message);
+    return;
+  }
+
+  await loadEmployeesFromSupabase();
   render();
 }
 
