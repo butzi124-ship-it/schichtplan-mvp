@@ -834,36 +834,58 @@ function clearAbsenceReplacementPlan(sourceType, sourceId) {
   render();
 }
 
-function buildShift(date, slotCode, shiftDef) {
-  const id = `${date}-${slotCode}-${shiftDef.index}`;
-  const label = shiftDef.label;
-  const start = shiftDef.start;
-  const end = shiftDef.end;
+function buildShift(date, id, template) {
+  const defaultAssigned = chooseDefault(template.options);
+  const swappedDefault = defaultAssigned
+    ? applySwap(date, defaultAssigned)
+    : defaultAssigned;
 
-  // 🔹 ursprüngliche Zuordnung (A/B/C Rotation)
-  const assigned = getAssignedUserForSlot(date, slotCode);
+  const isOptional = template.options.length > 1;
+  const manualAssigned = state.assignments[id] || null;
+  const replacement = getReplacementForShift(id);
+  const specialDay = getSpecialDay(date);
+  const blocked = isBlockedDay(date);
 
-  // 🔹 prüfen ob Schicht offen ist (durch Abwesenheit etc.)
-  let open = false;
+  const absenceKey = swappedDefault ? `${date}:${swappedDefault}` : null;
+  const calendarAbsenceType = swappedDefault
+    ? getCalendarAbsenceType(swappedDefault, date)
+    : null;
+  const manualAbsent = absenceKey ? !!state.absences[absenceKey] : false;
+  const absent = manualAbsent || !!calendarAbsenceType;
 
-  const absType = getCalendarAbsenceType(assigned, date);
-  if (absType) {
-    open = true;
+  const canceled =
+    !!state.shiftCancellations[id] || replacement?.mode === "cancel";
+
+  let assigned = null;
+
+  if (manualAssigned) {
+    assigned = manualAssigned;
+  } else if (blocked || canceled) {
+    assigned = null;
+  } else if (replacement?.mode === "replace" && replacement?.replacementUser) {
+    assigned = replacement.replacementUser;
+  } else if (!isOptional && !absent) {
+    assigned = swappedDefault;
+  } else {
+    assigned = null;
   }
 
-  // 🔹 Sondertage prüfen (Feiertag / Brückentag / Betriebsferien)
-  const blocked = isBlockedDay(date);
+  const open = !blocked && (canceled || !assigned);
 
   return {
     id,
     date,
-    label,
-    start,
-    end,
-    assigned: blocked ? null : assigned,
-    originalAssigned: blocked ? null : assigned,
-    open: blocked ? false : open,
+    label: template.label,
+    start: template.start,
+    end: template.end,
+    options: template.options,
+    assigned,
+    originalAssigned: blocked ? null : swappedDefault,
+    absenceType: calendarAbsenceType || (manualAbsent ? "abwesend" : null),
+    replacement,
+    open,
     blocked,
+    specialDay,
   };
 }
 
