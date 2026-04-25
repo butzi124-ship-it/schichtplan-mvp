@@ -2381,36 +2381,94 @@ async function addSickLeave() {
   render();
 }
 
+function getDatesBetween(start, end) {
+  const dates = [];
+  let current = new Date(start);
+  const last = new Date(end);
+
+  while (current <= last) {
+    dates.push(current.toISOString().slice(0, 10));
+    current.setDate(current.getDate() + 1);
+  }
+
+  return dates;
+}
+
 async function deleteVacation(id) {
+  if (!supabaseReady) return;
+
+  const entry = state.vacations.find((v) => v.id === id);
+  if (!entry) return;
+
+  const confirmDelete = confirm(`Urlaub von ${entry.user} wirklich löschen?`);
+  if (!confirmDelete) return;
+
+  // 🔴 Urlaub löschen
   const { error } = await supabaseClient
     .from("planner_vacations")
     .delete()
     .eq("id", id);
 
   if (error) {
-    console.error("Fehler beim Löschen von Urlaub:", error);
-    return alert(`Urlaub konnte nicht gelöscht werden: ${error.message}`);
+    console.error("Fehler beim Löschen Urlaub:", error);
+    return alert(error.message);
   }
 
+  // 🔴 Zugehörige Abwesenheiten löschen
+  const dates = getDatesBetween(entry.from, entry.to);
+
+  for (const d of dates) {
+    await supabaseClient
+      .from("planner_absences")
+      .delete()
+      .eq("absence_date", d)
+      .eq("user_name", entry.user);
+
+    delete state.absences[`${d}:${entry.user}`];
+  }
+
+  // 🔴 lokal entfernen
   state.vacations = state.vacations.filter((v) => v.id !== id);
-  clearReplacementPlanForSource("vacation", id);
+
   persist();
   render();
 }
 
 async function deleteSickLeave(id) {
+  if (!supabaseReady) return;
+
+  const entry = state.sickLeaves.find((v) => v.id === id);
+  if (!entry) return;
+
+  const confirmDelete = confirm(
+    `Krankmeldung von ${entry.user} wirklich löschen?`,
+  );
+  if (!confirmDelete) return;
+
   const { error } = await supabaseClient
     .from("planner_sick_leaves")
     .delete()
     .eq("id", id);
 
   if (error) {
-    console.error("Fehler beim Löschen von Krankmeldung:", error);
-    return alert(`Krankmeldung konnte nicht gelöscht werden: ${error.message}`);
+    console.error("Fehler beim Löschen Krankmeldung:", error);
+    return alert(error.message);
   }
 
-  state.sickLeaves = state.sickLeaves.filter((s) => s.id !== id);
-  clearReplacementPlanForSource("sick", id);
+  const dates = getDatesBetween(entry.from, entry.to);
+
+  for (const d of dates) {
+    await supabaseClient
+      .from("planner_absences")
+      .delete()
+      .eq("absence_date", d)
+      .eq("user_name", entry.user);
+
+    delete state.absences[`${d}:${entry.user}`];
+  }
+
+  state.sickLeaves = state.sickLeaves.filter((v) => v.id !== id);
+
   persist();
   render();
 }
