@@ -27,6 +27,19 @@ const DEFAULT_SLOT_ASSIGNMENTS = {
   E: "Musa",
   F: "Ardian",
 };
+const EMPLOYEE_COLOR_OPTIONS = [
+  { key: "green", label: "Grün" },
+  { key: "blue", label: "Blau" },
+  { key: "yellow", label: "Gelb" },
+  { key: "purple", label: "Lila" },
+  { key: "orange", label: "Orange" },
+  { key: "teal", label: "Türkis" },
+  { key: "cyan", label: "Cyan" },
+  { key: "pink", label: "Pink" },
+  { key: "rose", label: "Rose" },
+  { key: "lime", label: "Lime" },
+  { key: "gray", label: "Grau" },
+];
 const DEFAULT_TOOL_LABELS = [
   "Schaftfräser",
   "Trochodialfräser",
@@ -164,6 +177,60 @@ async function loadEmployeesFromSupabase() {
   }
 
   return data || [];
+}
+
+function normalizeEmployeeFromDb(row) {
+  return {
+    id: row.id,
+    authUserId: row.auth_user_id || null,
+    name: row.display_name,
+    display_name: row.display_name,
+    role: row.role || "employee",
+    type: row.employee_type || "springer",
+    employee_type: row.employee_type || "springer",
+    slot: row.slot_code || "",
+    slot_code: row.slot_code || "",
+    isActive: row.is_active !== false,
+    is_active: row.is_active !== false,
+    color_key: row.color_key || "",
+    created_at: row.created_at || null,
+    updated_at: row.updated_at || null,
+  };
+}
+
+function applyEmployeesToState(rows) {
+  const employees = (rows || []).map(normalizeEmployeeFromDb);
+  const employeeMap = {};
+  const nextSlotAssignments = { ...(state.slotAssignments || {}) };
+
+  employees.forEach((employee) => {
+    employeeMap[employee.id] = employee;
+    if (
+      employee.isActive &&
+      employee.slot &&
+      SLOT_CODES.includes(employee.slot)
+    ) {
+      nextSlotAssignments[employee.slot] = employee.name;
+    }
+  });
+
+  SLOT_CODES.forEach((slot) => {
+    const assignedName = nextSlotAssignments[slot];
+    const assignedEmployee = employees.find((employee) => {
+      return employee.name === assignedName && employee.isActive;
+    });
+    if (!assignedEmployee) {
+      const defaultName = DEFAULT_SLOT_ASSIGNMENTS[slot] || "";
+      const defaultEmployee = employees.find((employee) => {
+        return employee.name === defaultName && employee.isActive;
+      });
+      nextSlotAssignments[slot] = defaultEmployee ? defaultName : "";
+    }
+  });
+
+  state.employees = employeeMap;
+  state.employeesList = employees;
+  state.slotAssignments = nextSlotAssignments;
 }
 
 function normalizeToolFromDb(row) {
@@ -478,10 +545,12 @@ async function syncSupabaseSessionToApp() {
     role: currentEmployeeRecord.role,
   };
 
+  const employees = await loadEmployeesFromSupabase();
   const materials = await loadToolMaterialsFromSupabase();
   const tools = await loadToolsFromSupabase();
   const planning = await loadPlanningDataFromSupabase();
 
+  applyEmployeesToState(employees);
   toolMaterials = materials;
   state.tools = tools;
 
@@ -537,6 +606,7 @@ async function bootSupabase() {
   const tools = await loadToolsFromSupabase();
   const planning = await loadPlanningDataFromSupabase();
 
+  applyEmployeesToState(employees);
   toolMaterials = materials;
   state.tools = tools;
 
@@ -563,11 +633,28 @@ async function bootSupabase() {
 }
 
 function allUsers() {
+  if (Array.isArray(state.employeesList) && state.employeesList.length) {
+    return state.employeesList.map((employee) => ({
+      id: employee.id,
+      name: employee.name || employee.display_name,
+      display_name: employee.display_name || employee.name,
+      slot: employee.slot || employee.slot_code || "",
+      type: employee.type || employee.employee_type || "springer",
+      role: employee.role || "employee",
+      color_key: employee.color_key || "",
+      isActive: employee.isActive !== false && employee.is_active !== false,
+    }));
+  }
+
   return [...USERS, ...(state.extraUsers || [])];
 }
 
 function activeUsers() {
-  return allUsers().filter((u) => !state.inactiveUsers?.[u.name]);
+  return allUsers().filter((u) => {
+    const activeByDb = u.isActive !== false;
+    const activeByLocalFallback = !state.inactiveUsers?.[u.name];
+    return activeByDb && activeByLocalFallback;
+  });
 }
 
 function loadState() {
@@ -591,6 +678,8 @@ function loadState() {
     machinePromptSeen: {},
     extraUsers: [],
     inactiveUsers: {},
+    employees: {},
+    employeesList: [],
     tools: [],
     toolLabelsExtra: [],
     toolManufacturersExtra: [],
@@ -624,6 +713,15 @@ function loadState() {
 
 function persist() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 function loginAs(name) {
@@ -1698,14 +1796,31 @@ function renderPlanningPersonal() {
   const personnelRows = allUsers()
     .map(
       (u) => `<tr class='border-b'>
-      <td class='p-2'>${u.name}</td>
-      <td class='p-2'>${u.type === "core" ? "A/B/C" : "Springer"}</td>
-      <td class='p-2'>${state.inactiveUsers?.[u.name] ? "Inaktiv" : "Aktiv"}</td>
+      <td class='p-2'><input id='employee-name-${u.id}' class='border rounded p-1 w-full' value='${escapeHtml(u.name)}' /></td>
+      <td class='p-2'>
+        <select id='employee-type-${u.id}' class='border rounded p-1'>
+          <option value='core' ${u.type === "core" ? "selected" : ""}>A/B/C</option>
+          <option value='springer' ${u.type === "springer" ? "selected" : ""}>Springer</option>
+        </select>
+      </td>
+      <td class='p-2'>${u.isActive === false || state.inactiveUsers?.[u.name] ? "Inaktiv" : "Aktiv"}</td>
+      <td class='p-2'>
+        <select id='employee-color-${u.id}' class='border rounded p-1'>
+          ${EMPLOYEE_COLOR_OPTIONS.map((color) => `<option value='${color.key}' ${u.color_key === color.key ? "selected" : ""}>${color.label}</option>`).join("")}
+        </select>
+      </td>
+      <td class='p-2'>
+        <select id='employee-role-${u.id}' class='border rounded p-1'>
+          <option value='employee' ${u.role === "employee" ? "selected" : ""}>Mitarbeiter</option>
+          <option value='admin' ${u.role === "admin" ? "selected" : ""}>Admin</option>
+        </select>
+      </td>
       <td class='p-2'>
         ${
-          state.inactiveUsers?.[u.name]
-            ? `<button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick="activateEmployee('${u.name}')">Reaktivieren</button>`
-            : `<button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="deactivateEmployee('${u.name}')">Löschen</button>`
+          u.isActive === false || state.inactiveUsers?.[u.name]
+            ? `<button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick="activateEmployee('${u.id}')">Reaktivieren</button>`
+            : `<button class='px-2 py-1 rounded bg-slate-900 text-white' onclick="updateEmployee('${u.id}')">Speichern</button>
+               <button class='px-2 py-1 rounded bg-rose-700 text-white ml-1' onclick="deactivateEmployee('${u.id}')">Inaktiv</button>`
         }
       </td>
     </tr>`,
@@ -1729,13 +1844,21 @@ function renderPlanningPersonal() {
   return `<div class='grid md:grid-cols-2 gap-4'>
     <div class='border rounded-lg p-3 bg-slate-50'>
       <h3 class='font-semibold mb-2'>Personalverwaltung</h3>
-      <div class='grid grid-cols-3 gap-2 mb-2'>
+      <div class='grid md:grid-cols-6 gap-2 mb-2'>
         <input id='newEmployeeName' class='border rounded p-1' placeholder='Neuer Name' />
         <select id='newEmployeeType' class='border rounded p-1'><option value='springer'>Springer</option><option value='core'>A/B/C</option></select>
+        <select id='newEmployeeSlot' class='border rounded p-1'>
+          <option value=''>Kein Slot</option>
+          ${SLOT_CODES.map((slot) => `<option value='${slot}'>${slot}</option>`).join("")}
+        </select>
+        <select id='newEmployeeColor' class='border rounded p-1'>
+          ${EMPLOYEE_COLOR_OPTIONS.map((color) => `<option value='${color.key}'>${color.label}</option>`).join("")}
+        </select>
+        <select id='newEmployeeRole' class='border rounded p-1'><option value='employee'>Mitarbeiter</option><option value='admin'>Admin</option></select>
         <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick='addEmployee()'>Mitarbeiter hinzufügen</button>
       </div>
       <div class='overflow-auto max-h-[55vh]'>
-        <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Name</th><th class='p-2 text-left'>Typ</th><th class='p-2 text-left'>Status</th><th class='p-2'></th></tr></thead>
+        <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Name</th><th class='p-2 text-left'>Typ</th><th class='p-2 text-left'>Status</th><th class='p-2 text-left'>Farbe</th><th class='p-2 text-left'>Rolle</th><th class='p-2'></th></tr></thead>
         <tbody>${personnelRows}</tbody></table>
       </div>
     </div>
@@ -2723,9 +2846,74 @@ async function resetPlanCurrentFuture() {
   );
 }
 
-function updateSlotAssignment(slot) {
+async function refreshEmployeesFromSupabase() {
+  const employees = await loadEmployeesFromSupabase();
+  applyEmployeesToState(employees);
+
+  if (currentEmployeeRecord?.id && state.employees?.[currentEmployeeRecord.id]) {
+    const refreshed = state.employees[currentEmployeeRecord.id];
+    currentEmployeeRecord = {
+      ...currentEmployeeRecord,
+      display_name: refreshed.display_name,
+      role: refreshed.role,
+      employee_type: refreshed.employee_type,
+      slot_code: refreshed.slot_code,
+      is_active: refreshed.is_active,
+      color_key: refreshed.color_key,
+    };
+    currentUser = {
+      name: refreshed.display_name,
+      role: refreshed.role,
+    };
+  }
+
+  persist();
+}
+
+async function clearSlotInSupabase(slot, exceptEmployeeId = null) {
+  if (!slot) return null;
+
+  let query = supabaseClient
+    .from("employees")
+    .update({ slot_code: null })
+    .eq("slot_code", slot);
+
+  if (exceptEmployeeId) {
+    query = query.neq("id", exceptEmployeeId);
+  }
+
+  const { error } = await query;
+  return error || null;
+}
+
+async function updateSlotAssignment(slot) {
   const select = document.getElementById(`slot-${slot}`);
   if (!select) return;
+  const selectedName = select.value;
+  const selectedEmployee = activeUsers().find((u) => u.name === selectedName);
+
+  if (supabaseReady && selectedEmployee?.id) {
+    const clearError = await clearSlotInSupabase(slot, selectedEmployee.id);
+    if (clearError) {
+      console.error("Fehler beim Freigeben des Slots:", clearError);
+      alert(clearError.message);
+      return;
+    }
+
+    const { error } = await supabaseClient
+      .from("employees")
+      .update({ slot_code: slot })
+      .eq("id", selectedEmployee.id);
+
+    if (error) {
+      console.error("Fehler beim Speichern der Slot-Zuordnung:", error);
+      alert(error.message);
+      return;
+    }
+
+    await refreshEmployeesFromSupabase();
+  }
+
   state.slotAssignments[slot] = select.value;
   persist();
   render();
@@ -2734,19 +2922,33 @@ function updateSlotAssignment(slot) {
 async function addEmployee() {
   if (!supabaseReady) return;
 
-  const name = document.getElementById("empName").value.trim();
-  const colorKey = document.getElementById("empColor").value;
+  const name = document.getElementById("newEmployeeName")?.value?.trim() || "";
+  const type = document.getElementById("newEmployeeType")?.value || "springer";
+  const slot = document.getElementById("newEmployeeSlot")?.value || null;
+  const colorKey = document.getElementById("newEmployeeColor")?.value || "gray";
+  const role = document.getElementById("newEmployeeRole")?.value || "employee";
 
   if (!name) {
     alert("Name fehlt");
     return;
   }
 
+  if (slot) {
+    const clearError = await clearSlotInSupabase(slot);
+    if (clearError) {
+      console.error("Fehler beim Freigeben des Slots:", clearError);
+      alert(clearError.message);
+      return;
+    }
+  }
+
   const { error } = await supabaseClient.from("employees").insert([
     {
       display_name: name,
-      role: "employee",
-      employee_type: "core",
+      role,
+      employee_type: type,
+      slot_code: slot,
+      is_active: true,
       color_key: colorKey,
     },
   ]);
@@ -2757,20 +2959,33 @@ async function addEmployee() {
     return;
   }
 
-  await loadEmployeesFromSupabase();
+  document.getElementById("newEmployeeName").value = "";
+  document.getElementById("newEmployeeSlot").value = "";
+  await refreshEmployeesFromSupabase();
   render();
 }
 
 function fillEmployeeForm(emp) {
-  document.getElementById("empName").value = emp.display_name;
-  document.getElementById("empColor").value = emp.color_key || "gray";
+  if (!emp?.id) return;
+
+  const nameInput = document.getElementById(`employee-name-${emp.id}`);
+  const typeInput = document.getElementById(`employee-type-${emp.id}`);
+  const colorInput = document.getElementById(`employee-color-${emp.id}`);
+  const roleInput = document.getElementById(`employee-role-${emp.id}`);
+
+  if (nameInput) nameInput.value = emp.display_name || emp.name || "";
+  if (typeInput) typeInput.value = emp.employee_type || emp.type || "springer";
+  if (colorInput) colorInput.value = emp.color_key || "gray";
+  if (roleInput) roleInput.value = emp.role || "employee";
 }
 
 async function updateEmployee(id) {
   if (!supabaseReady) return;
 
-  const name = document.getElementById("empName").value.trim();
-  const colorKey = document.getElementById("empColor").value;
+  const name = document.getElementById(`employee-name-${id}`)?.value?.trim() || "";
+  const type = document.getElementById(`employee-type-${id}`)?.value || "springer";
+  const colorKey = document.getElementById(`employee-color-${id}`)?.value || "gray";
+  const role = document.getElementById(`employee-role-${id}`)?.value || "employee";
 
   if (!name) {
     alert("Name fehlt");
@@ -2781,7 +2996,9 @@ async function updateEmployee(id) {
     .from("employees")
     .update({
       display_name: name,
+      employee_type: type,
       color_key: colorKey,
+      role,
     })
     .eq("id", id);
 
@@ -2791,23 +3008,55 @@ async function updateEmployee(id) {
     return;
   }
 
-  await loadEmployeesFromSupabase();
+  await refreshEmployeesFromSupabase();
   render();
 }
 
-function deactivateEmployee(name) {
+async function deactivateEmployee(id) {
+  const employee = state.employees?.[id];
+  const name = employee?.display_name || employee?.name || "Mitarbeiter";
   if (!confirm(`${name} wirklich als inaktiv markieren?`)) return;
+  if (supabaseReady && id) {
+    const { error } = await supabaseClient
+      .from("employees")
+      .update({ is_active: false, slot_code: null })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Fehler beim Deaktivieren des Mitarbeiters:", error);
+      alert(error.message);
+      return;
+    }
+  }
+
   state.inactiveUsers[name] = true;
   Object.keys(state.slotAssignments).forEach((slot) => {
     if (state.slotAssignments[slot] === name)
       state.slotAssignments[slot] = DEFAULT_SLOT_ASSIGNMENTS[slot] || null;
   });
+  if (supabaseReady) await refreshEmployeesFromSupabase();
   persist();
   render();
 }
 
-function activateEmployee(name) {
+async function activateEmployee(id) {
+  const employee = state.employees?.[id];
+  const name = employee?.display_name || employee?.name || id;
+  if (supabaseReady && id) {
+    const { error } = await supabaseClient
+      .from("employees")
+      .update({ is_active: true })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Fehler beim Aktivieren des Mitarbeiters:", error);
+      alert(error.message);
+      return;
+    }
+  }
+
   delete state.inactiveUsers[name];
+  if (supabaseReady) await refreshEmployeesFromSupabase();
   persist();
   render();
 }
@@ -5596,6 +5845,8 @@ window.resetManualAssignments = resetManualAssignments;
 window.resetPlanCurrentFuture = resetPlanCurrentFuture;
 window.updateSlotAssignment = updateSlotAssignment;
 window.addEmployee = addEmployee;
+window.updateEmployee = updateEmployee;
+window.fillEmployeeForm = fillEmployeeForm;
 window.deactivateEmployee = deactivateEmployee;
 window.activateEmployee = activateEmployee;
 window.requestSaturdayEvening = requestSaturdayEvening;
