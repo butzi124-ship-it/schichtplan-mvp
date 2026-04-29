@@ -1,4 +1,4 @@
-const { createClient } = window.supabase;
+﻿const { createClient } = window.supabase;
 
 const supabaseClient = createClient(
   window.SUPABASE_URL,
@@ -56,6 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
+const APP_VERSION = "0.2.1";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -2695,42 +2696,130 @@ async function deleteSickLeave(id) {
   render();
 }
 
-function addSwap() {
+async function addSwap() {
+  if (!supabaseReady) return;
+
   const userA = document.getElementById("swapA")?.value;
   const userB = document.getElementById("swapB")?.value;
   const startDate = document.getElementById("swapDate")?.value;
   const endDate = document.getElementById("swapEndDate")?.value || null;
+
   if (!isCoreEmployee(userA) || !isCoreEmployee(userB)) {
     alert("Beim Tausch sind nur A/B/C erlaubt.");
     return;
   }
+
   if (!userA || !userB || userA === userB || !startDate) {
     alert(
       "Bitte zwei verschiedene Mitarbeiter (A/B/C) und ein Startdatum wählen.",
     );
     return;
   }
+
   if (endDate && endDate < startDate) {
     alert("Enddatum muss nach dem Startdatum liegen.");
     return;
   }
-  state.swaps.push({ userA, userB, startDate, endDate });
+
+  const { data: inserted, error } = await supabaseClient
+    .from("planner_swaps")
+    .insert({
+      user_a: userA,
+      user_b: userB,
+      start_date: startDate,
+      end_date: endDate,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Fehler beim Speichern des Schichttausches:", error);
+    return alert(
+      `Schichttausch konnte nicht gespeichert werden: ${error.message}`,
+    );
+  }
+
+  state.swaps.push({
+    id: inserted.id,
+    userA: inserted.user_a,
+    userB: inserted.user_b,
+    startDate: inserted.start_date,
+    endDate: inserted.end_date || null,
+  });
+
   persist();
   render();
 }
 
-function deleteSwap(index) {
+async function deleteSwap(index) {
+  if (!supabaseReady) return;
   if (index < 0 || index >= state.swaps.length) return;
-  state.swaps.splice(index, 1);
+
+  const swap = state.swaps[index];
+
+  if (swap?.id) {
+    const { error } = await supabaseClient
+      .from("planner_swaps")
+      .delete()
+      .eq("id", swap.id);
+
+    if (error) {
+      console.error("Fehler beim Löschen des Schichttausches:", error);
+      return alert(
+        `Schichttausch konnte nicht gelöscht werden: ${error.message}`,
+      );
+    }
+  }
+
+  state.swaps = state.swaps.filter((_, i) => i !== index);
   persist();
   render();
 }
 
-function resetActiveSwaps(silent = false) {
+async function resetActiveSwaps(silent = false) {
+  if (!supabaseReady) return;
+
   const today = todayIso();
   const y = new Date(`${today}T00:00:00`);
   y.setDate(y.getDate() - 1);
   const yesterday = isoDate(y);
+
+  const activeSwaps = state.swaps.filter((swap) => {
+    if (!swap) return false;
+    if (swap.startDate >= today) return true;
+    return !swap.endDate || swap.endDate >= today;
+  });
+
+  const deleteIds = activeSwaps
+    .filter((swap) => swap.startDate >= today && swap.id)
+    .map((swap) => swap.id);
+  const updateIds = activeSwaps
+    .filter((swap) => swap.startDate < today && swap.id)
+    .map((swap) => swap.id);
+
+  const operations = [];
+  if (deleteIds.length)
+    operations.push(
+      supabaseClient.from("planner_swaps").delete().in("id", deleteIds),
+    );
+  if (updateIds.length)
+    operations.push(
+      supabaseClient
+        .from("planner_swaps")
+        .update({ end_date: yesterday })
+        .in("id", updateIds),
+    );
+
+  const results = await Promise.all(operations);
+  const firstError = results.find((res) => res.error)?.error;
+
+  if (firstError) {
+    console.error("Fehler beim Zurücksetzen der Tausche:", firstError);
+    return alert(
+      `Aktive/zukünftige Tausche konnten nicht zurückgesetzt werden: ${firstError.message}`,
+    );
+  }
+
   state.swaps = state.swaps.flatMap((swap) => {
     if (!swap) return [];
     if (swap.startDate >= today) return [];
@@ -2738,6 +2827,7 @@ function resetActiveSwaps(silent = false) {
       return [{ ...swap, endDate: yesterday }];
     return [swap];
   });
+
   persist();
   if (!silent) {
     render();
@@ -2850,7 +2940,10 @@ async function refreshEmployeesFromSupabase() {
   const employees = await loadEmployeesFromSupabase();
   applyEmployeesToState(employees);
 
-  if (currentEmployeeRecord?.id && state.employees?.[currentEmployeeRecord.id]) {
+  if (
+    currentEmployeeRecord?.id &&
+    state.employees?.[currentEmployeeRecord.id]
+  ) {
     const refreshed = state.employees[currentEmployeeRecord.id];
     currentEmployeeRecord = {
       ...currentEmployeeRecord,
@@ -2982,10 +3075,14 @@ function fillEmployeeForm(emp) {
 async function updateEmployee(id) {
   if (!supabaseReady) return;
 
-  const name = document.getElementById(`employee-name-${id}`)?.value?.trim() || "";
-  const type = document.getElementById(`employee-type-${id}`)?.value || "springer";
-  const colorKey = document.getElementById(`employee-color-${id}`)?.value || "gray";
-  const role = document.getElementById(`employee-role-${id}`)?.value || "employee";
+  const name =
+    document.getElementById(`employee-name-${id}`)?.value?.trim() || "";
+  const type =
+    document.getElementById(`employee-type-${id}`)?.value || "springer";
+  const colorKey =
+    document.getElementById(`employee-color-${id}`)?.value || "gray";
+  const role =
+    document.getElementById(`employee-role-${id}`)?.value || "employee";
 
   if (!name) {
     alert("Name fehlt");
