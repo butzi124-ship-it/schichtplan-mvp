@@ -56,12 +56,71 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.2.3";
+const APP_VERSION = "0.2.4";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
 let currentTab = "schichtplan";
 let statsViewPeriod = "week";
+
+const HELP_TEXTS = {
+  planningPersonal: {
+    title: "Planung / Personal",
+    body: [
+      "Hier pflegst du Mitarbeiter, Rollen, Farben und die Slots A-F.",
+      "Die Slot-Zuordnung steuert, wer in der automatischen Rotation eingesetzt wird.",
+      "Nach dem Speichern werden die Mitarbeiterdaten in Supabase aktualisiert und der Plan nutzt die neue Zuordnung.",
+    ],
+  },
+  abstinenz: {
+    title: "Abstinenz",
+    body: [
+      "Hier trägst du Urlaub, Krankheit und manuelle Abwesenheiten ein.",
+      "Abwesenheiten öffnen Schichten, wenn der ursprünglich geplante Mitarbeiter fehlt.",
+      "Nach dem Speichern werden die Planungsdaten in Supabase gehalten und beim Neuladen wieder geladen.",
+    ],
+  },
+  ersatzplanung: {
+    title: "Ersatzplanung",
+    body: [
+      "Hier planst du Ersatz oder Ausfall für Schichten während Urlaub oder Krankheit.",
+      "Es werden nur Schichten des abwesenden Mitarbeiters im betroffenen Zeitraum angezeigt.",
+      "Ersatz schreibt eine manuelle Einteilung, Ausfall sperrt die Schicht. Beides wirkt direkt auf den Plan.",
+    ],
+  },
+  wochenende: {
+    title: "Wochenendeinsätze",
+    body: [
+      "Springer melden, ob sie für Wochenend-Schichten können oder nicht können.",
+      "Der Admin teilt Springer nur ein, wenn der ursprüngliche A/B/C-Mitarbeiter abwesend ist.",
+      "Die Einteilung wird gespeichert und bleibt nach einem Refresh erhalten.",
+    ],
+  },
+  schichttausch: {
+    title: "Schichttausch",
+    body: [
+      "Hier können A/B/C-Mitarbeiter für einen Zeitraum ihre Rotation tauschen.",
+      "Der Tausch wirkt ab dem Startdatum bis zum Enddatum oder bis er zurückgesetzt wird.",
+      "Gespeicherte Tausche verändern die automatisch berechnete Schichtzuordnung.",
+    ],
+  },
+  werkzeuge: {
+    title: "Werkzeuge",
+    body: [
+      "Hier verwaltest du Werkzeugbestand, Stammdaten, Bestellungen und Werkzeugwechsel.",
+      "Bestand und Werkzeugdaten werden in Supabase gespeichert.",
+      "Wechsel und Bestellhistorie sind aktuell noch lokal und dienen als MVP-Journal.",
+    ],
+  },
+  statistik: {
+    title: "Statistik",
+    body: [
+      "Die Statistik vergleicht geplante Stunden, Ist-Stunden und Stillstand.",
+      "Du kannst zwischen Woche, Monat und Jahr wechseln.",
+      "Die Werte helfen, Abweichungen im Plan und Maschinenlaufzeit sichtbar zu machen.",
+    ],
+  },
+};
 
 function makeWeek(early, late, night, satPrimary, satSecondary) {
   return {
@@ -727,6 +786,43 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function helpButton(topic) {
+  return `<button class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white font-bold shadow-sm hover:bg-blue-700" onclick="openHelp('${topic}')" title="Hilfe">?</button>`;
+}
+
+function getHelpModalHost() {
+  let host = document.getElementById("helpModalHost");
+  if (!host) {
+    host = document.createElement("div");
+    host.id = "helpModalHost";
+    document.body.appendChild(host);
+  }
+  return host;
+}
+
+function openHelp(topic) {
+  const help = HELP_TEXTS[topic];
+  if (!help) return;
+
+  const body = help.body
+    .map((paragraph) => `<p class="text-sm text-slate-700">${paragraph}</p>`)
+    .join("");
+
+  getHelpModalHost().innerHTML = `<div class="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-4">
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <h3 class="text-lg font-bold">${help.title}</h3>
+        <button class="px-3 py-1 rounded bg-slate-200" onclick="closeHelp()">Schließen</button>
+      </div>
+      <div class="space-y-2">${body}</div>
+    </div>
+  </div>`;
+}
+
+function closeHelp() {
+  getHelpModalHost().innerHTML = "";
+}
+
 function loginAs(name) {
   if (name === "admin") {
     currentUser = { name: "Admin", role: "admin" };
@@ -1342,7 +1438,10 @@ function openAbsenceReplacementPlanner(type, entryId) {
           <h3 class="text-lg font-bold">Ersatzplanung</h3>
           <p class="text-sm text-slate-600">${entry.user}: ${formatDateDisplay(entry.from)} bis ${formatDateDisplay(entry.to)}</p>
         </div>
-        <button class="px-3 py-1 rounded bg-slate-200" onclick="closeReplacementPlanner('${type}', '${entryId}')">Abbrechen</button>
+        <div class="flex items-center gap-2">
+          ${helpButton("ersatzplanung")}
+          <button class="px-3 py-1 rounded bg-slate-200" onclick="closeReplacementPlanner('${type}', '${entryId}')">Abbrechen</button>
+        </div>
       </div>
 
       <div class="grid md:grid-cols-[minmax(180px,260px)_1fr] gap-4">
@@ -2308,7 +2407,10 @@ function renderPlanningPersonal() {
 
   return `<div class='grid md:grid-cols-2 gap-4'>
     <div class='border rounded-lg p-3 bg-slate-50'>
-      <h3 class='font-semibold mb-2'>Personalverwaltung</h3>
+      <div class='flex items-center justify-between gap-2 mb-2'>
+        <h3 class='font-semibold'>Personalverwaltung</h3>
+        ${helpButton("planningPersonal")}
+      </div>
       <div class='grid md:grid-cols-6 gap-2 mb-2'>
         <input id='newEmployeeName' class='border rounded p-1' placeholder='Neuer Name' />
         <select id='newEmployeeType' class='border rounded p-1'><option value='springer'>Springer</option><option value='core'>A/B/C</option></select>
@@ -2543,6 +2645,7 @@ function renderPlanningAbstinenz() {
 
   return `
   <div class='space-y-4'>
+    <div class='flex justify-end'>${helpButton("abstinenz")}</div>
 
     <div class='grid md:grid-cols-2 gap-4'>
       <div class='border rounded-lg p-3 bg-white'>
@@ -2775,7 +2878,10 @@ function renderPlanningWochenende() {
 
   return `<div class='space-y-4'>
     <div class='border rounded-lg p-3 bg-white'>
-      <h3 class='text-md font-semibold mb-2'>Wochenende</h3>
+      <div class='flex items-center justify-between gap-2 mb-2'>
+        <h3 class='text-md font-semibold'>Wochenende</h3>
+        ${helpButton("wochenende")}
+      </div>
       <p class='text-sm text-slate-500 mb-2'>
         Springer melden „Kann“ oder „Kann nicht“. Der Admin teilt ein. Der Vorschlag bevorzugt verfügbare Springer mit den wenigsten Wochenend-Einsätzen.
       </p>
@@ -2824,7 +2930,10 @@ function renderPlanningSchichttausch() {
 
   return `<div class='space-y-4'>
     <div class='border rounded-lg p-3 bg-slate-50'>
-      <h3 class='text-md font-semibold mb-2'>Schichttausch</h3>
+      <div class='flex items-center justify-between gap-2 mb-2'>
+        <h3 class='text-md font-semibold'>Schichttausch</h3>
+        ${helpButton("schichttausch")}
+      </div>
       <div class='grid md:grid-cols-5 gap-2 items-end'>
         <label class='text-sm'>Mitarbeiter 1 (A/B/C)<select id='swapA' class='border rounded p-1 w-full'>${corePersonOptions}</select></label>
         <label class='text-sm'>Mitarbeiter 2 (A/B/C)<select id='swapB' class='border rounded p-1 w-full'>${corePersonOptions}</select></label>
@@ -5460,7 +5569,10 @@ function renderTools() {
       </tr>`;
 
   return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
-    <h2 class='text-xl font-bold mb-1'>Werkzeugverwaltung</h2>
+    <div class='flex items-center justify-between gap-2'>
+      <h2 class='text-xl font-bold mb-1'>Werkzeugverwaltung</h2>
+      ${helpButton("werkzeuge")}
+    </div>
     <p class='text-sm text-slate-600 mb-2'>Alle Bereiche sind getrennt dargestellt: Stammdaten, Bestand, To-Do, Bestellt und Journal.</p>
 
     ${
@@ -5934,10 +6046,11 @@ function renderStats() {
   return `<div class='bg-white rounded-xl shadow p-4'>
     <div class='flex items-center justify-between mb-3'>
       <h2 class='text-lg font-semibold'>Laufzeitstatistik (${stats.period === "week" ? "Woche" : stats.period === "month" ? "Monat" : "Jahr"})</h2>
-      <div class='flex gap-2'>
+      <div class='flex items-center gap-2'>
         <button class='px-2 py-1 rounded ${statsViewPeriod === "week" ? "bg-slate-900 text-white" : "bg-slate-100"}' onclick="setStatsView('week')">Woche</button>
         <button class='px-2 py-1 rounded ${statsViewPeriod === "month" ? "bg-slate-900 text-white" : "bg-slate-100"}' onclick="setStatsView('month')">Monat</button>
         <button class='px-2 py-1 rounded ${statsViewPeriod === "year" ? "bg-slate-900 text-white" : "bg-slate-100"}' onclick="setStatsView('year')">Jahr</button>
+        ${helpButton("statistik")}
       </div>
     </div>
     <div class='grid md:grid-cols-4 gap-3 text-center mb-4'>
@@ -6379,6 +6492,8 @@ window.logoutSupabase = logoutSupabase;
 window.fillLogin = fillLogin;
 window.loginAs = loginAs;
 window.logout = logout;
+window.openHelp = openHelp;
+window.closeHelp = closeHelp;
 window.setTab = setTab;
 window.setStatsView = setStatsView;
 window.setPlanningSubTab = setPlanningSubTab;
