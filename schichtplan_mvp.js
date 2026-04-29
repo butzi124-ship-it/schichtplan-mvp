@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.2.1";
+const APP_VERSION = "0.2.3";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -701,6 +701,8 @@ function loadState() {
     selectedOrderListManufacturer: "",
     planningSubTab: "personal",
     absenceReplacements: {},
+    replacementPlannerSelection: {},
+    replacementPlannerChoice: {},
   };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -883,7 +885,10 @@ function getReplacementForShift(shiftId) {
 
 function getReplacementEntriesForSource(sourceType, sourceId) {
   return Object.entries(state.absenceReplacements || {}).filter(([, entry]) => {
-    return entry?.sourceType === sourceType && entry?.sourceId === sourceId;
+    return (
+      entry?.sourceType === sourceType &&
+      String(entry?.sourceId) === String(sourceId)
+    );
   });
 }
 
@@ -915,11 +920,20 @@ function applyReplacementToShift(shiftId, replacementEntry) {
   state.assignments[shiftId] = replacementEntry.replacementUser;
 }
 
+function getReplacementShiftIdsForSource(sourceType, sourceId) {
+  return getReplacementEntriesForSource(sourceType, sourceId).map(
+    ([shiftId]) => shiftId,
+  );
+}
+
 function clearReplacementPlanForSource(sourceType, sourceId) {
   if (!state.absenceReplacements) return;
   Object.keys(state.absenceReplacements).forEach((shiftId) => {
     const entry = state.absenceReplacements[shiftId];
-    if (entry?.sourceType === sourceType && entry?.sourceId === sourceId) {
+    if (
+      entry?.sourceType === sourceType &&
+      String(entry?.sourceId) === String(sourceId)
+    ) {
       delete state.absenceReplacements[shiftId];
       delete state.shiftCancellations[shiftId];
       delete state.assignments[shiftId];
@@ -927,9 +941,435 @@ function clearReplacementPlanForSource(sourceType, sourceId) {
   });
 }
 
-function clearAbsenceReplacementPlan(sourceType, sourceId) {
+async function deleteReplacementPlanFromSupabase(
+  sourceType,
+  sourceId,
+  shiftIds = null,
+) {
+  if (!supabaseReady) return null;
+
+  const targetShiftIds =
+    shiftIds || getReplacementShiftIdsForSource(sourceType, sourceId);
+
+  const operations = [
+    supabaseClient
+      .from("planner_absence_replacements")
+      .delete()
+      .eq("source_type", sourceType)
+      .eq("source_id", sourceId),
+  ];
+
+  if (targetShiftIds.length) {
+    operations.push(
+      supabaseClient
+        .from("planner_assignments")
+        .delete()
+        .in("shift_id", targetShiftIds),
+    );
+    operations.push(
+      supabaseClient
+        .from("planner_shift_cancellations")
+        .delete()
+        .in("shift_id", targetShiftIds),
+    );
+  }
+
+  const results = await Promise.all(operations);
+  const firstError = results.find((res) => res.error)?.error;
+
+  return firstError || null;
+}
+
+async function persistReplacementShiftEffects(replacementEntries) {
+  if (!supabaseReady || !replacementEntries.length) return null;
+
+  const assignmentRows = [];
+  const cancellationRows = [];
+  const replacedShiftIds = [];
+  const canceledShiftIds = [];
+
+  replacementEntries.forEach(([shiftId, entry]) => {
+    const shift = getShiftById(shiftId);
+    if (!shift) return;
+
+    if (entry.mode === "cancel") {
+      canceledShiftIds.push(shiftId);
+      cancellationRows.push({
+        shift_id: shiftId,
+        shift_date: shift.date,
+        created_by_employee_id: currentEmployeeRecord?.id || null,
+      });
+      return;
+    }
+
+    if (entry.mode === "replace" && entry.replacementUser) {
+      replacedShiftIds.push(shiftId);
+      assignmentRows.push({
+        shift_id: shiftId,
+        shift_date: shift.date,
+        assigned_user: entry.replacementUser,
+        created_by_employee_id: currentEmployeeRecord?.id || null,
+      });
+    }
+  });
+
+  const operations = [];
+
+  if (replacedShiftIds.length) {
+    operations.push(
+      supabaseClient
+        .from("planner_shift_cancellations")
+        .delete()
+        .in("shift_id", replacedShiftIds),
+    );
+  }
+
+  if (canceledShiftIds.length) {
+    operations.push(
+      supabaseClient
+        .from("planner_assignments")
+        .delete()
+        .in("shift_id", canceledShiftIds),
+    );
+  }
+
+  if (assignmentRows.length) {
+    operations.push(
+      supabaseClient
+        .from("planner_assignments")
+        .upsert(assignmentRows, { onConflict: "shift_id" }),
+    );
+  }
+
+  if (cancellationRows.length) {
+    operations.push(
+      supabaseClient
+        .from("planner_shift_cancellations")
+        .upsert(cancellationRows, { onConflict: "shift_id" }),
+    );
+  }
+
+  const results = await Promise.all(operations);
+  const firstError = results.find((res) => res.error)?.error;
+
+  return firstError || null;
+}
+
+async function deleteReplacementEntriesFromSupabase(sourceType, sourceId) {
+  if (!supabaseReady) return null;
+
+  const { error } = await supabaseClient
+    .from("planner_absence_replacements")
+    .delete()
+    .eq("source_type", sourceType)
+    .eq("source_id", sourceId);
+
+  return error || null;
+}
+
+async function saveReplacementPlanToSupabase(replacementEntries) {
+  if (!supabaseReady || !replacementEntries.length) return null;
+
+  const rows = replacementEntries.map(([shiftId, entry]) => {
+    const shift = getShiftById(shiftId);
+    return {
+      shift_id: shiftId,
+      shift_date: shift?.date || entry.weekFrom || entry.from,
+      source_type: entry.sourceType,
+      source_id: entry.sourceId,
+      absent_user: entry.absentUser,
+      from_date: entry.from,
+      to_date: entry.to,
+      mode: entry.mode,
+      replacement_user: entry.replacementUser,
+      week_from: entry.weekFrom,
+      week_to: entry.weekTo,
+    };
+  });
+
+  const { error } = await supabaseClient
+    .from("planner_absence_replacements")
+    .insert(rows);
+
+  if (error) return error;
+
+  return persistReplacementShiftEffects(replacementEntries);
+}
+
+async function clearAbsenceReplacementPlan(sourceType, sourceId) {
+  const shiftIds = getReplacementShiftIdsForSource(sourceType, sourceId);
+  const error = await deleteReplacementPlanFromSupabase(sourceType, sourceId);
+  if (error) {
+    console.error("Fehler beim Löschen der Ersatzplanung:", error);
+    return alert(`Ersatzplanung konnte nicht gelöscht werden: ${error.message}`);
+  }
+
   clearReplacementPlanForSource(sourceType, sourceId);
   persist();
+  render();
+}
+
+function getAbsenceEntry(type, entryId) {
+  const list = type === "vacation" ? state.vacations : state.sickLeaves;
+  return list.find((entry) => String(entry.id) === String(entryId)) || null;
+}
+
+function getPendingReplacementShifts(type, entryId) {
+  const entry = getAbsenceEntry(type, entryId);
+  if (!entry) return [];
+
+  return getShiftsOfUserInRange(entry.user, entry.from, entry.to).filter(
+    (shift) => {
+      const replacement = state.absenceReplacements?.[shift.id];
+      return !(
+        replacement?.sourceType === type &&
+        String(replacement?.sourceId) === String(entryId)
+      );
+    },
+  );
+}
+
+function groupReplacementShiftsByWeek(shifts) {
+  const grouped = {};
+
+  shifts.forEach((shift) => {
+    const key = weekKey(shift.date);
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(shift);
+  });
+
+  return Object.entries(grouped).map(([weekStart, weekShifts]) => ({
+    weekStart,
+    shifts: weekShifts,
+  }));
+}
+
+function getReplacementPlannerSelectionKey(type, entryId) {
+  return `${type}:${entryId}`;
+}
+
+function getReplacementPlannerChoice(type, entryId) {
+  const key = getReplacementPlannerSelectionKey(type, entryId);
+  return state.replacementPlannerChoice?.[key] || "AUSFALL";
+}
+
+function setReplacementPlannerChoice(type, entryId, value) {
+  const key = getReplacementPlannerSelectionKey(type, entryId);
+  if (!state.replacementPlannerChoice) state.replacementPlannerChoice = {};
+  state.replacementPlannerChoice[key] = value || "AUSFALL";
+  persist();
+}
+
+function ensureReplacementPlannerSelection(type, entryId) {
+  const key = getReplacementPlannerSelectionKey(type, entryId);
+  if (!state.replacementPlannerSelection) state.replacementPlannerSelection = {};
+  if (!state.replacementPlannerSelection[key]) {
+    state.replacementPlannerSelection[key] = {};
+  }
+  return state.replacementPlannerSelection[key];
+}
+
+function renderReplacementCalendar(type, entryId) {
+  const pendingShifts = getPendingReplacementShifts(type, entryId);
+  const selection = ensureReplacementPlannerSelection(type, entryId);
+  const groupedWeeks = groupReplacementShiftsByWeek(pendingShifts);
+
+  if (!pendingShifts.length) {
+    return `<div class="text-sm rounded border border-emerald-200 bg-emerald-50 p-3 text-emerald-800">
+      Alle Schichten in diesem Zeitraum sind ersetzt oder als Ausfall markiert.
+    </div>`;
+  }
+
+  return groupedWeeks
+    .map(({ weekStart, shifts }, index) => {
+      const weekEnd = new Date(`${weekStart}T00:00:00`);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+
+      const shiftButtons = shifts
+        .map((shift) => {
+          const selected = !!selection[shift.id];
+          return `<button class="text-left border rounded p-2 ${selected ? "bg-slate-900 text-white border-slate-900" : "bg-white border-slate-300"}" onclick="toggleReplacementDay('${type}', '${entryId}', '${shift.id}')">
+            <div class="font-semibold">${formatDateWithWeekday(shift.date)}</div>
+            <div class="text-xs">${shift.label} · ${shift.start}-${shift.end}</div>
+          </button>`;
+        })
+        .join("");
+
+      return `<div class="border rounded-lg p-3 bg-slate-50">
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <div class="font-semibold">KW ${index + 1}: ${formatDateDisplay(weekStart)} bis ${formatDateDisplay(isoDate(weekEnd))}</div>
+          <button class="px-2 py-1 rounded bg-slate-700 text-white text-sm" onclick="applyReplacementForWeek('${type}', '${entryId}', '${weekStart}')">Diese Woche</button>
+        </div>
+        <div class="grid md:grid-cols-2 gap-2">${shiftButtons}</div>
+      </div>`;
+    })
+    .join("");
+}
+
+function toggleReplacementDay(type, entryId, shiftId) {
+  const selection = ensureReplacementPlannerSelection(type, entryId);
+  selection[shiftId] = !selection[shiftId];
+  openAbsenceReplacementPlanner(type, entryId);
+}
+
+async function applyReplacementForSelectedDays(type, entryId, selectedShiftIds) {
+  if (!supabaseReady) return;
+
+  const entry = getAbsenceEntry(type, entryId);
+  if (!entry) return;
+
+  const modeValue =
+    document.getElementById("replacementUserSelect")?.value ||
+    getReplacementPlannerChoice(type, entryId);
+  setReplacementPlannerChoice(type, entryId, modeValue);
+  const mode = modeValue === "AUSFALL" ? "cancel" : "replace";
+  const replacementUser = mode === "replace" ? modeValue : null;
+
+  if (!selectedShiftIds.length) {
+    alert("Bitte mindestens eine Schicht auswählen.");
+    return;
+  }
+
+  const newEntries = selectedShiftIds
+    .map((shiftId) => {
+      const shift = getShiftById(shiftId);
+      if (!shift) return null;
+
+      return [
+        shiftId,
+        {
+          sourceType: type,
+          sourceId: entryId,
+          absentUser: entry.user,
+          from: entry.from,
+          to: entry.to,
+          mode,
+          replacementUser,
+          weekFrom: weekKey(shift.date),
+          weekTo: shift.date,
+        },
+      ];
+    })
+    .filter(Boolean);
+
+  const deleteError = await deleteReplacementEntriesFromSupabase(type, entryId);
+  if (deleteError) {
+    console.error("Fehler beim Vorbereiten der Ersatzplanung:", deleteError);
+    return alert(
+      `Ersatzplanung konnte nicht vorbereitet werden: ${deleteError.message}`,
+    );
+  }
+
+  newEntries.forEach(([shiftId, replacementEntry]) => {
+    applyReplacementToShift(shiftId, replacementEntry);
+  });
+
+  const allEntries = getReplacementEntriesForSource(type, entryId);
+  const saveError = await saveReplacementPlanToSupabase(allEntries);
+  if (saveError) {
+    console.error("Fehler beim Speichern der Ersatzplanung:", saveError);
+    return alert(
+      `Ersatzplanung konnte nicht gespeichert werden: ${saveError.message}`,
+    );
+  }
+
+  const selectionKey = getReplacementPlannerSelectionKey(type, entryId);
+  if (state.replacementPlannerSelection) {
+    state.replacementPlannerSelection[selectionKey] = {};
+  }
+
+  persist();
+
+  if (getPendingReplacementShifts(type, entryId).length) {
+    openAbsenceReplacementPlanner(type, entryId);
+    return;
+  }
+
+  if (state.replacementPlannerSelection) {
+    delete state.replacementPlannerSelection[selectionKey];
+  }
+  if (state.replacementPlannerChoice) {
+    delete state.replacementPlannerChoice[selectionKey];
+  }
+
+  getModalHost().innerHTML = "";
+  render();
+}
+
+function applyReplacementForWeek(type, entryId, weekStart) {
+  const pendingShiftIds = getPendingReplacementShifts(type, entryId)
+    .filter((shift) => weekKey(shift.date) === weekStart)
+    .map((shift) => shift.id);
+
+  applyReplacementForSelectedDays(type, entryId, pendingShiftIds);
+}
+
+function applyReplacementForAll(type, entryId) {
+  const pendingShiftIds = getPendingReplacementShifts(type, entryId).map(
+    (shift) => shift.id,
+  );
+
+  applyReplacementForSelectedDays(type, entryId, pendingShiftIds);
+}
+
+function openAbsenceReplacementPlanner(type, entryId) {
+  const entry = getAbsenceEntry(type, entryId);
+  if (!entry) return;
+
+  const host = getModalHost();
+  const pendingShifts = getPendingReplacementShifts(type, entryId);
+  const selection = ensureReplacementPlannerSelection(type, entryId);
+  const selectedReplacementValue = getReplacementPlannerChoice(type, entryId);
+  const selectedShiftIds = Object.entries(selection)
+    .filter(([, selected]) => selected)
+    .map(([shiftId]) => shiftId)
+    .filter((shiftId) => pendingShifts.some((shift) => shift.id === shiftId));
+
+  const replacementOptions = [
+    `<option value="AUSFALL" ${selectedReplacementValue === "AUSFALL" ? "selected" : ""}>Ausfall</option>`,
+    ...activeUsers()
+      .filter((user) => user.name !== entry.user)
+      .map(
+        (user) =>
+          `<option value="${user.name}" ${selectedReplacementValue === user.name ? "selected" : ""}>${user.name}</option>`,
+      ),
+  ].join("");
+
+  host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-5xl max-h-[90vh] overflow-auto p-4">
+      <div class="flex items-start justify-between gap-3 mb-4">
+        <div>
+          <h3 class="text-lg font-bold">Ersatzplanung</h3>
+          <p class="text-sm text-slate-600">${entry.user}: ${formatDateDisplay(entry.from)} bis ${formatDateDisplay(entry.to)}</p>
+        </div>
+        <button class="px-3 py-1 rounded bg-slate-200" onclick="closeReplacementPlanner('${type}', '${entryId}')">Abbrechen</button>
+      </div>
+
+      <div class="grid md:grid-cols-[minmax(180px,260px)_1fr] gap-4">
+        <div class="space-y-3">
+          <label class="block text-sm font-medium">
+            Ersatz-Mitarbeiter
+            <select id="replacementUserSelect" class="border rounded p-2 w-full mt-1" onchange="setReplacementPlannerChoice('${type}', '${entryId}', this.value)">${replacementOptions}</select>
+          </label>
+          <button class="px-3 py-2 rounded bg-slate-900 text-white w-full" onclick="applyReplacementForAll('${type}', '${entryId}')">Alle</button>
+          <button class="px-3 py-2 rounded bg-emerald-700 text-white w-full" onclick="applyReplacementForSelectedDays('${type}', '${entryId}', ${JSON.stringify(selectedShiftIds).replaceAll('"', "&quot;")})">OK</button>
+          <div class="text-xs text-slate-500">${pendingShifts.length} offene Schicht(en), ${selectedShiftIds.length} ausgewählt.</div>
+        </div>
+        <div class="space-y-3">${renderReplacementCalendar(type, entryId)}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function closeReplacementPlanner(type = null, entryId = null) {
+  if (type && entryId && state.replacementPlannerSelection) {
+    const key = getReplacementPlannerSelectionKey(type, entryId);
+    delete state.replacementPlannerSelection[key];
+    delete state.replacementPlannerChoice?.[key];
+    persist();
+  }
+
+  getModalHost().innerHTML = "";
   render();
 }
 
@@ -1690,8 +2130,32 @@ function renderMyShifts() {
   </div>`;
 }
 
-function requestSaturdayEvening(shiftId) {
-  state.saturdayEveningRequests[`${shiftId}:${currentUser.name}`] = true;
+async function requestSaturdayEvening(shiftId) {
+  if (!supabaseReady) return;
+
+  const shift = getShiftById(shiftId);
+  if (!shift) return alert("Schicht konnte nicht gefunden werden.");
+
+  const requestKey = `${shiftId}:${currentUser.name}`;
+
+  const { error } = await supabaseClient.from("planner_saturday_requests").upsert(
+    {
+      request_key: requestKey,
+      shift_id: shiftId,
+      shift_date: shift.date,
+      user_name: currentUser.name,
+    },
+    { onConflict: "request_key" },
+  );
+
+  if (error) {
+    console.error("Fehler beim Speichern der Samstags-Anfrage:", error);
+    return alert(
+      `Samstags-Anfrage konnte nicht gespeichert werden: ${error.message}`,
+    );
+  }
+
+  state.saturdayEveningRequests[requestKey] = true;
   persist();
   render();
 }
@@ -1967,76 +2431,8 @@ function chooseReplacementUser(absentUser, from, to, weekLabel = "") {
 }
 
 async function planAbsenceReplacement(type, entryId) {
-  const list = type === "vacation" ? state.vacations : state.sickLeaves;
-  const entry = list.find((v) => v.id === entryId);
-  if (!entry) return;
-
-  const full = await askYesNoCentered(
-    `Soll ein Mitarbeiter ${entry.user} für die komplette Zeit von ${formatDateDisplay(entry.from)} bis ${formatDateDisplay(entry.to)} ersetzen?`,
-  );
-  if (full === null) return;
-
-  clearReplacementPlanForSource(type, entryId);
-
-  if (full) {
-    const choice = await chooseReplacementUser(
-      entry.user,
-      entry.from,
-      entry.to,
-    );
-    if (!choice) return;
-
-    const shifts = getShiftsOfUserInRange(entry.user, entry.from, entry.to);
-    shifts.forEach((shift) => {
-      applyReplacementToShift(shift.id, {
-        sourceType: type,
-        sourceId: entryId,
-        absentUser: entry.user,
-        from: entry.from,
-        to: entry.to,
-        mode: choice.mode,
-        replacementUser: choice.replacementUser,
-        weekFrom: entry.from,
-        weekTo: entry.to,
-      });
-    });
-
-    persist();
-    render();
-    return;
-  }
-
-  const weeks = getWeekRanges(entry.from, entry.to);
-
-  for (let i = 0; i < weeks.length; i++) {
-    const week = weeks[i];
-    const label = `Woche ${i + 1}: ${formatDateDisplay(week.from)} bis ${formatDateDisplay(week.to)}`;
-    const choice = await chooseReplacementUser(
-      entry.user,
-      week.from,
-      week.to,
-      label,
-    );
-    if (!choice) continue;
-
-    const shifts = getShiftsOfUserInRange(entry.user, week.from, week.to);
-    shifts.forEach((shift) => {
-      applyReplacementToShift(shift.id, {
-        sourceType: type,
-        sourceId: entryId,
-        absentUser: entry.user,
-        from: entry.from,
-        to: entry.to,
-        mode: choice.mode,
-        replacementUser: choice.replacementUser,
-        weekFrom: week.from,
-        weekTo: week.to,
-      });
-    });
-  }
-
-  persist();
-  render();
+  if (!supabaseReady) return;
+  openAbsenceReplacementPlanner(type, entryId);
 }
 
 async function deleteManualAbsence(date, userName) {
@@ -2101,6 +2497,7 @@ function renderPlanningAbstinenz() {
         <td class='p-2'>${formatDateDisplay(v.to)}</td>
         <td class='p-2'>
           <button class='px-2 py-1 rounded bg-red-600 text-white' onclick="deleteVacation('${v.id}')">Löschen</button>
+          <button class='px-2 py-1 rounded bg-slate-900 text-white ml-1' onclick="planAbsenceReplacement('vacation','${v.id}')">Ersatz</button>
         </td>
       </tr>`,
     )
@@ -2116,6 +2513,7 @@ function renderPlanningAbstinenz() {
         <td class='p-2'>${formatDateDisplay(v.to)}</td>
         <td class='p-2'>
           <button class='px-2 py-1 rounded bg-red-600 text-white' onclick="deleteSickLeave('${v.id}')">Löschen</button>
+          <button class='px-2 py-1 rounded bg-slate-900 text-white ml-1' onclick="planAbsenceReplacement('sick','${v.id}')">Ersatz</button>
         </td>
       </tr>`,
     )
@@ -2626,6 +3024,17 @@ async function deleteVacation(id) {
   const confirmDelete = confirm(`Urlaub von ${entry.user} wirklich löschen?`);
   if (!confirmDelete) return;
 
+  const replacementError = await deleteReplacementPlanFromSupabase(
+    "vacation",
+    id,
+  );
+  if (replacementError) {
+    console.error("Fehler beim Löschen der Ersatzplanung:", replacementError);
+    return alert(
+      `Urlaub konnte nicht gelöscht werden, weil die Ersatzplanung nicht bereinigt werden konnte: ${replacementError.message}`,
+    );
+  }
+
   // 🔴 Urlaub löschen
   const { error } = await supabaseClient
     .from("planner_vacations")
@@ -2651,6 +3060,7 @@ async function deleteVacation(id) {
   }
 
   // 🔴 lokal entfernen
+  clearReplacementPlanForSource("vacation", id);
   state.vacations = state.vacations.filter((v) => v.id !== id);
 
   persist();
@@ -2667,6 +3077,14 @@ async function deleteSickLeave(id) {
     `Krankmeldung von ${entry.user} wirklich löschen?`,
   );
   if (!confirmDelete) return;
+
+  const replacementError = await deleteReplacementPlanFromSupabase("sick", id);
+  if (replacementError) {
+    console.error("Fehler beim Löschen der Ersatzplanung:", replacementError);
+    return alert(
+      `Krankmeldung konnte nicht gelöscht werden, weil die Ersatzplanung nicht bereinigt werden konnte: ${replacementError.message}`,
+    );
+  }
 
   const { error } = await supabaseClient
     .from("planner_sick_leaves")
@@ -2690,6 +3108,7 @@ async function deleteSickLeave(id) {
     delete state.absences[`${d}:${entry.user}`];
   }
 
+  clearReplacementPlanForSource("sick", id);
   state.sickLeaves = state.sickLeaves.filter((v) => v.id !== id);
 
   persist();
@@ -5902,8 +6321,49 @@ async function assignSuggestedSpringer(shiftId) {
   render();
 }
 
-function approveSaturdayRequest(shiftId, user) {
+async function approveSaturdayRequest(shiftId, user) {
+  if (!supabaseReady) return;
   if (!canAssignUserToShift(user, shiftId)) return;
+
+  const shift = getShiftById(shiftId);
+  if (!shift) return alert("Schicht konnte nicht gefunden werden.");
+
+  const { error } = await supabaseClient.from("planner_assignments").upsert(
+    {
+      shift_id: shiftId,
+      shift_date: shift.date,
+      assigned_user: user,
+      created_by_employee_id: currentEmployeeRecord?.id || null,
+    },
+    { onConflict: "shift_id" },
+  );
+
+  if (error) {
+    console.error("Fehler beim Bestätigen der Samstags-Anfrage:", error);
+    return alert(
+      `Samstags-Anfrage konnte nicht übernommen werden: ${error.message}`,
+    );
+  }
+
+  const [deleteRequest, deleteCancellation] = await Promise.all([
+    supabaseClient
+      .from("planner_saturday_requests")
+      .delete()
+      .eq("request_key", `${shiftId}:${user}`),
+    supabaseClient
+      .from("planner_shift_cancellations")
+      .delete()
+      .eq("shift_id", shiftId),
+  ]);
+
+  const firstError = deleteRequest.error || deleteCancellation.error;
+  if (firstError) {
+    console.error("Fehler beim Abschließen der Samstags-Anfrage:", firstError);
+    return alert(
+      `Einteilung gespeichert, aber Anfrage/Ausfall konnte nicht bereinigt werden: ${firstError.message}`,
+    );
+  }
+
   delete state.shiftCancellations[shiftId];
   state.assignments[shiftId] = user;
   delete state.saturdayEveningRequests[`${shiftId}:${user}`];
@@ -5935,6 +6395,13 @@ window.deleteVacation = deleteVacation;
 window.deleteSickLeave = deleteSickLeave;
 window.planAbsenceReplacement = planAbsenceReplacement;
 window.clearAbsenceReplacementPlan = clearAbsenceReplacementPlan;
+window.openAbsenceReplacementPlanner = openAbsenceReplacementPlanner;
+window.closeReplacementPlanner = closeReplacementPlanner;
+window.setReplacementPlannerChoice = setReplacementPlannerChoice;
+window.toggleReplacementDay = toggleReplacementDay;
+window.applyReplacementForSelectedDays = applyReplacementForSelectedDays;
+window.applyReplacementForWeek = applyReplacementForWeek;
+window.applyReplacementForAll = applyReplacementForAll;
 window.addSwap = addSwap;
 window.deleteSwap = deleteSwap;
 window.resetActiveSwaps = resetActiveSwaps;
