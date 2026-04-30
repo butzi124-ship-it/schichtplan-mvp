@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.3.3";
+const APP_VERSION = "0.3.4";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -447,7 +447,6 @@ async function loadPlanningDataFromSupabase() {
     supabaseClient
       .from("planner_tasks")
       .select("*")
-      .order("due_date", { ascending: true })
       .order("created_at", { ascending: false }),
   ]);
 
@@ -540,7 +539,7 @@ async function loadPlanningDataFromSupabase() {
     };
   });
 
-  let tasks = state.tasks || [];
+  let tasks = [];
   if (tasksRes.error) {
     console.warn("Fehler beim Laden von planner_tasks:", tasksRes.error);
   } else {
@@ -652,7 +651,8 @@ async function syncSupabaseSessionToApp() {
     state.shiftCancellations = planning.shiftCancellations;
     state.saturdayEveningRequests = planning.saturdayEveningRequests;
     state.absenceReplacements = planning.absenceReplacements;
-    state.tasks = planning.tasks;
+    state.tasks = Array.isArray(planning.tasks) ? planning.tasks : [];
+    console.log("Tasks aus Supabase geladen:", state.tasks);
   }
 
   persist();
@@ -709,7 +709,8 @@ async function bootSupabase() {
     state.shiftCancellations = planning.shiftCancellations;
     state.saturdayEveningRequests = planning.saturdayEveningRequests;
     state.absenceReplacements = planning.absenceReplacements;
-    state.tasks = planning.tasks;
+    state.tasks = Array.isArray(planning.tasks) ? planning.tasks : [];
+    console.log("Tasks aus Supabase geladen:", state.tasks);
   }
 
   persist();
