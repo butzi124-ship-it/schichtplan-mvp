@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.3.4";
+const APP_VERSION = "0.3.6";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -331,6 +331,21 @@ function normalizeTaskFromDb(row) {
   };
 }
 
+async function loadTasksFromSupabase() {
+  const { data, error } = await supabaseClient
+    .from("planner_tasks")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Fehler beim Laden von planner_tasks:", error);
+    return [];
+  }
+
+  console.log("planner_tasks raw data:", data);
+  return (data || []).map(normalizeTaskFromDb);
+}
+
 async function loadToolsFromSupabase() {
   const { data, error } = await supabaseClient
     .from("tools")
@@ -406,7 +421,6 @@ async function loadPlanningDataFromSupabase() {
     cancellationsRes,
     saturdayRequestsRes,
     replacementsRes,
-    tasksRes,
   ] = await Promise.all([
     supabaseClient
       .from("planner_assignments")
@@ -444,10 +458,6 @@ async function loadPlanningDataFromSupabase() {
       .from("planner_absence_replacements")
       .select("*")
       .order("shift_date", { ascending: true }),
-    supabaseClient
-      .from("planner_tasks")
-      .select("*")
-      .order("created_at", { ascending: false }),
   ]);
 
   const responses = [
@@ -467,6 +477,8 @@ async function loadPlanningDataFromSupabase() {
     console.error("Fehler beim Laden der Planungsdaten:", firstError);
     return null;
   }
+
+  const tasks = await loadTasksFromSupabase();
 
   const assignments = {};
   (assignmentsRes.data || []).forEach((row) => {
@@ -538,13 +550,6 @@ async function loadPlanningDataFromSupabase() {
       weekTo: row.week_to,
     };
   });
-
-  let tasks = [];
-  if (tasksRes.error) {
-    console.warn("Fehler beim Laden von planner_tasks:", tasksRes.error);
-  } else {
-    tasks = (tasksRes.data || []).map(normalizeTaskFromDb);
-  }
 
   return {
     assignments,
@@ -1228,7 +1233,9 @@ async function clearAbsenceReplacementPlan(sourceType, sourceId) {
   const error = await deleteReplacementPlanFromSupabase(sourceType, sourceId);
   if (error) {
     console.error("Fehler beim Löschen der Ersatzplanung:", error);
-    return alert(`Ersatzplanung konnte nicht gelöscht werden: ${error.message}`);
+    return alert(
+      `Ersatzplanung konnte nicht gelöscht werden: ${error.message}`,
+    );
   }
 
   clearReplacementPlanForSource(sourceType, sourceId);
@@ -1289,7 +1296,8 @@ function setReplacementPlannerChoice(type, entryId, value) {
 
 function ensureReplacementPlannerSelection(type, entryId) {
   const key = getReplacementPlannerSelectionKey(type, entryId);
-  if (!state.replacementPlannerSelection) state.replacementPlannerSelection = {};
+  if (!state.replacementPlannerSelection)
+    state.replacementPlannerSelection = {};
   if (!state.replacementPlannerSelection[key]) {
     state.replacementPlannerSelection[key] = {};
   }
@@ -1339,7 +1347,11 @@ function toggleReplacementDay(type, entryId, shiftId) {
   openAbsenceReplacementPlanner(type, entryId);
 }
 
-async function applyReplacementForSelectedDays(type, entryId, selectedShiftIds) {
+async function applyReplacementForSelectedDays(
+  type,
+  entryId,
+  selectedShiftIds,
+) {
   if (!supabaseReady) return;
 
   const entry = getAbsenceEntry(type, entryId);
@@ -2268,15 +2280,17 @@ async function requestSaturdayEvening(shiftId) {
 
   const requestKey = `${shiftId}:${currentUser.name}`;
 
-  const { error } = await supabaseClient.from("planner_saturday_requests").upsert(
-    {
-      request_key: requestKey,
-      shift_id: shiftId,
-      shift_date: shift.date,
-      user_name: currentUser.name,
-    },
-    { onConflict: "request_key" },
-  );
+  const { error } = await supabaseClient
+    .from("planner_saturday_requests")
+    .upsert(
+      {
+        request_key: requestKey,
+        shift_id: shiftId,
+        shift_date: shift.date,
+        user_name: currentUser.name,
+      },
+      { onConflict: "request_key" },
+    );
 
   if (error) {
     console.error("Fehler beim Speichern der Samstags-Anfrage:", error);
@@ -5755,14 +5769,44 @@ function taskCompletedAt(task) {
   return task.completedAt || task.completed_at || null;
 }
 
+function normalizeNameForCompare(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
+function currentUserNameForCompare() {
+  return normalizeNameForCompare(
+    currentUser?.name ||
+      currentEmployeeRecord?.display_name ||
+      currentEmployeeRecord?.name ||
+      "",
+  );
+}
+
+function isTaskAssignedToCurrentUser(task) {
+  return (
+    normalizeNameForCompare(taskAssignee(task)) === currentUserNameForCompare()
+  );
+}
+
 function renderTodo() {
   const nowIso = new Date().toISOString();
   const isAdmin = currentUser?.role === "admin";
+  const allTasks = Array.isArray(state.tasks) ? state.tasks : [];
+  console.log("renderTodo allTasks:", allTasks);
+
   const visibleTasks = isAdmin
-    ? state.tasks || []
-    : (state.tasks || []).filter(
-        (task) => taskAssignee(task) === currentUser?.name,
-      );
+    ? allTasks
+    : allTasks.filter((task) => isTaskAssignedToCurrentUser(task));
+
+  console.log("To-Do Render Debug:", {
+    user: currentUser,
+    employeeRecord: currentEmployeeRecord,
+    tasks: state.tasks,
+    visibleCount: visibleTasks?.length,
+  });
+
   const openTasks = visibleTasks.filter((task) => task.status !== "done");
   const doneTasks = visibleTasks.filter((task) => task.status === "done");
 
@@ -5787,16 +5831,14 @@ function renderTodo() {
     .join("");
 
   const doneRows = doneTasks
-    .map(
-      (task) => {
-        const dueDate = taskDueDate(task);
-        const completedAt = taskCompletedAt(task);
-        return `<tr class='border-b bg-emerald-50'>
+    .map((task) => {
+      const dueDate = taskDueDate(task);
+      const completedAt = taskCompletedAt(task);
+      return `<tr class='border-b bg-emerald-50'>
       <td class='p-2'>✅ ${task.title}</td><td class='p-2'>${taskAssignee(task)}</td><td class='p-2'>${dueDate ? formatDateDisplay(dueDate) : "-"}</td><td class='p-2'>${completedAt || "-"}</td>
       <td class='p-2'>${isAdmin ? `<button class='px-2 py-1 rounded bg-slate-900 text-white' onclick="deleteTask('${task.id}')">Löschen</button>` : "-"}</td>
     </tr>`;
-      },
-    )
+    })
     .join("");
 
   return `<div class='bg-white rounded-xl shadow p-4'>
@@ -5963,7 +6005,9 @@ async function saveTaskReassignment(taskId) {
 
   if (error) {
     console.error("Fehler beim Neuzuweisen der Aufgabe:", error);
-    return alert(`Aufgabe konnte nicht neu zugewiesen werden: ${error.message}`);
+    return alert(
+      `Aufgabe konnte nicht neu zugewiesen werden: ${error.message}`,
+    );
   }
 
   task.assignee = selectedName;
@@ -5979,11 +6023,11 @@ function maybeTaskReminder() {
   const today = isoDate(now);
   const hourKey = `${today}:${now.getHours()}:${currentUser.name}`;
   if (state[`_taskReminder_${hourKey}`]) return;
-  const dueToday = state.tasks.filter(
-    (t) =>
-      taskAssignee(t) === currentUser.name &&
-      t.status !== "done" &&
-      taskDueDate(t) === today,
+  const dueToday = (state.tasks || []).filter(
+    (task) =>
+      isTaskAssignedToCurrentUser(task) &&
+      task.status !== "done" &&
+      taskDueDate(task) === today,
   );
   if (!dueToday.length) return;
   alert(`Erinnerung: ${dueToday.length} Aufgabe(n) heute fällig.`);
