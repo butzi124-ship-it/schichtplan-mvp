@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.2.4";
+const APP_VERSION = "0.3.1";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -317,6 +317,22 @@ function normalizeToolFromDb(row) {
   };
 }
 
+function normalizeTaskFromDb(row) {
+  return {
+    id: row.id,
+    title: row.title || "",
+    description: row.description || "",
+    assignee: row.assigned_to || "",
+    assignedTo: row.assigned_to || "",
+    dueDate: row.due_date || "",
+    deadline: row.due_date || "",
+    status: row.status || "open",
+    createdAt: row.created_at || null,
+    completedAt: row.completed_at || null,
+    doneAt: row.completed_at || null,
+  };
+}
+
 async function loadToolsFromSupabase() {
   const { data, error } = await supabaseClient
     .from("tools")
@@ -392,6 +408,7 @@ async function loadPlanningDataFromSupabase() {
     cancellationsRes,
     saturdayRequestsRes,
     replacementsRes,
+    tasksRes,
   ] = await Promise.all([
     supabaseClient
       .from("planner_assignments")
@@ -429,6 +446,11 @@ async function loadPlanningDataFromSupabase() {
       .from("planner_absence_replacements")
       .select("*")
       .order("shift_date", { ascending: true }),
+    supabaseClient
+      .from("planner_tasks")
+      .select("*")
+      .order("due_date", { ascending: true })
+      .order("created_at", { ascending: false }),
   ]);
 
   const responses = [
@@ -520,6 +542,13 @@ async function loadPlanningDataFromSupabase() {
     };
   });
 
+  let tasks = state.tasks || [];
+  if (tasksRes.error) {
+    console.warn("Fehler beim Laden von planner_tasks:", tasksRes.error);
+  } else {
+    tasks = (tasksRes.data || []).map(normalizeTaskFromDb);
+  }
+
   return {
     assignments,
     absences,
@@ -530,6 +559,7 @@ async function loadPlanningDataFromSupabase() {
     shiftCancellations,
     saturdayEveningRequests,
     absenceReplacements,
+    tasks,
   };
 }
 
@@ -624,6 +654,7 @@ async function syncSupabaseSessionToApp() {
     state.shiftCancellations = planning.shiftCancellations;
     state.saturdayEveningRequests = planning.saturdayEveningRequests;
     state.absenceReplacements = planning.absenceReplacements;
+    state.tasks = planning.tasks;
   }
 
   persist();
@@ -680,6 +711,7 @@ async function bootSupabase() {
     state.shiftCancellations = planning.shiftCancellations;
     state.saturdayEveningRequests = planning.saturdayEveningRequests;
     state.absenceReplacements = planning.absenceReplacements;
+    state.tasks = planning.tasks;
   }
 
   persist();
@@ -5712,21 +5744,35 @@ function toggleInsertToolFieldsById(checkboxId, edgesId) {
   if (!checkbox.checked) edges.value = "";
 }
 
+function taskAssignee(task) {
+  return task.assignee || task.assignedTo || "";
+}
+
+function taskDueDate(task) {
+  return task.dueDate || task.deadline || "";
+}
+
+function taskCompletedAt(task) {
+  return task.completedAt || task.doneAt || "";
+}
+
 function renderTodo() {
   const nowIso = new Date().toISOString();
   const isAdmin = currentUser.role === "admin";
   const relevantTasks = state.tasks.filter(
-    (t) => isAdmin || t.assignee === currentUser.name,
+    (t) => isAdmin || taskAssignee(t) === currentUser.name,
   );
   const openTasks = relevantTasks.filter((t) => t.status !== "done");
   const doneTasks = relevantTasks.filter((t) => t.status === "done");
 
   const openRows = openTasks
     .map((t) => {
-      const overdue = t.deadline && nowIso > `${t.deadline}T23:59:59`;
+      const dueDate = taskDueDate(t);
+      const completedAt = taskCompletedAt(t);
+      const overdue = dueDate && nowIso > `${dueDate}T23:59:59`;
       return `<tr class='border-b ${overdue ? "bg-rose-50" : ""}'>
-      <td class='p-2'>${t.title}</td><td class='p-2'>${t.assignee}</td><td class='p-2'>${t.deadline ? formatDateDisplay(t.deadline) : "-"}</td>
-      <td class='p-2'>${t.doneAt ? "Erledigt" : "Offen"}</td>
+      <td class='p-2'>${t.title}</td><td class='p-2'>${taskAssignee(t)}</td><td class='p-2'>${dueDate ? formatDateDisplay(dueDate) : "-"}</td>
+      <td class='p-2'>${completedAt ? "Erledigt" : "Offen"}</td>
       <td class='p-2'>
         ${
           isAdmin
@@ -5742,7 +5788,7 @@ function renderTodo() {
   const doneRows = doneTasks
     .map(
       (t) => `<tr class='border-b bg-emerald-50'>
-      <td class='p-2'>✅ ${t.title}</td><td class='p-2'>${t.assignee}</td><td class='p-2'>${t.deadline ? formatDateDisplay(t.deadline) : "-"}</td><td class='p-2'>${t.doneAt || "-"}</td>
+      <td class='p-2'>✅ ${t.title}</td><td class='p-2'>${taskAssignee(t)}</td><td class='p-2'>${taskDueDate(t) ? formatDateDisplay(taskDueDate(t)) : "-"}</td><td class='p-2'>${taskCompletedAt(t) || "-"}</td>
       <td class='p-2'>${isAdmin ? `<button class='px-2 py-1 rounded bg-slate-900 text-white' onclick="deleteTask('${t.id}')">Löschen</button>` : "-"}</td>
     </tr>`,
     )
@@ -5777,47 +5823,114 @@ function renderTaskCreateBox() {
   </div>`;
 }
 
-function createTask() {
+async function createTask() {
+  if (!supabaseReady) return;
+
   const title = document.getElementById("taskTitle")?.value?.trim();
   const assignee = document.getElementById("taskAssignee")?.value;
   const deadline = document.getElementById("taskDeadline")?.value;
   if (!title || !assignee)
     return alert("Bitte Aufgabe und Mitarbeiter angeben.");
-  state.tasks.push({
-    id: `task-${Date.now()}`,
+
+  const payload = {
     title,
-    assignee,
-    deadline,
+    description: "",
+    assigned_to: assignee,
+    due_date: deadline || null,
     status: "open",
-    createdAt: new Date().toISOString(),
-    doneAt: null,
-  });
+    created_by_employee_id: currentEmployeeRecord?.id || null,
+  };
+
+  const { data: inserted, error } = await supabaseClient
+    .from("planner_tasks")
+    .insert(payload)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Fehler beim Speichern der Aufgabe:", error);
+    return alert(`Aufgabe konnte nicht gespeichert werden: ${error.message}`);
+  }
+
+  state.tasks.push(normalizeTaskFromDb(inserted));
   persist();
   render();
 }
 
-function completeTask(taskId) {
+async function completeTask(taskId) {
+  if (!supabaseReady) return;
+
   const task = state.tasks.find((t) => t.id === taskId);
   if (!task) return;
+
+  const completedAt = new Date().toISOString();
+
+  const { error } = await supabaseClient
+    .from("planner_tasks")
+    .update({
+      status: "done",
+      completed_at: completedAt,
+      updated_at: completedAt,
+    })
+    .eq("id", taskId);
+
+  if (error) {
+    console.error("Fehler beim Abschließen der Aufgabe:", error);
+    return alert(`Aufgabe konnte nicht abgeschlossen werden: ${error.message}`);
+  }
+
   task.status = "done";
-  task.doneAt = new Date().toISOString().slice(0, 16).replace("T", " ");
+  task.completedAt = completedAt;
+  task.doneAt = completedAt;
   persist();
   render();
 }
 
-function deleteTask(taskId) {
+async function deleteTask(taskId) {
+  if (!supabaseReady) return;
+
+  const { error } = await supabaseClient
+    .from("planner_tasks")
+    .delete()
+    .eq("id", taskId);
+
+  if (error) {
+    console.error("Fehler beim Löschen der Aufgabe:", error);
+    return alert(`Aufgabe konnte nicht gelöscht werden: ${error.message}`);
+  }
+
   state.tasks = state.tasks.filter((t) => t.id !== taskId);
   persist();
   render();
 }
 
-function reassignTaskPrompt(taskId) {
+async function reassignTaskPrompt(taskId) {
+  if (!supabaseReady) return;
+
   const task = state.tasks.find((t) => t.id === taskId);
   if (!task) return;
-  const name = prompt("Neuer Mitarbeiter:", task.assignee);
+  const name = prompt("Neuer Mitarbeiter:", taskAssignee(task));
   if (!name) return;
+
+  const { error } = await supabaseClient
+    .from("planner_tasks")
+    .update({
+      assigned_to: name,
+      status: "open",
+      completed_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", taskId);
+
+  if (error) {
+    console.error("Fehler beim Neuzuweisen der Aufgabe:", error);
+    return alert(`Aufgabe konnte nicht neu zugewiesen werden: ${error.message}`);
+  }
+
   task.assignee = name;
+  task.assignedTo = name;
   task.status = "open";
+  task.completedAt = null;
   task.doneAt = null;
   persist();
   render();
@@ -5831,9 +5944,9 @@ function maybeTaskReminder() {
   if (state[`_taskReminder_${hourKey}`]) return;
   const dueToday = state.tasks.filter(
     (t) =>
-      t.assignee === currentUser.name &&
+      taskAssignee(t) === currentUser.name &&
       t.status !== "done" &&
-      t.deadline === today,
+      taskDueDate(t) === today,
   );
   if (!dueToday.length) return;
   alert(`Erinnerung: ${dueToday.length} Aufgabe(n) heute fällig.`);
