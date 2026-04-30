@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.3.2";
+const APP_VERSION = "0.3.3";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -5756,27 +5756,29 @@ function taskCompletedAt(task) {
 
 function renderTodo() {
   const nowIso = new Date().toISOString();
-  const isAdmin = currentUser.role === "admin";
-  const relevantTasks = state.tasks.filter(
-    (t) => isAdmin || taskAssignee(t) === currentUser.name,
-  );
-  const openTasks = relevantTasks.filter((t) => t.status !== "done");
-  const doneTasks = relevantTasks.filter((t) => t.status === "done");
+  const isAdmin = currentUser?.role === "admin";
+  const visibleTasks = isAdmin
+    ? state.tasks || []
+    : (state.tasks || []).filter(
+        (task) => taskAssignee(task) === currentUser?.name,
+      );
+  const openTasks = visibleTasks.filter((task) => task.status !== "done");
+  const doneTasks = visibleTasks.filter((task) => task.status === "done");
 
   const openRows = openTasks
-    .map((t) => {
-      const dueDate = taskDueDate(t);
-      const completedAt = taskCompletedAt(t);
+    .map((task) => {
+      const dueDate = taskDueDate(task);
+      const completedAt = taskCompletedAt(task);
       const overdue = dueDate && nowIso > `${dueDate}T23:59:59`;
       return `<tr class='border-b ${overdue ? "bg-rose-50" : ""}'>
-      <td class='p-2'>${t.title}</td><td class='p-2'>${taskAssignee(t)}</td><td class='p-2'>${dueDate ? formatDateDisplay(dueDate) : "-"}</td>
+      <td class='p-2'>${task.title}</td><td class='p-2'>${taskAssignee(task)}</td><td class='p-2'>${dueDate ? formatDateDisplay(dueDate) : "-"}</td>
       <td class='p-2'>${completedAt ? "Erledigt" : "Offen"}</td>
       <td class='p-2'>
         ${
           isAdmin
-            ? `<button class='px-2 py-1 rounded bg-slate-900 text-white mr-1' onclick="deleteTask('${t.id}')">Löschen</button>
-          <button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="reassignTaskPrompt('${t.id}')">Neu zuweisen</button>`
-            : `<button class='px-2 py-1 rounded bg-emerald-600 text-white' onclick="completeTask('${t.id}')">Erledigt</button>`
+            ? `<button class='px-2 py-1 rounded bg-slate-900 text-white mr-1' onclick="deleteTask('${task.id}')">Löschen</button>
+          <button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="reassignTaskPrompt('${task.id}')">Neu zuweisen</button>`
+            : `<button class='px-2 py-1 rounded bg-emerald-600 text-white' onclick="completeTask('${task.id}')">Erledigt</button>`
         }
       </td>
     </tr>`;
@@ -5785,10 +5787,14 @@ function renderTodo() {
 
   const doneRows = doneTasks
     .map(
-      (t) => `<tr class='border-b bg-emerald-50'>
-      <td class='p-2'>✅ ${t.title}</td><td class='p-2'>${taskAssignee(t)}</td><td class='p-2'>${taskDueDate(t) ? formatDateDisplay(taskDueDate(t)) : "-"}</td><td class='p-2'>${taskCompletedAt(t) || "-"}</td>
-      <td class='p-2'>${isAdmin ? `<button class='px-2 py-1 rounded bg-slate-900 text-white' onclick="deleteTask('${t.id}')">Löschen</button>` : "-"}</td>
-    </tr>`,
+      (task) => {
+        const dueDate = taskDueDate(task);
+        const completedAt = taskCompletedAt(task);
+        return `<tr class='border-b bg-emerald-50'>
+      <td class='p-2'>✅ ${task.title}</td><td class='p-2'>${taskAssignee(task)}</td><td class='p-2'>${dueDate ? formatDateDisplay(dueDate) : "-"}</td><td class='p-2'>${completedAt || "-"}</td>
+      <td class='p-2'>${isAdmin ? `<button class='px-2 py-1 rounded bg-slate-900 text-white' onclick="deleteTask('${task.id}')">Löschen</button>` : "-"}</td>
+    </tr>`;
+      },
     )
     .join("");
 
