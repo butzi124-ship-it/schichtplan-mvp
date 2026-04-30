@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.3.1";
+const APP_VERSION = "0.3.2";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -325,11 +325,9 @@ function normalizeTaskFromDb(row) {
     assignee: row.assigned_to || "",
     assignedTo: row.assigned_to || "",
     dueDate: row.due_date || "",
-    deadline: row.due_date || "",
     status: row.status || "open",
     createdAt: row.created_at || null,
     completedAt: row.completed_at || null,
-    doneAt: row.completed_at || null,
   };
 }
 
@@ -5745,15 +5743,15 @@ function toggleInsertToolFieldsById(checkboxId, edgesId) {
 }
 
 function taskAssignee(task) {
-  return task.assignee || task.assignedTo || "";
+  return task.assignee || task.assignedTo || task.assigned_to || "";
 }
 
 function taskDueDate(task) {
-  return task.dueDate || task.deadline || "";
+  return task.dueDate || task.due_date || "";
 }
 
 function taskCompletedAt(task) {
-  return task.completedAt || task.doneAt || "";
+  return task.completedAt || task.completed_at || null;
 }
 
 function renderTodo() {
@@ -5865,14 +5863,16 @@ async function completeTask(taskId) {
 
   const completedAt = new Date().toISOString();
 
-  const { error } = await supabaseClient
+  const { data: updated, error } = await supabaseClient
     .from("planner_tasks")
     .update({
       status: "done",
       completed_at: completedAt,
       updated_at: completedAt,
     })
-    .eq("id", taskId);
+    .eq("id", taskId)
+    .select()
+    .single();
 
   if (error) {
     console.error("Fehler beim Abschließen der Aufgabe:", error);
@@ -5880,8 +5880,7 @@ async function completeTask(taskId) {
   }
 
   task.status = "done";
-  task.completedAt = completedAt;
-  task.doneAt = completedAt;
+  task.completedAt = updated?.completed_at || completedAt;
   persist();
   render();
 }
@@ -5909,16 +5908,49 @@ async function reassignTaskPrompt(taskId) {
 
   const task = state.tasks.find((t) => t.id === taskId);
   if (!task) return;
-  const name = prompt("Neuer Mitarbeiter:", taskAssignee(task));
-  if (!name) return;
+
+  const currentAssignee = taskAssignee(task);
+  const options = activeUsers()
+    .map((user) => {
+      const selected = user.name === currentAssignee ? "selected" : "";
+      return `<option value="${escapeHtml(user.name)}" ${selected}>${escapeHtml(user.name)}</option>`;
+    })
+    .join("");
+
+  const host = getModalHost();
+  host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-4">
+      <h3 class="text-lg font-bold mb-3">Aufgabe neu zuweisen</h3>
+      <p class="text-sm text-slate-600 mb-3">${escapeHtml(task.title)}</p>
+      <select id="taskReassignSelect" class="border rounded p-2 w-full mb-4">${options}</select>
+      <div class="flex justify-end gap-2">
+        <button class="px-3 py-1 rounded bg-slate-200" onclick="closeTaskReassignModal()">Abbrechen</button>
+        <button class="px-3 py-1 rounded bg-slate-900 text-white" onclick="saveTaskReassignment('${taskId}')">Speichern</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function closeTaskReassignModal() {
+  getModalHost().innerHTML = "";
+}
+
+async function saveTaskReassignment(taskId) {
+  if (!supabaseReady) return;
+
+  const task = state.tasks.find((t) => t.id === taskId);
+  if (!task) return;
+
+  const selectedName = document.getElementById("taskReassignSelect")?.value;
+  if (!selectedName) return alert("Bitte Mitarbeiter auswählen.");
+
+  const updatedAt = new Date().toISOString();
 
   const { error } = await supabaseClient
     .from("planner_tasks")
     .update({
-      assigned_to: name,
-      status: "open",
-      completed_at: null,
-      updated_at: new Date().toISOString(),
+      assigned_to: selectedName,
+      updated_at: updatedAt,
     })
     .eq("id", taskId);
 
@@ -5927,11 +5959,9 @@ async function reassignTaskPrompt(taskId) {
     return alert(`Aufgabe konnte nicht neu zugewiesen werden: ${error.message}`);
   }
 
-  task.assignee = name;
-  task.assignedTo = name;
-  task.status = "open";
-  task.completedAt = null;
-  task.doneAt = null;
+  task.assignee = selectedName;
+  task.assignedTo = selectedName;
+  closeTaskReassignModal();
   persist();
   render();
 }
@@ -6647,6 +6677,8 @@ window.createTask = createTask;
 window.completeTask = completeTask;
 window.deleteTask = deleteTask;
 window.reassignTaskPrompt = reassignTaskPrompt;
+window.closeTaskReassignModal = closeTaskReassignModal;
+window.saveTaskReassignment = saveTaskReassignment;
 window.setConflictResolved = setConflictResolved;
 window.stopDowntimeTimer = stopDowntimeTimer;
 window.applyToolFilters = applyToolFilters;
