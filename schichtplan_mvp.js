@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.3.6";
+const APP_VERSION = "0.3.7";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -339,7 +339,7 @@ async function loadTasksFromSupabase() {
 
   if (error) {
     console.error("Fehler beim Laden von planner_tasks:", error);
-    return [];
+    return null;
   }
 
   console.log("planner_tasks raw data:", data);
@@ -656,8 +656,14 @@ async function syncSupabaseSessionToApp() {
     state.shiftCancellations = planning.shiftCancellations;
     state.saturdayEveningRequests = planning.saturdayEveningRequests;
     state.absenceReplacements = planning.absenceReplacements;
-    state.tasks = Array.isArray(planning.tasks) ? planning.tasks : [];
-    console.log("Tasks aus Supabase geladen:", state.tasks);
+    if (Array.isArray(planning.tasks)) {
+      state.tasks = planning.tasks;
+      console.log("Tasks aus Supabase geladen:", state.tasks);
+    } else {
+      console.warn(
+        "Tasks wurden nicht aktualisiert, alter state.tasks bleibt erhalten.",
+      );
+    }
   }
 
   persist();
@@ -672,6 +678,7 @@ async function syncSupabaseSessionToApp() {
   console.log("Tool-Materials nach Login geladen:", materials);
   console.log("Tools nach Login geladen:", tools);
   console.log("Planungsdaten nach Login geladen:", planning);
+  console.log("Tasks nach Session-Sync:", state.tasks);
 
   render();
 }
@@ -714,8 +721,6 @@ async function bootSupabase() {
     state.shiftCancellations = planning.shiftCancellations;
     state.saturdayEveningRequests = planning.saturdayEveningRequests;
     state.absenceReplacements = planning.absenceReplacements;
-    state.tasks = Array.isArray(planning.tasks) ? planning.tasks : [];
-    console.log("Tasks aus Supabase geladen:", state.tasks);
   }
 
   persist();
