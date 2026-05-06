@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.3.7";
+const APP_VERSION = "0.3.8";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -803,12 +803,23 @@ function loadState() {
     absenceReplacements: {},
     replacementPlannerSelection: {},
     replacementPlannerChoice: {},
+    ui: {
+      pendingEmployeeEdits: {},
+      pendingSlotAssignments: {},
+    },
   };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return base;
     const parsed = JSON.parse(raw);
-    return { ...base, ...parsed };
+    return {
+      ...base,
+      ...parsed,
+      ui: {
+        ...base.ui,
+        ...(parsed.ui || {}),
+      },
+    };
   } catch {
     return base;
   }
@@ -2406,86 +2417,150 @@ function renderPlanning() {
   </div>`;
 }
 
+function ensurePersonnelPendingState() {
+  if (!state.ui) state.ui = {};
+  if (!state.ui.pendingEmployeeEdits) state.ui.pendingEmployeeEdits = {};
+  if (!state.ui.pendingSlotAssignments) state.ui.pendingSlotAssignments = {};
+  return state.ui;
+}
+
+function queueEmployeeEdit(id, field, value) {
+  if (!id) return;
+  const ui = ensurePersonnelPendingState();
+  ui.pendingEmployeeEdits[id] = {
+    ...(ui.pendingEmployeeEdits[id] || {}),
+    [field]: value,
+  };
+  persist();
+  render();
+}
+
+function queueEmployeeActive(id, isActive) {
+  if (!id) return;
+  const employee = state.employees?.[id];
+  const name = employee?.display_name || employee?.name || "Mitarbeiter";
+  if (!isActive && !confirm(`${name} als inaktiv vormerken?`)) return;
+  queueEmployeeEdit(id, "is_active", isActive);
+}
+
+function queueSlotAssignment(slot, value) {
+  const ui = ensurePersonnelPendingState();
+  ui.pendingSlotAssignments[slot] = value;
+  persist();
+  render();
+}
+
+function hasPersonnelPendingChanges() {
+  const ui = ensurePersonnelPendingState();
+  return (
+    Object.keys(ui.pendingEmployeeEdits).length > 0 ||
+    Object.keys(ui.pendingSlotAssignments).length > 0
+  );
+}
+
 function renderPlanningPersonal() {
+  const ui = ensurePersonnelPendingState();
+  const pendingEmployees = ui.pendingEmployeeEdits;
+  const pendingSlots = ui.pendingSlotAssignments;
+  const hasPending = hasPersonnelPendingChanges();
+
   const personnelRows = allUsers()
-    .map(
-      (u) => `<tr class='border-b'>
-      <td class='p-2'><input id='employee-name-${u.id}' class='border rounded p-1 w-full' value='${escapeHtml(u.name)}' /></td>
+    .map((u) => {
+      const pending = pendingEmployees[u.id] || {};
+      const name = pending.display_name ?? u.name;
+      const type = pending.employee_type ?? u.type;
+      const isActive =
+        pending.is_active ??
+        (u.isActive !== false && !state.inactiveUsers?.[u.name]);
+      const colorKey = pending.color_key ?? u.color_key ?? "gray";
+      const role = pending.role ?? u.role ?? "employee";
+      const changed = Object.keys(pending).length > 0;
+      const rowClass = changed ? "border-b bg-amber-50" : "border-b";
+
+      return `<tr class='${rowClass}'>
+      <td class='p-2'><input id='employee-name-${u.id}' class='border rounded p-1 w-full' value='${escapeHtml(name)}' onchange="queueEmployeeEdit('${u.id}', 'display_name', this.value.trim())" /></td>
       <td class='p-2'>
-        <select id='employee-type-${u.id}' class='border rounded p-1'>
-          <option value='core' ${u.type === "core" ? "selected" : ""}>A/B/C</option>
-          <option value='springer' ${u.type === "springer" ? "selected" : ""}>Springer</option>
+        <select id='employee-type-${u.id}' class='border rounded p-1' onchange="queueEmployeeEdit('${u.id}', 'employee_type', this.value)">
+          <option value='core' ${type === "core" ? "selected" : ""}>A/B/C</option>
+          <option value='springer' ${type === "springer" ? "selected" : ""}>Springer</option>
         </select>
       </td>
-      <td class='p-2'>${u.isActive === false || state.inactiveUsers?.[u.name] ? "Inaktiv" : "Aktiv"}</td>
+      <td class='p-2'>${isActive ? "Aktiv" : "Inaktiv"}${changed ? `<div class='text-xs text-amber-700 mt-1'>ungespeichert</div>` : ""}</td>
       <td class='p-2'>
-        <select id='employee-color-${u.id}' class='border rounded p-1'>
-          ${EMPLOYEE_COLOR_OPTIONS.map((color) => `<option value='${color.key}' ${u.color_key === color.key ? "selected" : ""}>${color.label}</option>`).join("")}
+        <select id='employee-color-${u.id}' class='border rounded p-1' onchange="queueEmployeeEdit('${u.id}', 'color_key', this.value)">
+          ${EMPLOYEE_COLOR_OPTIONS.map((color) => `<option value='${color.key}' ${colorKey === color.key ? "selected" : ""}>${color.label}</option>`).join("")}
         </select>
       </td>
       <td class='p-2'>
-        <select id='employee-role-${u.id}' class='border rounded p-1'>
-          <option value='employee' ${u.role === "employee" ? "selected" : ""}>Mitarbeiter</option>
-          <option value='admin' ${u.role === "admin" ? "selected" : ""}>Admin</option>
+        <select id='employee-role-${u.id}' class='border rounded p-1' onchange="queueEmployeeEdit('${u.id}', 'role', this.value)">
+          <option value='employee' ${role === "employee" ? "selected" : ""}>Mitarbeiter</option>
+          <option value='admin' ${role === "admin" ? "selected" : ""}>Admin</option>
         </select>
       </td>
       <td class='p-2'>
         ${
-          u.isActive === false || state.inactiveUsers?.[u.name]
-            ? `<button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick="activateEmployee('${u.id}')">Reaktivieren</button>`
-            : `<button class='px-2 py-1 rounded bg-slate-900 text-white' onclick="updateEmployee('${u.id}')">Speichern</button>
-               <button class='px-2 py-1 rounded bg-rose-700 text-white ml-1' onclick="deactivateEmployee('${u.id}')">Inaktiv</button>`
+          isActive
+            ? `<button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="queueEmployeeActive('${u.id}', false)">Inaktiv</button>`
+            : `<button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick="queueEmployeeActive('${u.id}', true)">Reaktivieren</button>`
         }
       </td>
-    </tr>`,
-    )
+    </tr>`;
+    })
     .join("");
 
   const slotAssignmentRows = SLOT_CODES.map((slot) => {
+    const currentValue = state.slotAssignments?.[slot] || "";
+    const selectedValue = pendingSlots[slot] ?? currentValue;
+    const changed = Object.prototype.hasOwnProperty.call(pendingSlots, slot);
+    const rowClass = changed ? "border-b bg-amber-50" : "border-b";
     const options = activeUsers()
       .map(
         (u) =>
-          `<option value='${u.name}' ${state.slotAssignments?.[slot] === u.name ? "selected" : ""}>${u.name}</option>`,
+          `<option value='${escapeHtml(u.name)}' ${selectedValue === u.name ? "selected" : ""}>${escapeHtml(u.name)}</option>`,
       )
       .join("");
-    return `<tr class='border-b'>
+    return `<tr class='${rowClass}'>
       <td class='p-2 font-semibold'>${slot}</td>
-      <td class='p-2'><select id='slot-${slot}' class='border rounded p-1 w-full'>${options}</select></td>
-      <td class='p-2'><button class='px-2 py-1 rounded bg-slate-900 text-white' onclick="updateSlotAssignment('${slot}')">Speichern</button></td>
+      <td class='p-2'><select id='slot-${slot}' class='border rounded p-1 w-full' onchange="queueSlotAssignment('${slot}', this.value)">${options}</select></td>
+      <td class='p-2 text-xs text-amber-700'>${changed ? "ungespeichert" : ""}</td>
     </tr>`;
   }).join("");
 
-  return `<div class='grid md:grid-cols-2 gap-4'>
+  return `<div class='space-y-4'>
     <div class='border rounded-lg p-3 bg-slate-50'>
-      <div class='flex items-center justify-between gap-2 mb-2'>
+      <div class='flex items-center justify-between gap-2 mb-3'>
         <h3 class='font-semibold'>Personalverwaltung</h3>
         ${helpButton("planningPersonal")}
       </div>
-      <div class='grid md:grid-cols-6 gap-2 mb-2'>
-        <input id='newEmployeeName' class='border rounded p-1' placeholder='Neuer Name' />
-        <select id='newEmployeeType' class='border rounded p-1'><option value='springer'>Springer</option><option value='core'>A/B/C</option></select>
-        <select id='newEmployeeSlot' class='border rounded p-1'>
+      <div class='grid sm:grid-cols-2 lg:grid-cols-6 gap-2 mb-3'>
+        <input id='newEmployeeName' class='border rounded p-2' placeholder='Neuer Name' />
+        <select id='newEmployeeType' class='border rounded p-2'><option value='springer'>Springer</option><option value='core'>A/B/C</option></select>
+        <select id='newEmployeeSlot' class='border rounded p-2'>
           <option value=''>Kein Slot</option>
           ${SLOT_CODES.map((slot) => `<option value='${slot}'>${slot}</option>`).join("")}
         </select>
-        <select id='newEmployeeColor' class='border rounded p-1'>
+        <select id='newEmployeeColor' class='border rounded p-2'>
           ${EMPLOYEE_COLOR_OPTIONS.map((color) => `<option value='${color.key}'>${color.label}</option>`).join("")}
         </select>
-        <select id='newEmployeeRole' class='border rounded p-1'><option value='employee'>Mitarbeiter</option><option value='admin'>Admin</option></select>
-        <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick='addEmployee()'>Mitarbeiter hinzufügen</button>
+        <select id='newEmployeeRole' class='border rounded p-2'><option value='employee'>Mitarbeiter</option><option value='admin'>Admin</option></select>
+        <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='addEmployee()'>Mitarbeiter hinzufügen</button>
       </div>
       <div class='overflow-auto max-h-[55vh]'>
-        <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Name</th><th class='p-2 text-left'>Typ</th><th class='p-2 text-left'>Status</th><th class='p-2 text-left'>Farbe</th><th class='p-2 text-left'>Rolle</th><th class='p-2'></th></tr></thead>
+        <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Name</th><th class='p-2 text-left'>Typ</th><th class='p-2 text-left'>Status</th><th class='p-2 text-left'>Farbe</th><th class='p-2 text-left'>Rolle</th><th class='p-2 text-left'>Aktion</th></tr></thead>
         <tbody>${personnelRows}</tbody></table>
       </div>
     </div>
     <div class='border rounded-lg p-3 bg-slate-50'>
       <h3 class='font-semibold mb-2'>Zuordnung</h3>
-      <p class='text-sm text-slate-500 mb-2'>Admin kann festlegen, welcher Mitarbeiter aktuell A/B/C/D/E/F ist. Der Schichtplan passt sich danach direkt an.</p>
+      <p class='text-sm text-slate-500 mb-2'>Admin kann festlegen, welcher Mitarbeiter aktuell A/B/C/D/E/F ist. Der Schichtplan passt sich nach dem zentralen Speichern an.</p>
       <div class='overflow-auto max-h-[55vh]'>
-        <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Slot</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2'></th></tr></thead>
+        <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Slot</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Status</th></tr></thead>
         <tbody>${slotAssignmentRows}</tbody></table>
       </div>
+    </div>
+    <div class='flex items-center justify-end gap-3 border rounded-lg p-3 bg-white'>
+      ${hasPending ? `<span class='text-sm text-amber-700'>Es gibt ungespeicherte Änderungen</span>` : `<span class='text-sm text-slate-500'>Keine ungespeicherten Änderungen</span>`}
+      <button class='px-4 py-2 rounded ${hasPending ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500 cursor-not-allowed"}' ${hasPending ? "" : "disabled"} onclick='saveAllPersonnelChanges()'>Alle Änderungen speichern</button>
     </div>
   </div>`;
 }
@@ -3588,6 +3663,115 @@ async function updateSlotAssignment(slot) {
   state.slotAssignments[slot] = select.value;
   persist();
   render();
+}
+
+async function saveAllPersonnelChanges() {
+  if (!supabaseReady) return;
+
+  const ui = ensurePersonnelPendingState();
+  const pendingEmployees = { ...ui.pendingEmployeeEdits };
+  const pendingSlots = { ...ui.pendingSlotAssignments };
+  const originalUsers = allUsers();
+  const originalNameToId = {};
+  originalUsers.forEach((user) => {
+    if (user?.name && user?.id) originalNameToId[user.name] = user.id;
+  });
+
+  const failedEmployeeEdits = {};
+  const failedSlotAssignments = {};
+  const errors = [];
+
+  for (const [id, changes] of Object.entries(pendingEmployees)) {
+    const payload = {};
+
+    if (Object.prototype.hasOwnProperty.call(changes, "display_name")) {
+      const displayName = String(changes.display_name || "").trim();
+      if (!displayName) {
+        failedEmployeeEdits[id] = changes;
+        errors.push("Ein Mitarbeitername fehlt.");
+        continue;
+      }
+      payload.display_name = displayName;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(changes, "employee_type")) {
+      payload.employee_type = changes.employee_type || "springer";
+    }
+    if (Object.prototype.hasOwnProperty.call(changes, "color_key")) {
+      payload.color_key = changes.color_key || "gray";
+    }
+    if (Object.prototype.hasOwnProperty.call(changes, "role")) {
+      payload.role = changes.role || "employee";
+    }
+    if (Object.prototype.hasOwnProperty.call(changes, "is_active")) {
+      payload.is_active = !!changes.is_active;
+      if (!payload.is_active) payload.slot_code = null;
+    }
+
+    if (!Object.keys(payload).length) continue;
+
+    const { error } = await supabaseClient
+      .from("employees")
+      .update(payload)
+      .eq("id", id);
+
+    if (error) {
+      console.error("Fehler beim Speichern des Mitarbeiters:", error);
+      failedEmployeeEdits[id] = changes;
+      errors.push(error.message);
+    }
+  }
+
+  await refreshEmployeesFromSupabase();
+
+  for (const [slot, selectedName] of Object.entries(pendingSlots)) {
+    const originalId = originalNameToId[selectedName];
+    const selectedEmployee =
+      activeUsers().find((u) => u.name === selectedName) ||
+      activeUsers().find((u) => u.id === originalId);
+
+    if (!selectedEmployee?.id) {
+      failedSlotAssignments[slot] = selectedName;
+      errors.push(`Kein aktiver Mitarbeiter für Slot ${slot} gefunden.`);
+      continue;
+    }
+
+    const clearError = await clearSlotInSupabase(slot, selectedEmployee.id);
+    if (clearError) {
+      console.error("Fehler beim Freigeben des Slots:", clearError);
+      failedSlotAssignments[slot] = selectedName;
+      errors.push(clearError.message);
+      continue;
+    }
+
+    const { error } = await supabaseClient
+      .from("employees")
+      .update({ slot_code: slot })
+      .eq("id", selectedEmployee.id);
+
+    if (error) {
+      console.error("Fehler beim Speichern der Slot-Zuordnung:", error);
+      failedSlotAssignments[slot] = selectedName;
+      errors.push(error.message);
+      continue;
+    }
+
+    state.slotAssignments[slot] = selectedEmployee.name;
+  }
+
+  ui.pendingEmployeeEdits = failedEmployeeEdits;
+  ui.pendingSlotAssignments = failedSlotAssignments;
+
+  await refreshEmployeesFromSupabase();
+  persist();
+  render();
+
+  if (errors.length) {
+    alert(`Einige Änderungen konnten nicht gespeichert werden:\n${errors.join("\n")}`);
+    return;
+  }
+
+  alert("Alle Änderungen wurden gespeichert.");
 }
 
 async function addEmployee() {
@@ -6722,6 +6906,10 @@ window.resetActiveSwaps = resetActiveSwaps;
 window.resetManualAssignments = resetManualAssignments;
 window.resetPlanCurrentFuture = resetPlanCurrentFuture;
 window.updateSlotAssignment = updateSlotAssignment;
+window.queueEmployeeEdit = queueEmployeeEdit;
+window.queueEmployeeActive = queueEmployeeActive;
+window.queueSlotAssignment = queueSlotAssignment;
+window.saveAllPersonnelChanges = saveAllPersonnelChanges;
 window.addEmployee = addEmployee;
 window.updateEmployee = updateEmployee;
 window.fillEmployeeForm = fillEmployeeForm;
