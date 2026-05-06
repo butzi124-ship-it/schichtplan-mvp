@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.0";
+const APP_VERSION = "0.4.1";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -791,6 +791,7 @@ function loadState() {
       tNumber: "",
       diameter: "",
       holder: "",
+      imageStatus: "",
     },
     toolOrderOverrides: {},
     orderArchive: [],
@@ -815,6 +816,10 @@ function loadState() {
     return {
       ...base,
       ...parsed,
+      toolFilters: {
+        ...base.toolFilters,
+        ...(parsed.toolFilters || {}),
+      },
       ui: {
         ...base.ui,
         ...(parsed.ui || {}),
@@ -5432,6 +5437,7 @@ function resetToolFilters() {
     tNumber: "",
     diameter: "",
     holder: "",
+    imageStatus: "",
   };
   persist();
   render();
@@ -5443,7 +5449,16 @@ function applyToolFilters() {
   const tNumber = document.getElementById("toolFilterT")?.value || "";
   const diameter = document.getElementById("toolFilterD")?.value || "";
   const holder = document.getElementById("toolFilterHolder")?.value || "";
-  state.toolFilters = { search, label, tNumber, diameter, holder };
+  const imageStatus =
+    document.getElementById("toolFilterImageStatus")?.value || "";
+  state.toolFilters = {
+    search,
+    label,
+    tNumber,
+    diameter,
+    holder,
+    imageStatus,
+  };
   persist();
   render();
 }
@@ -5645,12 +5660,14 @@ function renderTools() {
     tNumber: "",
     diameter: "",
     holder: "",
+    imageStatus: "",
   };
   const search = (filters.search || "").toLowerCase();
   const filterLabel = filters.label || "";
   const filterT = filters.tNumber || "";
   const filterD = filters.diameter || "";
   const filterHolder = filters.holder || "";
+  const imageStatus = filters.imageStatus || "";
   const isAdmin = currentUser?.role === "admin";
 
   const filterLabelOptions = labels
@@ -5670,15 +5687,28 @@ function renderTools() {
     const byT = !filterT || String(t.tNumber).includes(filterT);
     const byD = !filterD || String(t.diameter).includes(filterD);
     const byHolder = !filterHolder || t.holder === filterHolder;
-    return bySearch && byLabel && byT && byD && byHolder;
+    const imagePath = getToolImagePath(t);
+    const byImageStatus =
+      !imageStatus ||
+      (imageStatus === "withPath" && !!imagePath) ||
+      (imageStatus === "withoutPath" && !imagePath);
+    return bySearch && byLabel && byT && byD && byHolder && byImageStatus;
   });
 
   const toolRows = tools
     .map((t) => {
       const statusText = t.ordered ? "Bestellt" : "-";
+      const imagePath = getToolImagePath(t);
+      const imageCell = imagePath
+        ? `<button class='border rounded bg-white p-1 hover:bg-slate-50' onclick="openToolImagePopup('${t.id}')" title="Werkzeugbild öffnen">
+            <img src="${escapeHtml(imagePath)}" alt="Bild T ${escapeHtml(normalizeToolImageNumber(t.tNumber))}" class="w-12 h-12 object-contain" onerror="this.style.display='none'; this.parentElement.querySelector('[data-tool-image-missing]').classList.remove('hidden')" />
+            <span data-tool-image-missing class="hidden text-xs text-rose-700">kein Bild</span>
+          </button>`
+        : "-";
 
       return `<tr class='border-b'>
         <td class='p-2'>T ${t.tNumber}</td>
+        <td class='p-2'>${imageCell}</td>
         <td class='p-2'>${t.label}</td>
         <td class='p-2'>${formatToolSize(t)}</td>
         ${isAdmin ? `<td class='p-2'>${getToolMaterialNameById(t.materialId)}</td>` : ""}
@@ -5690,7 +5720,6 @@ function renderTools() {
         ${isAdmin ? `<td class='p-2'>${t.manufacturer || "-"}</td>` : ""}
         <td class='p-2'>${statusText}</td>
         <td class='p-2 whitespace-nowrap'>
-          <button class='px-2 py-1 rounded bg-slate-700 text-white mr-1' onclick="openToolImagePopup('${t.id}')">Bild</button>
           <button class='px-2 py-1 rounded bg-emerald-700 text-white mr-1' onclick="bookToolChange('${t.id}')">Wechsel</button>
           ${
             isAdmin
@@ -5860,6 +5889,7 @@ function renderTools() {
   const stockTableHeader = isAdmin
     ? `<tr>
         <th class='p-2 text-left'>T</th>
+        <th class='p-2 text-left'>Bild</th>
         <th class='p-2 text-left'>Bezeichnung</th>
         <th class='p-2 text-left'>Ø</th>
         <th class='p-2 text-left'>Werkstoff</th>
@@ -5874,6 +5904,7 @@ function renderTools() {
       </tr>`
     : `<tr>
         <th class='p-2 text-left'>T</th>
+        <th class='p-2 text-left'>Bild</th>
         <th class='p-2 text-left'>Bezeichnung</th>
         <th class='p-2 text-left'>Ø</th>
         <th class='p-2 text-left'>Fach</th>
@@ -5909,23 +5940,33 @@ function renderTools() {
     }
 
     <div class='border-2 border-slate-300 rounded-xl p-3'>
-      <h3 class='text-lg font-bold mb-2'>2) Filter & Suche</h3>
-      <div class='grid md:grid-cols-7 gap-2 mb-2'>
-        <input id='toolSearch' class='border rounded p-1' placeholder='Suche...' value='${filters.search || ""}' />
-        <select id='toolFilterLabel' class='border rounded p-1'>
+      <div class='flex items-center justify-between gap-3 flex-wrap mb-3'>
+        <h3 class='text-lg font-bold'>2) Filter & Suche</h3>
+        <span class='text-sm text-slate-500'>${tools.length} von ${state.tools.length} Werkzeugen angezeigt</span>
+      </div>
+      <div class='grid lg:grid-cols-[2fr,1fr,1fr,1fr,1fr,1fr] md:grid-cols-3 gap-3 mb-3'>
+        <input id='toolSearch' class='border rounded p-2 md:col-span-2 lg:col-span-1' placeholder='Suche nach T, Bezeichnung, Artikel, Aufnahme, Hersteller...' value='${escapeHtml(filters.search || "")}' />
+        <select id='toolFilterLabel' class='border rounded p-2'>
           <option value='' ${filterLabel ? "" : "selected"}>Alle Bezeichnungen</option>${filterLabelOptions}
         </select>
-        <input id='toolFilterT' class='border rounded p-1' placeholder='Filter T-Nummer' value='${filterT}' />
-        <input id='toolFilterD' class='border rounded p-1' placeholder='Filter Durchmesser' value='${filterD}' />
-        <select id='toolFilterHolder' class='border rounded p-1'>
+        <input id='toolFilterT' class='border rounded p-2' placeholder='T-Nummer' value='${escapeHtml(filterT)}' />
+        <input id='toolFilterD' class='border rounded p-2' placeholder='Durchmesser' value='${escapeHtml(filterD)}' />
+        <select id='toolFilterHolder' class='border rounded p-2'>
           <option value='' ${filterHolder ? "" : "selected"}>Alle Aufnahmen</option>
           <option value='HSK 100' ${filterHolder === "HSK 100" ? "selected" : ""}>HSK 100</option>
           <option value='HSK 63' ${filterHolder === "HSK 63" ? "selected" : ""}>HSK 63</option>
         </select>
-        <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick='applyToolFilters()'>Filter anwenden</button>
-        <button class='px-2 py-1 rounded bg-slate-700 text-white' onclick='resetToolFilters()'>Filter zurücksetzen</button>
+        <select id='toolFilterImageStatus' class='border rounded p-2'>
+          <option value='' ${imageStatus ? "" : "selected"}>Alle Bildstatus</option>
+          <option value='withPath' ${imageStatus === "withPath" ? "selected" : ""}>Mit Bildpfad</option>
+          <option value='withoutPath' ${imageStatus === "withoutPath" ? "selected" : ""}>Ohne Bildpfad</option>
+        </select>
       </div>
-      <p class='text-xs text-slate-500'>Gib alle Werte vollständig ein und klicke dann auf „Filter anwenden“.</p>
+      <div class='flex gap-2 flex-wrap'>
+        <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='applyToolFilters()'>Filter anwenden</button>
+        <button class='px-3 py-2 rounded bg-slate-700 text-white' onclick='resetToolFilters()'>Filter zurücksetzen</button>
+      </div>
+      <p class='text-xs text-slate-500 mt-2'>Bildstatus prüft nur, ob aus T-Nummer und Aufnahme ein Bildpfad erstellt werden kann.</p>
     </div>
 
     <div class='border-2 border-slate-300 rounded-xl p-3'>
@@ -5935,7 +5976,7 @@ function renderTools() {
           <thead class='bg-slate-100 sticky top-0'>
             ${stockTableHeader}
           </thead>
-          <tbody>${toolRows || `<tr><td class="p-2" colspan="${isAdmin ? 12 : 9}">Keine Werkzeuge.</td></tr>`}</tbody>
+          <tbody>${toolRows || `<tr><td class="p-2" colspan="${isAdmin ? 13 : 10}">Keine Werkzeuge.</td></tr>`}</tbody>
         </table>
       </div>
     </div>
