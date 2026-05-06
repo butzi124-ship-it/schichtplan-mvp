@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.3.8";
+const APP_VERSION = "0.4.0";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -2464,7 +2464,7 @@ function renderPlanningPersonal() {
   const pendingSlots = ui.pendingSlotAssignments;
   const hasPending = hasPersonnelPendingChanges();
 
-  const personnelRows = allUsers()
+  const personnelCards = allUsers()
     .map((u) => {
       const pending = pendingEmployees[u.id] || {};
       const name = pending.display_name ?? u.name;
@@ -2475,36 +2475,51 @@ function renderPlanningPersonal() {
       const colorKey = pending.color_key ?? u.color_key ?? "gray";
       const role = pending.role ?? u.role ?? "employee";
       const changed = Object.keys(pending).length > 0;
-      const rowClass = changed ? "border-b bg-amber-50" : "border-b";
+      const cardClass = changed
+        ? "border-amber-300 bg-amber-50"
+        : "border-slate-200 bg-white";
+      const statusClass = isActive
+        ? "bg-emerald-100 text-emerald-800"
+        : "bg-slate-200 text-slate-700";
 
-      return `<tr class='${rowClass}'>
-      <td class='p-2'><input id='employee-name-${u.id}' class='border rounded p-1 w-full' value='${escapeHtml(name)}' onchange="queueEmployeeEdit('${u.id}', 'display_name', this.value.trim())" /></td>
-      <td class='p-2'>
-        <select id='employee-type-${u.id}' class='border rounded p-1' onchange="queueEmployeeEdit('${u.id}', 'employee_type', this.value)">
-          <option value='core' ${type === "core" ? "selected" : ""}>A/B/C</option>
-          <option value='springer' ${type === "springer" ? "selected" : ""}>Springer</option>
-        </select>
-      </td>
-      <td class='p-2'>${isActive ? "Aktiv" : "Inaktiv"}${changed ? `<div class='text-xs text-amber-700 mt-1'>ungespeichert</div>` : ""}</td>
-      <td class='p-2'>
-        <select id='employee-color-${u.id}' class='border rounded p-1' onchange="queueEmployeeEdit('${u.id}', 'color_key', this.value)">
-          ${EMPLOYEE_COLOR_OPTIONS.map((color) => `<option value='${color.key}' ${colorKey === color.key ? "selected" : ""}>${color.label}</option>`).join("")}
-        </select>
-      </td>
-      <td class='p-2'>
-        <select id='employee-role-${u.id}' class='border rounded p-1' onchange="queueEmployeeEdit('${u.id}', 'role', this.value)">
-          <option value='employee' ${role === "employee" ? "selected" : ""}>Mitarbeiter</option>
-          <option value='admin' ${role === "admin" ? "selected" : ""}>Admin</option>
-        </select>
-      </td>
-      <td class='p-2'>
-        ${
-          isActive
-            ? `<button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="queueEmployeeActive('${u.id}', false)">Inaktiv</button>`
-            : `<button class='px-2 py-1 rounded bg-emerald-700 text-white' onclick="queueEmployeeActive('${u.id}', true)">Reaktivieren</button>`
-        }
-      </td>
-    </tr>`;
+      return `<div class='border ${cardClass} rounded-lg p-3 shadow-sm'>
+        <div class='flex items-start justify-between gap-3 mb-3'>
+          <div class='min-w-0'>
+            <div class='font-semibold text-slate-900 truncate'>${escapeHtml(name)}</div>
+            ${changed ? `<div class='text-xs text-amber-700 mt-1'>Ungespeichert</div>` : ""}
+          </div>
+          <span class='shrink-0 px-2 py-1 rounded-full text-xs font-semibold ${statusClass}'>${isActive ? "Aktiv" : "Inaktiv"}</span>
+        </div>
+        <div class='grid sm:grid-cols-2 gap-3'>
+          <label class='text-xs text-slate-500'>Name
+            <input id='employee-name-${u.id}' class='mt-1 border rounded p-2 w-full text-sm bg-white' value='${escapeHtml(name)}' onchange="queueEmployeeEdit('${u.id}', 'display_name', this.value.trim())" />
+          </label>
+          <label class='text-xs text-slate-500'>Typ
+            <select id='employee-type-${u.id}' class='mt-1 border rounded p-2 w-full text-sm bg-white' onchange="queueEmployeeEdit('${u.id}', 'employee_type', this.value)">
+              <option value='core' ${type === "core" ? "selected" : ""}>A/B/C</option>
+              <option value='springer' ${type === "springer" ? "selected" : ""}>Springer</option>
+            </select>
+          </label>
+          <label class='text-xs text-slate-500'>Farbe
+            <select id='employee-color-${u.id}' class='mt-1 border rounded p-2 w-full text-sm bg-white' onchange="queueEmployeeEdit('${u.id}', 'color_key', this.value)">
+              ${EMPLOYEE_COLOR_OPTIONS.map((color) => `<option value='${color.key}' ${colorKey === color.key ? "selected" : ""}>${color.label}</option>`).join("")}
+            </select>
+          </label>
+          <label class='text-xs text-slate-500'>Rolle
+            <select id='employee-role-${u.id}' class='mt-1 border rounded p-2 w-full text-sm bg-white' onchange="queueEmployeeEdit('${u.id}', 'role', this.value)">
+              <option value='employee' ${role === "employee" ? "selected" : ""}>Mitarbeiter</option>
+              <option value='admin' ${role === "admin" ? "selected" : ""}>Admin</option>
+            </select>
+          </label>
+        </div>
+        <div class='flex justify-end mt-3'>
+          ${
+            isActive
+              ? `<button class='px-3 py-2 rounded bg-rose-700 text-white text-sm' onclick="queueEmployeeActive('${u.id}', false)">Inaktiv vormerken</button>`
+              : `<button class='px-3 py-2 rounded bg-emerald-700 text-white text-sm' onclick="queueEmployeeActive('${u.id}', true)">Reaktivieren vormerken</button>`
+          }
+        </div>
+      </div>`;
     })
     .join("");
 
@@ -2532,22 +2547,24 @@ function renderPlanningPersonal() {
         <h3 class='font-semibold'>Personalverwaltung</h3>
         ${helpButton("planningPersonal")}
       </div>
-      <div class='grid sm:grid-cols-2 lg:grid-cols-6 gap-2 mb-3'>
-        <input id='newEmployeeName' class='border rounded p-2' placeholder='Neuer Name' />
-        <select id='newEmployeeType' class='border rounded p-2'><option value='springer'>Springer</option><option value='core'>A/B/C</option></select>
-        <select id='newEmployeeSlot' class='border rounded p-2'>
-          <option value=''>Kein Slot</option>
-          ${SLOT_CODES.map((slot) => `<option value='${slot}'>${slot}</option>`).join("")}
-        </select>
-        <select id='newEmployeeColor' class='border rounded p-2'>
-          ${EMPLOYEE_COLOR_OPTIONS.map((color) => `<option value='${color.key}'>${color.label}</option>`).join("")}
-        </select>
-        <select id='newEmployeeRole' class='border rounded p-2'><option value='employee'>Mitarbeiter</option><option value='admin'>Admin</option></select>
-        <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='addEmployee()'>Mitarbeiter hinzufügen</button>
+      <div class='border rounded-lg bg-white p-3 mb-4'>
+        <div class='font-semibold text-sm mb-3'>Mitarbeiter hinzufügen</div>
+        <div class='grid sm:grid-cols-2 lg:grid-cols-3 gap-3'>
+          <input id='newEmployeeName' class='border rounded p-2' placeholder='Neuer Name' />
+          <select id='newEmployeeType' class='border rounded p-2'><option value='springer'>Springer</option><option value='core'>A/B/C</option></select>
+          <select id='newEmployeeSlot' class='border rounded p-2'>
+            <option value=''>Kein Slot</option>
+            ${SLOT_CODES.map((slot) => `<option value='${slot}'>${slot}</option>`).join("")}
+          </select>
+          <select id='newEmployeeColor' class='border rounded p-2'>
+            ${EMPLOYEE_COLOR_OPTIONS.map((color) => `<option value='${color.key}'>${color.label}</option>`).join("")}
+          </select>
+          <select id='newEmployeeRole' class='border rounded p-2'><option value='employee'>Mitarbeiter</option><option value='admin'>Admin</option></select>
+          <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='addEmployee()'>Mitarbeiter hinzufügen</button>
+        </div>
       </div>
-      <div class='overflow-auto max-h-[55vh]'>
-        <table class='w-full text-sm'><thead class='bg-white sticky top-0'><tr><th class='p-2 text-left'>Name</th><th class='p-2 text-left'>Typ</th><th class='p-2 text-left'>Status</th><th class='p-2 text-left'>Farbe</th><th class='p-2 text-left'>Rolle</th><th class='p-2 text-left'>Aktion</th></tr></thead>
-        <tbody>${personnelRows}</tbody></table>
+      <div class='grid lg:grid-cols-2 gap-3'>
+        ${personnelCards}
       </div>
     </div>
     <div class='border rounded-lg p-3 bg-slate-50'>
@@ -4474,6 +4491,70 @@ function getModalHost() {
   return host;
 }
 
+function normalizeToolImageNumber(tNumber) {
+  return String(tNumber || "")
+    .trim()
+    .replace(/^T\s*/i, "")
+    .trim();
+}
+
+function getToolImagePath(tool) {
+  const holderFolder =
+    tool.holder === "HSK 100"
+      ? "HSK100"
+      : tool.holder === "HSK 63"
+        ? "HSK63"
+        : "";
+
+  const imageNumber = normalizeToolImageNumber(tool.tNumber);
+
+  if (!holderFolder || !imageNumber) return "";
+
+  return `img/Depo/${holderFolder}/${imageNumber}.PNG`;
+}
+
+function openToolImagePopup(toolId) {
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool) return;
+
+  const imagePath = getToolImagePath(tool);
+  if (!imagePath) {
+    alert("Für dieses Werkzeug konnte kein Bildpfad erstellt werden.");
+    return;
+  }
+
+  const imageNumber = normalizeToolImageNumber(tool.tNumber);
+  const host = getModalHost();
+
+  host.innerHTML = `
+    <div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-auto p-4">
+        <div class="flex items-center justify-between gap-3 mb-3">
+          <div>
+            <h3 class="text-lg font-bold">Werkzeugbild – T ${escapeHtml(imageNumber)}</h3>
+            <p class="text-sm text-slate-500">${escapeHtml(tool.label || "-")} · ${escapeHtml(tool.holder || "-")}</p>
+            <p class="text-xs text-slate-400">${escapeHtml(imagePath)}</p>
+          </div>
+          <button class="px-3 py-1 rounded bg-slate-200" onclick="closeToolImagePopup()">Schließen</button>
+        </div>
+
+        <div class="border rounded-lg bg-slate-50 p-3 flex justify-center">
+          <img
+            src="${imagePath}"
+            alt="Werkzeugbild T ${escapeHtml(imageNumber)}"
+            class="max-w-full max-h-[70vh] object-contain rounded"
+            onerror="this.outerHTML='<div class=&quot;text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded p-3 w-full&quot;>Kein Bild gefunden: ${imagePath}</div>'"
+          />
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function closeToolImagePopup() {
+  getModalHost().innerHTML = "";
+}
+
 function askYesNoCentered(message) {
   const host = getModalHost();
   return new Promise((resolve) => {
@@ -5609,6 +5690,7 @@ function renderTools() {
         ${isAdmin ? `<td class='p-2'>${t.manufacturer || "-"}</td>` : ""}
         <td class='p-2'>${statusText}</td>
         <td class='p-2 whitespace-nowrap'>
+          <button class='px-2 py-1 rounded bg-slate-700 text-white mr-1' onclick="openToolImagePopup('${t.id}')">Bild</button>
           <button class='px-2 py-1 rounded bg-emerald-700 text-white mr-1' onclick="bookToolChange('${t.id}')">Wechsel</button>
           ${
             isAdmin
@@ -6929,6 +7011,8 @@ window.applyToolFilters = applyToolFilters;
 window.resetToolFilters = resetToolFilters;
 window.bookToolChange = bookToolChange;
 window.undoToolJournalEntry = undoToolJournalEntry;
+window.openToolImagePopup = openToolImagePopup;
+window.closeToolImagePopup = closeToolImagePopup;
 window.editTool = editTool;
 window.deleteTool = deleteTool;
 window.setToolOrderOverride = setToolOrderOverride;
