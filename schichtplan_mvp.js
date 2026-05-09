@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.1";
+const APP_VERSION = "0.4.2";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -898,7 +898,8 @@ function render() {
   if (!currentUser) return;
   cleanupOrderArchive();
 
-  const tabs = ["schichtplan"];
+  const tabs =
+    currentUser.role === "tool_scanner" ? ["toolscanner"] : ["schichtplan"];
   if (currentUser.role === "admin") {
     tabs.push(
       "planung",
@@ -936,10 +937,12 @@ function render() {
   if (currentTab === "meine") view.innerHTML = renderMyShifts();
   if (currentTab === "planung") view.innerHTML = renderPlanning();
   if (currentTab === "werkzeuge") view.innerHTML = renderTools();
+  if (currentTab === "toolscanner") view.innerHTML = renderToolScanner();
   if (currentTab === "bestellstatistik") view.innerHTML = renderOrderStats();
   if (currentTab === "todo") view.innerHTML = renderTodo();
   if (currentTab === "konflikte") view.innerHTML = renderConflicts();
   if (currentTab === "statistik") view.innerHTML = renderStats();
+  if (currentUser.role === "tool_scanner") return;
   maybeShowMachinePrompt();
   maybeTaskReminder();
   maybeShowShiftStartChecklist();
@@ -952,6 +955,7 @@ function labelTab(tab) {
     meine: "Meine Schichten",
     planung: "Planung (Admin)",
     werkzeuge: "Werkzeuge",
+    toolscanner: "Werkzeug-Scanner",
     bestellstatistik: "Bestell-Statistik",
     todo: "To-Do",
     konflikte: "Konflikte",
@@ -4560,6 +4564,228 @@ function closeToolImagePopup() {
   getModalHost().innerHTML = "";
 }
 
+function getToolQrPayload(tool) {
+  return `TOOL:${tool.id}`;
+}
+
+function openToolQrPopup(toolId) {
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool) return;
+
+  const payload = getToolQrPayload(tool);
+  const host = getModalHost();
+
+  host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-4">
+      <div class="flex items-center justify-between gap-3 mb-3">
+        <div>
+          <h3 class="text-lg font-bold">QR-Code für T ${escapeHtml(tool.tNumber)}</h3>
+          <p class="text-sm text-slate-500">${escapeHtml(tool.label || "-")} · ${escapeHtml(formatToolSize(tool))} · ${escapeHtml(tool.holder || "-")}</p>
+        </div>
+        <button class="px-3 py-1 rounded bg-slate-200" onclick="closeToolImagePopup()">Schließen</button>
+      </div>
+      <div class="border rounded-lg bg-slate-50 p-3 mb-3">
+        <div class="text-xs text-slate-500 mb-1">QR-Inhalt</div>
+        <div class="font-mono text-sm break-all bg-white border rounded p-2">${escapeHtml(payload)}</div>
+      </div>
+      <p class="text-sm text-slate-600 mb-4">Diesen Inhalt später als QR-Code auf das Werkzeugfach kleben. QR-Code-Grafik wird im nächsten Schritt ergänzt.</p>
+      <div class="flex justify-end gap-2">
+        <button class="px-3 py-2 rounded bg-slate-900 text-white" onclick="copyToolQrPayload('${tool.id}')">Text kopieren</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function copyToolQrPayload(toolId) {
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool) return;
+
+  const payload = getToolQrPayload(tool);
+  if (!navigator.clipboard?.writeText) {
+    alert(payload);
+    return;
+  }
+
+  await navigator.clipboard.writeText(payload);
+  alert("QR-Inhalt wurde kopiert.");
+}
+
+function renderToolScanner() {
+  return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
+    <div>
+      <h2 class='text-2xl font-bold'>Werkzeug-Scanner</h2>
+      <p class='text-sm text-slate-500 mt-1'>Für Werkzeugbereich / Handy-Terminal</p>
+    </div>
+    <div class='grid md:grid-cols-2 gap-4'>
+      <div class='border rounded-xl p-4 bg-slate-50 space-y-4'>
+        <div>
+          <h3 class='text-xl font-bold'>Werkzeug entnehmen</h3>
+          <p class='text-sm text-slate-500 mt-1'>Werkzeugbestand um 1 reduzieren.</p>
+        </div>
+        <div class='grid gap-3'>
+          <button class='px-4 py-4 rounded-lg bg-emerald-700 text-white text-lg font-semibold' onclick='openManualToolWithdraw()'>Manuell entnehmen</button>
+          <button class='px-4 py-4 rounded-lg bg-slate-800 text-white text-lg font-semibold' onclick="openQrScannerPlaceholder('withdraw')">QR-Code scannen</button>
+        </div>
+      </div>
+      <div class='border rounded-xl p-4 bg-slate-50 space-y-4'>
+        <div>
+          <h3 class='text-xl font-bold'>Werkzeug einlagern</h3>
+          <p class='text-sm text-slate-500 mt-1'>Werkzeugbestand um eine gewählte Menge erhöhen.</p>
+        </div>
+        <div class='grid gap-3'>
+          <button class='px-4 py-4 rounded-lg bg-blue-700 text-white text-lg font-semibold' onclick='openManualToolRestock()'>Manuell einlagern</button>
+          <button class='px-4 py-4 rounded-lg bg-slate-800 text-white text-lg font-semibold' onclick="openQrScannerPlaceholder('restock')">QR-Code scannen</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderToolScannerOptions() {
+  return state.tools
+    .map(
+      (tool) =>
+        `<option value="${tool.id}">T ${escapeHtml(tool.tNumber)} · ${escapeHtml(tool.label || "-")} · ${escapeHtml(formatToolSize(tool))} · ${escapeHtml(tool.holder || "-")} · Bestand ${tool.stock}</option>`,
+    )
+    .join("");
+}
+
+function openQrScannerPlaceholder(mode) {
+  const modeLabel = mode === "restock" ? "Einlagern" : "Entnehmen";
+  const host = getModalHost();
+
+  host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-4">
+      <h3 class="text-lg font-bold mb-2">QR-Code scannen</h3>
+      <p class="text-sm text-slate-500 mb-1">Modus: ${modeLabel}</p>
+      <p class="text-sm text-slate-700 mb-4">QR-Scanner wird im nächsten Schritt aktiviert.</p>
+      <div class="flex justify-end">
+        <button class="px-3 py-2 rounded bg-slate-900 text-white" onclick="closeToolImagePopup()">Schließen</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function openManualToolWithdraw() {
+  const host = getModalHost();
+
+  host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-xl p-4">
+      <h3 class="text-lg font-bold mb-3">Werkzeug manuell entnehmen</h3>
+      <select id="scannerWithdrawTool" class="border rounded p-2 w-full mb-4">
+        ${renderToolScannerOptions()}
+      </select>
+      <div class="flex justify-end gap-2">
+        <button class="px-3 py-2 rounded bg-slate-200" onclick="closeToolImagePopup()">Abbrechen</button>
+        <button id="scannerWithdrawSave" class="px-3 py-2 rounded bg-emerald-700 text-white">Entnehmen</button>
+      </div>
+    </div>
+  </div>`;
+
+  host.querySelector("#scannerWithdrawSave")?.addEventListener("click", async () => {
+    const toolId = host.querySelector("#scannerWithdrawTool")?.value;
+    const tool = state.tools.find((t) => t.id === toolId);
+    if (!tool) return;
+    if (Number(tool.stock || 0) <= 0) {
+      alert("Nicht genügend Bestand vorhanden.");
+      return;
+    }
+
+    const nextStock = Number(tool.stock || 0) - 1;
+    const { data, error } = await supabaseClient
+      .from("tools")
+      .update({ stock: nextStock })
+      .eq("id", toolId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Fehler bei Werkzeug-Scanner Entnahme:", error);
+      alert(`Entnahme konnte nicht gespeichert werden: ${error.message}`);
+      return;
+    }
+
+    const updatedTool = normalizeToolFromDb(data);
+    const index = state.tools.findIndex((t) => t.id === toolId);
+    if (index !== -1) state.tools[index] = updatedTool;
+
+    state.toolJournal.unshift({
+      id: `journal-${Date.now()}`,
+      user: currentUser?.name || "Werkzeug-Scanner",
+      at: new Date().toISOString().slice(0, 16).replace("T", " "),
+      toolId: updatedTool.id,
+      tNumber: updatedTool.tNumber,
+      qty: 1,
+      action: "Werkzeug-Scanner Entnahme 1",
+    });
+
+    closeToolImagePopup();
+    persist();
+    render();
+  });
+}
+
+function openManualToolRestock() {
+  const host = getModalHost();
+
+  host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-xl p-4">
+      <h3 class="text-lg font-bold mb-3">Werkzeug manuell einlagern</h3>
+      <select id="scannerRestockTool" class="border rounded p-2 w-full mb-3">
+        ${renderToolScannerOptions()}
+      </select>
+      <input id="scannerRestockQty" type="number" min="1" class="border rounded p-2 w-full mb-4" value="1" />
+      <div class="flex justify-end gap-2">
+        <button class="px-3 py-2 rounded bg-slate-200" onclick="closeToolImagePopup()">Abbrechen</button>
+        <button id="scannerRestockSave" class="px-3 py-2 rounded bg-blue-700 text-white">Einlagern</button>
+      </div>
+    </div>
+  </div>`;
+
+  host.querySelector("#scannerRestockSave")?.addEventListener("click", async () => {
+    const toolId = host.querySelector("#scannerRestockTool")?.value;
+    const qty = Number(host.querySelector("#scannerRestockQty")?.value || 0);
+    const tool = state.tools.find((t) => t.id === toolId);
+    if (!tool) return;
+    if (!Number.isFinite(qty) || qty <= 0) {
+      alert("Bitte eine gültige Menge eingeben.");
+      return;
+    }
+
+    const nextStock = Number(tool.stock || 0) + qty;
+    const { data, error } = await supabaseClient
+      .from("tools")
+      .update({ stock: nextStock })
+      .eq("id", toolId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Fehler bei Werkzeug-Scanner Einlagerung:", error);
+      alert(`Einlagerung konnte nicht gespeichert werden: ${error.message}`);
+      return;
+    }
+
+    const updatedTool = normalizeToolFromDb(data);
+    const index = state.tools.findIndex((t) => t.id === toolId);
+    if (index !== -1) state.tools[index] = updatedTool;
+
+    state.toolJournal.unshift({
+      id: `journal-${Date.now()}`,
+      user: currentUser?.name || "Werkzeug-Scanner",
+      at: new Date().toISOString().slice(0, 16).replace("T", " "),
+      toolId: updatedTool.id,
+      tNumber: updatedTool.tNumber,
+      qty,
+      action: `Werkzeug-Scanner Einlagerung ${qty}`,
+    });
+
+    closeToolImagePopup();
+    persist();
+    render();
+  });
+}
+
 function askYesNoCentered(message) {
   const host = getModalHost();
   return new Promise((resolve) => {
@@ -5723,7 +5949,8 @@ function renderTools() {
           <button class='px-2 py-1 rounded bg-emerald-700 text-white mr-1' onclick="bookToolChange('${t.id}')">Wechsel</button>
           ${
             isAdmin
-              ? `<button class='px-2 py-1 rounded bg-amber-600 text-white mr-1' onclick="editTool('${t.id}')">Bearbeiten</button>
+              ? `<button class='px-2 py-1 rounded bg-slate-700 text-white mr-1' onclick="openToolQrPopup('${t.id}')">QR</button>
+                 <button class='px-2 py-1 rounded bg-amber-600 text-white mr-1' onclick="editTool('${t.id}')">Bearbeiten</button>
                  <button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="deleteTool('${t.id}')">Löschen</button>`
               : ""
           }
@@ -7054,6 +7281,11 @@ window.bookToolChange = bookToolChange;
 window.undoToolJournalEntry = undoToolJournalEntry;
 window.openToolImagePopup = openToolImagePopup;
 window.closeToolImagePopup = closeToolImagePopup;
+window.openManualToolWithdraw = openManualToolWithdraw;
+window.openManualToolRestock = openManualToolRestock;
+window.openQrScannerPlaceholder = openQrScannerPlaceholder;
+window.openToolQrPopup = openToolQrPopup;
+window.copyToolQrPayload = copyToolQrPayload;
 window.editTool = editTool;
 window.deleteTool = deleteTool;
 window.setToolOrderOverride = setToolOrderOverride;
