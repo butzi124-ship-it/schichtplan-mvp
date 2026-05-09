@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.4";
+const APP_VERSION = "0.4.5";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -4564,6 +4564,202 @@ function closeToolImagePopup() {
   getModalHost().innerHTML = "";
 }
 
+function renderSimpleQrSvg(text) {
+  try {
+    const size = 29;
+    const quiet = 4;
+    const scale = 6;
+    const dataCodewords = 55;
+    const ecCodewords = 15;
+    const modules = Array.from({ length: size }, () => Array(size).fill(false));
+    const reserved = Array.from({ length: size }, () => Array(size).fill(false));
+
+    const setModule = (x, y, dark, reserve = true) => {
+      if (x < 0 || y < 0 || x >= size || y >= size) return;
+      modules[y][x] = !!dark;
+      if (reserve) reserved[y][x] = true;
+    };
+
+    const addFinder = (x, y) => {
+      for (let dy = -1; dy <= 7; dy++) {
+        for (let dx = -1; dx <= 7; dx++) {
+          const xx = x + dx;
+          const yy = y + dy;
+          if (xx < 0 || yy < 0 || xx >= size || yy >= size) continue;
+          const inFinder = dx >= 0 && dx <= 6 && dy >= 0 && dy <= 6;
+          const dark =
+            inFinder &&
+            (dx === 0 ||
+              dx === 6 ||
+              dy === 0 ||
+              dy === 6 ||
+              (dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4));
+          setModule(xx, yy, dark);
+        }
+      }
+    };
+
+    addFinder(0, 0);
+    addFinder(size - 7, 0);
+    addFinder(0, size - 7);
+
+    for (let i = 8; i < size - 8; i++) {
+      setModule(i, 6, i % 2 === 0);
+      setModule(6, i, i % 2 === 0);
+    }
+
+    for (let dy = -2; dy <= 2; dy++) {
+      for (let dx = -2; dx <= 2; dx++) {
+        const dist = Math.max(Math.abs(dx), Math.abs(dy));
+        setModule(22 + dx, 22 + dy, dist === 2 || dist === 0);
+      }
+    }
+
+    for (let i = 0; i <= 8; i++) {
+      reserved[8][i] = true;
+      reserved[i][8] = true;
+    }
+    for (let i = 0; i < 8; i++) {
+      reserved[8][size - 1 - i] = true;
+      reserved[size - 1 - i][8] = true;
+    }
+    setModule(8, size - 8, true);
+
+    const bytes = String(text || "")
+      .split("")
+      .map((ch) => ch.charCodeAt(0));
+    if (!bytes.length || bytes.some((byte) => byte > 255)) {
+      throw new Error("QR unterstützt nur kurzen ASCII-Text.");
+    }
+    if (bytes.length > 53) {
+      throw new Error("QR-Text ist für diese lokale Minimalversion zu lang.");
+    }
+
+    const bits = [];
+    const appendBits = (value, length) => {
+      for (let i = length - 1; i >= 0; i--) bits.push((value >>> i) & 1);
+    };
+
+    appendBits(0b0100, 4);
+    appendBits(bytes.length, 8);
+    bytes.forEach((byte) => appendBits(byte, 8));
+
+    const capacityBits = dataCodewords * 8;
+    const terminator = Math.min(4, capacityBits - bits.length);
+    appendBits(0, terminator);
+    while (bits.length % 8) bits.push(0);
+
+    const data = [];
+    for (let i = 0; i < bits.length; i += 8) {
+      data.push(Number.parseInt(bits.slice(i, i + 8).join(""), 2));
+    }
+    for (let pad = 0xec; data.length < dataCodewords; pad ^= 0xfd) {
+      data.push(pad);
+    }
+
+    const gfExp = Array(512).fill(0);
+    const gfLog = Array(256).fill(0);
+    let value = 1;
+    for (let i = 0; i < 255; i++) {
+      gfExp[i] = value;
+      gfLog[value] = i;
+      value <<= 1;
+      if (value & 0x100) value ^= 0x11d;
+    }
+    for (let i = 255; i < 512; i++) gfExp[i] = gfExp[i - 255];
+
+    const gfMul = (a, b) => {
+      if (!a || !b) return 0;
+      return gfExp[gfLog[a] + gfLog[b]];
+    };
+
+    const polyMul = (a, b) => {
+      const result = Array(a.length + b.length - 1).fill(0);
+      a.forEach((av, i) => {
+        b.forEach((bv, j) => {
+          result[i + j] ^= gfMul(av, bv);
+        });
+      });
+      return result;
+    };
+
+    let generator = [1];
+    for (let i = 0; i < ecCodewords; i++) {
+      generator = polyMul(generator, [1, gfExp[i]]);
+    }
+
+    const ec = Array(ecCodewords).fill(0);
+    data.forEach((byte) => {
+      const factor = byte ^ ec.shift();
+      ec.push(0);
+      for (let i = 0; i < ecCodewords; i++) {
+        ec[i] ^= gfMul(generator[i + 1], factor);
+      }
+    });
+
+    const codewordBits = [...data, ...ec].flatMap((byte) => {
+      const out = [];
+      for (let i = 7; i >= 0; i--) out.push((byte >>> i) & 1);
+      return out;
+    });
+
+    let bitIndex = 0;
+    let upward = true;
+    for (let right = size - 1; right >= 1; right -= 2) {
+      if (right === 6) right--;
+      for (let vert = 0; vert < size; vert++) {
+        const y = upward ? size - 1 - vert : vert;
+        for (let j = 0; j < 2; j++) {
+          const x = right - j;
+          if (reserved[y][x]) continue;
+          const bit = bitIndex < codewordBits.length ? codewordBits[bitIndex++] : 0;
+          const mask = (x + y) % 2 === 0;
+          setModule(x, y, bit ^ mask, false);
+        }
+      }
+      upward = !upward;
+    }
+
+    const formatData = (0b01 << 3) | 0;
+    let formatRemainder = formatData << 10;
+    for (let i = 14; i >= 10; i--) {
+      if ((formatRemainder >>> i) & 1) {
+        formatRemainder ^= 0x537 << (i - 10);
+      }
+    }
+    const formatBits = ((formatData << 10) | formatRemainder) ^ 0x5412;
+    const formatBit = (i) => ((formatBits >>> i) & 1) === 1;
+
+    for (let i = 0; i <= 5; i++) setModule(8, i, formatBit(i));
+    setModule(8, 7, formatBit(6));
+    setModule(8, 8, formatBit(7));
+    setModule(7, 8, formatBit(8));
+    for (let i = 9; i < 15; i++) setModule(14 - i, 8, formatBit(i));
+    for (let i = 0; i < 8; i++) setModule(size - 1 - i, 8, formatBit(i));
+    for (let i = 8; i < 15; i++) setModule(8, size - 15 + i, formatBit(i));
+    setModule(8, size - 8, true);
+
+    const viewSize = (size + quiet * 2) * scale;
+    const rects = [];
+    modules.forEach((row, y) => {
+      row.forEach((dark, x) => {
+        if (!dark) return;
+        rects.push(
+          `<rect x="${(x + quiet) * scale}" y="${(y + quiet) * scale}" width="${scale}" height="${scale}"/>`,
+        );
+      });
+    });
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${viewSize} ${viewSize}" width="180" height="180" role="img" aria-label="QR-Code">
+      <rect width="100%" height="100%" fill="#fff"/>
+      <g fill="#000">${rects.join("")}</g>
+    </svg>`;
+  } catch (error) {
+    console.error("QR-Code konnte nicht erzeugt werden:", error);
+    return `<div class="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded p-3">[QR-Code konnte nicht erzeugt werden]</div>`;
+  }
+}
+
 function getToolQrPayload(tool) {
   return `TOOL:${tool.id}`;
 }
@@ -4575,6 +4771,7 @@ function openToolQrPopup(toolId) {
   const payload = getToolQrPayload(tool);
   const host = getModalHost();
   const toolTitle = `T ${tool.tNumber}`;
+  const qrSvg = renderSimpleQrSvg(payload);
 
   host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-4">
@@ -4593,8 +4790,8 @@ function openToolQrPopup(toolId) {
           <div><span class="text-xs text-slate-500">Lagerfach</span><div>${escapeHtml(tool.shelf || "-")}</div></div>
           <div><span class="text-xs text-slate-500">QR-Inhalt</span><div class="font-mono text-sm break-all bg-white border rounded p-2 mt-1">${escapeHtml(payload)}</div></div>
         </div>
-        <div class="border-2 border-dashed border-slate-300 rounded-lg bg-white p-3 flex items-center justify-center text-center text-sm text-slate-500 min-h-[220px]">
-          [QR-Code wird im nächsten Schritt als Grafik ergänzt]
+        <div class="border rounded-lg bg-white p-3 flex items-center justify-center text-center min-h-[220px]">
+          ${qrSvg}
         </div>
       </div>
       <div class="border rounded-lg bg-white p-4 mb-4">
@@ -4604,7 +4801,7 @@ function openToolQrPopup(toolId) {
           <div class="text-3xl font-bold">${escapeHtml(toolTitle)}</div>
           <div class="text-base mt-1">${escapeHtml(tool.label || "-")}</div>
           <div class="text-sm text-slate-600 mt-1">${escapeHtml(tool.holder || "-")} · Fach ${escapeHtml(tool.shelf || "-")}</div>
-          <div class="border-2 border-dashed border-slate-300 rounded p-6 mt-4 text-sm text-slate-500">[QR-Code wird im nächsten Schritt als Grafik ergänzt]</div>
+          <div class="mt-4 flex justify-center">${qrSvg}</div>
           <div class="font-mono text-xs break-all mt-3">QR-Inhalt: ${escapeHtml(payload)}</div>
         </div>
       </div>
@@ -4621,6 +4818,7 @@ function printToolQrLabel(toolId) {
   if (!tool) return;
 
   const payload = getToolQrPayload(tool);
+  const qrSvg = renderSimpleQrSvg(payload);
   const printWindow = window.open("", "_blank", "width=420,height=560");
   if (!printWindow) {
     alert("Druckfenster konnte nicht geöffnet werden.");
@@ -4638,8 +4836,9 @@ function printToolQrLabel(toolId) {
         .tnumber { font-size: 42px; font-weight: 800; margin: 8px 0; }
         .name { font-size: 18px; margin-bottom: 8px; }
         .meta { font-size: 14px; color: #475569; margin-bottom: 16px; }
-        .qr-placeholder { border: 2px dashed #94a3b8; border-radius: 10px; padding: 36px 12px; color: #64748b; margin-bottom: 14px; }
+        .qr-wrap { display: flex; justify-content: center; margin: 16px 0 14px; }
         .payload { font-family: monospace; font-size: 12px; word-break: break-all; }
+        svg { width: 180px; height: 180px; }
       </style>
     </head>
     <body>
@@ -4648,7 +4847,7 @@ function printToolQrLabel(toolId) {
         <div class="tnumber">T ${escapeHtml(tool.tNumber)}</div>
         <div class="name">${escapeHtml(tool.label || "-")}</div>
         <div class="meta">${escapeHtml(tool.holder || "-")} · Fach ${escapeHtml(tool.shelf || "-")}</div>
-        <div class="qr-placeholder">[QR-Code wird im nächsten Schritt als Grafik ergänzt]</div>
+        <div class="qr-wrap">${qrSvg}</div>
         <div class="payload">QR-Inhalt: ${escapeHtml(payload)}</div>
       </div>
       <script>
