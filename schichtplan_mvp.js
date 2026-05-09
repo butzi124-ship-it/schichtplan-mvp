@@ -56,12 +56,15 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.7";
+const APP_VERSION = "0.4.8";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
 let currentTab = "schichtplan";
 let statsViewPeriod = "week";
+let qrScannerStream = null;
+let qrScannerTimer = null;
+let qrScannerMode = null;
 
 const HELP_TEXTS = {
   planningPersonal: {
@@ -4964,28 +4967,177 @@ function updateScannerRestockPreview() {
 }
 
 function openQrScannerPlaceholder(mode) {
+  openQrScanner(mode);
+}
+
+async function openQrScanner(mode) {
+  stopQrScanner();
+
   const modeLabel = mode === "restock" ? "Einlagern" : "Entnehmen";
   const host = getModalHost();
 
+  if (!("BarcodeDetector" in window)) {
+    host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-4">
+        <h3 class="text-lg font-bold mb-2">QR-Code scannen</h3>
+        <p class="text-sm text-slate-700 mb-4">QR-Scanner wird von diesem Browser nicht unterstützt. Bitte manuell per T-Nummer buchen.</p>
+        <div class="flex justify-end gap-2">
+          <button class="px-3 py-2 rounded bg-slate-200" onclick="closeToolImagePopup()">Schließen</button>
+          <button class="px-3 py-2 rounded bg-slate-900 text-white" onclick="${mode === "restock" ? "openManualToolRestock()" : "openManualToolWithdraw()"}">Manuell buchen</button>
+        </div>
+      </div>
+    </div>`;
+    return;
+  }
+
+  if (!navigator.mediaDevices?.getUserMedia) {
+    host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-4">
+        <h3 class="text-lg font-bold mb-2">QR-Code scannen</h3>
+        <p class="text-sm text-slate-700 mb-4">Kamera-Zugriff wird von diesem Browser nicht unterstützt. Bitte manuell per T-Nummer buchen.</p>
+        <div class="flex justify-end gap-2">
+          <button class="px-3 py-2 rounded bg-slate-200" onclick="closeToolImagePopup()">Schließen</button>
+          <button class="px-3 py-2 rounded bg-slate-900 text-white" onclick="${mode === "restock" ? "openManualToolRestock()" : "openManualToolWithdraw()"}">Manuell buchen</button>
+        </div>
+      </div>
+    </div>`;
+    return;
+  }
+
+  qrScannerMode = mode;
   host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-4">
       <h3 class="text-lg font-bold mb-2">QR-Code scannen</h3>
       <p class="text-sm text-slate-500 mb-1">Modus: ${modeLabel}</p>
-      <p class="text-sm text-slate-700 mb-4">QR-Scanner wird im nächsten Schritt aktiviert.</p>
-      <div class="flex justify-end">
-        <button class="px-3 py-2 rounded bg-slate-900 text-white" onclick="closeToolImagePopup()">Schließen</button>
+      <video id="qrScannerVideo" class="w-full bg-black rounded-lg mb-3" autoplay muted playsinline></video>
+      <div id="qrScannerStatus" class="text-sm text-slate-600 bg-slate-50 border rounded p-2 mb-4">Kamera wird gestartet ...</div>
+      <div class="flex justify-end gap-2">
+        <button class="px-3 py-2 rounded bg-slate-200" onclick="stopQrScanner(); closeToolImagePopup()">Abbrechen</button>
+        <button class="px-3 py-2 rounded bg-slate-900 text-white" onclick="stopQrScanner(); ${mode === "restock" ? "openManualToolRestock()" : "openManualToolWithdraw()"}">Manuell buchen</button>
+      </div>
+    </div>
+  </div>`;
+
+  try {
+    qrScannerStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" },
+    });
+    const video = document.getElementById("qrScannerVideo");
+    if (!video) return;
+    video.srcObject = qrScannerStream;
+    await video.play();
+    const status = document.getElementById("qrScannerStatus");
+    if (status) {
+      status.textContent = "Kamera aktiv. QR-Code vor die Kamera halten.";
+    }
+    startQrScannerLoop();
+  } catch (error) {
+    console.error("Fehler beim Starten des QR-Scanners:", error);
+    stopQrScanner();
+    const status = document.getElementById("qrScannerStatus");
+    if (status) {
+      status.textContent =
+        "Kamera konnte nicht gestartet werden. Bitte manuell per T-Nummer buchen.";
+    }
+  }
+}
+
+async function startQrScannerLoop() {
+  const video = document.getElementById("qrScannerVideo");
+  const status = document.getElementById("qrScannerStatus");
+  if (!video || !("BarcodeDetector" in window)) return;
+
+  const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
+  let scanning = false;
+
+  qrScannerTimer = window.setInterval(async () => {
+    if (scanning || !qrScannerStream) return;
+    if (video.readyState < 2) return;
+
+    scanning = true;
+    try {
+      const codes = await detector.detect(video);
+      const first = codes?.[0];
+      const rawValue = first?.rawValue || "";
+      if (rawValue) {
+        if (status) status.textContent = "QR-Code erkannt.";
+        const mode = qrScannerMode;
+        stopQrScanner();
+        processScannedToolQr(rawValue, mode);
+      }
+    } catch (error) {
+      console.error("Fehler beim Lesen des QR-Codes:", error);
+      if (status) status.textContent = "QR-Code konnte nicht gelesen werden.";
+    } finally {
+      scanning = false;
+    }
+  }, 450);
+}
+
+function processScannedToolQr(rawValue, mode) {
+  const value = String(rawValue || "").trim();
+  if (!value.startsWith("TOOL:")) {
+    alert("Ungültiger QR-Code");
+    return;
+  }
+
+  const toolId = value.slice("TOOL:".length);
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool) {
+    alert("Werkzeug nicht gefunden");
+    return;
+  }
+
+  const modeLabel = mode === "restock" ? "Einlagerung" : "Entnahme";
+  const actionLabel =
+    mode === "restock" ? "Einlagerung vorbereiten" : "Entnahme vorbereiten";
+  const actionCall =
+    mode === "restock"
+      ? `openManualToolRestock('${escapeHtml(String(tool.tNumber || ""))}')`
+      : `openManualToolWithdraw('${escapeHtml(String(tool.tNumber || ""))}')`;
+
+  getModalHost().innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-4">
+      <h3 class="text-lg font-bold mb-2">Werkzeug erkannt</h3>
+      <p class="text-sm text-slate-500 mb-3">Modus: ${modeLabel}</p>
+      <div class="border rounded-lg bg-slate-50 p-3 space-y-1 text-sm mb-4">
+        <div><span class="text-slate-500">T-Nummer:</span> T ${escapeHtml(tool.tNumber)}</div>
+        <div><span class="text-slate-500">Bezeichnung:</span> ${escapeHtml(tool.label || "-")}</div>
+        <div><span class="text-slate-500">Durchmesser:</span> ${escapeHtml(formatToolSize(tool))}</div>
+        <div><span class="text-slate-500">Aufnahme:</span> ${escapeHtml(tool.holder || "-")}</div>
+        <div><span class="text-slate-500">Fach:</span> ${escapeHtml(tool.shelf || "-")}</div>
+        <div><span class="text-slate-500">Bestand:</span> ${escapeHtml(tool.stock)}</div>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button class="px-3 py-2 rounded bg-slate-200" onclick="closeToolImagePopup()">Abbrechen</button>
+        <button class="px-3 py-2 rounded bg-slate-900 text-white" onclick="${actionCall}">${actionLabel}</button>
       </div>
     </div>
   </div>`;
 }
 
-function openManualToolWithdraw() {
+function stopQrScanner() {
+  if (qrScannerTimer) {
+    window.clearInterval(qrScannerTimer);
+    qrScannerTimer = null;
+  }
+
+  if (qrScannerStream) {
+    qrScannerStream.getTracks().forEach((track) => track.stop());
+    qrScannerStream = null;
+  }
+
+  qrScannerMode = null;
+}
+
+function openManualToolWithdraw(initialTNumber = "") {
   const host = getModalHost();
+  stopQrScanner();
 
   host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-xl p-4">
       <h3 class="text-lg font-bold mb-3">Werkzeug manuell entnehmen</h3>
-      <input id="scannerWithdrawTNumber" inputmode="numeric" class="border rounded p-2 w-full mb-2" placeholder="T-Nummer eingeben, z. B. 133" oninput="updateScannerWithdrawPreview()" />
+      <input id="scannerWithdrawTNumber" inputmode="numeric" class="border rounded p-2 w-full mb-2" placeholder="T-Nummer eingeben, z. B. 133" value="${escapeHtml(initialTNumber)}" oninput="updateScannerWithdrawPreview()" />
       <div id="scannerWithdrawToolPreview" class="mb-4">
         <div class="text-sm text-slate-500 bg-slate-50 border rounded p-2">Kein Werkzeug gefunden</div>
       </div>
@@ -5042,15 +5194,17 @@ function openManualToolWithdraw() {
   });
 
   host.querySelector("#scannerWithdrawTNumber")?.focus();
+  updateScannerWithdrawPreview();
 }
 
-function openManualToolRestock() {
+function openManualToolRestock(initialTNumber = "") {
   const host = getModalHost();
+  stopQrScanner();
 
   host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-xl p-4">
       <h3 class="text-lg font-bold mb-3">Werkzeug manuell einlagern</h3>
-      <input id="scannerRestockTNumber" inputmode="numeric" class="border rounded p-2 w-full mb-2" placeholder="T-Nummer eingeben, z. B. 133" oninput="updateScannerRestockPreview()" />
+      <input id="scannerRestockTNumber" inputmode="numeric" class="border rounded p-2 w-full mb-2" placeholder="T-Nummer eingeben, z. B. 133" value="${escapeHtml(initialTNumber)}" oninput="updateScannerRestockPreview()" />
       <div id="scannerRestockToolPreview" class="mb-3">
         <div class="text-sm text-slate-500 bg-slate-50 border rounded p-2">Kein Werkzeug gefunden</div>
       </div>
@@ -5109,6 +5263,7 @@ function openManualToolRestock() {
   });
 
   host.querySelector("#scannerRestockTNumber")?.focus();
+  updateScannerRestockPreview();
 }
 
 function askYesNoCentered(message) {
@@ -7609,6 +7764,9 @@ window.closeToolImagePopup = closeToolImagePopup;
 window.openManualToolWithdraw = openManualToolWithdraw;
 window.openManualToolRestock = openManualToolRestock;
 window.openQrScannerPlaceholder = openQrScannerPlaceholder;
+window.openQrScanner = openQrScanner;
+window.stopQrScanner = stopQrScanner;
+window.processScannedToolQr = processScannedToolQr;
 window.updateScannerWithdrawPreview = updateScannerWithdrawPreview;
 window.updateScannerRestockPreview = updateScannerRestockPreview;
 window.openToolQrPopup = openToolQrPopup;
