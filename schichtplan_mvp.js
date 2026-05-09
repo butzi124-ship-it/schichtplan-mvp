@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.2";
+const APP_VERSION = "0.4.3";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -4641,13 +4641,49 @@ function renderToolScanner() {
   </div>`;
 }
 
-function renderToolScannerOptions() {
-  return state.tools
-    .map(
-      (tool) =>
-        `<option value="${tool.id}">T ${escapeHtml(tool.tNumber)} · ${escapeHtml(tool.label || "-")} · ${escapeHtml(formatToolSize(tool))} · ${escapeHtml(tool.holder || "-")} · Bestand ${tool.stock}</option>`,
-    )
-    .join("");
+function findToolByTNumberInput(value) {
+  const normalized = normalizeToolImageNumber(value);
+  if (!normalized) return null;
+
+  return (
+    state.tools.find((tool) => {
+      return normalizeToolImageNumber(tool.tNumber) === normalized;
+    }) || null
+  );
+}
+
+function formatToolScannerSummary(tool) {
+  if (!tool) return "";
+  return `T ${tool.tNumber} · ${tool.label || "-"} · ${formatToolSize(tool)} · ${tool.holder || "-"} · Bestand ${tool.stock}`;
+}
+
+function updateScannerWithdrawPreview() {
+  const input = document.getElementById("scannerWithdrawTNumber");
+  const preview = document.getElementById("scannerWithdrawToolPreview");
+  if (!preview) return;
+
+  const tool = findToolByTNumberInput(input?.value || "");
+  preview.innerHTML = tool
+    ? `<div class="text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-2">${escapeHtml(formatToolScannerSummary(tool))}</div>`
+    : `<div class="text-sm text-slate-500 bg-slate-50 border rounded p-2">Kein Werkzeug gefunden</div>`;
+}
+
+function updateScannerRestockPreview() {
+  const input = document.getElementById("scannerRestockTNumber");
+  const preview = document.getElementById("scannerRestockToolPreview");
+  const qtyInput = document.getElementById("scannerRestockQty");
+  if (!preview) return;
+
+  const tool = findToolByTNumberInput(input?.value || "");
+  preview.innerHTML = tool
+    ? `<div class="text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-2">${escapeHtml(formatToolScannerSummary(tool))}</div>`
+    : `<div class="text-sm text-slate-500 bg-slate-50 border rounded p-2">Kein Werkzeug gefunden</div>`;
+
+  if (qtyInput && tool?.ordered && Number(tool.orderedQty || 0) > 0) {
+    qtyInput.value = String(tool.orderedQty);
+  } else if (qtyInput && !qtyInput.value) {
+    qtyInput.value = "1";
+  }
 }
 
 function openQrScannerPlaceholder(mode) {
@@ -4672,9 +4708,10 @@ function openManualToolWithdraw() {
   host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-xl p-4">
       <h3 class="text-lg font-bold mb-3">Werkzeug manuell entnehmen</h3>
-      <select id="scannerWithdrawTool" class="border rounded p-2 w-full mb-4">
-        ${renderToolScannerOptions()}
-      </select>
+      <input id="scannerWithdrawTNumber" inputmode="numeric" class="border rounded p-2 w-full mb-2" placeholder="T-Nummer eingeben, z. B. 133" oninput="updateScannerWithdrawPreview()" />
+      <div id="scannerWithdrawToolPreview" class="mb-4">
+        <div class="text-sm text-slate-500 bg-slate-50 border rounded p-2">Kein Werkzeug gefunden</div>
+      </div>
       <div class="flex justify-end gap-2">
         <button class="px-3 py-2 rounded bg-slate-200" onclick="closeToolImagePopup()">Abbrechen</button>
         <button id="scannerWithdrawSave" class="px-3 py-2 rounded bg-emerald-700 text-white">Entnehmen</button>
@@ -4683,9 +4720,12 @@ function openManualToolWithdraw() {
   </div>`;
 
   host.querySelector("#scannerWithdrawSave")?.addEventListener("click", async () => {
-    const toolId = host.querySelector("#scannerWithdrawTool")?.value;
-    const tool = state.tools.find((t) => t.id === toolId);
-    if (!tool) return;
+    const input = host.querySelector("#scannerWithdrawTNumber");
+    const tool = findToolByTNumberInput(input?.value || "");
+    if (!tool) {
+      alert("Werkzeug wurde nicht gefunden.");
+      return;
+    }
     if (Number(tool.stock || 0) <= 0) {
       alert("Nicht genügend Bestand vorhanden.");
       return;
@@ -4695,7 +4735,7 @@ function openManualToolWithdraw() {
     const { data, error } = await supabaseClient
       .from("tools")
       .update({ stock: nextStock })
-      .eq("id", toolId)
+      .eq("id", tool.id)
       .select()
       .single();
 
@@ -4706,7 +4746,7 @@ function openManualToolWithdraw() {
     }
 
     const updatedTool = normalizeToolFromDb(data);
-    const index = state.tools.findIndex((t) => t.id === toolId);
+    const index = state.tools.findIndex((t) => t.id === tool.id);
     if (index !== -1) state.tools[index] = updatedTool;
 
     state.toolJournal.unshift({
@@ -4723,6 +4763,8 @@ function openManualToolWithdraw() {
     persist();
     render();
   });
+
+  host.querySelector("#scannerWithdrawTNumber")?.focus();
 }
 
 function openManualToolRestock() {
@@ -4731,9 +4773,10 @@ function openManualToolRestock() {
   host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-xl p-4">
       <h3 class="text-lg font-bold mb-3">Werkzeug manuell einlagern</h3>
-      <select id="scannerRestockTool" class="border rounded p-2 w-full mb-3">
-        ${renderToolScannerOptions()}
-      </select>
+      <input id="scannerRestockTNumber" inputmode="numeric" class="border rounded p-2 w-full mb-2" placeholder="T-Nummer eingeben, z. B. 133" oninput="updateScannerRestockPreview()" />
+      <div id="scannerRestockToolPreview" class="mb-3">
+        <div class="text-sm text-slate-500 bg-slate-50 border rounded p-2">Kein Werkzeug gefunden</div>
+      </div>
       <input id="scannerRestockQty" type="number" min="1" class="border rounded p-2 w-full mb-4" value="1" />
       <div class="flex justify-end gap-2">
         <button class="px-3 py-2 rounded bg-slate-200" onclick="closeToolImagePopup()">Abbrechen</button>
@@ -4743,10 +4786,13 @@ function openManualToolRestock() {
   </div>`;
 
   host.querySelector("#scannerRestockSave")?.addEventListener("click", async () => {
-    const toolId = host.querySelector("#scannerRestockTool")?.value;
+    const input = host.querySelector("#scannerRestockTNumber");
     const qty = Number(host.querySelector("#scannerRestockQty")?.value || 0);
-    const tool = state.tools.find((t) => t.id === toolId);
-    if (!tool) return;
+    const tool = findToolByTNumberInput(input?.value || "");
+    if (!tool) {
+      alert("Werkzeug wurde nicht gefunden.");
+      return;
+    }
     if (!Number.isFinite(qty) || qty <= 0) {
       alert("Bitte eine gültige Menge eingeben.");
       return;
@@ -4756,7 +4802,7 @@ function openManualToolRestock() {
     const { data, error } = await supabaseClient
       .from("tools")
       .update({ stock: nextStock })
-      .eq("id", toolId)
+      .eq("id", tool.id)
       .select()
       .single();
 
@@ -4767,7 +4813,7 @@ function openManualToolRestock() {
     }
 
     const updatedTool = normalizeToolFromDb(data);
-    const index = state.tools.findIndex((t) => t.id === toolId);
+    const index = state.tools.findIndex((t) => t.id === tool.id);
     if (index !== -1) state.tools[index] = updatedTool;
 
     state.toolJournal.unshift({
@@ -4784,6 +4830,8 @@ function openManualToolRestock() {
     persist();
     render();
   });
+
+  host.querySelector("#scannerRestockTNumber")?.focus();
 }
 
 function askYesNoCentered(message) {
@@ -7284,6 +7332,8 @@ window.closeToolImagePopup = closeToolImagePopup;
 window.openManualToolWithdraw = openManualToolWithdraw;
 window.openManualToolRestock = openManualToolRestock;
 window.openQrScannerPlaceholder = openQrScannerPlaceholder;
+window.updateScannerWithdrawPreview = updateScannerWithdrawPreview;
+window.updateScannerRestockPreview = updateScannerRestockPreview;
 window.openToolQrPopup = openToolQrPopup;
 window.copyToolQrPayload = copyToolQrPayload;
 window.editTool = editTool;
