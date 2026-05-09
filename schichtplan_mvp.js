@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.6";
+const APP_VERSION = "0.4.7";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -4750,7 +4750,7 @@ function renderSimpleQrSvg(text) {
       });
     });
 
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${viewSize} ${viewSize}" width="180" height="180" role="img" aria-label="QR-Code">
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${viewSize} ${viewSize}" width="150" height="150" role="img" aria-label="QR-Code">
       <rect width="100%" height="100%" fill="#fff"/>
       <g fill="#000">${rects.join("")}</g>
     </svg>`;
@@ -4778,38 +4778,38 @@ function openToolQrPopup(toolId) {
   const articleNo = tool.articleNo || "-";
   const shelf = tool.shelf || "-";
 
-  host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-4">
-      <div class="flex items-center justify-between gap-3 mb-3">
+  host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-auto p-3">
+      <div class="flex items-center justify-between gap-3 mb-2">
         <div>
           <h3 class="text-lg font-bold">QR-Code für ${escapeHtml(toolTitle)}</h3>
           <p class="text-sm text-slate-500">${escapeHtml(tool.label || "-")} · ${escapeHtml(tool.holder || "-")} · Fach ${escapeHtml(tool.shelf || "-")}</p>
         </div>
         <button class="px-3 py-1 rounded bg-slate-200" onclick="closeToolImagePopup()">Schließen</button>
       </div>
-      <div class="grid md:grid-cols-[1fr,220px] gap-4 mb-4">
-        <div class="border rounded-lg bg-slate-50 p-3 space-y-2">
+      <div class="grid md:grid-cols-[1fr,190px] gap-3 mb-3">
+        <div class="border rounded-lg bg-slate-50 p-2 space-y-1">
           <div><span class="text-xs text-slate-500">T-Nummer</span><div class="font-semibold">${escapeHtml(toolTitle)}</div></div>
           <div><span class="text-xs text-slate-500">Bezeichnung</span><div>${escapeHtml(tool.label || "-")}</div></div>
           <div><span class="text-xs text-slate-500">Aufnahme</span><div>${escapeHtml(tool.holder || "-")}</div></div>
           <div><span class="text-xs text-slate-500">Lagerfach</span><div>${escapeHtml(tool.shelf || "-")}</div></div>
-          <div><span class="text-xs text-slate-500">QR-Inhalt</span><div class="font-mono text-sm break-all bg-white border rounded p-2 mt-1">${escapeHtml(payload)}</div></div>
+          <div><span class="text-xs text-slate-500">QR-Inhalt</span><div class="font-mono text-xs break-all bg-white border rounded p-1 mt-1">${escapeHtml(payload)}</div></div>
         </div>
-        <div class="border rounded-lg bg-white p-3 flex items-center justify-center text-center min-h-[220px]">
+        <div class="border rounded-lg bg-white p-2 flex items-center justify-center text-center min-h-[170px]">
           ${qrSvg}
         </div>
       </div>
-      <div class="border rounded-lg bg-white p-4 mb-4">
-        <div class="text-xs uppercase tracking-wide text-slate-500 mb-2">Druckbereich</div>
-        <div class="border rounded-lg p-4 text-center">
-          <div class="text-3xl font-bold">${escapeHtml(toolTitle)}</div>
-          <div class="text-base mt-1">${escapeHtml(tool.label || "-")}</div>
+      <div class="border rounded-lg bg-white p-3 mb-3">
+        <div class="text-xs uppercase tracking-wide text-slate-500 mb-1">Druckbereich</div>
+        <div class="border rounded-lg p-3 text-center">
+          <div class="text-2xl font-bold">${escapeHtml(toolTitle)}</div>
+          <div class="text-sm mt-1">${escapeHtml(tool.label || "-")}</div>
           <div class="text-sm text-slate-700 mt-1">Ø ${escapeHtml(diameter)} · ${escapeHtml(cornerRadius)}</div>
-          <div class="text-xs text-slate-600 mt-1">Hersteller: ${escapeHtml(manufacturer)}</div>
+          <div class="text-xs text-slate-600">Hersteller: ${escapeHtml(manufacturer)}</div>
           <div class="text-xs text-slate-600">Artikel: ${escapeHtml(articleNo)}</div>
           <div class="text-xs text-slate-600">Fach: ${escapeHtml(shelf)}</div>
-          <div class="mt-4 flex justify-center">${qrSvg}</div>
-          <div class="font-mono text-xs break-all mt-3">QR-Inhalt: ${escapeHtml(payload)}</div>
+          <div class="mt-2 flex justify-center">${qrSvg}</div>
+          <div class="font-mono text-[10px] break-all mt-2">QR-Inhalt: ${escapeHtml(payload)}</div>
         </div>
       </div>
       <div class="flex justify-end gap-2">
@@ -4843,13 +4843,13 @@ function printToolQrLabel(toolId) {
       <title>QR-Etikett T ${escapeHtml(tool.tNumber)}</title>
       <style>
         body { font-family: Arial, sans-serif; margin: 24px; color: #0f172a; }
-        .label { border: 2px solid #0f172a; border-radius: 12px; padding: 20px; text-align: center; max-width: 340px; }
-        .tnumber { font-size: 42px; font-weight: 800; margin: 0 0 4px; }
-        .name { font-size: 18px; margin-bottom: 6px; }
-        .meta { font-size: 13px; color: #475569; line-height: 1.35; }
-        .qr-wrap { display: flex; justify-content: center; margin: 14px 0 12px; }
-        .payload { font-family: monospace; font-size: 12px; word-break: break-all; }
-        svg { width: 180px; height: 180px; }
+        .label { border: 2px solid #0f172a; border-radius: 12px; padding: 16px; text-align: center; max-width: 340px; }
+        .tnumber { font-size: 36px; font-weight: 800; margin: 0 0 3px; }
+        .name { font-size: 16px; margin-bottom: 4px; }
+        .meta { font-size: 12px; color: #475569; line-height: 1.25; }
+        .qr-wrap { display: flex; justify-content: center; margin: 10px 0 8px; }
+        .payload { font-family: monospace; font-size: 10px; word-break: break-all; }
+        svg { width: 150px; height: 150px; }
       </style>
     </head>
     <body>
