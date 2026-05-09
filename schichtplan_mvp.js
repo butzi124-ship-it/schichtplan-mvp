@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.5";
+const APP_VERSION = "0.4.6";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -4772,6 +4772,11 @@ function openToolQrPopup(toolId) {
   const host = getModalHost();
   const toolTitle = `T ${tool.tNumber}`;
   const qrSvg = renderSimpleQrSvg(payload);
+  const diameter = tool.diameter || "-";
+  const cornerRadius = tool.cornerRadius ? `R ${tool.cornerRadius}` : "-";
+  const manufacturer = tool.manufacturer || "-";
+  const articleNo = tool.articleNo || "-";
+  const shelf = tool.shelf || "-";
 
   host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-4">
@@ -4797,10 +4802,12 @@ function openToolQrPopup(toolId) {
       <div class="border rounded-lg bg-white p-4 mb-4">
         <div class="text-xs uppercase tracking-wide text-slate-500 mb-2">Druckbereich</div>
         <div class="border rounded-lg p-4 text-center">
-          <div class="text-sm text-slate-500">Werkzeugfach</div>
           <div class="text-3xl font-bold">${escapeHtml(toolTitle)}</div>
           <div class="text-base mt-1">${escapeHtml(tool.label || "-")}</div>
-          <div class="text-sm text-slate-600 mt-1">${escapeHtml(tool.holder || "-")} · Fach ${escapeHtml(tool.shelf || "-")}</div>
+          <div class="text-sm text-slate-700 mt-1">Ø ${escapeHtml(diameter)} · ${escapeHtml(cornerRadius)}</div>
+          <div class="text-xs text-slate-600 mt-1">Hersteller: ${escapeHtml(manufacturer)}</div>
+          <div class="text-xs text-slate-600">Artikel: ${escapeHtml(articleNo)}</div>
+          <div class="text-xs text-slate-600">Fach: ${escapeHtml(shelf)}</div>
           <div class="mt-4 flex justify-center">${qrSvg}</div>
           <div class="font-mono text-xs break-all mt-3">QR-Inhalt: ${escapeHtml(payload)}</div>
         </div>
@@ -4819,6 +4826,11 @@ function printToolQrLabel(toolId) {
 
   const payload = getToolQrPayload(tool);
   const qrSvg = renderSimpleQrSvg(payload);
+  const diameter = tool.diameter || "-";
+  const cornerRadius = tool.cornerRadius ? `R ${tool.cornerRadius}` : "-";
+  const manufacturer = tool.manufacturer || "-";
+  const articleNo = tool.articleNo || "-";
+  const shelf = tool.shelf || "-";
   const printWindow = window.open("", "_blank", "width=420,height=560");
   if (!printWindow) {
     alert("Druckfenster konnte nicht geöffnet werden.");
@@ -4828,25 +4840,26 @@ function printToolQrLabel(toolId) {
   printWindow.document.write(`<!doctype html>
   <html>
     <head>
-      <title>Werkzeugfach T ${escapeHtml(tool.tNumber)}</title>
+      <title>QR-Etikett T ${escapeHtml(tool.tNumber)}</title>
       <style>
         body { font-family: Arial, sans-serif; margin: 24px; color: #0f172a; }
         .label { border: 2px solid #0f172a; border-radius: 12px; padding: 20px; text-align: center; max-width: 340px; }
-        .eyebrow { font-size: 13px; color: #64748b; text-transform: uppercase; letter-spacing: .08em; }
-        .tnumber { font-size: 42px; font-weight: 800; margin: 8px 0; }
-        .name { font-size: 18px; margin-bottom: 8px; }
-        .meta { font-size: 14px; color: #475569; margin-bottom: 16px; }
-        .qr-wrap { display: flex; justify-content: center; margin: 16px 0 14px; }
+        .tnumber { font-size: 42px; font-weight: 800; margin: 0 0 4px; }
+        .name { font-size: 18px; margin-bottom: 6px; }
+        .meta { font-size: 13px; color: #475569; line-height: 1.35; }
+        .qr-wrap { display: flex; justify-content: center; margin: 14px 0 12px; }
         .payload { font-family: monospace; font-size: 12px; word-break: break-all; }
         svg { width: 180px; height: 180px; }
       </style>
     </head>
     <body>
       <div class="label">
-        <div class="eyebrow">Werkzeugfach</div>
         <div class="tnumber">T ${escapeHtml(tool.tNumber)}</div>
         <div class="name">${escapeHtml(tool.label || "-")}</div>
-        <div class="meta">${escapeHtml(tool.holder || "-")} · Fach ${escapeHtml(tool.shelf || "-")}</div>
+        <div class="meta">Ø ${escapeHtml(diameter)} · ${escapeHtml(cornerRadius)}</div>
+        <div class="meta">Hersteller: ${escapeHtml(manufacturer)}</div>
+        <div class="meta">Artikel: ${escapeHtml(articleNo)}</div>
+        <div class="meta">Fach: ${escapeHtml(shelf)}</div>
         <div class="qr-wrap">${qrSvg}</div>
         <div class="payload">QR-Inhalt: ${escapeHtml(payload)}</div>
       </div>
