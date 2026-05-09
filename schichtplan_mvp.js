@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.3";
+const APP_VERSION = "0.4.4";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -4574,26 +4574,91 @@ function openToolQrPopup(toolId) {
 
   const payload = getToolQrPayload(tool);
   const host = getModalHost();
+  const toolTitle = `T ${tool.tNumber}`;
 
   host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-4">
       <div class="flex items-center justify-between gap-3 mb-3">
         <div>
-          <h3 class="text-lg font-bold">QR-Code für T ${escapeHtml(tool.tNumber)}</h3>
-          <p class="text-sm text-slate-500">${escapeHtml(tool.label || "-")} · ${escapeHtml(formatToolSize(tool))} · ${escapeHtml(tool.holder || "-")}</p>
+          <h3 class="text-lg font-bold">QR-Code für ${escapeHtml(toolTitle)}</h3>
+          <p class="text-sm text-slate-500">${escapeHtml(tool.label || "-")} · ${escapeHtml(tool.holder || "-")} · Fach ${escapeHtml(tool.shelf || "-")}</p>
         </div>
         <button class="px-3 py-1 rounded bg-slate-200" onclick="closeToolImagePopup()">Schließen</button>
       </div>
-      <div class="border rounded-lg bg-slate-50 p-3 mb-3">
-        <div class="text-xs text-slate-500 mb-1">QR-Inhalt</div>
-        <div class="font-mono text-sm break-all bg-white border rounded p-2">${escapeHtml(payload)}</div>
+      <div class="grid md:grid-cols-[1fr,220px] gap-4 mb-4">
+        <div class="border rounded-lg bg-slate-50 p-3 space-y-2">
+          <div><span class="text-xs text-slate-500">T-Nummer</span><div class="font-semibold">${escapeHtml(toolTitle)}</div></div>
+          <div><span class="text-xs text-slate-500">Bezeichnung</span><div>${escapeHtml(tool.label || "-")}</div></div>
+          <div><span class="text-xs text-slate-500">Aufnahme</span><div>${escapeHtml(tool.holder || "-")}</div></div>
+          <div><span class="text-xs text-slate-500">Lagerfach</span><div>${escapeHtml(tool.shelf || "-")}</div></div>
+          <div><span class="text-xs text-slate-500">QR-Inhalt</span><div class="font-mono text-sm break-all bg-white border rounded p-2 mt-1">${escapeHtml(payload)}</div></div>
+        </div>
+        <div class="border-2 border-dashed border-slate-300 rounded-lg bg-white p-3 flex items-center justify-center text-center text-sm text-slate-500 min-h-[220px]">
+          [QR-Code wird im nächsten Schritt als Grafik ergänzt]
+        </div>
       </div>
-      <p class="text-sm text-slate-600 mb-4">Diesen Inhalt später als QR-Code auf das Werkzeugfach kleben. QR-Code-Grafik wird im nächsten Schritt ergänzt.</p>
+      <div class="border rounded-lg bg-white p-4 mb-4">
+        <div class="text-xs uppercase tracking-wide text-slate-500 mb-2">Druckbereich</div>
+        <div class="border rounded-lg p-4 text-center">
+          <div class="text-sm text-slate-500">Werkzeugfach</div>
+          <div class="text-3xl font-bold">${escapeHtml(toolTitle)}</div>
+          <div class="text-base mt-1">${escapeHtml(tool.label || "-")}</div>
+          <div class="text-sm text-slate-600 mt-1">${escapeHtml(tool.holder || "-")} · Fach ${escapeHtml(tool.shelf || "-")}</div>
+          <div class="border-2 border-dashed border-slate-300 rounded p-6 mt-4 text-sm text-slate-500">[QR-Code wird im nächsten Schritt als Grafik ergänzt]</div>
+          <div class="font-mono text-xs break-all mt-3">QR-Inhalt: ${escapeHtml(payload)}</div>
+        </div>
+      </div>
       <div class="flex justify-end gap-2">
+        <button class="px-3 py-2 rounded bg-slate-200" onclick="printToolQrLabel('${tool.id}')">Drucken</button>
         <button class="px-3 py-2 rounded bg-slate-900 text-white" onclick="copyToolQrPayload('${tool.id}')">Text kopieren</button>
       </div>
     </div>
   </div>`;
+}
+
+function printToolQrLabel(toolId) {
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool) return;
+
+  const payload = getToolQrPayload(tool);
+  const printWindow = window.open("", "_blank", "width=420,height=560");
+  if (!printWindow) {
+    alert("Druckfenster konnte nicht geöffnet werden.");
+    return;
+  }
+
+  printWindow.document.write(`<!doctype html>
+  <html>
+    <head>
+      <title>Werkzeugfach T ${escapeHtml(tool.tNumber)}</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 24px; color: #0f172a; }
+        .label { border: 2px solid #0f172a; border-radius: 12px; padding: 20px; text-align: center; max-width: 340px; }
+        .eyebrow { font-size: 13px; color: #64748b; text-transform: uppercase; letter-spacing: .08em; }
+        .tnumber { font-size: 42px; font-weight: 800; margin: 8px 0; }
+        .name { font-size: 18px; margin-bottom: 8px; }
+        .meta { font-size: 14px; color: #475569; margin-bottom: 16px; }
+        .qr-placeholder { border: 2px dashed #94a3b8; border-radius: 10px; padding: 36px 12px; color: #64748b; margin-bottom: 14px; }
+        .payload { font-family: monospace; font-size: 12px; word-break: break-all; }
+      </style>
+    </head>
+    <body>
+      <div class="label">
+        <div class="eyebrow">Werkzeugfach</div>
+        <div class="tnumber">T ${escapeHtml(tool.tNumber)}</div>
+        <div class="name">${escapeHtml(tool.label || "-")}</div>
+        <div class="meta">${escapeHtml(tool.holder || "-")} · Fach ${escapeHtml(tool.shelf || "-")}</div>
+        <div class="qr-placeholder">[QR-Code wird im nächsten Schritt als Grafik ergänzt]</div>
+        <div class="payload">QR-Inhalt: ${escapeHtml(payload)}</div>
+      </div>
+      <script>
+        window.onload = function() {
+          window.print();
+        };
+      </script>
+    </body>
+  </html>`);
+  printWindow.document.close();
 }
 
 async function copyToolQrPayload(toolId) {
@@ -7336,6 +7401,7 @@ window.updateScannerWithdrawPreview = updateScannerWithdrawPreview;
 window.updateScannerRestockPreview = updateScannerRestockPreview;
 window.openToolQrPopup = openToolQrPopup;
 window.copyToolQrPayload = copyToolQrPayload;
+window.printToolQrLabel = printToolQrLabel;
 window.editTool = editTool;
 window.deleteTool = deleteTool;
 window.setToolOrderOverride = setToolOrderOverride;
