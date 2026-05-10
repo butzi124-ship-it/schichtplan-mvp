@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.20";
+const APP_VERSION = "0.4.21";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -5112,11 +5112,23 @@ function processScannedToolQr(rawValue, mode) {
 
   const isRestockMode = mode === "restock";
   const modeLabel = isRestockMode ? "Einlagerung" : "Entnahme";
+  const orderedQty = Number(tool.orderedQty || tool.ordered_qty || 0);
+  const defaultRestockQty = tool.ordered || orderedQty > 0 ? orderedQty : 1;
+  const orderedQtyLine =
+    isRestockMode && (tool.ordered || orderedQty > 0)
+      ? `<div><span class="text-slate-500">Bestellmenge:</span> ${escapeHtml(orderedQty)}</div>`
+      : "";
+  const restockQtyInput = isRestockMode
+    ? `<label class="block text-sm font-medium mb-4">
+        Menge
+        <input id="qrRestockQty" type="number" min="1" class="border rounded p-2 w-full mt-1" value="${escapeHtml(defaultRestockQty)}" />
+      </label>`
+    : "";
   const actionLabel = isRestockMode
-    ? "Einlagerung vorbereiten"
+    ? "Einlagern bestätigen"
     : "Entnahme bestätigen";
   const actionCall = isRestockMode
-    ? `openManualToolRestock('${escapeHtml(String(tool.tNumber || ""))}')`
+    ? `confirmQrToolRestock('${escapeHtml(String(tool.id || ""))}')`
     : `confirmQrToolWithdraw('${escapeHtml(String(tool.id || ""))}')`;
 
   getModalHost().innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
@@ -5130,7 +5142,9 @@ function processScannedToolQr(rawValue, mode) {
         <div><span class="text-slate-500">Aufnahme:</span> ${escapeHtml(tool.holder || "-")}</div>
         <div><span class="text-slate-500">Fach:</span> ${escapeHtml(tool.shelf || "-")}</div>
         <div><span class="text-slate-500">Bestand:</span> ${escapeHtml(tool.stock)}</div>
+        ${orderedQtyLine}
       </div>
+      ${restockQtyInput}
       <div class="flex justify-end gap-2">
         <button class="px-3 py-2 rounded bg-slate-200" onclick="closeToolImagePopup()">Abbrechen</button>
         <button class="px-3 py-2 rounded bg-slate-900 text-white" onclick="${actionCall}">${actionLabel}</button>
@@ -5186,6 +5200,82 @@ async function confirmQrToolWithdraw(toolId) {
     tNumber: refreshedTool.tNumber,
     qty: 1,
     action: "QR-Scanner Entnahme 1",
+  });
+
+  closeToolImagePopup();
+  persist();
+  render();
+}
+
+async function confirmQrToolRestock(toolId) {
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool) {
+    alert("Werkzeug nicht gefunden");
+    return;
+  }
+
+  const qty = Number(document.getElementById("qrRestockQty")?.value || 0);
+  if (!Number.isFinite(qty) || qty <= 0) {
+    alert("Bitte eine gültige Menge eingeben.");
+    return;
+  }
+
+  const oldStock = Number(tool.stock || 0);
+  const newStock = oldStock + qty;
+  const { error } = await supabaseClient
+    .from("tools")
+    .update({
+      stock: newStock,
+      ordered: false,
+      ordered_qty: 0,
+    })
+    .eq("id", tool.id);
+
+  if (error) {
+    console.error("Fehler bei QR-Scanner Einlagerung:", error);
+    alert("QR-Einlagerung konnte nicht gespeichert werden.");
+    return;
+  }
+
+  const loadedTools = await loadToolsFromSupabase();
+  if (Array.isArray(loadedTools) && loadedTools.length > 0) {
+    state.tools = loadedTools;
+  }
+
+  let refreshedTool = state.tools.find((t) => t.id === tool.id);
+
+  if (!refreshedTool) {
+    console.warn("Werkzeug wurde nach QR-Einlagerung nicht neu geladen.", {
+      toolId: tool.id,
+    });
+    state.tools = state.tools.map((t) =>
+      t.id === tool.id
+        ? {
+            ...t,
+            stock: newStock,
+            ordered: false,
+            orderedQty: 0,
+            ordered_qty: 0,
+          }
+        : t,
+    );
+    refreshedTool = state.tools.find((t) => t.id === tool.id) || {
+      ...tool,
+      stock: newStock,
+      ordered: false,
+      orderedQty: 0,
+      ordered_qty: 0,
+    };
+  }
+
+  state.toolJournal.unshift({
+    id: `journal-${Date.now()}`,
+    user: currentUser?.name || "Werkzeug-Scanner",
+    at: new Date().toISOString().slice(0, 16).replace("T", " "),
+    toolId: refreshedTool.id,
+    tNumber: refreshedTool.tNumber,
+    qty,
+    action: `QR-Scanner Einlagerung ${qty}`,
   });
 
   closeToolImagePopup();
@@ -7990,6 +8080,7 @@ window.openQrScanner = openQrScanner;
 window.stopQrScanner = stopQrScanner;
 window.processScannedToolQr = processScannedToolQr;
 window.confirmQrToolWithdraw = confirmQrToolWithdraw;
+window.confirmQrToolRestock = confirmQrToolRestock;
 window.updateScannerWithdrawPreview = updateScannerWithdrawPreview;
 window.updateScannerRestockPreview = updateScannerRestockPreview;
 window.openToolQrPopup = openToolQrPopup;
