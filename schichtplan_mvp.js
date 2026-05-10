@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.12";
+const APP_VERSION = "0.4.13";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -5164,8 +5164,14 @@ function openManualToolWithdraw(initialTNumber = "") {
       return;
     }
 
-    const nextStock = Number(tool.stock || 0) - 1;
-    const payload = { stock: nextStock };
+    const oldStock = Number(tool.stock || 0);
+    const newStock = oldStock - 1;
+    if (newStock < 0) {
+      alert("Nicht genügend Bestand vorhanden.");
+      return;
+    }
+
+    const payload = { stock: newStock };
     const { error } = await supabaseClient
       .from("tools")
       .update(payload)
@@ -5177,13 +5183,40 @@ function openManualToolWithdraw(initialTNumber = "") {
       return;
     }
 
-    console.log("Scanner stock update ok", {
-      toolId: tool.id,
-      stock: payload.stock,
-    });
+    const { data: refreshed, error: reloadError } = await supabaseClient
+      .from("tools")
+      .select("*")
+      .eq("id", tool.id)
+      .maybeSingle();
 
-    state.tools = await loadToolsFromSupabase();
-    const refreshedTool = state.tools.find((t) => t.id === tool.id) || tool;
+    if (reloadError || !refreshed) {
+      console.error("Scanner stock reload failed", {
+        toolId: tool.id,
+        reloadError,
+      });
+      alert(
+        "Entnahme konnte nicht geprüft werden. Werkzeug wurde nicht neu geladen.",
+      );
+      return;
+    }
+
+    if (Number(refreshed.stock) !== newStock) {
+      console.error("Scanner stock update verification failed", {
+        toolId: tool.id,
+        expectedStock: newStock,
+        actualStock: refreshed.stock,
+      });
+      alert(
+        "Entnahme wurde nicht gespeichert. Bitte RLS/Update-Rechte für tools prüfen.",
+      );
+      return;
+    }
+
+    const refreshedTool = normalizeToolFromDb(refreshed);
+    const index = state.tools.findIndex((t) => t.id === refreshedTool.id);
+    if (index !== -1) {
+      state.tools[index] = refreshedTool;
+    }
 
     state.toolJournal.unshift({
       id: `journal-${Date.now()}`,
@@ -5236,8 +5269,9 @@ function openManualToolRestock(initialTNumber = "") {
       return;
     }
 
-    const nextStock = Number(tool.stock || 0) + qty;
-    const payload = { stock: nextStock };
+    const oldStock = Number(tool.stock || 0);
+    const newStock = oldStock + qty;
+    const payload = { stock: newStock };
     const { error } = await supabaseClient
       .from("tools")
       .update(payload)
@@ -5249,13 +5283,40 @@ function openManualToolRestock(initialTNumber = "") {
       return;
     }
 
-    console.log("Scanner stock update ok", {
-      toolId: tool.id,
-      stock: payload.stock,
-    });
+    const { data: refreshed, error: reloadError } = await supabaseClient
+      .from("tools")
+      .select("*")
+      .eq("id", tool.id)
+      .maybeSingle();
 
-    state.tools = await loadToolsFromSupabase();
-    const refreshedTool = state.tools.find((t) => t.id === tool.id) || tool;
+    if (reloadError || !refreshed) {
+      console.error("Scanner stock reload failed", {
+        toolId: tool.id,
+        reloadError,
+      });
+      alert(
+        "Einlagerung konnte nicht geprüft werden. Werkzeug wurde nicht neu geladen.",
+      );
+      return;
+    }
+
+    if (Number(refreshed.stock) !== newStock) {
+      console.error("Scanner stock update verification failed", {
+        toolId: tool.id,
+        expectedStock: newStock,
+        actualStock: refreshed.stock,
+      });
+      alert(
+        "Einlagerung wurde nicht gespeichert. Bitte RLS/Update-Rechte für tools prüfen.",
+      );
+      return;
+    }
+
+    const refreshedTool = normalizeToolFromDb(refreshed);
+    const index = state.tools.findIndex((t) => t.id === refreshedTool.id);
+    if (index !== -1) {
+      state.tools[index] = refreshedTool;
+    }
 
     state.toolJournal.unshift({
       id: `journal-${Date.now()}`,
