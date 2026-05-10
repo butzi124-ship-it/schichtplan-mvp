@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.16";
+const APP_VERSION = "0.4.17";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -6114,27 +6114,12 @@ async function restockTool(toolId) {
 
   const nextStock = Number(tool.stock || 0) + Number(add || 0);
 
-  let nextOrderedQty = Number(tool.orderedQty || 0);
-  let nextOrdered = !!tool.ordered;
-
-  if (tool.ordered && Number(tool.orderedQty || 0) > 0) {
-    nextOrderedQty = Math.max(
-      0,
-      Number(tool.orderedQty || 0) - Number(add || 0),
-    );
-    if (nextOrderedQty === 0) nextOrdered = false;
-  }
-
-  if (nextStock >= Number(tool.minStock || 0) && nextOrderedQty === 0) {
-    nextOrdered = false;
-  }
-
   const { data: updated, error } = await supabaseClient
     .from("tools")
     .update({
       stock: nextStock,
-      ordered: nextOrdered,
-      ordered_qty: nextOrderedQty,
+      ordered: false,
+      ordered_qty: 0,
     })
     .eq("id", toolId)
     .select()
@@ -6621,7 +6606,9 @@ function renderTools() {
     .join("");
 
   const todoTools = state.tools.filter((t) => shouldOrderTool(t) && !t.ordered);
-  const orderedTools = state.tools.filter((t) => t.ordered);
+  const orderedTools = state.tools.filter((t) => {
+    return t.ordered || Number(t.orderedQty || 0) > 0;
+  });
   const orderGroups = getOrderCandidateGroups();
   const availableManufacturers = Object.keys(orderGroups).sort((a, b) =>
     a.localeCompare(b),
