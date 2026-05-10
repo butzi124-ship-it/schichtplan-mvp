@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.17";
+const APP_VERSION = "0.4.18";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -6114,30 +6114,35 @@ async function restockTool(toolId) {
 
   const nextStock = Number(tool.stock || 0) + Number(add || 0);
 
-  const { data: updated, error } = await supabaseClient
+  const { error } = await supabaseClient
     .from("tools")
     .update({
       stock: nextStock,
       ordered: false,
       ordered_qty: 0,
     })
-    .eq("id", toolId)
-    .select()
-    .single();
+    .eq("id", tool.id);
 
   if (error) {
     console.error("Fehler beim Einlagern des Werkzeugs:", error);
     return alert(
-      `Einlagerung konnte nicht gespeichert werden: ${error.message}`,
+      `Werkzeug konnte nicht gespeichert werden: ${error.message}`,
     );
   }
 
-  const index = state.tools.findIndex((t) => t.id === toolId);
-  if (index !== -1) {
-    state.tools[index] = normalizeToolFromDb(updated);
+  state.tools = await loadToolsFromSupabase();
+  const refreshed = state.tools.find((t) => t.id === tool.id);
+
+  if (
+    refreshed &&
+    (refreshed.ordered || Number(refreshed.orderedQty || 0) > 0)
+  ) {
+    alert(
+      "Einlagerung wurde gespeichert, aber Bestellstatus konnte nicht zurückgesetzt werden.",
+    );
   }
 
-  archiveOrderEvent(state.tools[index], add, "restock");
+  archiveOrderEvent(refreshed || tool, add, "restock");
   persist();
   render();
 }
