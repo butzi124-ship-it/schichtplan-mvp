@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.15";
+const APP_VERSION = "0.4.16";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -5112,11 +5112,11 @@ function processScannedToolQr(rawValue, mode) {
 
   const modeLabel = mode === "restock" ? "Einlagerung" : "Entnahme";
   const actionLabel =
-    mode === "restock" ? "Einlagerung vorbereiten" : "Entnahme vorbereiten";
+    mode === "restock" ? "Einlagerung vorbereiten" : "Entnahme bestätigen";
   const actionCall =
     mode === "restock"
       ? `openManualToolRestock('${escapeHtml(String(tool.tNumber || ""))}')`
-      : `openManualToolWithdraw('${escapeHtml(String(tool.tNumber || ""))}')`;
+      : `confirmQrToolWithdraw('${escapeHtml(String(tool.id || ""))}')`;
 
   getModalHost().innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-4">
@@ -5136,6 +5136,60 @@ function processScannedToolQr(rawValue, mode) {
       </div>
     </div>
   </div>`;
+}
+
+async function confirmQrToolWithdraw(toolId) {
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool) {
+    alert("Werkzeug nicht gefunden");
+    return;
+  }
+
+  const oldStock = Number(tool.stock || 0);
+  if (oldStock <= 0) {
+    alert("Bestand ist 0. Entnahme nicht möglich.");
+    return;
+  }
+
+  const newStock = oldStock - 1;
+  const { error } = await supabaseClient
+    .from("tools")
+    .update({ stock: newStock })
+    .eq("id", tool.id);
+
+  if (error) {
+    console.error("Fehler bei QR-Scanner Entnahme:", error);
+    alert("QR-Entnahme konnte nicht gespeichert werden.");
+    return;
+  }
+
+  const tools = await loadToolsFromSupabase();
+  const refreshedTool = tools.find((t) => t.id === tool.id);
+
+  if (!refreshedTool || Number(refreshedTool.stock) !== newStock) {
+    console.error("QR-Scanner Entnahme konnte nicht verifiziert werden", {
+      toolId: tool.id,
+      expectedStock: newStock,
+      actualStock: refreshedTool?.stock,
+    });
+    alert("QR-Entnahme konnte nicht gespeichert werden.");
+    return;
+  }
+
+  state.tools = tools;
+  state.toolJournal.unshift({
+    id: `journal-${Date.now()}`,
+    user: currentUser?.name || "Werkzeug-Scanner",
+    at: new Date().toISOString().slice(0, 16).replace("T", " "),
+    toolId: refreshedTool.id,
+    tNumber: refreshedTool.tNumber,
+    qty: 1,
+    action: "QR-Scanner Entnahme 1",
+  });
+
+  closeToolImagePopup();
+  persist();
+  render();
 }
 
 function stopQrScanner() {
@@ -7922,6 +7976,7 @@ window.openQrScannerPlaceholder = openQrScannerPlaceholder;
 window.openQrScanner = openQrScanner;
 window.stopQrScanner = stopQrScanner;
 window.processScannedToolQr = processScannedToolQr;
+window.confirmQrToolWithdraw = confirmQrToolWithdraw;
 window.updateScannerWithdrawPreview = updateScannerWithdrawPreview;
 window.updateScannerRestockPreview = updateScannerRestockPreview;
 window.openToolQrPopup = openToolQrPopup;
