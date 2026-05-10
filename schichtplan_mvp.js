@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.9";
+const APP_VERSION = "0.4.10";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -5394,11 +5394,21 @@ async function editTool(toolId) {
     .update(payload)
     .eq("id", toolId)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error("Fehler beim Bearbeiten des Werkzeugs:", error);
     return alert(`Werkzeug konnte nicht gespeichert werden: ${error.message}`);
+  }
+
+  if (!updated) {
+    console.error("Kein Werkzeug nach Update zurückgegeben", {
+      toolId,
+      payload,
+    });
+    return alert(
+      "Werkzeug konnte nicht gespeichert werden. Datensatz wurde nicht gefunden oder nicht zurückgegeben.",
+    );
   }
 
   const index = state.tools.findIndex((t) => t.id === toolId);
@@ -5700,11 +5710,21 @@ async function editTool(toolId) {
     .update(payload)
     .eq("id", toolId)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error("Fehler beim Bearbeiten des Werkzeugs:", error);
     return alert(`Werkzeug konnte nicht gespeichert werden: ${error.message}`);
+  }
+
+  if (!updated) {
+    console.error("Kein Werkzeug nach Update zurückgegeben", {
+      toolId,
+      payload,
+    });
+    return alert(
+      "Werkzeug konnte nicht gespeichert werden. Datensatz wurde nicht gefunden oder nicht zurückgegeben.",
+    );
   }
 
   const index = state.tools.findIndex((t) => t.id === toolId);
