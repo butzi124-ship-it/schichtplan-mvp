@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.8";
+const APP_VERSION = "0.4.9";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -4294,6 +4294,10 @@ function collectToolFormData(root = document) {
   };
 }
 
+function isValidToolShelf(value) {
+  return /^\d{2}[A-Z]$/.test(String(value || "").trim().toUpperCase());
+}
+
 function validateToolData(data) {
   const isThreadTool = isThreadToolLabel(data.label);
   const isRadiusTool = isRadiusToolLabel(data.label);
@@ -4302,14 +4306,14 @@ function validateToolData(data) {
     !data.tNumber ||
     !data.label ||
     !data.diameter ||
-    !/^\d{2}[A-Z]$/.test(data.shelf) ||
+    !isValidToolShelf(data.shelf) ||
     !data.articleNo ||
     !["HSK 100", "HSK 63"].includes(data.holder)
   ) {
     return {
       ok: false,
       message:
-        "Bitte Felder korrekt ausfüllen (2-stellige Zahl + Buchstabe für Fach, z. B. 01S, Aufnahme HSK 100 oder HSK 63).",
+        "Bitte Felder korrekt ausfüllen (2-stellige Zahl + Buchstabe für Fach, z. B. 26C oder 02T; Aufnahme HSK 100 oder HSK 63).",
     };
   }
 
@@ -5331,12 +5335,12 @@ async function editTool(toolId) {
   if (
     !data.label ||
     !data.diameter ||
-    !/^\d{2}[A-Z]$/.test(data.shelf) ||
+    !isValidToolShelf(data.shelf) ||
     !data.articleNo ||
     !["HSK 100", "HSK 63"].includes(data.holder)
   ) {
     return alert(
-      "Bitte Felder korrekt ausfüllen (2-stellige Zahl + Buchstabe für Fach, z. B. 01S, Aufnahme HSK 100 oder HSK 63).",
+      "Bitte Felder korrekt ausfüllen (2-stellige Zahl + Buchstabe für Fach, z. B. 26C oder 02T; Aufnahme HSK 100 oder HSK 63).",
     );
   }
 
@@ -5637,12 +5641,12 @@ async function editTool(toolId) {
   if (
     !data.label ||
     !data.diameter ||
-    !/^[A-Z]\d{2}$/.test(data.shelf) ||
+    !isValidToolShelf(data.shelf) ||
     !data.articleNo ||
     !["HSK 100", "HSK 63"].includes(data.holder)
   ) {
     return alert(
-      "Bitte Felder korrekt ausfüllen (A-Z + 2-stellige Zahl für Fach, Aufnahme HSK 100 oder HSK 63).",
+      "Bitte Felder korrekt ausfüllen (2-stellige Zahl + Buchstabe für Fach, z. B. 26C oder 02T; Aufnahme HSK 100 oder HSK 63).",
     );
   }
 
