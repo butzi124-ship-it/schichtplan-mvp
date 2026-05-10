@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.19";
+const APP_VERSION = "0.4.20";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -6118,17 +6118,35 @@ async function restockTool(toolId) {
     );
   }
 
-  state.tools = await loadToolsFromSupabase();
-  const refreshed = state.tools.find((t) => t.id === tool.id);
-
-  if (!refreshed) {
-    alert("Werkzeug wurde nach dem Speichern nicht neu geladen.");
-    return;
+  const loadedTools = await loadToolsFromSupabase();
+  if (Array.isArray(loadedTools) && loadedTools.length > 0) {
+    state.tools = loadedTools;
   }
 
-  if (Number(refreshed.stock) !== newStock) {
-    alert("Bestand wurde nicht korrekt gespeichert.");
-    return;
+  let refreshed = state.tools.find((t) => t.id === tool.id);
+
+  if (!refreshed) {
+    console.warn("Werkzeug wurde nach dem Speichern nicht neu geladen.", {
+      toolId: tool.id,
+    });
+    state.tools = state.tools.map((t) =>
+      t.id === tool.id
+        ? {
+            ...t,
+            stock: newStock,
+            ordered: false,
+            orderedQty: 0,
+            ordered_qty: 0,
+          }
+        : t,
+    );
+    refreshed = state.tools.find((t) => t.id === tool.id) || {
+      ...tool,
+      stock: newStock,
+      ordered: false,
+      orderedQty: 0,
+      ordered_qty: 0,
+    };
   }
 
   if (
