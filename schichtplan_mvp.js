@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.14";
+const APP_VERSION = "0.4.15";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -317,6 +317,7 @@ function normalizeToolFromDb(row) {
     orderedQty: Number(row.ordered_qty || 0),
     insertTool: !!row.insert_tool,
     insertEdges: Number(row.insert_edges || 0),
+    insertRadius: row.insert_radius || "",
   };
 }
 
@@ -4291,6 +4292,8 @@ function collectToolFormData(root = document) {
     manufacturer: root.getElementById("toolManufacturer")?.value,
     insertTool: !!root.getElementById("toolInsertTool")?.checked,
     insertEdges: Number(root.getElementById("toolInsertEdges")?.value || 0),
+    insertRadius:
+      root.getElementById("toolInsertRadius")?.value?.trim() || "",
   };
 }
 
@@ -4379,6 +4382,7 @@ function normalizeToolData(data) {
     orderedQty: 0,
     insertTool: data.insertTool,
     insertEdges: data.insertTool ? data.insertEdges : 0,
+    insertRadius: data.insertTool ? data.insertRadius || "" : "",
   };
 }
 
@@ -4442,10 +4446,13 @@ function renderToolCreateForm(prefix = "tool") {
     <input id='${prefix}OptimalStock' type='number' class='border rounded p-2' placeholder='Optimale Stückzahl' />
     <select id='${prefix}Manufacturer' class='border rounded p-2'>${manufacturerOptions}</select>
     <label class='flex items-center gap-2 text-sm md:col-span-2'>
-      <input id='${prefix}InsertTool' type='checkbox' onchange='toggleInsertToolFieldsById("${prefix}InsertTool","${prefix}InsertEdges")' />
+      <input id='${prefix}InsertTool' type='checkbox' onchange='toggleInsertToolFieldsById("${prefix}InsertTool","${prefix}InsertEdges","${prefix}InsertRadius")' />
       Wendeplattenwerkzeug
     </label>
     <input id='${prefix}InsertEdges' type='number' class='border rounded p-2 md:col-span-2' placeholder='Anzahl Schneiden' disabled />
+    <div id='${prefix}InsertRadiusWrap' class='md:col-span-2' style='display:none;'>
+      <input id='${prefix}InsertRadius' class='border rounded p-2 w-full' placeholder='Plattenradius optional, z. B. 0.8' disabled />
+    </div>
   </div>`;
 }
 
@@ -4478,6 +4485,7 @@ async function createTool() {
     ordered_qty: Number(normalized.orderedQty || 0),
     insert_tool: !!normalized.insertTool,
     insert_edges: Number(normalized.insertEdges || 0),
+    insert_radius: normalized.insertRadius || null,
     created_by_employee_id: currentEmployeeRecord?.id || null,
   };
 
@@ -4784,6 +4792,10 @@ function openToolQrPopup(toolId) {
   const manufacturer = tool.manufacturer || "-";
   const articleNo = tool.articleNo || "-";
   const shelf = tool.shelf || "-";
+  const insertRadiusLine =
+    tool.insertTool && tool.insertRadius
+      ? `<div class="text-xs text-slate-600">Plattenradius: R ${escapeHtml(tool.insertRadius)}</div>`
+      : "";
 
   host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-auto p-3">
@@ -4812,6 +4824,7 @@ function openToolQrPopup(toolId) {
           <div class="text-2xl font-bold">${escapeHtml(toolTitle)}</div>
           <div class="text-sm mt-1">${escapeHtml(tool.label || "-")}</div>
           <div class="text-sm text-slate-700 mt-1">Ø ${escapeHtml(diameter)} · ${escapeHtml(cornerRadius)}</div>
+          ${insertRadiusLine}
           <div class="text-xs text-slate-600">Hersteller: ${escapeHtml(manufacturer)}</div>
           <div class="text-xs text-slate-600">Artikel: ${escapeHtml(articleNo)}</div>
           <div class="text-xs text-slate-600">Fach: ${escapeHtml(shelf)}</div>
@@ -4838,6 +4851,10 @@ function printToolQrLabel(toolId) {
   const manufacturer = tool.manufacturer || "-";
   const articleNo = tool.articleNo || "-";
   const shelf = tool.shelf || "-";
+  const insertRadiusLine =
+    tool.insertTool && tool.insertRadius
+      ? `<div class="meta">Plattenradius: R ${escapeHtml(tool.insertRadius)}</div>`
+      : "";
   const printWindow = window.open("", "_blank", "width=420,height=560");
   if (!printWindow) {
     alert("Druckfenster konnte nicht geöffnet werden.");
@@ -4864,6 +4881,7 @@ function printToolQrLabel(toolId) {
         <div class="tnumber">T ${escapeHtml(tool.tNumber)}</div>
         <div class="name">${escapeHtml(tool.label || "-")}</div>
         <div class="meta">Ø ${escapeHtml(diameter)} · ${escapeHtml(cornerRadius)}</div>
+        ${insertRadiusLine}
         <div class="meta">Hersteller: ${escapeHtml(manufacturer)}</div>
         <div class="meta">Artikel: ${escapeHtml(articleNo)}</div>
         <div class="meta">Fach: ${escapeHtml(shelf)}</div>
@@ -5454,6 +5472,7 @@ async function editTool(toolId) {
     manufacturer: data.manufacturer || null,
     insert_tool: !!data.insertTool,
     insert_edges: data.insertTool ? Number(data.insertEdges || 0) : 0,
+    insert_radius: data.insertTool ? data.insertRadius || null : null,
   };
 
   const { data: updated, error } = await supabaseClient
@@ -5611,13 +5630,18 @@ async function editToolCentered(tool) {
           <div></div>
 
           <label class='flex items-center gap-2 text-sm md:col-span-2'>
-            <input id='editInsertTool' type='checkbox' ${tool.insertTool ? "checked" : ""} onchange='toggleInsertToolFieldsById("editInsertTool","editInsertEdges")' />
+            <input id='editInsertTool' type='checkbox' ${tool.insertTool ? "checked" : ""} onchange='toggleInsertToolFieldsById("editInsertTool","editInsertEdges","editInsertRadius")' />
             Wendeplattenwerkzeug
           </label>
 
           <label class='text-sm font-medium md:col-span-2'>
             Anzahl Schneiden
             <input id='editInsertEdges' type='number' class='border rounded p-2 w-full mt-1' placeholder='Anzahl Schneiden' value="${tool.insertEdges ?? 0}" ${tool.insertTool ? "" : "disabled"} />
+          </label>
+
+          <label id='editInsertRadiusWrap' class='text-sm font-medium md:col-span-2' style='display:${tool.insertTool ? "" : "none"};'>
+            Plattenradius optional
+            <input id='editInsertRadius' class='border rounded p-2 w-full mt-1' placeholder='Plattenradius optional, z. B. 0.8' value="${escapeHtml(tool.insertRadius || "")}" ${tool.insertTool ? "" : "disabled"} />
           </label>
         </div>
 
@@ -5629,7 +5653,11 @@ async function editToolCentered(tool) {
     </div>`;
 
     updateEditToolTypeFields();
-    toggleInsertToolFieldsById("editInsertTool", "editInsertEdges");
+    toggleInsertToolFieldsById(
+      "editInsertTool",
+      "editInsertEdges",
+      "editInsertRadius",
+    );
 
     const close = () => {
       host.innerHTML = "";
@@ -5673,6 +5701,8 @@ async function editToolCentered(tool) {
         insertEdges: Number(
           document.getElementById("editInsertEdges")?.value || 0,
         ),
+        insertRadius:
+          document.getElementById("editInsertRadius")?.value?.trim() || "",
       };
 
       close();
@@ -5770,6 +5800,7 @@ async function editTool(toolId) {
     manufacturer: data.manufacturer || null,
     insert_tool: !!data.insertTool,
     insert_edges: data.insertTool ? Number(data.insertEdges || 0) : 0,
+    insert_radius: data.insertTool ? data.insertRadius || null : null,
   };
 
   const { data: updated, error } = await supabaseClient
@@ -5870,6 +5901,7 @@ function openCreateToolModal() {
       ordered_qty: Number(normalized.orderedQty || 0),
       insert_tool: !!normalized.insertTool,
       insert_edges: Number(normalized.insertEdges || 0),
+      insert_radius: normalized.insertRadius || null,
       created_by_employee_id: currentEmployeeRecord?.id || null,
     };
 
@@ -6502,12 +6534,16 @@ function renderTools() {
             <span data-tool-image-missing class="hidden text-xs text-rose-700">kein Bild</span>
           </button>`
         : "-";
+      const insertRadiusLine =
+        t.insertTool && t.insertRadius
+          ? `<div class='text-xs text-slate-500'>Plattenradius: R ${escapeHtml(t.insertRadius)}</div>`
+          : "";
 
       return `<tr class='border-b'>
         <td class='p-2'>T ${t.tNumber}</td>
         <td class='p-2'>${imageCell}</td>
         <td class='p-2'>${t.label}</td>
-        <td class='p-2'>${formatToolSize(t)}</td>
+        <td class='p-2'>${formatToolSize(t)}${insertRadiusLine}</td>
         ${isAdmin ? `<td class='p-2'>${getToolMaterialNameById(t.materialId)}</td>` : ""}
         <td class='p-2'>${t.shelf}</td>
         <td class='p-2'>${t.articleNo}</td>
@@ -6565,6 +6601,10 @@ function renderTools() {
         : isRadiusTool
           ? `<div><span class='font-semibold'>Radius:</span> R ${t.cornerRadius || "-"}</div>`
           : "";
+      const insertRadiusLine =
+        t.insertTool && t.insertRadius
+          ? `<div><span class='font-semibold'>Plattenradius:</span> R ${escapeHtml(t.insertRadius)}</div>`
+          : "";
 
       return `<div class='border rounded-lg p-3 bg-emerald-50 space-y-3'>
         <div class='grid md:grid-cols-2 gap-x-6 gap-y-2 text-sm'>
@@ -6573,6 +6613,7 @@ function renderTools() {
           <div><span class='font-semibold'>Durchmesser:</span> ${formatToolSize(t)}</div>
           <div><span class='font-semibold'>Schneidwerkstoff:</span> ${getToolMaterialNameById(t.materialId)}</div>
           ${detailLine}
+          ${insertRadiusLine}
           <div><span class='font-semibold'>Menge:</span> ${t.orderedQty || effectiveOrderQty(t)}</div>
           <div><span class='font-semibold'>Artikelnummer:</span> ${t.articleNo}</div>
           <div><span class='font-semibold'>Lagerfach:</span> ${t.shelf}</div>
@@ -6865,15 +6906,29 @@ function renderTools() {
 }
 
 function toggleInsertToolFields() {
-  toggleInsertToolFieldsById("toolInsertTool", "toolInsertEdges");
+  toggleInsertToolFieldsById(
+    "toolInsertTool",
+    "toolInsertEdges",
+    "toolInsertRadius",
+  );
 }
 
-function toggleInsertToolFieldsById(checkboxId, edgesId) {
+function toggleInsertToolFieldsById(checkboxId, edgesId, radiusId = "") {
   const checkbox = document.getElementById(checkboxId);
   const edges = document.getElementById(edgesId);
+  const radius = radiusId ? document.getElementById(radiusId) : null;
+  const radiusWrap = radiusId ? document.getElementById(`${radiusId}Wrap`) : null;
   if (!checkbox || !edges) return;
-  edges.disabled = !checkbox.checked;
-  if (!checkbox.checked) edges.value = "";
+
+  const checked = !!checkbox.checked;
+  edges.disabled = !checked;
+  if (!checked) edges.value = "";
+
+  if (radius) {
+    radius.disabled = !checked;
+    if (!checked) radius.value = "";
+  }
+  if (radiusWrap) radiusWrap.style.display = checked ? "" : "none";
 }
 
 function taskAssignee(task) {
