@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.10";
+const APP_VERSION = "0.4.11";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -5165,12 +5165,12 @@ function openManualToolWithdraw(initialTNumber = "") {
     }
 
     const nextStock = Number(tool.stock || 0) - 1;
-    const { data, error } = await supabaseClient
+    const { data: updatedToolRow, error } = await supabaseClient
       .from("tools")
       .update({ stock: nextStock })
       .eq("id", tool.id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Fehler bei Werkzeug-Scanner Entnahme:", error);
@@ -5178,7 +5178,18 @@ function openManualToolWithdraw(initialTNumber = "") {
       return;
     }
 
-    const updatedTool = normalizeToolFromDb(data);
+    if (!updatedToolRow) {
+      console.error("Scanner update returned no row", {
+        toolId: tool.id,
+        payload: { stock: nextStock },
+      });
+      alert(
+        "Entnahme konnte nicht gespeichert werden. Werkzeugdatensatz wurde nicht zurückgegeben.",
+      );
+      return;
+    }
+
+    const updatedTool = normalizeToolFromDb(updatedToolRow);
     const index = state.tools.findIndex((t) => t.id === tool.id);
     if (index !== -1) state.tools[index] = updatedTool;
 
@@ -5234,12 +5245,12 @@ function openManualToolRestock(initialTNumber = "") {
     }
 
     const nextStock = Number(tool.stock || 0) + qty;
-    const { data, error } = await supabaseClient
+    const { data: updatedToolRow, error } = await supabaseClient
       .from("tools")
       .update({ stock: nextStock })
       .eq("id", tool.id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Fehler bei Werkzeug-Scanner Einlagerung:", error);
@@ -5247,7 +5258,18 @@ function openManualToolRestock(initialTNumber = "") {
       return;
     }
 
-    const updatedTool = normalizeToolFromDb(data);
+    if (!updatedToolRow) {
+      console.error("Scanner update returned no row", {
+        toolId: tool.id,
+        payload: { stock: nextStock },
+      });
+      alert(
+        "Einlagerung konnte nicht gespeichert werden. Werkzeugdatensatz wurde nicht zurückgegeben.",
+      );
+      return;
+    }
+
+    const updatedTool = normalizeToolFromDb(updatedToolRow);
     const index = state.tools.findIndex((t) => t.id === tool.id);
     if (index !== -1) state.tools[index] = updatedTool;
 
