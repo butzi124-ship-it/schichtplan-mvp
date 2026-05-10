@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.13";
+const APP_VERSION = "0.4.14";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -6557,13 +6557,22 @@ function renderTools() {
     .join("");
 
   const orderedCards = orderedTools
-    .map(
-      (t) => `<div class='border rounded-lg p-3 bg-emerald-50 space-y-3'>
+    .map((t) => {
+      const isThreadTool = String(t.label || "").includes("Gewinde");
+      const isRadiusTool = String(t.label || "").includes("Radiusfräser");
+      const detailLine = isThreadTool
+        ? `<div><span class='font-semibold'>Steigung:</span> ${t.threadPitch || t.pitch || "-"}</div>`
+        : isRadiusTool
+          ? `<div><span class='font-semibold'>Radius:</span> R ${t.cornerRadius || "-"}</div>`
+          : "";
+
+      return `<div class='border rounded-lg p-3 bg-emerald-50 space-y-3'>
         <div class='grid md:grid-cols-2 gap-x-6 gap-y-2 text-sm'>
+          <div><span class='font-semibold'>T-Nummer:</span> T ${t.tNumber}</div>
           <div><span class='font-semibold'>Bezeichnung:</span> ${t.label}</div>
           <div><span class='font-semibold'>Durchmesser:</span> ${formatToolSize(t)}</div>
           <div><span class='font-semibold'>Schneidwerkstoff:</span> ${getToolMaterialNameById(t.materialId)}</div>
-          <div><span class='font-semibold'>Steigung:</span> ${t.threadPrefix === "MF" && t.threadPitch ? `P ${t.threadPitch}` : "-"}</div>
+          ${detailLine}
           <div><span class='font-semibold'>Menge:</span> ${t.orderedQty || effectiveOrderQty(t)}</div>
           <div><span class='font-semibold'>Artikelnummer:</span> ${t.articleNo}</div>
           <div><span class='font-semibold'>Lagerfach:</span> ${t.shelf}</div>
@@ -6572,8 +6581,8 @@ function renderTools() {
           <button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="markToolOrdered('${t.id}', false)">Bestellt</button>
           <button class='px-2 py-1 rounded bg-slate-700 text-white' onclick="restockTool('${t.id}')">Einlagern</button>
         </div>
-      </div>`,
-    )
+      </div>`;
+    })
     .join("");
 
   const journalRows = state.toolJournal
