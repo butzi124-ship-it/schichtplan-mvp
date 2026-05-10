@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.18";
+const APP_VERSION = "0.4.19";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -5110,13 +5110,14 @@ function processScannedToolQr(rawValue, mode) {
     return;
   }
 
-  const modeLabel = mode === "restock" ? "Einlagerung" : "Entnahme";
-  const actionLabel =
-    mode === "restock" ? "Einlagerung vorbereiten" : "Entnahme bestätigen";
-  const actionCall =
-    mode === "restock"
-      ? `openManualToolRestock('${escapeHtml(String(tool.tNumber || ""))}')`
-      : `confirmQrToolWithdraw('${escapeHtml(String(tool.id || ""))}')`;
+  const isRestockMode = mode === "restock";
+  const modeLabel = isRestockMode ? "Einlagerung" : "Entnahme";
+  const actionLabel = isRestockMode
+    ? "Einlagerung vorbereiten"
+    : "Entnahme bestätigen";
+  const actionCall = isRestockMode
+    ? `openManualToolRestock('${escapeHtml(String(tool.tNumber || ""))}')`
+    : `confirmQrToolWithdraw('${escapeHtml(String(tool.id || ""))}')`;
 
   getModalHost().innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-4">
@@ -6092,32 +6093,19 @@ async function restockTool(toolId) {
   const tool = state.tools.find((t) => t.id === toolId);
   if (!tool) return;
 
-  let add = 0;
-
-  if (tool.ordered && Number(tool.orderedQty || 0) > 0) {
-    const full = await askYesNoCentered("Bestellte Menge einlagern?");
-    if (full) {
-      add = Number(tool.orderedQty || 0);
-    } else {
-      add = await askNumberCentered(
-        "Einzulagernde Menge eingeben:",
-        String(tool.orderedQty || 1),
-      );
-      if (add === null) return;
-    }
-  } else {
-    add = await askNumberCentered("Werkzeug einlagern (Anzahl):", "1");
-    if (add === null) return;
+  const qty = Number(tool.orderedQty || tool.ordered_qty || 0);
+  if (!Number.isFinite(qty) || qty <= 0) {
+    alert("Keine Bestellmenge vorhanden.");
+    return;
   }
 
-  if (!Number.isFinite(add) || add <= 0) return;
-
-  const nextStock = Number(tool.stock || 0) + Number(add || 0);
+  const oldStock = Number(tool.stock || 0);
+  const newStock = oldStock + qty;
 
   const { error } = await supabaseClient
     .from("tools")
     .update({
-      stock: nextStock,
+      stock: newStock,
       ordered: false,
       ordered_qty: 0,
     })
@@ -6133,16 +6121,27 @@ async function restockTool(toolId) {
   state.tools = await loadToolsFromSupabase();
   const refreshed = state.tools.find((t) => t.id === tool.id);
 
-  if (
-    refreshed &&
-    (refreshed.ordered || Number(refreshed.orderedQty || 0) > 0)
-  ) {
-    alert(
-      "Einlagerung wurde gespeichert, aber Bestellstatus konnte nicht zurückgesetzt werden.",
-    );
+  if (!refreshed) {
+    alert("Werkzeug wurde nach dem Speichern nicht neu geladen.");
+    return;
   }
 
-  archiveOrderEvent(refreshed || tool, add, "restock");
+  if (Number(refreshed.stock) !== newStock) {
+    alert("Bestand wurde nicht korrekt gespeichert.");
+    return;
+  }
+
+  if (
+    refreshed.ordered ||
+    Number(refreshed.orderedQty || refreshed.ordered_qty || 0) > 0
+  ) {
+    alert(
+      "Bestand wurde gespeichert, aber Bestellstatus wurde nicht zurückgesetzt.",
+    );
+    return;
+  }
+
+  archiveOrderEvent(refreshed, qty, "restock");
   persist();
   render();
 }
@@ -6612,7 +6611,11 @@ function renderTools() {
 
   const todoTools = state.tools.filter((t) => shouldOrderTool(t) && !t.ordered);
   const orderedTools = state.tools.filter((t) => {
-    return t.ordered || Number(t.orderedQty || 0) > 0;
+    return (
+      t.ordered === true ||
+      Number(t.orderedQty || 0) > 0 ||
+      Number(t.ordered_qty || 0) > 0
+    );
   });
   const orderGroups = getOrderCandidateGroups();
   const availableManufacturers = Object.keys(orderGroups).sort((a, b) =>
