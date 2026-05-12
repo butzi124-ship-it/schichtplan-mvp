@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.33";
+const APP_VERSION = "0.4.34";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -7071,16 +7071,26 @@ function renderTools() {
     })
     .join("");
 
-  const journalRows = (Array.isArray(state.toolJournal) ? state.toolJournal : [])
+  console.log(
+    "Render Tool-Journal:",
+    state.toolJournal?.length,
+    state.toolJournal,
+  );
+
+  const journalEntries = Array.isArray(state.toolJournal)
+    ? state.toolJournal
+    : [];
+
+  const journalRows = journalEntries
     .slice(0, 80)
     .map(
-      (j) => `<tr class='border-b'>
-        <td class='p-2'>${escapeHtml(formatDateTime(j.createdAt) || j.at || "")}</td>
-        <td class='p-2'>${escapeHtml(j.user || "-")}</td>
-        <td class='p-2'>T ${escapeHtml(j.toolTNumber || j.tNumber || "-")} · ${escapeHtml(j.toolLabel || "-")}</td>
-        <td class='p-2'>${escapeHtml(j.action || "-")}</td>
-        <td class='p-2'>${escapeHtml(j.qty ?? "-")}</td>
-        <td class='p-2'>${escapeHtml(j.stockBefore ?? "-")} / ${escapeHtml(j.stockAfter ?? "-")}</td>
+      (entry) => `<tr class='border-b'>
+        <td class='p-2'>${escapeHtml(entry.createdAt ? new Date(entry.createdAt).toLocaleString() : entry.at || "")}</td>
+        <td class='p-2'>${escapeHtml(entry.user || "-")}</td>
+        <td class='p-2'>T ${escapeHtml(entry.toolTNumber || "-")} · ${escapeHtml(entry.toolLabel || "-")}</td>
+        <td class='p-2'>${escapeHtml(entry.action || "-")}</td>
+        <td class='p-2'>${escapeHtml(entry.qty ?? "-")}</td>
+        <td class='p-2'>${escapeHtml(entry.stockBefore ?? "-")} / ${escapeHtml(entry.stockAfter ?? "-")}</td>
       </tr>`,
     )
     .join("");
@@ -7343,7 +7353,7 @@ function renderTools() {
               <th class='p-2 text-left'>Bestand vorher/nachher</th>
             </tr>
           </thead>
-          <tbody>${journalRows || '<tr><td class="p-2" colspan="6">Keine Einträge.</td></tr>'}</tbody>
+          <tbody>${journalEntries.length === 0 ? '<tr><td class="p-2" colspan="6">Keine Einträge.</td></tr>' : journalRows}</tbody>
         </table>
       </div>
     </div>
