@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.26";
+const APP_VERSION = "0.4.27";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -419,7 +419,7 @@ async function loadToolJournalFromSupabase() {
 }
 
 async function addToolJournalEntry(entry) {
-  const fallbackEntry = {
+  const localEntry = {
     id: `journal-${Date.now()}`,
     toolId: entry.toolId || null,
     toolTNumber: entry.toolTNumber || entry.tNumber || "",
@@ -431,8 +431,8 @@ async function addToolJournalEntry(entry) {
     user: entry.user || currentUser?.name || "System",
     createdAt: new Date().toISOString(),
   };
-  fallbackEntry.at = fallbackEntry.createdAt.slice(0, 16).replace("T", " ");
-  fallbackEntry.tNumber = fallbackEntry.toolTNumber;
+  localEntry.at = localEntry.createdAt.slice(0, 16).replace("T", " ");
+  localEntry.tNumber = localEntry.toolTNumber;
 
   const payload = {
     tool_id: entry.toolId || null,
@@ -445,21 +445,19 @@ async function addToolJournalEntry(entry) {
     user_name: entry.user || currentUser?.name || "System",
   };
 
-  const { data, error } = await supabaseClient
+  const { error } = await supabaseClient
     .from("tool_journal")
-    .insert(payload)
-    .select()
-    .maybeSingle();
+    .insert(payload);
 
-  if (error || !data) {
-    console.warn("Fehler beim Schreiben von tool_journal:", error);
-    state.toolJournal.unshift(fallbackEntry);
-    return fallbackEntry;
+  if (error) {
+    console.warn("Tool-Journal konnte nicht in Supabase gespeichert werden", error);
+    state.toolJournal.unshift(localEntry);
+    return localEntry;
   }
 
-  const normalized = normalizeToolJournalFromDb(data);
-  state.toolJournal.unshift(normalized);
-  return normalized;
+  state.toolJournal.unshift(localEntry);
+  console.log("Tool-Journal geschrieben:", entry);
+  return localEntry;
 }
 
 async function refreshToolsAndRender() {
