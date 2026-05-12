@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.30";
+const APP_VERSION = "0.4.31";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -386,7 +386,7 @@ async function reloadSingleToolFromSupabase(toolId) {
 }
 
 function normalizeToolJournalFromDb(row) {
-  const createdAt = row.created_at || new Date().toISOString();
+  const createdAt = row.created_at || null;
   return {
     id: row.id,
     toolId: row.tool_id,
@@ -398,7 +398,7 @@ function normalizeToolJournalFromDb(row) {
     stockAfter: row.stock_after,
     user: row.user_name,
     createdAt,
-    at: createdAt.slice(0, 16).replace("T", " "),
+    at: createdAt ? createdAt.slice(0, 16).replace("T", " ") : "",
     tNumber: row.tool_t_number,
   };
 }
@@ -408,14 +408,15 @@ async function loadToolJournalFromSupabase() {
     .from("tool_journal")
     .select("*")
     .order("created_at", { ascending: false })
-    .limit(200);
+    .limit(100);
 
   if (error) {
-    console.warn("Fehler beim Laden von tool_journal:", error);
+    console.warn("Tool-Journal konnte nicht aus Supabase geladen werden", error);
     return state.toolJournal || [];
   }
 
   state.toolJournal = (data || []).map(normalizeToolJournalFromDb);
+  console.log("Tool-Journal geladen:", state.toolJournal);
   return state.toolJournal;
 }
 
@@ -1922,6 +1923,19 @@ function getWeekdayName(iso) {
 
 function formatDateWithWeekday(iso) {
   return `${getWeekdayName(iso)} ${formatDateDisplay(iso)}`;
+}
+
+function formatDateTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString("de-CH", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function inRange(date, from, to) {
@@ -7050,15 +7064,16 @@ function renderTools() {
     })
     .join("");
 
-  const journalRows = state.toolJournal
+  const journalRows = (Array.isArray(state.toolJournal) ? state.toolJournal : [])
     .slice(0, 80)
     .map(
       (j) => `<tr class='border-b'>
-        <td class='p-2'>${j.at}</td>
-        <td class='p-2'>${j.user}</td>
-        <td class='p-2'>T ${j.tNumber}</td>
-        <td class='p-2'>${j.action}</td>
-        <td class='p-2'><button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="undoToolJournalEntry('${j.id}')">Rückgängig</button></td>
+        <td class='p-2'>${escapeHtml(formatDateTime(j.createdAt) || j.at || "")}</td>
+        <td class='p-2'>${escapeHtml(j.user || "-")}</td>
+        <td class='p-2'>T ${escapeHtml(j.toolTNumber || j.tNumber || "-")} · ${escapeHtml(j.toolLabel || "-")}</td>
+        <td class='p-2'>${escapeHtml(j.action || "-")}</td>
+        <td class='p-2'>${escapeHtml(j.qty ?? "-")}</td>
+        <td class='p-2'>${escapeHtml(j.stockBefore ?? "-")} / ${escapeHtml(j.stockAfter ?? "-")}</td>
       </tr>`,
     )
     .join("");
@@ -7314,13 +7329,14 @@ function renderTools() {
           <thead class='bg-slate-100 sticky top-0'>
             <tr>
               <th class='p-2 text-left'>Zeit</th>
-              <th class='p-2 text-left'>Wer</th>
-              <th class='p-2 text-left'>T-Nr</th>
-              <th class='p-2 text-left'>Was</th>
-              <th class='p-2'></th>
+              <th class='p-2 text-left'>Benutzer</th>
+              <th class='p-2 text-left'>Werkzeug</th>
+              <th class='p-2 text-left'>Aktion</th>
+              <th class='p-2 text-left'>Menge</th>
+              <th class='p-2 text-left'>Bestand vorher/nachher</th>
             </tr>
           </thead>
-          <tbody>${journalRows || '<tr><td class="p-2" colspan="5">Keine Einträge.</td></tr>'}</tbody>
+          <tbody>${journalRows || '<tr><td class="p-2" colspan="6">Keine Einträge.</td></tr>'}</tbody>
         </table>
       </div>
     </div>
