@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.28";
+const APP_VERSION = "0.4.29";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -5310,25 +5310,31 @@ async function confirmQrToolWithdraw(toolId) {
   }
 
   state.tools = tools;
+  console.log("QR Withdraw Bestand erfolgreich aktualisiert");
   console.log("Journal wird geschrieben aus confirmQrToolWithdraw", {
     tool: refreshedTool,
     oldStock,
     newStock,
     qty: 1,
   });
-  await addToolJournalEntry({
-    toolId: refreshedTool.id,
-    toolTNumber: refreshedTool.tNumber,
-    toolLabel: refreshedTool.label,
-    action: "QR-Scanner Entnahme 1",
-    qty: 1,
-    stockBefore: oldStock,
-    stockAfter: newStock,
-    user: currentUser?.name || "Werkzeug-Scanner",
-  });
-
-  closeToolImagePopup();
-  await refreshToolsAndRender();
+  console.log("QR Withdraw ruft Journal auf");
+  try {
+    await addToolJournalEntry({
+      toolId: refreshedTool.id,
+      toolTNumber: refreshedTool.tNumber,
+      toolLabel: refreshedTool.label,
+      action: "QR-Scanner Entnahme 1",
+      qty: 1,
+      stockBefore: oldStock,
+      stockAfter: newStock,
+      user: currentUser?.name || "Werkzeug-Scanner",
+    });
+    console.log("QR Withdraw Journal abgeschlossen");
+    await refreshToolsAndRender();
+    closeToolImagePopup();
+  } catch (error) {
+    console.error("QR Withdraw Journal Fehler:", error);
+  }
 }
 
 async function confirmQrToolRestock(toolId) {
@@ -5394,25 +5400,31 @@ async function confirmQrToolRestock(toolId) {
     };
   }
 
+  console.log("QR Restock Bestand erfolgreich aktualisiert");
   console.log("Journal wird geschrieben aus confirmQrToolRestock", {
     tool: refreshedTool,
     oldStock,
     newStock,
     qty,
   });
-  await addToolJournalEntry({
-    toolId: refreshedTool.id,
-    toolTNumber: refreshedTool.tNumber,
-    toolLabel: refreshedTool.label,
-    action: `QR-Scanner Einlagerung ${qty}`,
-    qty,
-    stockBefore: oldStock,
-    stockAfter: newStock,
-    user: currentUser?.name || "Werkzeug-Scanner",
-  });
-
-  closeToolImagePopup();
-  await refreshToolsAndRender();
+  console.log("QR Restock ruft Journal auf");
+  try {
+    await addToolJournalEntry({
+      toolId: refreshedTool.id,
+      toolTNumber: refreshedTool.tNumber,
+      toolLabel: refreshedTool.label,
+      action: `QR-Scanner Einlagerung ${qty}`,
+      qty,
+      stockBefore: oldStock,
+      stockAfter: newStock,
+      user: currentUser?.name || "Werkzeug-Scanner",
+    });
+    console.log("QR Restock Journal abgeschlossen");
+    await refreshToolsAndRender();
+    closeToolImagePopup();
+  } catch (error) {
+    console.error("QR Restock Journal Fehler:", error);
+  }
 }
 
 function stopQrScanner() {
