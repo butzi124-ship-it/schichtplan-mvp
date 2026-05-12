@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.25";
+const APP_VERSION = "0.4.26";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -362,6 +362,26 @@ async function loadToolsFromSupabase() {
   }
 
   return (data || []).map(normalizeToolFromDb);
+}
+
+async function reloadSingleToolFromSupabase(toolId) {
+  const { data, error } = await supabaseClient
+    .from("tools")
+    .select("*")
+    .eq("id", toolId)
+    .maybeSingle();
+
+  if (error || !data) {
+    console.warn("Werkzeug konnte nicht einzeln geladen werden", {
+      toolId,
+      error,
+    });
+    return null;
+  }
+
+  const normalized = normalizeToolFromDb(data);
+  state.tools = state.tools.map((t) => (t.id === toolId ? normalized : t));
+  return normalized;
 }
 
 function normalizeToolJournalFromDb(row) {
@@ -5189,7 +5209,7 @@ async function startQrScannerLoop() {
   }, 450);
 }
 
-function processScannedToolQr(rawValue, mode) {
+async function processScannedToolQr(rawValue, mode) {
   const value = String(rawValue || "").trim();
   if (!value.startsWith("TOOL:")) {
     alert("Ungültiger QR-Code");
@@ -5197,7 +5217,8 @@ function processScannedToolQr(rawValue, mode) {
   }
 
   const toolId = value.slice("TOOL:".length);
-  const tool = state.tools.find((t) => t.id === toolId);
+  const cachedTool = state.tools.find((t) => t.id === toolId);
+  const tool = (await reloadSingleToolFromSupabase(toolId)) || cachedTool;
   if (!tool) {
     alert("Werkzeug nicht gefunden");
     return;
@@ -5247,7 +5268,9 @@ function processScannedToolQr(rawValue, mode) {
 }
 
 async function confirmQrToolWithdraw(toolId) {
-  const tool = state.tools.find((t) => t.id === toolId);
+  const tool =
+    (await reloadSingleToolFromSupabase(toolId)) ||
+    state.tools.find((t) => t.id === toolId);
   if (!tool) {
     alert("Werkzeug nicht gefunden");
     return;
@@ -5301,7 +5324,9 @@ async function confirmQrToolWithdraw(toolId) {
 }
 
 async function confirmQrToolRestock(toolId) {
-  const tool = state.tools.find((t) => t.id === toolId);
+  const tool =
+    (await reloadSingleToolFromSupabase(toolId)) ||
+    state.tools.find((t) => t.id === toolId);
   if (!tool) {
     alert("Werkzeug nicht gefunden");
     return;
@@ -5415,12 +5440,13 @@ function openManualToolWithdraw(initialTNumber = "") {
       alert("Werkzeug wurde nicht gefunden.");
       return;
     }
-    if (Number(tool.stock || 0) <= 0) {
+    const freshTool = (await reloadSingleToolFromSupabase(tool.id)) || tool;
+    if (Number(freshTool.stock || 0) <= 0) {
       alert("Nicht genügend Bestand vorhanden.");
       return;
     }
 
-    const oldStock = Number(tool.stock || 0);
+    const oldStock = Number(freshTool.stock || 0);
     const newStock = oldStock - 1;
     if (newStock < 0) {
       alert("Nicht genügend Bestand vorhanden.");
@@ -5431,7 +5457,7 @@ function openManualToolWithdraw(initialTNumber = "") {
     const { error } = await supabaseClient
       .from("tools")
       .update(payload)
-      .eq("id", tool.id);
+      .eq("id", freshTool.id);
 
     if (error) {
       console.error("Fehler bei Werkzeug-Scanner Entnahme:", error);
@@ -5442,12 +5468,12 @@ function openManualToolWithdraw(initialTNumber = "") {
     const { data: refreshed, error: reloadError } = await supabaseClient
       .from("tools")
       .select("*")
-      .eq("id", tool.id)
+      .eq("id", freshTool.id)
       .maybeSingle();
 
     if (reloadError || !refreshed) {
       console.error("Scanner stock reload failed", {
-        toolId: tool.id,
+        toolId: freshTool.id,
         reloadError,
       });
       alert(
@@ -5458,7 +5484,7 @@ function openManualToolWithdraw(initialTNumber = "") {
 
     if (Number(refreshed.stock) !== newStock) {
       console.error("Scanner stock update verification failed", {
-        toolId: tool.id,
+        toolId: freshTool.id,
         expectedStock: newStock,
         actualStock: refreshed.stock,
       });
@@ -5520,18 +5546,19 @@ function openManualToolRestock(initialTNumber = "") {
       alert("Werkzeug wurde nicht gefunden.");
       return;
     }
+    const freshTool = (await reloadSingleToolFromSupabase(tool.id)) || tool;
     if (!Number.isFinite(qty) || qty <= 0) {
       alert("Bitte eine gültige Menge eingeben.");
       return;
     }
 
-    const oldStock = Number(tool.stock || 0);
+    const oldStock = Number(freshTool.stock || 0);
     const newStock = oldStock + qty;
     const payload = { stock: newStock };
     const { error } = await supabaseClient
       .from("tools")
       .update(payload)
-      .eq("id", tool.id);
+      .eq("id", freshTool.id);
 
     if (error) {
       console.error("Fehler bei Werkzeug-Scanner Einlagerung:", error);
@@ -5542,12 +5569,12 @@ function openManualToolRestock(initialTNumber = "") {
     const { data: refreshed, error: reloadError } = await supabaseClient
       .from("tools")
       .select("*")
-      .eq("id", tool.id)
+      .eq("id", freshTool.id)
       .maybeSingle();
 
     if (reloadError || !refreshed) {
       console.error("Scanner stock reload failed", {
-        toolId: tool.id,
+        toolId: freshTool.id,
         reloadError,
       });
       alert(
@@ -5558,7 +5585,7 @@ function openManualToolRestock(initialTNumber = "") {
 
     if (Number(refreshed.stock) !== newStock) {
       console.error("Scanner stock update verification failed", {
-        toolId: tool.id,
+        toolId: freshTool.id,
         expectedStock: newStock,
         actualStock: refreshed.stock,
       });
