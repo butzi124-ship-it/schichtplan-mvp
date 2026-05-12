@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.22";
+const APP_VERSION = "0.4.23";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -5625,35 +5625,17 @@ async function editTool(toolId) {
     insert_radius: data.insertTool ? data.insertRadius || null : null,
   };
 
-  const { data: updated, error } = await supabaseClient
+  const { error } = await supabaseClient
     .from("tools")
     .update(payload)
-    .eq("id", toolId)
-    .select()
-    .maybeSingle();
+    .eq("id", toolId);
 
   if (error) {
     console.error("Fehler beim Bearbeiten des Werkzeugs:", error);
     return alert(`Werkzeug konnte nicht gespeichert werden: ${error.message}`);
   }
 
-  if (!updated) {
-    console.error("Kein Werkzeug nach Update zurückgegeben", {
-      toolId,
-      payload,
-    });
-    return alert(
-      "Werkzeug konnte nicht gespeichert werden. Datensatz wurde nicht gefunden oder nicht zurückgegeben.",
-    );
-  }
-
-  const index = state.tools.findIndex((t) => t.id === toolId);
-  if (index !== -1) {
-    state.tools[index] = normalizeToolFromDb(updated);
-  }
-
-  persist();
-  render();
+  await refreshToolsAndRender();
 }
 
 async function editToolCentered(tool) {
@@ -5953,35 +5935,17 @@ async function editTool(toolId) {
     insert_radius: data.insertTool ? data.insertRadius || null : null,
   };
 
-  const { data: updated, error } = await supabaseClient
+  const { error } = await supabaseClient
     .from("tools")
     .update(payload)
-    .eq("id", toolId)
-    .select()
-    .maybeSingle();
+    .eq("id", toolId);
 
   if (error) {
     console.error("Fehler beim Bearbeiten des Werkzeugs:", error);
     return alert(`Werkzeug konnte nicht gespeichert werden: ${error.message}`);
   }
 
-  if (!updated) {
-    console.error("Kein Werkzeug nach Update zurückgegeben", {
-      toolId,
-      payload,
-    });
-    return alert(
-      "Werkzeug konnte nicht gespeichert werden. Datensatz wurde nicht gefunden oder nicht zurückgegeben.",
-    );
-  }
-
-  const index = state.tools.findIndex((t) => t.id === toolId);
-  if (index !== -1) {
-    state.tools[index] = normalizeToolFromDb(updated);
-  }
-
-  persist();
-  render();
+  await refreshToolsAndRender();
 }
 
 function openCreateToolModal() {
