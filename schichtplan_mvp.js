@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.27";
+const APP_VERSION = "0.4.28";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -419,6 +419,8 @@ async function loadToolJournalFromSupabase() {
 }
 
 async function addToolJournalEntry(entry) {
+  console.log("Tool-Journal Start:", entry);
+
   const localEntry = {
     id: `journal-${Date.now()}`,
     toolId: entry.toolId || null,
@@ -444,6 +446,8 @@ async function addToolJournalEntry(entry) {
     stock_after: Number(entry.stockAfter || 0),
     user_name: entry.user || currentUser?.name || "System",
   };
+
+  console.log("Tool-Journal Supabase Insert payload:", payload);
 
   const { error } = await supabaseClient
     .from("tool_journal")
@@ -5306,6 +5310,12 @@ async function confirmQrToolWithdraw(toolId) {
   }
 
   state.tools = tools;
+  console.log("Journal wird geschrieben aus confirmQrToolWithdraw", {
+    tool: refreshedTool,
+    oldStock,
+    newStock,
+    qty: 1,
+  });
   await addToolJournalEntry({
     toolId: refreshedTool.id,
     toolTNumber: refreshedTool.tNumber,
@@ -5384,6 +5394,12 @@ async function confirmQrToolRestock(toolId) {
     };
   }
 
+  console.log("Journal wird geschrieben aus confirmQrToolRestock", {
+    tool: refreshedTool,
+    oldStock,
+    newStock,
+    qty,
+  });
   await addToolJournalEntry({
     toolId: refreshedTool.id,
     toolTNumber: refreshedTool.tNumber,
@@ -5498,6 +5514,12 @@ function openManualToolWithdraw(initialTNumber = "") {
       state.tools[index] = refreshedTool;
     }
 
+    console.log("Journal wird geschrieben aus openManualToolWithdraw", {
+      tool: refreshedTool,
+      oldStock,
+      newStock,
+      qty: 1,
+    });
     await addToolJournalEntry({
       toolId: refreshedTool.id,
       toolTNumber: refreshedTool.tNumber,
@@ -5599,6 +5621,12 @@ function openManualToolRestock(initialTNumber = "") {
       state.tools[index] = refreshedTool;
     }
 
+    console.log("Journal wird geschrieben aus openManualToolRestock", {
+      tool: refreshedTool,
+      oldStock,
+      newStock,
+      qty,
+    });
     await addToolJournalEntry({
       toolId: refreshedTool.id,
       toolTNumber: refreshedTool.tNumber,
@@ -6386,6 +6414,12 @@ async function restockTool(toolId) {
   }
 
   archiveOrderEvent(refreshed, qty, "restock");
+  console.log("Journal wird geschrieben aus restockTool", {
+    tool: refreshed,
+    oldStock,
+    newStock,
+    qty,
+  });
   await addToolJournalEntry({
     toolId: refreshed.id,
     toolTNumber: refreshed.tNumber,
@@ -6470,6 +6504,12 @@ async function bookToolChange(toolId) {
     }
   }
 
+  console.log("Journal wird geschrieben aus bookToolChange", {
+    tool: updatedTool,
+    oldStock: Number(tool.stock || 0),
+    newStock: takeOut ? Number(updatedTool.stock || 0) : Number(tool.stock || 0),
+    qty,
+  });
   await addToolJournalEntry({
     toolId: updatedTool.id,
     toolTNumber: updatedTool.tNumber,
