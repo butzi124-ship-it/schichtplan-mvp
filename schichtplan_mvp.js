@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.31";
+const APP_VERSION = "0.4.33";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -416,7 +416,10 @@ async function loadToolJournalFromSupabase() {
   }
 
   state.toolJournal = (data || []).map(normalizeToolJournalFromDb);
-  console.log("Tool-Journal geladen:", state.toolJournal);
+  console.log(
+    "Tool-Journal aus Supabase geladen:",
+    state.toolJournal.length,
+  );
   return state.toolJournal;
 }
 
@@ -930,9 +933,11 @@ function loadState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return base;
     const parsed = JSON.parse(raw);
+    delete parsed.toolJournal;
     return {
       ...base,
       ...parsed,
+      toolJournal: base.toolJournal,
       toolFilters: {
         ...base.toolFilters,
         ...(parsed.toolFilters || {}),
@@ -948,7 +953,9 @@ function loadState() {
 }
 
 function persist() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  const snapshot = { ...state };
+  delete snapshot.toolJournal;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
 }
 
 function escapeHtml(value) {
