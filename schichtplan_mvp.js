@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.23";
+const APP_VERSION = "0.4.24";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -364,6 +364,84 @@ async function loadToolsFromSupabase() {
   return (data || []).map(normalizeToolFromDb);
 }
 
+function normalizeToolJournalFromDb(row) {
+  const createdAt = row.created_at || new Date().toISOString();
+  return {
+    id: row.id,
+    toolId: row.tool_id,
+    toolTNumber: row.tool_t_number,
+    toolLabel: row.tool_label,
+    action: row.action,
+    qty: row.qty,
+    stockBefore: row.stock_before,
+    stockAfter: row.stock_after,
+    user: row.user_name,
+    createdAt,
+    at: createdAt.slice(0, 16).replace("T", " "),
+    tNumber: row.tool_t_number,
+  };
+}
+
+async function loadToolJournalFromSupabase() {
+  const { data, error } = await supabaseClient
+    .from("tool_journal")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (error) {
+    console.warn("Fehler beim Laden von tool_journal:", error);
+    return state.toolJournal || [];
+  }
+
+  state.toolJournal = (data || []).map(normalizeToolJournalFromDb);
+  return state.toolJournal;
+}
+
+async function addToolJournalEntry(entry) {
+  const fallbackEntry = {
+    id: `journal-${Date.now()}`,
+    toolId: entry.toolId || null,
+    toolTNumber: entry.toolTNumber || entry.tNumber || "",
+    toolLabel: entry.toolLabel || entry.label || "",
+    action: entry.action,
+    qty: Number(entry.qty || 0),
+    stockBefore: Number(entry.stockBefore || 0),
+    stockAfter: Number(entry.stockAfter || 0),
+    user: entry.user || currentUser?.name || "System",
+    createdAt: new Date().toISOString(),
+  };
+  fallbackEntry.at = fallbackEntry.createdAt.slice(0, 16).replace("T", " ");
+  fallbackEntry.tNumber = fallbackEntry.toolTNumber;
+
+  const payload = {
+    tool_id: entry.toolId || null,
+    tool_t_number: entry.toolTNumber || entry.tNumber || null,
+    tool_label: entry.toolLabel || entry.label || null,
+    action: entry.action,
+    qty: Number(entry.qty || 0),
+    stock_before: Number(entry.stockBefore || 0),
+    stock_after: Number(entry.stockAfter || 0),
+    user_name: entry.user || currentUser?.name || "System",
+  };
+
+  const { data, error } = await supabaseClient
+    .from("tool_journal")
+    .insert(payload)
+    .select()
+    .maybeSingle();
+
+  if (error || !data) {
+    console.warn("Fehler beim Schreiben von tool_journal:", error);
+    state.toolJournal.unshift(fallbackEntry);
+    return fallbackEntry;
+  }
+
+  const normalized = normalizeToolJournalFromDb(data);
+  state.toolJournal.unshift(normalized);
+  return normalized;
+}
+
 async function refreshToolsAndRender() {
   const tools = await loadToolsFromSupabase();
   if (Array.isArray(tools) && tools.length > 0) {
@@ -658,6 +736,7 @@ async function syncSupabaseSessionToApp() {
   applyEmployeesToState(employees);
   toolMaterials = materials;
   state.tools = tools;
+  await loadToolJournalFromSupabase();
 
   if (planning) {
     state.assignments = planning.assignments;
@@ -723,6 +802,7 @@ async function bootSupabase() {
   applyEmployeesToState(employees);
   toolMaterials = materials;
   state.tools = tools;
+  await loadToolJournalFromSupabase();
 
   if (planning) {
     state.assignments = planning.assignments;
@@ -5201,14 +5281,15 @@ async function confirmQrToolWithdraw(toolId) {
   }
 
   state.tools = tools;
-  state.toolJournal.unshift({
-    id: `journal-${Date.now()}`,
-    user: currentUser?.name || "Werkzeug-Scanner",
-    at: new Date().toISOString().slice(0, 16).replace("T", " "),
+  await addToolJournalEntry({
     toolId: refreshedTool.id,
-    tNumber: refreshedTool.tNumber,
-    qty: 1,
+    toolTNumber: refreshedTool.tNumber,
+    toolLabel: refreshedTool.label,
     action: "QR-Scanner Entnahme 1",
+    qty: 1,
+    stockBefore: oldStock,
+    stockAfter: newStock,
+    user: currentUser?.name || "Werkzeug-Scanner",
   });
 
   closeToolImagePopup();
@@ -5276,14 +5357,15 @@ async function confirmQrToolRestock(toolId) {
     };
   }
 
-  state.toolJournal.unshift({
-    id: `journal-${Date.now()}`,
-    user: currentUser?.name || "Werkzeug-Scanner",
-    at: new Date().toISOString().slice(0, 16).replace("T", " "),
+  await addToolJournalEntry({
     toolId: refreshedTool.id,
-    tNumber: refreshedTool.tNumber,
-    qty,
+    toolTNumber: refreshedTool.tNumber,
+    toolLabel: refreshedTool.label,
     action: `QR-Scanner Einlagerung ${qty}`,
+    qty,
+    stockBefore: oldStock,
+    stockAfter: newStock,
+    user: currentUser?.name || "Werkzeug-Scanner",
   });
 
   closeToolImagePopup();
@@ -5388,14 +5470,15 @@ function openManualToolWithdraw(initialTNumber = "") {
       state.tools[index] = refreshedTool;
     }
 
-    state.toolJournal.unshift({
-      id: `journal-${Date.now()}`,
-      user: currentUser?.name || "Werkzeug-Scanner",
-      at: new Date().toISOString().slice(0, 16).replace("T", " "),
+    await addToolJournalEntry({
       toolId: refreshedTool.id,
-      tNumber: refreshedTool.tNumber,
-      qty: 1,
+      toolTNumber: refreshedTool.tNumber,
+      toolLabel: refreshedTool.label,
       action: "Werkzeug-Scanner Entnahme 1",
+      qty: 1,
+      stockBefore: oldStock,
+      stockAfter: newStock,
+      user: currentUser?.name || "Werkzeug-Scanner",
     });
 
     closeToolImagePopup();
@@ -5487,14 +5570,15 @@ function openManualToolRestock(initialTNumber = "") {
       state.tools[index] = refreshedTool;
     }
 
-    state.toolJournal.unshift({
-      id: `journal-${Date.now()}`,
-      user: currentUser?.name || "Werkzeug-Scanner",
-      at: new Date().toISOString().slice(0, 16).replace("T", " "),
+    await addToolJournalEntry({
       toolId: refreshedTool.id,
-      tNumber: refreshedTool.tNumber,
-      qty,
+      toolTNumber: refreshedTool.tNumber,
+      toolLabel: refreshedTool.label,
       action: `Werkzeug-Scanner Einlagerung ${qty}`,
+      qty,
+      stockBefore: oldStock,
+      stockAfter: newStock,
+      user: currentUser?.name || "Werkzeug-Scanner",
     });
 
     closeToolImagePopup();
@@ -6219,6 +6303,16 @@ async function restockTool(toolId) {
   }
 
   archiveOrderEvent(refreshed, qty, "restock");
+  await addToolJournalEntry({
+    toolId: refreshed.id,
+    toolTNumber: refreshed.tNumber,
+    toolLabel: refreshed.label,
+    action: `Einlagerung bestellt ${qty}`,
+    qty,
+    stockBefore: oldStock,
+    stockAfter: newStock,
+    user: currentUser?.name || "System",
+  });
   await refreshToolsAndRender();
 }
 
@@ -6293,16 +6387,17 @@ async function bookToolChange(toolId) {
     }
   }
 
-  state.toolJournal.unshift({
-    id: `journal-${Date.now()}`,
-    user: currentUser.name,
-    at: new Date().toISOString().slice(0, 16).replace("T", " "),
+  await addToolJournalEntry({
     toolId: updatedTool.id,
-    tNumber: updatedTool.tNumber,
-    qty,
+    toolTNumber: updatedTool.tNumber,
+    toolLabel: updatedTool.label,
     action: takeOut
       ? `Werkzeugwechsel + Entnahme ${qty}`
       : "Werkzeugwechsel ohne Entnahme",
+    qty,
+    stockBefore: Number(tool.stock || 0),
+    stockAfter: takeOut ? Number(updatedTool.stock || 0) : Number(tool.stock || 0),
+    user: currentUser.name,
   });
 
   await refreshToolsAndRender();
