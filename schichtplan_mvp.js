@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.24";
+const APP_VERSION = "0.4.25";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -4375,7 +4375,11 @@ function collectToolFormData(root = document) {
     shelf: root.getElementById("toolShelf")?.value?.trim().toUpperCase(),
     articleNo: root.getElementById("toolArticle")?.value?.trim(),
     holder: root.getElementById("toolHolder")?.value,
-    stock: Number(root.getElementById("toolStock")?.value || 0),
+    stock: Number(
+      root.getElementById("toolStock")?.value ||
+        root.querySelector?.("[name='stock']")?.value ||
+        0,
+    ),
     minStock: Number(root.getElementById("toolMinStock")?.value || 0),
     optimalStock: Number(root.getElementById("toolOptimalStock")?.value || 0),
     manufacturer: root.getElementById("toolManufacturer")?.value,
@@ -4463,7 +4467,7 @@ function normalizeToolData(data) {
     shelf: data.shelf,
     articleNo: data.articleNo,
     holder: data.holder,
-    stock: data.stock,
+    stock: Number(data.stock || 0),
     minStock: data.minStock,
     optimalStock: Math.max(0, data.optimalStock),
     manufacturer: data.manufacturer,
@@ -5719,6 +5723,33 @@ async function editTool(toolId) {
     return alert(`Werkzeug konnte nicht gespeichert werden: ${error.message}`);
   }
 
+  state.tools = state.tools.map((existingTool) =>
+    existingTool.id === toolId
+      ? {
+          ...existingTool,
+          label: data.label,
+          diameter: String(data.diameter),
+          threadPrefix: isThreadTool ? data.threadPrefix || "" : "",
+          threadPitch:
+            isThreadTool && data.threadPrefix === "MF"
+              ? data.threadPitch || ""
+              : "",
+          cornerRadius: isRadiusTool ? data.cornerRadius || "" : "",
+          materialId: data.materialId || null,
+          shelf: data.shelf,
+          articleNo: data.articleNo,
+          holder: data.holder,
+          stock: Number(data.stock || 0),
+          minStock: Number(data.minStock || 0),
+          optimalStock: Number(data.optimalStock || 0),
+          manufacturer: data.manufacturer || "",
+          insertTool: !!data.insertTool,
+          insertEdges: data.insertTool ? Number(data.insertEdges || 0) : 0,
+          insertRadius: data.insertTool ? data.insertRadius || "" : "",
+        }
+      : existingTool,
+  );
+
   await refreshToolsAndRender();
 }
 
@@ -6028,6 +6059,33 @@ async function editTool(toolId) {
     console.error("Fehler beim Bearbeiten des Werkzeugs:", error);
     return alert(`Werkzeug konnte nicht gespeichert werden: ${error.message}`);
   }
+
+  state.tools = state.tools.map((existingTool) =>
+    existingTool.id === toolId
+      ? {
+          ...existingTool,
+          label: data.label,
+          diameter: String(data.diameter),
+          threadPrefix: isThreadTool ? data.threadPrefix || "" : "",
+          threadPitch:
+            isThreadTool && data.threadPrefix === "MF"
+              ? data.threadPitch || ""
+              : "",
+          cornerRadius: isRadiusTool ? data.cornerRadius || "" : "",
+          materialId: data.materialId || null,
+          shelf: data.shelf,
+          articleNo: data.articleNo,
+          holder: data.holder,
+          stock: Number(data.stock || 0),
+          minStock: Number(data.minStock || 0),
+          optimalStock: Number(data.optimalStock || 0),
+          manufacturer: data.manufacturer || "",
+          insertTool: !!data.insertTool,
+          insertEdges: data.insertTool ? Number(data.insertEdges || 0) : 0,
+          insertRadius: data.insertTool ? data.insertRadius || "" : "",
+        }
+      : existingTool,
+  );
 
   await refreshToolsAndRender();
 }
