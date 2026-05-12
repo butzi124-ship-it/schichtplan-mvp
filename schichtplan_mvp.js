@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.21";
+const APP_VERSION = "0.4.22";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -362,6 +362,15 @@ async function loadToolsFromSupabase() {
   }
 
   return (data || []).map(normalizeToolFromDb);
+}
+
+async function refreshToolsAndRender() {
+  const tools = await loadToolsFromSupabase();
+  if (Array.isArray(tools) && tools.length > 0) {
+    state.tools = tools;
+  }
+  persist();
+  render();
 }
 
 async function getCurrentEmployeeRecord() {
@@ -5203,8 +5212,7 @@ async function confirmQrToolWithdraw(toolId) {
   });
 
   closeToolImagePopup();
-  persist();
-  render();
+  await refreshToolsAndRender();
 }
 
 async function confirmQrToolRestock(toolId) {
@@ -5279,8 +5287,7 @@ async function confirmQrToolRestock(toolId) {
   });
 
   closeToolImagePopup();
-  persist();
-  render();
+  await refreshToolsAndRender();
 }
 
 function stopQrScanner() {
@@ -5392,8 +5399,7 @@ function openManualToolWithdraw(initialTNumber = "") {
     });
 
     closeToolImagePopup();
-    persist();
-    render();
+    await refreshToolsAndRender();
   });
 
   host.querySelector("#scannerWithdrawTNumber")?.focus();
@@ -5492,8 +5498,7 @@ function openManualToolRestock(initialTNumber = "") {
     });
 
     closeToolImagePopup();
-    persist();
-    render();
+    await refreshToolsAndRender();
   });
 
   host.querySelector("#scannerRestockTNumber")?.focus();
@@ -6250,8 +6255,7 @@ async function restockTool(toolId) {
   }
 
   archiveOrderEvent(refreshed, qty, "restock");
-  persist();
-  render();
+  await refreshToolsAndRender();
 }
 
 async function bookToolChange(toolId) {
@@ -6337,8 +6341,7 @@ async function bookToolChange(toolId) {
       : "Werkzeugwechsel ohne Entnahme",
   });
 
-  persist();
-  render();
+  await refreshToolsAndRender();
 }
 
 async function deleteTool(toolId) {
@@ -6406,8 +6409,7 @@ async function undoToolJournalEntry(entryId) {
   }
 
   state.toolJournal.splice(idx, 1);
-  persist();
-  render();
+  await refreshToolsAndRender();
 }
 
 function resetToolFilters() {
