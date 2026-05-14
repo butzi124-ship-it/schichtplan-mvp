@@ -56,7 +56,94 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.41";
+const APP_VERSION = "0.4.42";
+const VERSION_LOG = [
+  {
+    version: "0.4.42",
+    date: "2026-05-14",
+    changes: ["Versionslog in der Fußzeile ergänzt"],
+  },
+  {
+    version: "0.4.41",
+    changes: [
+      "Mindestbestand-Warnfarben unterschieden: erreicht = orange, unterschritten = rot",
+    ],
+  },
+  {
+    version: "0.4.40",
+    changes: [
+      "Mindestbestand-Warnung und Bereich Nachbestellen prüfen ergänzt",
+    ],
+  },
+  {
+    version: "0.4.39",
+    changes: ["Auto-Aktualisierung im Werkzeugbereich alle 15 Sekunden ergänzt"],
+  },
+  {
+    version: "0.4.38",
+    changes: [
+      "Werkzeug-Aktualisierung gegen leere Supabase-Rückgaben abgesichert",
+    ],
+  },
+  {
+    version: "0.4.37",
+    changes: ["Button Werkzeuge aktualisieren ergänzt"],
+  },
+  {
+    version: "0.4.35",
+    changes: ["Temporäre Mobile-Debug-Konsole entfernt"],
+  },
+  {
+    version: "0.4.34",
+    changes: ["Tool-Journal-Anzeige stabil aus state.toolJournal gerendert"],
+  },
+  {
+    version: "0.4.33",
+    changes: ["Tool-Journal bleibt stabil aus Supabase geladen"],
+  },
+  {
+    version: "0.4.31",
+    changes: ["Tool-Journal-Anzeige auf Supabase-Daten vorbereitet"],
+  },
+  {
+    version: "0.4.24",
+    changes: ["Tool-Journal auf Supabase-Anbindung vorbereitet"],
+  },
+  {
+    version: "0.4.21",
+    changes: ["QR-Einlagerung mit Mengenbestätigung ergänzt"],
+  },
+  {
+    version: "0.4.16",
+    changes: ["QR-Entnahme mit direkter Bestätigung ergänzt"],
+  },
+  {
+    version: "0.4.15",
+    changes: ["Optionaler Plattenradius für Wendeplattenwerkzeuge ergänzt"],
+  },
+  {
+    version: "0.4.14",
+    changes: [
+      "Bestellte Werkzeugkarten mit T-Nummer und dynamischen Details verbessert",
+    ],
+  },
+  {
+    version: "0.4.8",
+    changes: ["Kamera-QR-Scanner vorbereitet"],
+  },
+  {
+    version: "0.4.5",
+    changes: ["Lokale QR-Code-Grafik für Werkzeugetiketten ergänzt"],
+  },
+  {
+    version: "0.4.2",
+    changes: ["Werkzeug-Scanner-Kiosk mit Rolle tool_scanner ergänzt"],
+  },
+  {
+    version: "0.4.0",
+    changes: ["Werkzeugbilder per Popup ergänzt"],
+  },
+];
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -1050,6 +1137,54 @@ function closeHelp() {
   getHelpModalHost().innerHTML = "";
 }
 
+function ensureVersionFooter() {
+  let footer = document.getElementById("versionFooter");
+  if (!footer) {
+    footer = document.createElement("div");
+    footer.id = "versionFooter";
+    footer.className = "fixed bottom-2 right-2 z-40";
+    document.body.appendChild(footer);
+  }
+
+  footer.innerHTML = `<button class="px-3 py-1 rounded-full bg-white/95 border border-slate-200 shadow text-xs text-slate-600 hover:bg-slate-50" onclick="openVersionLog()">Versionslog · v${APP_VERSION}</button>`;
+}
+
+function openVersionLog() {
+  const rows = VERSION_LOG.map((entry) => {
+    const changes = entry.changes
+      .map((change) => `<li>${escapeHtml(change)}</li>`)
+      .join("");
+    const date = entry.date
+      ? `<span class="text-xs text-slate-500">${escapeHtml(entry.date)}</span>`
+      : "";
+
+    return `<div class="border-b border-slate-100 pb-3">
+      <div class="flex items-center justify-between gap-3 mb-1">
+        <h4 class="font-semibold">Version ${escapeHtml(entry.version)}</h4>
+        ${date}
+      </div>
+      <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">${changes}</ul>
+    </div>`;
+  }).join("");
+
+  getModalHost().innerHTML = `<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[88vh] overflow-auto p-4">
+      <div class="flex items-start justify-between gap-3 mb-4">
+        <div>
+          <h3 class="text-lg font-bold">Versionslog</h3>
+          <p class="text-sm text-slate-500">Aktuelle Version: v${APP_VERSION}</p>
+        </div>
+        <button class="px-3 py-1 rounded bg-slate-200" onclick="closeVersionLog()">Schließen</button>
+      </div>
+      <div class="space-y-3">${rows}</div>
+    </div>
+  </div>`;
+}
+
+function closeVersionLog() {
+  getModalHost().innerHTML = "";
+}
+
 function loginAs(name) {
   if (name === "admin") {
     currentUser = { name: "Admin", role: "admin" };
@@ -1118,6 +1253,7 @@ function render() {
   if (currentTab === "todo") view.innerHTML = renderTodo();
   if (currentTab === "konflikte") view.innerHTML = renderConflicts();
   if (currentTab === "statistik") view.innerHTML = renderStats();
+  ensureVersionFooter();
   if (currentUser.role === "tool_scanner") return;
   maybeShowMachinePrompt();
   maybeTaskReminder();
@@ -8338,6 +8474,8 @@ window.loginAs = loginAs;
 window.logout = logout;
 window.openHelp = openHelp;
 window.closeHelp = closeHelp;
+window.openVersionLog = openVersionLog;
+window.closeVersionLog = closeVersionLog;
 window.setTab = setTab;
 window.setStatsView = setStatsView;
 window.setPlanningSubTab = setPlanningSubTab;
