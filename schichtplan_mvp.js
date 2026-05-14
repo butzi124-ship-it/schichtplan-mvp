@@ -63,7 +63,7 @@ const VERSION_LOG = [
     date: "2026-05-14",
     changes: [
       "Werkzeug-Stammdaten in ein Popup verschoben",
-      "Versionslog aktualisiert und Pflege bei Änderungen festgelegt",
+      "Scrollposition der Werkzeugliste beim Auto-Refresh erhalten",
     ],
   },
   {
@@ -574,6 +574,8 @@ async function refreshToolsAndRender() {
 }
 
 async function refreshToolPageData() {
+  const stockScrollEl = document.getElementById("toolStockTableScroll");
+  const stockScrollTop = stockScrollEl ? stockScrollEl.scrollTop : 0;
   const previousTools = Array.isArray(state.tools) ? [...state.tools] : [];
   const previousJournal = Array.isArray(state.toolJournal)
     ? [...state.toolJournal]
@@ -602,6 +604,11 @@ async function refreshToolPageData() {
 
   persist();
   render();
+
+  const newStockScrollEl = document.getElementById("toolStockTableScroll");
+  if (newStockScrollEl) {
+    newStockScrollEl.scrollTop = stockScrollTop;
+  }
 }
 
 function startToolAutoRefresh() {
@@ -7499,7 +7506,7 @@ function renderTools() {
           : ""
       }
 
-      <div class='overflow-auto max-h-[35vh] border rounded-lg'>
+      <div id='toolStockTableScroll' class='overflow-auto max-h-[35vh] border rounded-lg'>
         <table class='w-full text-sm'>
           <thead class='bg-slate-100 sticky top-0'>
             ${stockTableHeader}
