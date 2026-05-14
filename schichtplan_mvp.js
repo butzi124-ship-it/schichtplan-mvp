@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.34";
+const APP_VERSION = "0.4.35";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -65,7 +65,6 @@ let statsViewPeriod = "week";
 let qrScannerStream = null;
 let qrScannerTimer = null;
 let qrScannerMode = null;
-window.DEBUG_LOGS = [];
 
 const HELP_TEXTS = {
   planningPersonal: {
@@ -424,8 +423,6 @@ async function loadToolJournalFromSupabase() {
 }
 
 async function addToolJournalEntry(entry) {
-  debugLog("Tool-Journal Start:", entry);
-
   const localEntry = {
     id: `journal-${Date.now()}`,
     toolId: entry.toolId || null,
@@ -452,20 +449,17 @@ async function addToolJournalEntry(entry) {
     user_name: entry.user || currentUser?.name || "System",
   };
 
-  debugLog("Tool-Journal Supabase Insert payload:", payload);
-
   const { error } = await supabaseClient
     .from("tool_journal")
     .insert(payload);
 
   if (error) {
-    debugLog("Tool-Journal konnte nicht in Supabase gespeichert werden", error);
+    console.warn("Tool-Journal konnte nicht in Supabase gespeichert werden", error);
     state.toolJournal.unshift(localEntry);
     return localEntry;
   }
 
   state.toolJournal.unshift(localEntry);
-  debugLog("Tool-Journal geschrieben:", entry);
   return localEntry;
 }
 
@@ -965,74 +959,6 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
-}
-
-function debugLog(...args) {
-  const text = args
-    .map((value) => {
-      try {
-        return typeof value === "string"
-          ? value
-          : JSON.stringify(value, null, 2);
-      } catch {
-        return String(value);
-      }
-    })
-    .join(" ");
-
-  console.log(...args);
-
-  window.DEBUG_LOGS.unshift(
-    `[${new Date().toLocaleTimeString()}] ${text}`,
-  );
-  window.DEBUG_LOGS = window.DEBUG_LOGS.slice(0, 50);
-
-  const el = document.getElementById("mobileDebugConsole");
-  if (el) {
-    el.textContent = window.DEBUG_LOGS.join("\n\n");
-  }
-}
-
-function renderMobileDebugConsole() {
-  return `
-    <div style="
-      position:fixed;
-      bottom:0;
-      left:0;
-      right:0;
-      height:35vh;
-      background:#000;
-      color:#00ff66;
-      z-index:999999;
-      overflow:auto;
-      font-size:11px;
-      padding:8px;
-      white-space:pre-wrap;
-      font-family:monospace;
-      border-top:2px solid #00ff66;
-    ">
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-        <strong>DEBUG CONSOLE</strong>
-        <button onclick="document.getElementById('mobileDebugConsoleWrapper').remove()">
-          Schließen
-        </button>
-      </div>
-
-      <div id="mobileDebugConsole">
-        ${window.DEBUG_LOGS.join("\n\n")}
-      </div>
-    </div>
-  `;
-}
-
-function openMobileDebugConsole() {
-  if (document.getElementById("mobileDebugConsoleWrapper")) return;
-
-  const div = document.createElement("div");
-  div.id = "mobileDebugConsoleWrapper";
-  div.innerHTML = renderMobileDebugConsole();
-
-  document.body.appendChild(div);
 }
 
 function helpButton(topic) {
@@ -5118,8 +5044,6 @@ async function copyToolQrPayload(toolId) {
 }
 
 function renderToolScanner() {
-  setTimeout(openMobileDebugConsole, 0);
-
   return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
     <div>
       <h2 class='text-2xl font-bold'>Werkzeug-Scanner</h2>
@@ -5402,14 +5326,6 @@ async function confirmQrToolWithdraw(toolId) {
   }
 
   state.tools = tools;
-  debugLog("QR Withdraw Bestand erfolgreich aktualisiert");
-  debugLog("Journal wird geschrieben aus confirmQrToolWithdraw", {
-    tool: refreshedTool,
-    oldStock,
-    newStock,
-    qty: 1,
-  });
-  debugLog("QR Withdraw ruft Journal auf");
   try {
     await addToolJournalEntry({
       toolId: refreshedTool.id,
@@ -5421,7 +5337,6 @@ async function confirmQrToolWithdraw(toolId) {
       stockAfter: newStock,
       user: currentUser?.name || "Werkzeug-Scanner",
     });
-    debugLog("QR Withdraw Journal abgeschlossen");
     await refreshToolsAndRender();
     closeToolImagePopup();
   } catch (error) {
@@ -5492,14 +5407,6 @@ async function confirmQrToolRestock(toolId) {
     };
   }
 
-  debugLog("QR Restock Bestand erfolgreich aktualisiert");
-  debugLog("Journal wird geschrieben aus confirmQrToolRestock", {
-    tool: refreshedTool,
-    oldStock,
-    newStock,
-    qty,
-  });
-  debugLog("QR Restock ruft Journal auf");
   try {
     await addToolJournalEntry({
       toolId: refreshedTool.id,
@@ -5511,7 +5418,6 @@ async function confirmQrToolRestock(toolId) {
       stockAfter: newStock,
       user: currentUser?.name || "Werkzeug-Scanner",
     });
-    debugLog("QR Restock Journal abgeschlossen");
     await refreshToolsAndRender();
     closeToolImagePopup();
   } catch (error) {
@@ -7071,12 +6977,6 @@ function renderTools() {
     })
     .join("");
 
-  console.log(
-    "Render Tool-Journal:",
-    state.toolJournal?.length,
-    state.toolJournal,
-  );
-
   const journalEntries = Array.isArray(state.toolJournal)
     ? state.toolJournal
     : [];
@@ -8313,7 +8213,6 @@ render();
 bootSupabase();
 
 window.loginWithSupabase = loginWithSupabase;
-window.openMobileDebugConsole = openMobileDebugConsole;
 window.logoutSupabase = logoutSupabase;
 window.fillLogin = fillLogin;
 window.loginAs = loginAs;
