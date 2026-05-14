@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.38";
+const APP_VERSION = "0.4.39";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -65,6 +65,7 @@ let statsViewPeriod = "week";
 let qrScannerStream = null;
 let qrScannerTimer = null;
 let qrScannerMode = null;
+let toolAutoRefreshTimer = null;
 
 const HELP_TEXTS = {
   planningPersonal: {
@@ -499,6 +500,28 @@ async function refreshToolPageData() {
 
   persist();
   render();
+}
+
+function startToolAutoRefresh() {
+  stopToolAutoRefresh();
+
+  if (currentTab !== "werkzeuge") return;
+
+  toolAutoRefreshTimer = setInterval(async () => {
+    if (currentTab !== "werkzeuge") {
+      stopToolAutoRefresh();
+      return;
+    }
+
+    await refreshToolPageData();
+  }, 15000);
+}
+
+function stopToolAutoRefresh() {
+  if (toolAutoRefreshTimer) {
+    clearInterval(toolAutoRefreshTimer);
+    toolAutoRefreshTimer = null;
+  }
 }
 
 async function getCurrentEmployeeRecord() {
@@ -1079,6 +1102,12 @@ function render() {
     `Angemeldet: ${currentUser.name} (${currentUser.role})`;
 
   if (!tabs.includes(currentTab)) currentTab = tabs[0];
+  if (currentTab === "werkzeuge") {
+    startToolAutoRefresh();
+  } else {
+    stopToolAutoRefresh();
+  }
+
   const view = document.getElementById("view");
   if (currentTab === "schichtplan") view.innerHTML = renderSchedule();
   if (currentTab === "meine") view.innerHTML = renderMyShifts();
@@ -7154,7 +7183,10 @@ function renderTools() {
         <h2 class='text-xl font-bold mb-1'>Werkzeugverwaltung</h2>
         ${helpButton("werkzeuge")}
       </div>
-      <button class='px-3 py-2 rounded bg-blue-700 text-white' onclick='refreshToolPageData()'>Werkzeuge aktualisieren</button>
+      <div class='flex items-center gap-2 flex-wrap'>
+        <span class='text-xs text-slate-500'>Auto-Aktualisierung alle 15 Sekunden aktiv</span>
+        <button class='px-3 py-2 rounded bg-blue-700 text-white' onclick='refreshToolPageData()'>Werkzeuge aktualisieren</button>
+      </div>
     </div>
     <p class='text-sm text-slate-600 mb-2'>Alle Bereiche sind getrennt dargestellt: Stammdaten, Bestand, To-Do, Bestellt und Journal.</p>
 
@@ -8302,6 +8334,8 @@ window.stopDowntimeTimer = stopDowntimeTimer;
 window.applyToolFilters = applyToolFilters;
 window.resetToolFilters = resetToolFilters;
 window.refreshToolPageData = refreshToolPageData;
+window.startToolAutoRefresh = startToolAutoRefresh;
+window.stopToolAutoRefresh = stopToolAutoRefresh;
 window.bookToolChange = bookToolChange;
 window.undoToolJournalEntry = undoToolJournalEntry;
 window.openToolImagePopup = openToolImagePopup;
