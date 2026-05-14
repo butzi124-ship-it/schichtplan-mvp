@@ -56,8 +56,23 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.43";
+const APP_VERSION = "0.4.44";
 const VERSION_LOG = [
+  {
+    version: "0.4.44",
+    date: "2026-05-14",
+    changes: [
+      "Werkzeug-Stammdaten in ein Popup verschoben",
+      "Versionslog aktualisiert und Pflege bei Änderungen festgelegt",
+    ],
+  },
+  {
+    version: "0.4.43",
+    date: "2026-05-14",
+    changes: [
+      "Werkzeugbereich neu strukturiert: Werkzeugbestand oben, Filter integriert, Admin-Bestandsaktionen untereinander",
+    ],
+  },
   {
     version: "0.4.42",
     date: "2026-05-14",
@@ -4557,6 +4572,62 @@ function renderToolMasterDataAdmin() {
   </div>`;
 }
 
+function openToolMasterDataModal() {
+  const labelRows = getToolLabels()
+    .map((name) => `<tr class='border-b'><td class='p-2'>${escapeHtml(name)}</td></tr>`)
+    .join("");
+
+  const manufacturerRows = getToolManufacturers()
+    .map((name) => `<tr class='border-b'><td class='p-2'>${escapeHtml(name)}</td></tr>`)
+    .join("");
+
+  const materialRows = toolMaterials
+    .map(
+      (material) =>
+        `<tr class='border-b'><td class='p-2'>${escapeHtml(material.name || "-")}</td></tr>`,
+    )
+    .join("");
+
+  getModalHost().innerHTML = `<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-5xl max-h-[88vh] overflow-auto p-4">
+      <div class="flex items-start justify-between gap-3 mb-4">
+        <div>
+          <h3 class="text-lg font-bold">Stammdaten für Werkzeuge</h3>
+          <p class="text-sm text-slate-500">Bezeichnungen, Hersteller und Schneidwerkstoffe.</p>
+        </div>
+        <button class="px-3 py-1 rounded bg-slate-200" onclick="closeToolMasterDataModal()">Schließen</button>
+      </div>
+
+      <div class='grid md:grid-cols-3 gap-4'>
+        <div class='border rounded-lg bg-white overflow-auto max-h-[55vh]'>
+          <div class='p-2 font-semibold border-b bg-slate-100'>Bezeichnungen</div>
+          <table class='w-full text-sm'>
+            <tbody>${labelRows || '<tr><td class="p-2">Keine Bezeichnungen vorhanden.</td></tr>'}</tbody>
+          </table>
+        </div>
+
+        <div class='border rounded-lg bg-white overflow-auto max-h-[55vh]'>
+          <div class='p-2 font-semibold border-b bg-slate-100'>Hersteller</div>
+          <table class='w-full text-sm'>
+            <tbody>${manufacturerRows || '<tr><td class="p-2">Keine Hersteller vorhanden.</td></tr>'}</tbody>
+          </table>
+        </div>
+
+        <div class='border rounded-lg bg-white overflow-auto max-h-[55vh]'>
+          <div class='p-2 font-semibold border-b bg-slate-100'>Schneidwerkstoffe</div>
+          <table class='w-full text-sm'>
+            <tbody>${materialRows || '<tr><td class="p-2">Keine Schneidwerkstoffe vorhanden.</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function closeToolMasterDataModal() {
+  getModalHost().innerHTML = "";
+}
+
 function isThreadToolLabel(label) {
   return [
     "Gewindebohrer",
@@ -7417,6 +7488,17 @@ function renderTools() {
         <p class='text-xs text-slate-500 mt-2'>Bildstatus prüft nur, ob aus T-Nummer und Aufnahme ein Bildpfad erstellt werden kann.</p>
       </div>
 
+      ${
+        isAdmin
+          ? `<div class='flex gap-2 flex-wrap mb-3'>
+              <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='addToolLabel()'>Bezeichnung hinzufügen</button>
+              <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='addToolManufacturer()'>Hersteller hinzufügen</button>
+              <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='addToolMaterial()'>Schneidwerkstoff hinzufügen</button>
+              <button class='px-3 py-2 rounded bg-slate-700 text-white' onclick='openToolMasterDataModal()'>Stammdaten anzeigen</button>
+            </div>`
+          : ""
+      }
+
       <div class='overflow-auto max-h-[35vh] border rounded-lg'>
         <table class='w-full text-sm'>
           <thead class='bg-slate-100 sticky top-0'>
@@ -7426,8 +7508,6 @@ function renderTools() {
         </table>
       </div>
     </div>
-
-    ${isAdmin ? renderToolMasterDataAdmin() : ""}
 
     ${
       isAdmin
@@ -8485,6 +8565,8 @@ window.openHelp = openHelp;
 window.closeHelp = closeHelp;
 window.openVersionLog = openVersionLog;
 window.closeVersionLog = closeVersionLog;
+window.openToolMasterDataModal = openToolMasterDataModal;
+window.closeToolMasterDataModal = closeToolMasterDataModal;
 window.setTab = setTab;
 window.setStatsView = setStatsView;
 window.setPlanningSubTab = setPlanningSubTab;
