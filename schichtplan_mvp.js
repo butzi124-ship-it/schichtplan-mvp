@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.42";
+const APP_VERSION = "0.4.43";
 const VERSION_LOG = [
   {
     version: "0.4.42",
@@ -7376,57 +7376,47 @@ function renderTools() {
         <button class='px-3 py-2 rounded bg-blue-700 text-white' onclick='refreshToolPageData()'>Werkzeuge aktualisieren</button>
       </div>
     </div>
-    <p class='text-sm text-slate-600 mb-2'>Alle Bereiche sind getrennt dargestellt: Stammdaten, Bestand, To-Do, Bestellt und Journal.</p>
-
-    ${
-      isAdmin
-        ? `<div class='border-2 border-slate-300 rounded-xl p-3 bg-slate-50'>
-            <div class='flex items-center justify-between gap-3 flex-wrap'>
-              <div>
-                <h3 class='text-lg font-bold mb-1'>1) Neues Werkzeug anlegen</h3>
-                <p class='text-sm text-slate-500'>Die Dateneingabe öffnet sich in einem separaten Eingabefenster.</p>
-              </div>
-              <div class='flex gap-2 flex-wrap'>
-                <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='openCreateToolModal()'>Neues Werkzeug erfassen</button>
-              </div>
-            </div>
-          </div>
-          ${renderToolMasterDataAdmin()}`
-        : ""
-    }
+    <p class='text-sm text-slate-600 mb-2'>Werkzeugbestand, Stammdaten, Bestellungen und Journal sind getrennt untereinander dargestellt.</p>
 
     <div class='border-2 border-slate-300 rounded-xl p-3'>
       <div class='flex items-center justify-between gap-3 flex-wrap mb-3'>
-        <h3 class='text-lg font-bold'>2) Filter & Suche</h3>
-        <span class='text-sm text-slate-500'>${tools.length} von ${state.tools.length} Werkzeugen angezeigt</span>
+        <div>
+          <h3 class='text-lg font-bold'>Werkzeugbestand</h3>
+          <span class='text-sm text-slate-500'>${tools.length} von ${state.tools.length} Werkzeugen angezeigt</span>
+        </div>
+        ${
+          isAdmin
+            ? `<button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='openCreateToolModal()'>Neues Werkzeug erfassen</button>`
+            : ""
+        }
       </div>
-      <div class='grid lg:grid-cols-[2fr,1fr,1fr,1fr,1fr,1fr] md:grid-cols-3 gap-3 mb-3'>
-        <input id='toolSearch' class='border rounded p-2 md:col-span-2 lg:col-span-1' placeholder='Suche nach T, Bezeichnung, Artikel, Aufnahme, Hersteller...' value='${escapeHtml(filters.search || "")}' />
-        <select id='toolFilterLabel' class='border rounded p-2'>
-          <option value='' ${filterLabel ? "" : "selected"}>Alle Bezeichnungen</option>${filterLabelOptions}
-        </select>
-        <input id='toolFilterT' class='border rounded p-2' placeholder='T-Nummer' value='${escapeHtml(filterT)}' />
-        <input id='toolFilterD' class='border rounded p-2' placeholder='Durchmesser' value='${escapeHtml(filterD)}' />
-        <select id='toolFilterHolder' class='border rounded p-2'>
-          <option value='' ${filterHolder ? "" : "selected"}>Alle Aufnahmen</option>
-          <option value='HSK 100' ${filterHolder === "HSK 100" ? "selected" : ""}>HSK 100</option>
-          <option value='HSK 63' ${filterHolder === "HSK 63" ? "selected" : ""}>HSK 63</option>
-        </select>
-        <select id='toolFilterImageStatus' class='border rounded p-2'>
-          <option value='' ${imageStatus ? "" : "selected"}>Alle Bildstatus</option>
-          <option value='withPath' ${imageStatus === "withPath" ? "selected" : ""}>Mit Bildpfad</option>
-          <option value='withoutPath' ${imageStatus === "withoutPath" ? "selected" : ""}>Ohne Bildpfad</option>
-        </select>
-      </div>
-      <div class='flex gap-2 flex-wrap'>
-        <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='applyToolFilters()'>Filter anwenden</button>
-        <button class='px-3 py-2 rounded bg-slate-700 text-white' onclick='resetToolFilters()'>Filter zurücksetzen</button>
-      </div>
-      <p class='text-xs text-slate-500 mt-2'>Bildstatus prüft nur, ob aus T-Nummer und Aufnahme ein Bildpfad erstellt werden kann.</p>
-    </div>
 
-    <div class='border-2 border-slate-300 rounded-xl p-3'>
-      <h3 class='text-lg font-bold mb-2'>3) Werkzeugbestand</h3>
+      <div class='border rounded-lg bg-slate-50 p-3 mb-3'>
+        <div class='grid lg:grid-cols-[2fr,1fr,1fr,1fr,1fr,1fr] md:grid-cols-3 gap-3 mb-3'>
+          <input id='toolSearch' class='border rounded p-2 md:col-span-2 lg:col-span-1' placeholder='Suche nach T, Bezeichnung, Artikel, Aufnahme, Hersteller...' value='${escapeHtml(filters.search || "")}' />
+          <select id='toolFilterLabel' class='border rounded p-2'>
+            <option value='' ${filterLabel ? "" : "selected"}>Alle Bezeichnungen</option>${filterLabelOptions}
+          </select>
+          <input id='toolFilterT' class='border rounded p-2' placeholder='T-Nummer' value='${escapeHtml(filterT)}' />
+          <input id='toolFilterD' class='border rounded p-2' placeholder='Durchmesser' value='${escapeHtml(filterD)}' />
+          <select id='toolFilterHolder' class='border rounded p-2'>
+            <option value='' ${filterHolder ? "" : "selected"}>Alle Aufnahmen</option>
+            <option value='HSK 100' ${filterHolder === "HSK 100" ? "selected" : ""}>HSK 100</option>
+            <option value='HSK 63' ${filterHolder === "HSK 63" ? "selected" : ""}>HSK 63</option>
+          </select>
+          <select id='toolFilterImageStatus' class='border rounded p-2'>
+            <option value='' ${imageStatus ? "" : "selected"}>Alle Bildstatus</option>
+            <option value='withPath' ${imageStatus === "withPath" ? "selected" : ""}>Mit Bildpfad</option>
+            <option value='withoutPath' ${imageStatus === "withoutPath" ? "selected" : ""}>Ohne Bildpfad</option>
+          </select>
+        </div>
+        <div class='flex gap-2 flex-wrap'>
+          <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='applyToolFilters()'>Filter anwenden</button>
+          <button class='px-3 py-2 rounded bg-slate-700 text-white' onclick='resetToolFilters()'>Filter zurücksetzen</button>
+        </div>
+        <p class='text-xs text-slate-500 mt-2'>Bildstatus prüft nur, ob aus T-Nummer und Aufnahme ein Bildpfad erstellt werden kann.</p>
+      </div>
+
       <div class='overflow-auto max-h-[35vh] border rounded-lg'>
         <table class='w-full text-sm'>
           <thead class='bg-slate-100 sticky top-0'>
@@ -7437,44 +7427,46 @@ function renderTools() {
       </div>
     </div>
 
+    ${isAdmin ? renderToolMasterDataAdmin() : ""}
+
     ${
       isAdmin
-        ? `<div class='border-2 border-slate-300 rounded-xl p-3'>
-            <h3 class='text-lg font-bold mb-2'>4) Admin-Bestandsaktionen</h3>
-            <div class='grid md:grid-cols-2 gap-3'>
-              <div class='border rounded p-3 bg-white overflow-auto'>
-                <h4 class='font-semibold mb-2'>Nachbestellen prüfen</h4>
-                <table class='w-full text-sm'>
-                  <thead class='bg-slate-100'>
-                    <tr>
-                      <th class='p-2 text-left'>T</th>
-                      <th class='p-2 text-left'>Bezeichnung</th>
-                      <th class='p-2 text-left'>Größe</th>
-                      <th class='p-2 text-left'>Bestand</th>
-                      <th class='p-2 text-left'>Mindestbestand</th>
-                      <th class='p-2 text-left'>Aufnahme</th>
-                      <th class='p-2 text-left'>Fach</th>
-                      <th class='p-2 text-left'>Status</th>
-                      <th class='p-2'></th>
-                    </tr>
-                  </thead>
-                  <tbody>${todoRows || '<tr><td class="p-2" colspan="9">Keine Werkzeuge mit erreichtem Mindestbestand.</td></tr>'}</tbody>
-                </table>
-              </div>
-              <div class='border rounded p-3 bg-white'>
-                <h4 class='font-semibold mb-2'>Bestellt</h4>
-                <div class='space-y-3'>
-                  ${orderedCards || '<div class="text-sm text-slate-500">Keine bestellten Werkzeuge.</div>'}
-                </div>
+        ? `<div class='border-2 border-slate-300 rounded-xl p-3 space-y-3'>
+            <h3 class='text-lg font-bold'>Admin-Bestandsaktionen</h3>
+
+            <div class='border rounded p-3 bg-white overflow-auto'>
+              <h4 class='font-semibold mb-2'>Nachbestellen prüfen</h4>
+              <table class='w-full text-sm'>
+                <thead class='bg-slate-100'>
+                  <tr>
+                    <th class='p-2 text-left'>T</th>
+                    <th class='p-2 text-left'>Bezeichnung</th>
+                    <th class='p-2 text-left'>Größe</th>
+                    <th class='p-2 text-left'>Bestand</th>
+                    <th class='p-2 text-left'>Mindestbestand</th>
+                    <th class='p-2 text-left'>Aufnahme</th>
+                    <th class='p-2 text-left'>Fach</th>
+                    <th class='p-2 text-left'>Status</th>
+                    <th class='p-2'></th>
+                  </tr>
+                </thead>
+                <tbody>${todoRows || '<tr><td class="p-2" colspan="9">Keine Werkzeuge mit erreichtem Mindestbestand.</td></tr>'}</tbody>
+              </table>
+            </div>
+
+            <div class='border rounded p-3 bg-white'>
+              <h4 class='font-semibold mb-2'>Bestellt</h4>
+              <div class='space-y-3'>
+                ${orderedCards || '<div class="text-sm text-slate-500">Keine bestellten Werkzeuge.</div>'}
               </div>
             </div>
 
-            <div class='mt-3 border rounded p-3 bg-slate-50'>
+            <div class='border rounded p-3 bg-slate-50'>
               <h4 class='font-semibold mb-2'>Bestellliste nach Hersteller</h4>
               <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick='openOrderListPopup()'>Bestellliste anzeigen</button>
             </div>
 
-            <div class='mt-3 border rounded p-3 bg-slate-50'>
+            <div class='border rounded p-3 bg-slate-50'>
               <h4 class='font-semibold mb-2'>Vorschläge für optimale Bestellmenge</h4>
               <table class='w-full text-sm'>
                 <thead class='bg-slate-100'>
@@ -7490,28 +7482,45 @@ function renderTools() {
                 <tbody>${suggestionRows || '<tr><td class="p-2" colspan="6">Noch keine aussagekräftigen Vorschläge vorhanden.</td></tr>'}</tbody>
               </table>
             </div>
-          </div>`
-        : ""
-    }
 
-    <div class='border-2 border-slate-300 rounded-xl p-3'>
-      <h3 class='text-lg font-bold mb-2'>5) Schichtjournal – Werkzeugwechsel</h3>
-      <div class='overflow-auto max-h-[25vh]'>
-        <table class='w-full text-sm'>
-          <thead class='bg-slate-100 sticky top-0'>
-            <tr>
-              <th class='p-2 text-left'>Zeit</th>
-              <th class='p-2 text-left'>Benutzer</th>
-              <th class='p-2 text-left'>Werkzeug</th>
-              <th class='p-2 text-left'>Aktion</th>
-              <th class='p-2 text-left'>Menge</th>
-              <th class='p-2 text-left'>Bestand vorher/nachher</th>
-            </tr>
-          </thead>
-          <tbody>${journalEntries.length === 0 ? '<tr><td class="p-2" colspan="6">Keine Einträge.</td></tr>' : journalRows}</tbody>
-        </table>
-      </div>
-    </div>
+            <div class='border rounded p-3 bg-white'>
+              <h4 class='font-semibold mb-2'>Schichtjournal – Werkzeugwechsel</h4>
+              <div class='overflow-auto max-h-[25vh]'>
+                <table class='w-full text-sm'>
+                  <thead class='bg-slate-100 sticky top-0'>
+                    <tr>
+                      <th class='p-2 text-left'>Zeit</th>
+                      <th class='p-2 text-left'>Benutzer</th>
+                      <th class='p-2 text-left'>Werkzeug</th>
+                      <th class='p-2 text-left'>Aktion</th>
+                      <th class='p-2 text-left'>Menge</th>
+                      <th class='p-2 text-left'>Bestand vorher/nachher</th>
+                    </tr>
+                  </thead>
+                  <tbody>${journalEntries.length === 0 ? '<tr><td class="p-2" colspan="6">Keine Einträge.</td></tr>' : journalRows}</tbody>
+                </table>
+              </div>
+            </div>
+          </div>`
+        : `<div class='border-2 border-slate-300 rounded-xl p-3'>
+            <h3 class='text-lg font-bold mb-2'>Schichtjournal – Werkzeugwechsel</h3>
+            <div class='overflow-auto max-h-[25vh]'>
+              <table class='w-full text-sm'>
+                <thead class='bg-slate-100 sticky top-0'>
+                  <tr>
+                    <th class='p-2 text-left'>Zeit</th>
+                    <th class='p-2 text-left'>Benutzer</th>
+                    <th class='p-2 text-left'>Werkzeug</th>
+                    <th class='p-2 text-left'>Aktion</th>
+                    <th class='p-2 text-left'>Menge</th>
+                    <th class='p-2 text-left'>Bestand vorher/nachher</th>
+                  </tr>
+                </thead>
+                <tbody>${journalEntries.length === 0 ? '<tr><td class="p-2" colspan="6">Keine Einträge.</td></tr>' : journalRows}</tbody>
+              </table>
+            </div>
+          </div>`
+    }
 
     ${orderListPopup}
   </div>`;
