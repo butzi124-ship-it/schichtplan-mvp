@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.37";
+const APP_VERSION = "0.4.38";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -471,11 +471,32 @@ async function refreshToolsAndRender() {
 }
 
 async function refreshToolPageData() {
+  const previousTools = Array.isArray(state.tools) ? [...state.tools] : [];
+  const previousJournal = Array.isArray(state.toolJournal)
+    ? [...state.toolJournal]
+    : [];
+
   const tools = await loadToolsFromSupabase();
-  if (Array.isArray(tools)) {
+  if (Array.isArray(tools) && tools.length > 0) {
     state.tools = tools;
+  } else if (previousTools.length > 0) {
+    state.tools = previousTools;
+    console.warn(
+      "Werkzeug-Refresh hat keine Tools geladen, vorherige Daten bleiben erhalten.",
+    );
   }
+
   await loadToolJournalFromSupabase();
+  if (
+    (!Array.isArray(state.toolJournal) || state.toolJournal.length === 0) &&
+    previousJournal.length > 0
+  ) {
+    state.toolJournal = previousJournal;
+    console.warn(
+      "Journal-Refresh hat keine Einträge geladen, vorherige Daten bleiben erhalten.",
+    );
+  }
+
   persist();
   render();
 }
