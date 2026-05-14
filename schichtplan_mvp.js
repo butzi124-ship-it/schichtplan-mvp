@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.40";
+const APP_VERSION = "0.4.41";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -1157,9 +1157,17 @@ function setPlanningSubTab(subTab) {
 }
 
 function isToolBelowMinStock(tool) {
+  return getToolStockWarningLevel(tool) !== "";
+}
+
+function getToolStockWarningLevel(tool) {
   const stock = Number(tool.stock || 0);
   const minStock = Number(tool.minStock || 0);
-  return minStock > 0 && stock <= minStock;
+
+  if (minStock <= 0) return "";
+  if (stock < minStock) return "critical";
+  if (stock === minStock) return "warning";
+  return "";
 }
 
 function shouldOrderTool(tool) {
@@ -6935,12 +6943,28 @@ function renderTools() {
 
   const toolRows = tools
     .map((t) => {
-      const belowMinStock = isToolBelowMinStock(t);
+      const stockWarningLevel = getToolStockWarningLevel(t);
+      const warningBadge =
+        stockWarningLevel === "critical"
+          ? '<span class="inline-flex px-2 py-1 rounded bg-rose-100 text-rose-800 text-xs font-semibold">🚨 Mindestbestand unterschritten</span>'
+          : stockWarningLevel === "warning"
+            ? '<span class="inline-flex px-2 py-1 rounded bg-orange-100 text-orange-800 text-xs font-semibold">⚠ Mindestbestand erreicht</span>'
+            : "";
+      const rowWarningClass =
+        stockWarningLevel === "critical"
+          ? "bg-rose-50 border-l-4 border-rose-500"
+          : stockWarningLevel === "warning"
+            ? "bg-orange-50 border-l-4 border-orange-400"
+            : "";
+      const stockWarningClass =
+        stockWarningLevel === "critical"
+          ? "font-bold text-rose-700"
+          : stockWarningLevel === "warning"
+            ? "font-bold text-orange-700"
+            : "";
       const statusText = t.ordered
         ? "Bestellt"
-        : belowMinStock
-          ? '<span class="inline-flex px-2 py-1 rounded bg-rose-100 text-rose-800 text-xs font-semibold">⚠ Mindestbestand erreicht</span>'
-          : "-";
+        : warningBadge || "-";
       const imagePath = getToolImagePath(t);
       const imageCell = imagePath
         ? `<button class='border rounded bg-white p-1 hover:bg-slate-50' onclick="openToolImagePopup('${t.id}')" title="Werkzeugbild öffnen">
@@ -6953,7 +6977,7 @@ function renderTools() {
           ? `<div class='text-xs text-slate-500'>Plattenradius: R ${escapeHtml(t.insertRadius)}</div>`
           : "";
 
-      return `<tr class='border-b ${belowMinStock ? "bg-rose-50" : ""}'>
+      return `<tr class='border-b ${rowWarningClass}'>
         <td class='p-2'>T ${t.tNumber}</td>
         <td class='p-2'>${imageCell}</td>
         <td class='p-2'>${t.label}</td>
@@ -6962,7 +6986,7 @@ function renderTools() {
         <td class='p-2'>${t.shelf}</td>
         <td class='p-2'>${t.articleNo}</td>
         ${isAdmin ? `<td class='p-2'>${t.holder || "-"}</td>` : ""}
-        <td class='p-2 ${belowMinStock ? "font-bold text-rose-700" : ""}'>${t.stock}</td>
+        <td class='p-2 ${stockWarningClass}'>${t.stock}</td>
         <td class='p-2'>${t.minStock}</td>
         ${isAdmin ? `<td class='p-2'>${t.manufacturer || "-"}</td>` : ""}
         <td class='p-2'>${statusText}</td>
@@ -7001,18 +7025,31 @@ function renderTools() {
 
   const todoRows = todoTools
     .map(
-      (t) => `<tr class='border-b'>
+      (t) => {
+        const stockWarningLevel = getToolStockWarningLevel(t);
+        const stockBadge =
+          stockWarningLevel === "critical"
+            ? '<span class="inline-flex px-2 py-1 rounded bg-rose-100 text-rose-800 text-xs font-semibold">🚨 unterschritten</span>'
+            : '<span class="inline-flex px-2 py-1 rounded bg-orange-100 text-orange-800 text-xs font-semibold">⚠ erreicht</span>';
+        const stockClass =
+          stockWarningLevel === "critical"
+            ? "font-bold text-rose-700"
+            : "font-bold text-orange-700";
+
+        return `<tr class='border-b'>
         <td class='p-2'>T ${t.tNumber}</td>
         <td class='p-2'>${t.label}</td>
         <td class='p-2'>${formatToolSize(t)}</td>
-        <td class='p-2 font-bold text-rose-700'>${t.stock}</td>
+        <td class='p-2 ${stockClass}'>${t.stock}</td>
         <td class='p-2'>${t.minStock}</td>
         <td class='p-2'>${t.holder || "-"}</td>
         <td class='p-2'>${t.shelf || "-"}</td>
+        <td class='p-2'>${stockBadge}</td>
         <td class='p-2 whitespace-nowrap'>
           <button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="markToolOrdered('${t.id}', true)">Bestellen</button>
         </td>
-      </tr>`,
+      </tr>`;
+      },
     )
     .join("");
 
@@ -7281,10 +7318,11 @@ function renderTools() {
                       <th class='p-2 text-left'>Mindestbestand</th>
                       <th class='p-2 text-left'>Aufnahme</th>
                       <th class='p-2 text-left'>Fach</th>
+                      <th class='p-2 text-left'>Status</th>
                       <th class='p-2'></th>
                     </tr>
                   </thead>
-                  <tbody>${todoRows || '<tr><td class="p-2" colspan="8">Keine Werkzeuge mit erreichtem Mindestbestand.</td></tr>'}</tbody>
+                  <tbody>${todoRows || '<tr><td class="p-2" colspan="9">Keine Werkzeuge mit erreichtem Mindestbestand.</td></tr>'}</tbody>
                 </table>
               </div>
               <div class='border rounded p-3 bg-white'>
