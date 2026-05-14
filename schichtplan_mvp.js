@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.36";
+const APP_VERSION = "0.4.37";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -463,6 +463,16 @@ async function addToolJournalEntry(entry) {
 async function refreshToolsAndRender() {
   const tools = await loadToolsFromSupabase();
   if (Array.isArray(tools) && tools.length > 0) {
+    state.tools = tools;
+  }
+  await loadToolJournalFromSupabase();
+  persist();
+  render();
+}
+
+async function refreshToolPageData() {
+  const tools = await loadToolsFromSupabase();
+  if (Array.isArray(tools)) {
     state.tools = tools;
   }
   await loadToolJournalFromSupabase();
@@ -7118,9 +7128,12 @@ function renderTools() {
       </tr>`;
 
   return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
-    <div class='flex items-center justify-between gap-2'>
-      <h2 class='text-xl font-bold mb-1'>Werkzeugverwaltung</h2>
-      ${helpButton("werkzeuge")}
+    <div class='flex items-center justify-between gap-2 flex-wrap'>
+      <div class='flex items-center gap-2'>
+        <h2 class='text-xl font-bold mb-1'>Werkzeugverwaltung</h2>
+        ${helpButton("werkzeuge")}
+      </div>
+      <button class='px-3 py-2 rounded bg-blue-700 text-white' onclick='refreshToolPageData()'>Werkzeuge aktualisieren</button>
     </div>
     <p class='text-sm text-slate-600 mb-2'>Alle Bereiche sind getrennt dargestellt: Stammdaten, Bestand, To-Do, Bestellt und Journal.</p>
 
@@ -8267,6 +8280,7 @@ window.setConflictResolved = setConflictResolved;
 window.stopDowntimeTimer = stopDowntimeTimer;
 window.applyToolFilters = applyToolFilters;
 window.resetToolFilters = resetToolFilters;
+window.refreshToolPageData = refreshToolPageData;
 window.bookToolChange = bookToolChange;
 window.undoToolJournalEntry = undoToolJournalEntry;
 window.openToolImagePopup = openToolImagePopup;
