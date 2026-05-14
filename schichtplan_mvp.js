@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.35";
+const APP_VERSION = "0.4.36";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -385,7 +385,6 @@ async function reloadSingleToolFromSupabase(toolId) {
 }
 
 function normalizeToolJournalFromDb(row) {
-  const createdAt = row.created_at || null;
   return {
     id: row.id,
     toolId: row.tool_id,
@@ -396,9 +395,7 @@ function normalizeToolJournalFromDb(row) {
     stockBefore: row.stock_before,
     stockAfter: row.stock_after,
     user: row.user_name,
-    createdAt,
-    at: createdAt ? createdAt.slice(0, 16).replace("T", " ") : "",
-    tNumber: row.tool_t_number,
+    createdAt: row.created_at,
   };
 }
 
@@ -410,8 +407,8 @@ async function loadToolJournalFromSupabase() {
     .limit(100);
 
   if (error) {
-    console.warn("Tool-Journal konnte nicht aus Supabase geladen werden", error);
-    return state.toolJournal || [];
+    console.warn("Tool-Journal konnte nicht geladen werden", error);
+    return;
   }
 
   state.toolJournal = (data || []).map(normalizeToolJournalFromDb);
@@ -468,6 +465,7 @@ async function refreshToolsAndRender() {
   if (Array.isArray(tools) && tools.length > 0) {
     state.tools = tools;
   }
+  await loadToolJournalFromSupabase();
   persist();
   render();
 }
