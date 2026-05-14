@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.39";
+const APP_VERSION = "0.4.40";
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
 const state = loadState();
 let currentUser = null;
@@ -1156,8 +1156,14 @@ function setPlanningSubTab(subTab) {
   render();
 }
 
+function isToolBelowMinStock(tool) {
+  const stock = Number(tool.stock || 0);
+  const minStock = Number(tool.minStock || 0);
+  return minStock > 0 && stock <= minStock;
+}
+
 function shouldOrderTool(tool) {
-  return Number(tool.stock) <= Number(tool.minStock);
+  return isToolBelowMinStock(tool);
 }
 
 function tabNeedsAttention(tab) {
@@ -4631,7 +4637,7 @@ function renderToolCreateForm(prefix = "tool") {
     <input id='${prefix}Article' class='border rounded p-2' placeholder='Artikel Nr.' />
     <select id='${prefix}Holder' class='border rounded p-2'>${holderOptions}</select>
     <input id='${prefix}Stock' type='number' class='border rounded p-2' placeholder='Bestand' />
-    <input id='${prefix}MinStock' type='number' class='border rounded p-2' placeholder='Mindestbestand' />
+    <input id='${prefix}MinStock' type='number' min='0' class='border rounded p-2' placeholder='Mindestbestand' />
     <input id='${prefix}OptimalStock' type='number' class='border rounded p-2' placeholder='Optimale Stückzahl' />
     <select id='${prefix}Manufacturer' class='border rounded p-2'>${manufacturerOptions}</select>
     <label class='flex items-center gap-2 text-sm md:col-span-2'>
@@ -5987,7 +5993,7 @@ async function editToolCentered(tool) {
 
           <label class='text-sm font-medium'>
             Mindestbestand
-            <input id='editMinStock' type='number' class='border rounded p-2 w-full mt-1' placeholder='Mindestbestand' value="${tool.minStock ?? 0}" />
+            <input id='editMinStock' type='number' min='0' class='border rounded p-2 w-full mt-1' placeholder='Mindestbestand' value="${tool.minStock ?? 0}" />
           </label>
 
           <label class='text-sm font-medium'>
@@ -6929,7 +6935,12 @@ function renderTools() {
 
   const toolRows = tools
     .map((t) => {
-      const statusText = t.ordered ? "Bestellt" : "-";
+      const belowMinStock = isToolBelowMinStock(t);
+      const statusText = t.ordered
+        ? "Bestellt"
+        : belowMinStock
+          ? '<span class="inline-flex px-2 py-1 rounded bg-rose-100 text-rose-800 text-xs font-semibold">⚠ Mindestbestand erreicht</span>'
+          : "-";
       const imagePath = getToolImagePath(t);
       const imageCell = imagePath
         ? `<button class='border rounded bg-white p-1 hover:bg-slate-50' onclick="openToolImagePopup('${t.id}')" title="Werkzeugbild öffnen">
@@ -6942,7 +6953,7 @@ function renderTools() {
           ? `<div class='text-xs text-slate-500'>Plattenradius: R ${escapeHtml(t.insertRadius)}</div>`
           : "";
 
-      return `<tr class='border-b'>
+      return `<tr class='border-b ${belowMinStock ? "bg-rose-50" : ""}'>
         <td class='p-2'>T ${t.tNumber}</td>
         <td class='p-2'>${imageCell}</td>
         <td class='p-2'>${t.label}</td>
@@ -6951,7 +6962,7 @@ function renderTools() {
         <td class='p-2'>${t.shelf}</td>
         <td class='p-2'>${t.articleNo}</td>
         ${isAdmin ? `<td class='p-2'>${t.holder || "-"}</td>` : ""}
-        <td class='p-2'>${t.stock}</td>
+        <td class='p-2 ${belowMinStock ? "font-bold text-rose-700" : ""}'>${t.stock}</td>
         <td class='p-2'>${t.minStock}</td>
         ${isAdmin ? `<td class='p-2'>${t.manufacturer || "-"}</td>` : ""}
         <td class='p-2'>${statusText}</td>
@@ -6969,7 +6980,9 @@ function renderTools() {
     })
     .join("");
 
-  const todoTools = state.tools.filter((t) => shouldOrderTool(t) && !t.ordered);
+  const todoTools = state.tools.filter(
+    (t) => isToolBelowMinStock(t) && !t.ordered,
+  );
   const orderedTools = state.tools.filter((t) => {
     return (
       t.ordered === true ||
@@ -6992,10 +7005,12 @@ function renderTools() {
         <td class='p-2'>T ${t.tNumber}</td>
         <td class='p-2'>${t.label}</td>
         <td class='p-2'>${formatToolSize(t)}</td>
-        <td class='p-2'>${getToolMaterialNameById(t.materialId)}</td>
-        <td class='p-2'>${t.articleNo || "-"}</td>
+        <td class='p-2 font-bold text-rose-700'>${t.stock}</td>
+        <td class='p-2'>${t.minStock}</td>
+        <td class='p-2'>${t.holder || "-"}</td>
+        <td class='p-2'>${t.shelf || "-"}</td>
         <td class='p-2 whitespace-nowrap'>
-          <button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="markToolOrdered('${t.id}', true)">Bestellt markieren</button>
+          <button class='px-2 py-1 rounded bg-blue-700 text-white' onclick="markToolOrdered('${t.id}', true)">Bestellen</button>
         </td>
       </tr>`,
     )
@@ -7255,19 +7270,21 @@ function renderTools() {
             <h3 class='text-lg font-bold mb-2'>4) Admin-Bestandsaktionen</h3>
             <div class='grid md:grid-cols-2 gap-3'>
               <div class='border rounded p-3 bg-white overflow-auto'>
-                <h4 class='font-semibold mb-2'>Werkzeug To-Do (bei Mindestbestand oder darunter)</h4>
+                <h4 class='font-semibold mb-2'>Nachbestellen prüfen</h4>
                 <table class='w-full text-sm'>
                   <thead class='bg-slate-100'>
                     <tr>
                       <th class='p-2 text-left'>T</th>
                       <th class='p-2 text-left'>Bezeichnung</th>
                       <th class='p-2 text-left'>Größe</th>
-                      <th class='p-2 text-left'>Werkstoff</th>
-                      <th class='p-2 text-left'>Artikelnummer</th>
+                      <th class='p-2 text-left'>Bestand</th>
+                      <th class='p-2 text-left'>Mindestbestand</th>
+                      <th class='p-2 text-left'>Aufnahme</th>
+                      <th class='p-2 text-left'>Fach</th>
                       <th class='p-2'></th>
                     </tr>
                   </thead>
-                  <tbody>${todoRows || '<tr><td class="p-2" colspan="6">Keine offenen To-Dos.</td></tr>'}</tbody>
+                  <tbody>${todoRows || '<tr><td class="p-2" colspan="8">Keine Werkzeuge mit erreichtem Mindestbestand.</td></tr>'}</tbody>
                 </table>
               </div>
               <div class='border rounded p-3 bg-white'>
