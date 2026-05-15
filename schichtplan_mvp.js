@@ -56,8 +56,15 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.53";
+const APP_VERSION = "0.4.54";
 const VERSION_LOG = [
+  {
+    version: "0.4.54",
+    date: "2026-05-15 20:55",
+    changes: [
+      "Leeres Rendern des Werkzeug-Tabs vor Supabase-Ladevorgang verhindert",
+    ],
+  },
   {
     version: "0.4.53",
     date: "2026-05-15 20:36",
@@ -217,6 +224,7 @@ let qrScannerStream = null;
 let qrScannerTimer = null;
 let qrScannerMode = null;
 let toolAutoRefreshTimer = null;
+let toolPageLoadInProgress = false;
 
 const HELP_TEXTS = {
   planningPersonal: {
@@ -647,6 +655,24 @@ async function loadToolPageData() {
   }
 }
 
+async function forceLoadToolPageData() {
+  if (toolPageLoadInProgress) return;
+  toolPageLoadInProgress = true;
+
+  try {
+    const tools = await loadToolsFromSupabase();
+    if (Array.isArray(tools)) {
+      state.tools = tools;
+    }
+    await loadToolJournalFromSupabase();
+  } catch (err) {
+    console.error("Werkzeugdaten konnten nicht geladen werden", err);
+  } finally {
+    toolPageLoadInProgress = false;
+    render();
+  }
+}
+
 async function refreshToolPageData() {
   if (!state.ui?.supabaseReady) {
     console.warn("Werkzeug-Refresh übersprungen: Supabase noch nicht bereit.");
@@ -702,6 +728,7 @@ function startToolAutoRefresh() {
 
   if (currentTab !== "werkzeuge") return;
   if (!state.ui?.supabaseReady || !state.ui?.toolsInitialLoaded) return;
+  if (!Array.isArray(state.tools) || state.tools.length === 0) return;
 
   toolAutoRefreshTimer = setInterval(async () => {
     if (currentTab !== "werkzeuge") {
@@ -7443,6 +7470,23 @@ function renderOrderStats() {
 }
 
 function renderTools() {
+  const hasTools = Array.isArray(state.tools) && state.tools.length > 0;
+
+  if (!hasTools) {
+    setTimeout(() => forceLoadToolPageData(), 0);
+
+    return `
+    <div class="bg-white rounded-xl shadow p-6">
+      <h2 class="text-xl font-bold mb-2">Werkzeugverwaltung</h2>
+      <p class="text-slate-600">Werkzeugdaten werden aus Supabase geladen...</p>
+      <button class="mt-4 px-4 py-2 bg-slate-900 text-white rounded"
+        onclick="forceLoadToolPageData()">
+        Erneut laden
+      </button>
+    </div>
+  `;
+  }
+
   const labels = getToolLabels();
   const filters = state.toolFilters || {
     search: "",
@@ -9061,6 +9105,7 @@ window.resetToolFilters = resetToolFilters;
 window.applyToolJournalFilters = applyToolJournalFilters;
 window.resetToolJournalFilters = resetToolJournalFilters;
 window.setToolStatisticsRange = setToolStatisticsRange;
+window.forceLoadToolPageData = forceLoadToolPageData;
 window.refreshToolPageData = refreshToolPageData;
 window.startToolAutoRefresh = startToolAutoRefresh;
 window.stopToolAutoRefresh = stopToolAutoRefresh;
