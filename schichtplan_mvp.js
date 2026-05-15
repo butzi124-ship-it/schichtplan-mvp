@@ -56,8 +56,13 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.49";
+const APP_VERSION = "0.4.50";
 const VERSION_LOG = [
+  {
+    version: "0.4.50",
+    date: "2026-05-15 08:40",
+    changes: ["Einfachen Bereich Werkzeugstatistik ergänzt"],
+  },
   {
     version: "0.4.49",
     date: "2026-05-15 08:35",
@@ -4806,6 +4811,54 @@ function resetToolJournalFilters() {
   render();
 }
 
+function buildToolStatistics() {
+  const statsByTool = {};
+  const entries = Array.isArray(state.toolJournal) ? state.toolJournal : [];
+
+  entries.forEach((entry) => {
+    const toolId = entry.toolId || "";
+    if (!toolId) return;
+
+    if (!statsByTool[toolId]) {
+      statsByTool[toolId] = {
+        toolId,
+        toolTNumber: entry.toolTNumber || "",
+        toolLabel: entry.toolLabel || "",
+        withdrawals: 0,
+        restocks: 0,
+        totalActions: 0,
+        lastActionAt: null,
+        currentStock: 0,
+      };
+    }
+
+    const stat = statsByTool[toolId];
+    const action = String(entry.action || "");
+    if (action.includes("Entnahme")) stat.withdrawals += 1;
+    if (action.includes("Einlagerung")) stat.restocks += 1;
+    stat.totalActions += 1;
+
+    const entryDate = new Date(entry.createdAt || 0);
+    const lastDate = stat.lastActionAt ? new Date(stat.lastActionAt) : null;
+    if (!Number.isNaN(entryDate.getTime()) && (!lastDate || entryDate > lastDate)) {
+      stat.lastActionAt = entry.createdAt;
+    }
+  });
+
+  return Object.values(statsByTool)
+    .map((stat) => {
+      const tools = Array.isArray(state.tools) ? state.tools : [];
+      const tool = tools.find((t) => t.id === stat.toolId);
+      return {
+        ...stat,
+        toolTNumber: stat.toolTNumber || tool?.tNumber || "",
+        toolLabel: stat.toolLabel || tool?.label || "",
+        currentStock: Number(tool?.stock || 0),
+      };
+    })
+    .sort((a, b) => b.withdrawals - a.withdrawals);
+}
+
 function isThreadToolLabel(label) {
   return [
     "Gewindebohrer",
@@ -7525,6 +7578,41 @@ function renderTools() {
     )
     .join("");
 
+  const toolStatistics = buildToolStatistics().slice(0, 10);
+  const toolStatisticsRows = toolStatistics
+    .map(
+      (stat) => `<tr class='border-b'>
+        <td class='p-2'>T ${escapeHtml(stat.toolTNumber || "-")}</td>
+        <td class='p-2'>${escapeHtml(stat.toolLabel || "-")}</td>
+        <td class='p-2 text-rose-700 font-semibold'>${stat.withdrawals}</td>
+        <td class='p-2 text-emerald-700 font-semibold'>${stat.restocks}</td>
+        <td class='p-2'>${stat.totalActions}</td>
+        <td class='p-2'>${stat.currentStock}</td>
+        <td class='p-2'>${escapeHtml(stat.lastActionAt ? new Date(stat.lastActionAt).toLocaleString() : "-")}</td>
+      </tr>`,
+    )
+    .join("");
+
+  const toolStatisticsSection = `<div class='border rounded p-3 bg-white'>
+    <h4 class='font-semibold mb-2'>Werkzeugstatistik</h4>
+    <div class='overflow-auto'>
+      <table class='w-full text-sm'>
+        <thead class='bg-slate-100'>
+          <tr>
+            <th class='p-2 text-left'>T-Nummer</th>
+            <th class='p-2 text-left'>Werkzeug</th>
+            <th class='p-2 text-left'>Entnahmen</th>
+            <th class='p-2 text-left'>Einlagerungen</th>
+            <th class='p-2 text-left'>Gesamtaktionen</th>
+            <th class='p-2 text-left'>Bestand</th>
+            <th class='p-2 text-left'>Letzte Aktivität</th>
+          </tr>
+        </thead>
+        <tbody>${toolStatisticsRows || '<tr><td class="p-2" colspan="7">Keine Statistikdaten vorhanden.</td></tr>'}</tbody>
+      </table>
+    </div>
+  </div>`;
+
   const manufacturerOptionsForPopup = availableManufacturers
     .map(
       (maker) =>
@@ -7795,25 +7883,29 @@ function renderTools() {
                 </table>
               </div>
             </div>
+            ${toolStatisticsSection}
           </div>`
-        : `<div class='border-2 border-slate-300 rounded-xl p-3'>
-            <h3 class='text-lg font-bold mb-2'>Schichtjournal – Werkzeugwechsel</h3>
-            ${journalFilterBar}
-            <div class='overflow-auto max-h-[25vh]'>
-              <table class='w-full text-sm'>
-                <thead class='bg-slate-100 sticky top-0'>
-                  <tr>
-                    <th class='p-2 text-left'>Zeit</th>
-                    <th class='p-2 text-left'>Benutzer</th>
-                    <th class='p-2 text-left'>Werkzeug</th>
-                    <th class='p-2 text-left'>Aktion</th>
-                    <th class='p-2 text-left'>Menge</th>
-                    <th class='p-2 text-left'>Bestand vorher/nachher</th>
-                  </tr>
-                </thead>
-                <tbody>${journalEntries.length === 0 ? '<tr><td class="p-2" colspan="6">Keine Einträge.</td></tr>' : journalRows}</tbody>
-              </table>
+        : `<div class='space-y-3'>
+            <div class='border-2 border-slate-300 rounded-xl p-3'>
+              <h3 class='text-lg font-bold mb-2'>Schichtjournal – Werkzeugwechsel</h3>
+              ${journalFilterBar}
+              <div class='overflow-auto max-h-[25vh]'>
+                <table class='w-full text-sm'>
+                  <thead class='bg-slate-100 sticky top-0'>
+                    <tr>
+                      <th class='p-2 text-left'>Zeit</th>
+                      <th class='p-2 text-left'>Benutzer</th>
+                      <th class='p-2 text-left'>Werkzeug</th>
+                      <th class='p-2 text-left'>Aktion</th>
+                      <th class='p-2 text-left'>Menge</th>
+                      <th class='p-2 text-left'>Bestand vorher/nachher</th>
+                    </tr>
+                  </thead>
+                  <tbody>${journalEntries.length === 0 ? '<tr><td class="p-2" colspan="6">Keine Einträge.</td></tr>' : journalRows}</tbody>
+                </table>
+              </div>
             </div>
+            ${toolStatisticsSection}
           </div>`
     }
 
