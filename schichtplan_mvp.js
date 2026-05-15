@@ -56,8 +56,15 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.46";
+const APP_VERSION = "0.4.47";
 const VERSION_LOG = [
+  {
+    version: "0.4.47",
+    date: "2026-05-14",
+    changes: [
+      "Werkzeugbestand auf breiteres, lesbares Tabellenlayout zurückgestellt",
+    ],
+  },
   {
     version: "0.4.46",
     date: "2026-05-14",
@@ -7263,27 +7270,27 @@ function renderTools() {
           : "";
 
       return `<tr class='border-b ${rowWarningClass}'>
-        <td class='p-1 align-top'>T ${t.tNumber}</td>
-        <td class='p-1 align-top'>${imageCell}</td>
-        <td class='p-1 align-top break-words'>${t.label}</td>
-        <td class='p-1 align-top break-words'>${formatToolSize(t)}${insertRadiusLine}</td>
-        ${isAdmin ? `<td class='p-1 align-top break-words'>${getToolMaterialNameById(t.materialId)}</td>` : ""}
-        <td class='p-1 align-top break-words'>${t.shelf}</td>
-        <td class='p-1 align-top break-all'>${t.articleNo}</td>
-        ${isAdmin ? `<td class='p-1 align-top break-words'>${t.holder || "-"}</td>` : ""}
-        <td class='p-1 align-top ${stockWarningClass}'>${t.stock}</td>
-        <td class='p-1 align-top'>${t.minStock}</td>
-        ${isAdmin ? `<td class='p-1 align-top break-words'>${t.manufacturer || "-"}</td>` : ""}
-        <td class='p-1 align-top'>${statusText}</td>
-        <td class='p-1 align-top'>
+        <td class='p-2 align-top whitespace-nowrap'>T ${t.tNumber}</td>
+        <td class='p-2 align-top'>${imageCell}</td>
+        <td class='p-2 align-top'>${t.label}</td>
+        <td class='p-2 align-top whitespace-nowrap'>${formatToolSize(t)}${insertRadiusLine}</td>
+        ${isAdmin ? `<td class='p-2 align-top'>${getToolMaterialNameById(t.materialId)}</td>` : ""}
+        <td class='p-2 align-top whitespace-nowrap'>${t.shelf}</td>
+        <td class='p-2 align-top'>${t.articleNo}</td>
+        ${isAdmin ? `<td class='p-2 align-top whitespace-nowrap'>${t.holder || "-"}</td>` : ""}
+        <td class='p-2 align-top ${stockWarningClass}'>${t.stock}</td>
+        <td class='p-2 align-top'>${t.minStock}</td>
+        ${isAdmin ? `<td class='p-2 align-top'>${t.manufacturer || "-"}</td>` : ""}
+        <td class='p-2 align-top'>${statusText}</td>
+        <td class='p-2 align-top'>
           <div class='flex flex-wrap gap-1'>
-          <button class='px-2 py-1 rounded bg-emerald-700 text-white text-xs' title='Wechsel' onclick="bookToolChange('${t.id}')">W</button>
+          <button class='px-2 py-1 rounded bg-emerald-700 text-white text-xs' onclick="bookToolChange('${t.id}')">Wechsel</button>
           ${
             isAdmin
-              ? `<button class='px-2 py-1 rounded bg-slate-700 text-white text-xs' title='QR' onclick="openToolQrPopup('${t.id}')">QR</button>
-                 <button class='px-2 py-1 rounded bg-slate-800 text-white text-xs' title='Historie' onclick="openToolHistory('${t.id}')">H</button>
-                 <button class='px-2 py-1 rounded bg-amber-600 text-white text-xs' title='Bearbeiten' onclick="editTool('${t.id}')">✎</button>
-                 <button class='px-2 py-1 rounded bg-rose-700 text-white text-xs' title='Löschen' onclick="deleteTool('${t.id}')">×</button>`
+              ? `<button class='px-2 py-1 rounded bg-slate-700 text-white text-xs' onclick="openToolQrPopup('${t.id}')">QR</button>
+                 <button class='px-2 py-1 rounded bg-slate-800 text-white text-xs' onclick="openToolHistory('${t.id}')">Historie</button>
+                 <button class='px-2 py-1 rounded bg-amber-600 text-white text-xs' onclick="editTool('${t.id}')">Bearbeiten</button>
+                 <button class='px-2 py-1 rounded bg-rose-700 text-white text-xs' onclick="deleteTool('${t.id}')">Löschen</button>`
               : ""
           }
           </div>
@@ -7490,34 +7497,34 @@ function renderTools() {
 
   const stockTableHeader = isAdmin
     ? `<tr>
-        <th class='p-1 text-left'>T</th>
-        <th class='p-1 text-left'>Bild</th>
-        <th class='p-1 text-left'>Bezeichnung</th>
-        <th class='p-1 text-left'>Ø</th>
-        <th class='p-1 text-left'>Werkst.</th>
-        <th class='p-1 text-left'>Fach</th>
-        <th class='p-1 text-left'>Art.</th>
-        <th class='p-1 text-left'>Aufn.</th>
-        <th class='p-1 text-left'>Best.</th>
-        <th class='p-1 text-left'>Min</th>
-        <th class='p-1 text-left'>Herst.</th>
-        <th class='p-1 text-left'>Status</th>
-        <th class='p-1 text-left'>Aktion</th>
+        <th class='p-2 text-left'>T</th>
+        <th class='p-2 text-left'>Bild</th>
+        <th class='p-2 text-left'>Bezeichnung</th>
+        <th class='p-2 text-left'>Ø</th>
+        <th class='p-2 text-left'>Werkstoff</th>
+        <th class='p-2 text-left'>Fach</th>
+        <th class='p-2 text-left'>Art.</th>
+        <th class='p-2 text-left'>Aufn.</th>
+        <th class='p-2 text-left'>Bestand</th>
+        <th class='p-2 text-left'>Min</th>
+        <th class='p-2 text-left'>Herst.</th>
+        <th class='p-2 text-left'>Status</th>
+        <th class='p-2 text-left'>Aktionen</th>
       </tr>`
     : `<tr>
-        <th class='p-1 text-left'>T</th>
-        <th class='p-1 text-left'>Bild</th>
-        <th class='p-1 text-left'>Bezeichnung</th>
-        <th class='p-1 text-left'>Ø</th>
-        <th class='p-1 text-left'>Fach</th>
-        <th class='p-1 text-left'>Art.</th>
-        <th class='p-1 text-left'>Best.</th>
-        <th class='p-1 text-left'>Min</th>
-        <th class='p-1 text-left'>Status</th>
-        <th class='p-1 text-left'>Aktion</th>
+        <th class='p-2 text-left'>T</th>
+        <th class='p-2 text-left'>Bild</th>
+        <th class='p-2 text-left'>Bezeichnung</th>
+        <th class='p-2 text-left'>Ø</th>
+        <th class='p-2 text-left'>Fach</th>
+        <th class='p-2 text-left'>Art.</th>
+        <th class='p-2 text-left'>Bestand</th>
+        <th class='p-2 text-left'>Min</th>
+        <th class='p-2 text-left'>Status</th>
+        <th class='p-2 text-left'>Aktionen</th>
       </tr>`;
 
-  return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
+  return `<div class='bg-white rounded-xl shadow p-4 space-y-4 w-full max-w-none'>
     <div class='flex items-center justify-between gap-2 flex-wrap'>
       <div class='flex items-center gap-2'>
         <h2 class='text-xl font-bold mb-1'>Werkzeugverwaltung</h2>
@@ -7580,8 +7587,8 @@ function renderTools() {
           : ""
       }
 
-      <div id='toolStockTableScroll' class='overflow-y-auto max-h-[35vh] border rounded-lg'>
-        <table class='w-full table-fixed text-xs'>
+      <div id='toolStockTableScroll' class='overflow-x-auto overflow-y-auto max-h-[35vh] border rounded-lg'>
+        <table class='w-full min-w-max table-auto text-sm'>
           <thead class='bg-slate-100 sticky top-0'>
             ${stockTableHeader}
           </thead>
