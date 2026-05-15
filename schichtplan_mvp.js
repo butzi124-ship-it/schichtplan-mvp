@@ -60,9 +60,11 @@ const APP_VERSION = "0.4.54";
 const VERSION_LOG = [
   {
     version: "0.4.54",
-    date: "2026-05-15 20:55",
+    date: "2026-05-15 22:22",
     changes: [
       "Leeres Rendern des Werkzeug-Tabs vor Supabase-Ladevorgang verhindert",
+      "Werkzeugdaten werden nicht mehr aus localStorage wiederhergestellt",
+      "Leere Supabase-Loads überschreiben vorhandene Werkzeugdaten nicht mehr",
     ],
   },
   {
@@ -639,12 +641,16 @@ async function loadToolPageData() {
 
   try {
     const tools = await loadToolsFromSupabase();
-    if (Array.isArray(tools) && (tools.length > 0 || previousTools.length === 0)) {
+    if (Array.isArray(tools) && tools.length > 0) {
       state.tools = tools;
     } else if (previousTools.length > 0) {
       state.tools = previousTools;
       console.warn(
         "Werkzeugdaten wurden nicht geleert, vorherige Daten bleiben erhalten.",
+      );
+    } else {
+      console.warn(
+        "Werkzeugdaten wurden noch nicht geladen, leerer Supabase-Load wird ignoriert.",
       );
     }
 
@@ -661,8 +667,12 @@ async function forceLoadToolPageData() {
 
   try {
     const tools = await loadToolsFromSupabase();
-    if (Array.isArray(tools)) {
+    if (Array.isArray(tools) && tools.length > 0) {
       state.tools = tools;
+    } else {
+      console.warn(
+        "Force-Load hat keine Tools geliefert, state.tools bleibt unverändert.",
+      );
     }
     await loadToolJournalFromSupabase();
   } catch (err) {
@@ -1106,14 +1116,10 @@ async function bootSupabase() {
 
   const employees = await loadEmployeesFromSupabase();
   const materials = await loadToolMaterialsFromSupabase();
-  const tools = await loadToolsFromSupabase();
   const planning = await loadPlanningDataFromSupabase();
 
   applyEmployeesToState(employees);
   toolMaterials = materials;
-  state.tools = tools;
-  await loadToolJournalFromSupabase();
-  render();
 
   if (planning) {
     state.assignments = planning.assignments;
@@ -1131,7 +1137,6 @@ async function bootSupabase() {
 
   console.log("Employees aus Supabase:", employees);
   console.log("Tool-Materials aus Supabase:", materials);
-  console.log("Tools aus Supabase:", tools);
   console.log("Planungsdaten aus Supabase:", planning);
 
   if (currentUser) render();
@@ -1226,10 +1231,12 @@ function loadState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return base;
     const parsed = JSON.parse(raw);
+    delete parsed.tools;
     delete parsed.toolJournal;
     return {
       ...base,
       ...parsed,
+      tools: base.tools,
       toolJournal: base.toolJournal,
       toolFilters: {
         ...base.toolFilters,
@@ -1252,6 +1259,7 @@ function loadState() {
 
 function persist() {
   const snapshot = { ...state };
+  delete snapshot.tools;
   delete snapshot.toolJournal;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
 }
