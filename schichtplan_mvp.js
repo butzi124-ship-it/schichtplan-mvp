@@ -56,8 +56,13 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.48";
+const APP_VERSION = "0.4.49";
 const VERSION_LOG = [
+  {
+    version: "0.4.49",
+    date: "2026-05-15 08:35",
+    changes: ["Filter für Schichtjournal – Werkzeugwechsel ergänzt"],
+  },
   {
     version: "0.4.48",
     date: "2026-05-15 04:44",
@@ -1090,6 +1095,11 @@ function loadState() {
       holder: "",
       imageStatus: "",
     },
+    toolJournalFilters: {
+      search: "",
+      action: "",
+      range: "",
+    },
     toolOrderOverrides: {},
     orderArchive: [],
     orderHistory: [],
@@ -1118,6 +1128,10 @@ function loadState() {
       toolFilters: {
         ...base.toolFilters,
         ...(parsed.toolFilters || {}),
+      },
+      toolJournalFilters: {
+        ...base.toolJournalFilters,
+        ...(parsed.toolJournalFilters || {}),
       },
       ui: {
         ...base.ui,
@@ -4725,6 +4739,73 @@ function closeToolHistory() {
   getModalHost().innerHTML = "";
 }
 
+function getFilteredToolJournalEntries() {
+  const filters = state.toolJournalFilters || {};
+  const search = String(filters.search || "")
+    .trim()
+    .toLowerCase();
+  const action = String(filters.action || "");
+  const range = String(filters.range || "");
+
+  let entries = Array.isArray(state.toolJournal) ? [...state.toolJournal] : [];
+
+  if (search) {
+    entries = entries.filter((entry) => {
+      return [entry.toolTNumber, entry.toolLabel, entry.action, entry.user].some(
+        (value) => String(value || "").toLowerCase().includes(search),
+      );
+    });
+  }
+
+  if (action) {
+    entries = entries.filter((entry) =>
+      String(entry.action || "").toLowerCase().includes(action.toLowerCase()),
+    );
+  }
+
+  if (range) {
+    const now = new Date();
+    let since = null;
+
+    if (range === "today") {
+      since = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (range === "7d") {
+      since = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    } else if (range === "30d") {
+      since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    }
+
+    if (since) {
+      entries = entries.filter((entry) => {
+        const date = new Date(entry.createdAt);
+        return !Number.isNaN(date.getTime()) && date >= since;
+      });
+    }
+  }
+
+  return entries;
+}
+
+function applyToolJournalFilters() {
+  state.toolJournalFilters = {
+    search: document.getElementById("toolJournalSearch")?.value || "",
+    action: document.getElementById("toolJournalAction")?.value || "",
+    range: document.getElementById("toolJournalRange")?.value || "",
+  };
+  persist();
+  render();
+}
+
+function resetToolJournalFilters() {
+  state.toolJournalFilters = {
+    search: "",
+    action: "",
+    range: "",
+  };
+  persist();
+  render();
+}
+
 function isThreadToolLabel(label) {
   return [
     "Gewindebohrer",
@@ -7394,9 +7475,41 @@ function renderTools() {
     })
     .join("");
 
-  const journalEntries = Array.isArray(state.toolJournal)
+  const allJournalEntries = Array.isArray(state.toolJournal)
     ? state.toolJournal
     : [];
+  const journalEntries = getFilteredToolJournalEntries();
+  const journalFilters = state.toolJournalFilters || {
+    search: "",
+    action: "",
+    range: "",
+  };
+  const journalFilterBar = `<div class='border rounded p-3 bg-slate-50 mb-3'>
+    <div class='grid md:grid-cols-[2fr,1fr,1fr,auto,auto] gap-2 items-end'>
+      <label class='text-sm font-medium'>Suche
+        <input id='toolJournalSearch' class='border rounded p-2 w-full mt-1' placeholder='T, Werkzeug, Aktion, Benutzer' value='${escapeHtml(journalFilters.search || "")}' />
+      </label>
+      <label class='text-sm font-medium'>Aktion
+        <select id='toolJournalAction' class='border rounded p-2 w-full mt-1'>
+          <option value='' ${journalFilters.action ? "" : "selected"}>Alle</option>
+          <option value='Entnahme' ${journalFilters.action === "Entnahme" ? "selected" : ""}>Entnahme</option>
+          <option value='Einlagerung' ${journalFilters.action === "Einlagerung" ? "selected" : ""}>Einlagerung</option>
+          <option value='Wechsel' ${journalFilters.action === "Wechsel" ? "selected" : ""}>Wechsel</option>
+        </select>
+      </label>
+      <label class='text-sm font-medium'>Zeitraum
+        <select id='toolJournalRange' class='border rounded p-2 w-full mt-1'>
+          <option value='' ${journalFilters.range ? "" : "selected"}>Alle</option>
+          <option value='today' ${journalFilters.range === "today" ? "selected" : ""}>Heute</option>
+          <option value='7d' ${journalFilters.range === "7d" ? "selected" : ""}>7 Tage</option>
+          <option value='30d' ${journalFilters.range === "30d" ? "selected" : ""}>30 Tage</option>
+        </select>
+      </label>
+      <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='applyToolJournalFilters()'>Filter anwenden</button>
+      <button class='px-3 py-2 rounded bg-slate-700 text-white' onclick='resetToolJournalFilters()'>Zurücksetzen</button>
+    </div>
+    <div class='text-xs text-slate-500 mt-2'>${journalEntries.length} von ${allJournalEntries.length} Einträgen</div>
+  </div>`;
 
   const journalRows = journalEntries
     .slice(0, 80)
@@ -7665,6 +7778,7 @@ function renderTools() {
 
             <div class='border rounded p-3 bg-white'>
               <h4 class='font-semibold mb-2'>Schichtjournal – Werkzeugwechsel</h4>
+              ${journalFilterBar}
               <div class='overflow-auto max-h-[25vh]'>
                 <table class='w-full text-sm'>
                   <thead class='bg-slate-100 sticky top-0'>
@@ -7684,6 +7798,7 @@ function renderTools() {
           </div>`
         : `<div class='border-2 border-slate-300 rounded-xl p-3'>
             <h3 class='text-lg font-bold mb-2'>Schichtjournal – Werkzeugwechsel</h3>
+            ${journalFilterBar}
             <div class='overflow-auto max-h-[25vh]'>
               <table class='w-full text-sm'>
                 <thead class='bg-slate-100 sticky top-0'>
@@ -8719,6 +8834,8 @@ window.setConflictResolved = setConflictResolved;
 window.stopDowntimeTimer = stopDowntimeTimer;
 window.applyToolFilters = applyToolFilters;
 window.resetToolFilters = resetToolFilters;
+window.applyToolJournalFilters = applyToolJournalFilters;
+window.resetToolJournalFilters = resetToolJournalFilters;
 window.refreshToolPageData = refreshToolPageData;
 window.startToolAutoRefresh = startToolAutoRefresh;
 window.stopToolAutoRefresh = stopToolAutoRefresh;
