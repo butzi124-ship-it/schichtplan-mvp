@@ -56,8 +56,13 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.51";
+const APP_VERSION = "0.4.52";
 const VERSION_LOG = [
+  {
+    version: "0.4.52",
+    date: "2026-05-15 08:55",
+    changes: ["Loading-/Render-Reihenfolge für Werkzeugdaten stabilisiert"],
+  },
   {
     version: "0.4.51",
     date: "2026-05-15 08:46",
@@ -610,6 +615,31 @@ async function refreshToolsAndRender() {
   render();
 }
 
+async function loadToolPageData() {
+  state.ui = state.ui || {};
+  const previousTools = Array.isArray(state.tools) ? [...state.tools] : [];
+
+  state.ui.toolsLoading = true;
+  render();
+
+  try {
+    const tools = await loadToolsFromSupabase();
+    if (Array.isArray(tools) && (tools.length > 0 || previousTools.length === 0)) {
+      state.tools = tools;
+    } else if (previousTools.length > 0) {
+      state.tools = previousTools;
+      console.warn(
+        "Werkzeugdaten wurden nicht geleert, vorherige Daten bleiben erhalten.",
+      );
+    }
+
+    await loadToolJournalFromSupabase();
+  } finally {
+    state.ui.toolsLoading = false;
+    render();
+  }
+}
+
 async function refreshToolPageData() {
   const stockScrollEl = document.getElementById("toolStockTableScroll");
   const stockScrollTop = stockScrollEl ? stockScrollEl.scrollTop : 0;
@@ -949,13 +979,11 @@ async function syncSupabaseSessionToApp() {
 
   const employees = await loadEmployeesFromSupabase();
   const materials = await loadToolMaterialsFromSupabase();
-  const tools = await loadToolsFromSupabase();
   const planning = await loadPlanningDataFromSupabase();
 
   applyEmployeesToState(employees);
   toolMaterials = materials;
-  state.tools = tools;
-  await loadToolJournalFromSupabase();
+  await loadToolPageData();
 
   if (planning) {
     state.assignments = planning.assignments;
@@ -987,7 +1015,7 @@ async function syncSupabaseSessionToApp() {
   console.log("Supabase-User:", currentSupabaseUser);
   console.log("Employees-Datensatz:", currentEmployeeRecord);
   console.log("Tool-Materials nach Login geladen:", materials);
-  console.log("Tools nach Login geladen:", tools);
+  console.log("Tools nach Login geladen:", state.tools);
   console.log("Planungsdaten nach Login geladen:", planning);
   console.log("Tasks nach Session-Sync:", state.tasks);
 
@@ -1022,6 +1050,7 @@ async function bootSupabase() {
   toolMaterials = materials;
   state.tools = tools;
   await loadToolJournalFromSupabase();
+  render();
 
   if (planning) {
     state.assignments = planning.assignments;
@@ -1125,6 +1154,7 @@ function loadState() {
     ui: {
       pendingEmployeeEdits: {},
       pendingSlotAssignments: {},
+      toolsLoading: false,
     },
   };
   try {
@@ -7391,6 +7421,9 @@ function renderTools() {
   const filterHolder = filters.holder || "";
   const imageStatus = filters.imageStatus || "";
   const isAdmin = currentUser?.role === "admin";
+  const toolsLoadingBanner = state.ui?.toolsLoading
+    ? `<div class='border border-blue-200 bg-blue-50 text-blue-800 rounded p-3 text-sm'>Werkzeugdaten werden geladen...</div>`
+    : "";
 
   const filterLabelOptions = labels
     .map(
@@ -7809,6 +7842,7 @@ function renderTools() {
       </div>
     </div>
     <p class='text-sm text-slate-600 mb-2'>Werkzeugbestand, Stammdaten, Bestellungen und Journal sind getrennt untereinander dargestellt.</p>
+    ${toolsLoadingBanner}
 
     <div class='border-2 border-slate-300 rounded-xl p-3 w-full max-w-none'>
       <div class='flex items-center justify-between gap-3 flex-wrap mb-3'>
