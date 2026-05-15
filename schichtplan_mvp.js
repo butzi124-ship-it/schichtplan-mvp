@@ -56,8 +56,13 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.50";
+const APP_VERSION = "0.4.51";
 const VERSION_LOG = [
+  {
+    version: "0.4.51",
+    date: "2026-05-15 08:46",
+    changes: ["Zeitraumfilter für Werkzeugstatistik ergänzt"],
+  },
   {
     version: "0.4.50",
     date: "2026-05-15 08:40",
@@ -1105,6 +1110,7 @@ function loadState() {
       action: "",
       range: "",
     },
+    toolStatisticsRange: "30d",
     toolOrderOverrides: {},
     orderArchive: [],
     orderHistory: [],
@@ -1138,6 +1144,7 @@ function loadState() {
         ...base.toolJournalFilters,
         ...(parsed.toolJournalFilters || {}),
       },
+      toolStatisticsRange: parsed.toolStatisticsRange || base.toolStatisticsRange,
       ui: {
         ...base.ui,
         ...(parsed.ui || {}),
@@ -4811,9 +4818,34 @@ function resetToolJournalFilters() {
   render();
 }
 
+function getToolStatisticsSinceDate(range) {
+  const now = new Date();
+
+  if (range === "today") {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }
+  if (range === "7d") {
+    return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  }
+  if (range === "30d") {
+    return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  }
+
+  return null;
+}
+
 function buildToolStatistics() {
   const statsByTool = {};
-  const entries = Array.isArray(state.toolJournal) ? state.toolJournal : [];
+  const range = state.toolStatisticsRange || "30d";
+  const since = getToolStatisticsSinceDate(range);
+  let entries = Array.isArray(state.toolJournal) ? state.toolJournal : [];
+
+  if (since) {
+    entries = entries.filter((entry) => {
+      const entryDate = new Date(entry.createdAt || 0);
+      return !Number.isNaN(entryDate.getTime()) && entryDate >= since;
+    });
+  }
 
   entries.forEach((entry) => {
     const toolId = entry.toolId || "";
@@ -4857,6 +4889,12 @@ function buildToolStatistics() {
       };
     })
     .sort((a, b) => b.withdrawals - a.withdrawals);
+}
+
+function setToolStatisticsRange(range) {
+  state.toolStatisticsRange = range || "30d";
+  persist();
+  render();
 }
 
 function isThreadToolLabel(label) {
@@ -7579,6 +7617,17 @@ function renderTools() {
     .join("");
 
   const toolStatistics = buildToolStatistics().slice(0, 10);
+  const toolStatisticsRange = state.toolStatisticsRange || "30d";
+  const toolStatisticsRangeLabels = {
+    today: "Heute",
+    "7d": "7 Tage",
+    "30d": "30 Tage",
+    all: "Gesamt",
+  };
+  const toolStatisticsRangeButton = (range, label) => {
+    const active = toolStatisticsRange === range;
+    return `<button class='px-3 py-1 rounded text-sm ${active ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}' onclick="setToolStatisticsRange('${range}')">${label}</button>`;
+  };
   const toolStatisticsRows = toolStatistics
     .map(
       (stat) => `<tr class='border-b'>
@@ -7594,7 +7643,18 @@ function renderTools() {
     .join("");
 
   const toolStatisticsSection = `<div class='border rounded p-3 bg-white'>
-    <h4 class='font-semibold mb-2'>Werkzeugstatistik</h4>
+    <div class='flex flex-wrap items-center justify-between gap-2 mb-3'>
+      <div>
+        <h4 class='font-semibold'>Werkzeugstatistik</h4>
+        <div class='text-xs text-slate-500'>Zeitraum: ${escapeHtml(toolStatisticsRangeLabels[toolStatisticsRange] || "30 Tage")}</div>
+      </div>
+      <div class='flex flex-wrap gap-2'>
+        ${toolStatisticsRangeButton("today", "Heute")}
+        ${toolStatisticsRangeButton("7d", "7 Tage")}
+        ${toolStatisticsRangeButton("30d", "30 Tage")}
+        ${toolStatisticsRangeButton("all", "Gesamt")}
+      </div>
+    </div>
     <div class='overflow-auto'>
       <table class='w-full text-sm'>
         <thead class='bg-slate-100'>
@@ -8928,6 +8988,7 @@ window.applyToolFilters = applyToolFilters;
 window.resetToolFilters = resetToolFilters;
 window.applyToolJournalFilters = applyToolJournalFilters;
 window.resetToolJournalFilters = resetToolJournalFilters;
+window.setToolStatisticsRange = setToolStatisticsRange;
 window.refreshToolPageData = refreshToolPageData;
 window.startToolAutoRefresh = startToolAutoRefresh;
 window.stopToolAutoRefresh = stopToolAutoRefresh;
