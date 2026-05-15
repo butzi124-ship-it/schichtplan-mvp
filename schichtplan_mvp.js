@@ -56,8 +56,13 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.44";
+const APP_VERSION = "0.4.45";
 const VERSION_LOG = [
+  {
+    version: "0.4.45",
+    date: "2026-05-14",
+    changes: ["Werkzeughistorie pro Werkzeug ergänzt"],
+  },
   {
     version: "0.4.44",
     date: "2026-05-14",
@@ -4635,6 +4640,67 @@ function closeToolMasterDataModal() {
   getModalHost().innerHTML = "";
 }
 
+function openToolHistory(toolId) {
+  const tool = state.tools.find((t) => t.id === toolId);
+  if (!tool) return;
+
+  const entries = (Array.isArray(state.toolJournal) ? state.toolJournal : [])
+    .filter((entry) => entry.toolId === toolId)
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+  const rows = entries
+    .map((entry) => {
+      const action = entry.action || "-";
+      const actionClass = String(action).toLowerCase().includes("entnahme")
+        ? "text-rose-700"
+        : String(action).toLowerCase().includes("einlager")
+          ? "text-emerald-700"
+          : "text-slate-700";
+
+      return `<tr class='border-b'>
+        <td class='p-2'>${escapeHtml(entry.createdAt ? new Date(entry.createdAt).toLocaleString() : "-")}</td>
+        <td class='p-2'>${escapeHtml(entry.user || "-")}</td>
+        <td class='p-2 ${actionClass}'>${escapeHtml(action)}</td>
+        <td class='p-2'>${escapeHtml(entry.qty ?? "-")}</td>
+        <td class='p-2'>${escapeHtml(entry.stockBefore ?? "-")}</td>
+        <td class='p-2'>${escapeHtml(entry.stockAfter ?? "-")}</td>
+      </tr>`;
+    })
+    .join("");
+
+  getModalHost().innerHTML = `<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[80vh] overflow-auto p-4">
+      <div class="flex items-start justify-between gap-3 mb-4">
+        <div>
+          <h3 class="text-lg font-bold">Werkzeughistorie – T ${escapeHtml(tool.tNumber)}</h3>
+          <p class="text-sm text-slate-500">${escapeHtml(tool.label || "-")} · ${escapeHtml(tool.holder || "-")} · Fach ${escapeHtml(tool.shelf || "-")}</p>
+        </div>
+        <button class="px-3 py-1 rounded bg-slate-200" onclick="closeToolHistory()">Schließen</button>
+      </div>
+
+      <div class='overflow-auto border rounded-lg'>
+        <table class='w-full text-sm'>
+          <thead class='bg-slate-100 sticky top-0'>
+            <tr>
+              <th class='p-2 text-left'>Zeit</th>
+              <th class='p-2 text-left'>Benutzer</th>
+              <th class='p-2 text-left'>Aktion</th>
+              <th class='p-2 text-left'>Menge</th>
+              <th class='p-2 text-left'>Bestand vorher</th>
+              <th class='p-2 text-left'>Bestand nachher</th>
+            </tr>
+          </thead>
+          <tbody>${rows || '<tr><td class="p-2" colspan="6">Keine Historie vorhanden.</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+}
+
+function closeToolHistory() {
+  getModalHost().innerHTML = "";
+}
+
 function isThreadToolLabel(label) {
   return [
     "Gewindebohrer",
@@ -7209,6 +7275,7 @@ function renderTools() {
           ${
             isAdmin
               ? `<button class='px-2 py-1 rounded bg-slate-700 text-white mr-1' onclick="openToolQrPopup('${t.id}')">QR</button>
+                 <button class='px-2 py-1 rounded bg-slate-800 text-white mr-1' onclick="openToolHistory('${t.id}')">Historie</button>
                  <button class='px-2 py-1 rounded bg-amber-600 text-white mr-1' onclick="editTool('${t.id}')">Bearbeiten</button>
                  <button class='px-2 py-1 rounded bg-rose-700 text-white' onclick="deleteTool('${t.id}')">Löschen</button>`
               : ""
@@ -8574,6 +8641,8 @@ window.openVersionLog = openVersionLog;
 window.closeVersionLog = closeVersionLog;
 window.openToolMasterDataModal = openToolMasterDataModal;
 window.closeToolMasterDataModal = closeToolMasterDataModal;
+window.openToolHistory = openToolHistory;
+window.closeToolHistory = closeToolHistory;
 window.setTab = setTab;
 window.setStatsView = setStatsView;
 window.setPlanningSubTab = setPlanningSubTab;
