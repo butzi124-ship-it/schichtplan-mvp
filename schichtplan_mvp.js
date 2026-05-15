@@ -56,8 +56,15 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.52";
+const APP_VERSION = "0.4.53";
 const VERSION_LOG = [
+  {
+    version: "0.4.53",
+    date: "2026-05-15 20:36",
+    changes: [
+      "Werkzeug-Auto-Refresh bis nach initialem Supabase-Laden verzögert",
+    ],
+  },
   {
     version: "0.4.52",
     date: "2026-05-15 08:55",
@@ -641,6 +648,18 @@ async function loadToolPageData() {
 }
 
 async function refreshToolPageData() {
+  if (!state.ui?.supabaseReady) {
+    console.warn("Werkzeug-Refresh übersprungen: Supabase noch nicht bereit.");
+    return;
+  }
+
+  if (!state.ui?.toolsInitialLoaded) {
+    console.warn(
+      "Werkzeug-Refresh übersprungen: Werkzeugdaten noch nicht initial geladen.",
+    );
+    return;
+  }
+
   const stockScrollEl = document.getElementById("toolStockTableScroll");
   const stockScrollTop = stockScrollEl ? stockScrollEl.scrollTop : 0;
   const previousTools = Array.isArray(state.tools) ? [...state.tools] : [];
@@ -682,6 +701,7 @@ function startToolAutoRefresh() {
   stopToolAutoRefresh();
 
   if (currentTab !== "werkzeuge") return;
+  if (!state.ui?.supabaseReady || !state.ui?.toolsInitialLoaded) return;
 
   toolAutoRefreshTimer = setInterval(async () => {
     if (currentTab !== "werkzeuge") {
@@ -932,6 +952,10 @@ async function loginWithSupabase() {
 
 async function logoutSupabase() {
   await supabaseClient.auth.signOut();
+  stopToolAutoRefresh();
+  state.ui = state.ui || {};
+  state.ui.supabaseReady = false;
+  state.ui.toolsInitialLoaded = false;
   currentSupabaseUser = null;
   currentEmployeeRecord = null;
   currentUser = null;
@@ -945,6 +969,11 @@ async function logoutSupabase() {
 }
 
 async function syncSupabaseSessionToApp() {
+  stopToolAutoRefresh();
+  state.ui = state.ui || {};
+  state.ui.supabaseReady = false;
+  state.ui.toolsInitialLoaded = false;
+
   const {
     data: { user },
     error,
@@ -984,6 +1013,8 @@ async function syncSupabaseSessionToApp() {
   applyEmployeesToState(employees);
   toolMaterials = materials;
   await loadToolPageData();
+  state.ui.supabaseReady = true;
+  state.ui.toolsInitialLoaded = true;
 
   if (planning) {
     state.assignments = planning.assignments;
@@ -1023,6 +1054,11 @@ async function syncSupabaseSessionToApp() {
 }
 
 async function bootSupabase() {
+  stopToolAutoRefresh();
+  state.ui = state.ui || {};
+  state.ui.supabaseReady = false;
+  state.ui.toolsInitialLoaded = false;
+
   supabaseReady = await testSupabaseConnection();
 
   if (!supabaseReady) {
@@ -1155,6 +1191,8 @@ function loadState() {
       pendingEmployeeEdits: {},
       pendingSlotAssignments: {},
       toolsLoading: false,
+      supabaseReady: false,
+      toolsInitialLoaded: false,
     },
   };
   try {
