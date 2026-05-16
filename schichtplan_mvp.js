@@ -56,8 +56,13 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.57";
+const APP_VERSION = "0.4.58";
 const VERSION_LOG = [
+  {
+    version: "0.4.58",
+    date: "2026-05-16 08:16",
+    changes: ["Supabase Realtime für Werkzeugbestand und Tool-Journal ergänzt"],
+  },
   {
     version: "0.4.57",
     date: "2026-05-16 08:09",
@@ -242,6 +247,7 @@ let qrScannerTimer = null;
 let qrScannerMode = null;
 let toolAutoRefreshTimer = null;
 let toolPageLoadInProgress = false;
+let toolRealtimeChannel = null;
 
 const HELP_TEXTS = {
   planningPersonal: {
@@ -755,6 +761,7 @@ function startToolAutoRefresh() {
   stopToolAutoRefresh();
 
   if (currentTab !== "werkzeuge") return;
+  if (toolRealtimeChannel) return;
   if (!state.ui?.supabaseReady || !state.ui?.toolsInitialLoaded) return;
   if (!Array.isArray(state.tools) || state.tools.length === 0) return;
 
@@ -772,6 +779,42 @@ function stopToolAutoRefresh() {
   if (toolAutoRefreshTimer) {
     clearInterval(toolAutoRefreshTimer);
     toolAutoRefreshTimer = null;
+  }
+}
+
+function startToolRealtimeSubscription() {
+  if (!supabaseClient) return;
+  if (toolRealtimeChannel) return;
+
+  toolRealtimeChannel = supabaseClient
+    .channel("tool-realtime-updates")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "tools" },
+      async () => {
+        if (currentTab === "werkzeuge") {
+          await refreshToolPageData();
+        }
+      },
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "tool_journal" },
+      async () => {
+        if (currentTab === "werkzeuge") {
+          await refreshToolPageData();
+        }
+      },
+    )
+    .subscribe((status) => {
+      console.log("Tool Realtime Status:", status);
+    });
+}
+
+function stopToolRealtimeSubscription() {
+  if (toolRealtimeChannel && supabaseClient) {
+    supabaseClient.removeChannel(toolRealtimeChannel);
+    toolRealtimeChannel = null;
   }
 }
 
@@ -1008,6 +1051,7 @@ async function loginWithSupabase() {
 async function logoutSupabase() {
   await supabaseClient.auth.signOut();
   stopToolAutoRefresh();
+  stopToolRealtimeSubscription();
   state.ui = state.ui || {};
   state.ui.supabaseReady = false;
   state.ui.toolsInitialLoaded = false;
@@ -1105,6 +1149,7 @@ async function syncSupabaseSessionToApp() {
   console.log("Planungsdaten nach Login geladen:", planning);
   console.log("Tasks nach Session-Sync:", state.tasks);
 
+  startToolRealtimeSubscription();
   render();
 }
 
@@ -7533,6 +7578,9 @@ function renderTools() {
   const toolsLoadingBanner = state.ui?.toolsLoading
     ? `<div class='border border-blue-200 bg-blue-50 text-blue-800 rounded p-3 text-sm'>Werkzeugdaten werden geladen...</div>`
     : "";
+  const toolRefreshStatusText = toolRealtimeChannel
+    ? "Live-Aktualisierung aktiv"
+    : "Auto-Aktualisierung alle 15 Sekunden aktiv";
 
   const filterLabelOptions = labels
     .map(
@@ -7946,7 +7994,7 @@ function renderTools() {
         ${helpButton("werkzeuge")}
       </div>
       <div class='flex items-center gap-2 flex-wrap'>
-        <span class='text-xs text-slate-500'>Auto-Aktualisierung alle 15 Sekunden aktiv</span>
+        <span class='text-xs text-slate-500'>${toolRefreshStatusText}</span>
         <button class='px-3 py-2 rounded bg-blue-700 text-white' onclick='refreshToolPageData()'>Werkzeuge aktualisieren</button>
       </div>
     </div>
@@ -9136,6 +9184,8 @@ window.forceLoadToolPageData = forceLoadToolPageData;
 window.refreshToolPageData = refreshToolPageData;
 window.startToolAutoRefresh = startToolAutoRefresh;
 window.stopToolAutoRefresh = stopToolAutoRefresh;
+window.startToolRealtimeSubscription = startToolRealtimeSubscription;
+window.stopToolRealtimeSubscription = stopToolRealtimeSubscription;
 window.bookToolChange = bookToolChange;
 window.undoToolJournalEntry = undoToolJournalEntry;
 window.openToolImagePopup = openToolImagePopup;
