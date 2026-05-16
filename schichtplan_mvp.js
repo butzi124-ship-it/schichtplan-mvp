@@ -56,8 +56,13 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.54";
+const APP_VERSION = "0.4.55";
 const VERSION_LOG = [
+  {
+    version: "0.4.55",
+    date: "2026-05-16 05:58",
+    changes: ["Debug-Logs für Werkzeugladen aus Supabase ergänzt"],
+  },
   {
     version: "0.4.54",
     date: "2026-05-15 22:22",
@@ -513,10 +518,30 @@ async function loadTasksFromSupabase() {
 }
 
 async function loadToolsFromSupabase() {
+  console.log("loadToolsFromSupabase START", {
+    currentUser,
+    supabaseReady: state.ui?.supabaseReady,
+    toolsInitialLoaded: state.ui?.toolsInitialLoaded,
+  });
+
+  const { data: sessionData, error: sessionError } =
+    await supabaseClient.auth.getSession();
+  console.log("loadToolsFromSupabase SESSION", {
+    sessionUserId: sessionData?.session?.user?.id || null,
+    sessionEmail: sessionData?.session?.user?.email || null,
+    sessionError,
+  });
+
   const { data, error } = await supabaseClient
     .from("tools")
     .select("*")
     .order("t_number", { ascending: true });
+
+  console.log("loadToolsFromSupabase RESULT", {
+    count: data?.length || 0,
+    error,
+    data,
+  });
 
   if (error) {
     console.error("Fehler beim Laden von tools:", error);
