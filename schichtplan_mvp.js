@@ -56,8 +56,13 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.58";
+const APP_VERSION = "0.4.59";
 const VERSION_LOG = [
+  {
+    version: "0.4.59",
+    date: "2026-05-16 08:24",
+    changes: ["Realtime-Subscription für Werkzeugbereich nach Reload stabilisiert"],
+  },
   {
     version: "0.4.58",
     date: "2026-05-16 08:16",
@@ -782,9 +787,15 @@ function stopToolAutoRefresh() {
   }
 }
 
-function startToolRealtimeSubscription() {
+async function startToolRealtimeSubscription() {
   if (!supabaseClient) return;
   if (toolRealtimeChannel) return;
+
+  const { data } = await supabaseClient.auth.getSession();
+  if (!data?.session) {
+    console.warn("Tool Realtime nicht gestartet: keine Supabase-Session");
+    return;
+  }
 
   toolRealtimeChannel = supabaseClient
     .channel("tool-realtime-updates")
@@ -808,6 +819,10 @@ function startToolRealtimeSubscription() {
     )
     .subscribe((status) => {
       console.log("Tool Realtime Status:", status);
+      if (status === "CLOSED" || status === "CHANNEL_ERROR") {
+        toolRealtimeChannel = null;
+        startToolAutoRefresh();
+      }
     });
 }
 
@@ -1149,7 +1164,7 @@ async function syncSupabaseSessionToApp() {
   console.log("Planungsdaten nach Login geladen:", planning);
   console.log("Tasks nach Session-Sync:", state.tasks);
 
-  startToolRealtimeSubscription();
+  await startToolRealtimeSubscription();
   render();
 }
 
@@ -1474,6 +1489,7 @@ function render() {
 
   if (!tabs.includes(currentTab)) currentTab = tabs[0];
   if (currentTab === "werkzeuge") {
+    startToolRealtimeSubscription().catch(console.warn);
     startToolAutoRefresh();
   } else {
     stopToolAutoRefresh();
