@@ -56,8 +56,13 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.55";
+const APP_VERSION = "0.4.56";
 const VERSION_LOG = [
+  {
+    version: "0.4.56",
+    date: "2026-05-16 08:03",
+    changes: ["Werkzeug-Ladeansicht nach erfolgreichem Tool-Load korrigiert"],
+  },
   {
     version: "0.4.55",
     date: "2026-05-16 05:58",
@@ -680,6 +685,7 @@ async function loadToolPageData() {
     }
 
     await loadToolJournalFromSupabase();
+    state.ui.toolsInitialLoaded = true;
   } finally {
     state.ui.toolsLoading = false;
     render();
@@ -700,6 +706,8 @@ async function forceLoadToolPageData() {
       );
     }
     await loadToolJournalFromSupabase();
+    state.ui = state.ui || {};
+    state.ui.toolsInitialLoaded = true;
   } catch (err) {
     console.error("Werkzeugdaten konnten nicht geladen werden", err);
   } finally {
@@ -7503,9 +7511,10 @@ function renderOrderStats() {
 }
 
 function renderTools() {
+  const toolsLoaded = state.ui?.toolsInitialLoaded === true;
   const hasTools = Array.isArray(state.tools) && state.tools.length > 0;
 
-  if (!hasTools) {
+  if (!toolsLoaded && !hasTools) {
     setTimeout(() => forceLoadToolPageData(), 0);
 
     return `
