@@ -56,8 +56,13 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.65";
+const APP_VERSION = "0.4.66";
 const VERSION_LOG = [
+  {
+    version: "0.4.66",
+    date: "2026-05-17 09:25",
+    changes: ["Doppelte Fachbelegung beim Umlagern verhindert"],
+  },
   {
     version: "0.4.65",
     date: "2026-05-17 09:18",
@@ -1646,6 +1651,21 @@ function isValidStorageLocation(value) {
 function getToolStorageLocationKey(tool) {
   return normalizeStorageLocation(
     tool?.location || tool?.storageLocation || tool?.shelf || "",
+  );
+}
+
+function findToolByStorageLocation(locationKey, excludeToolId = null) {
+  const normalizedKey = normalizeStorageLocation(locationKey);
+  if (!normalizedKey) return null;
+
+  const tools = Array.isArray(state.tools) ? state.tools : [];
+  return (
+    tools.find((tool) => {
+      return (
+        tool.id !== excludeToolId &&
+        getToolStorageLocationKey(tool) === normalizedKey
+      );
+    }) || null
   );
 }
 
@@ -5194,6 +5214,7 @@ function openMoveToolModal(toolId) {
           Neues Fach
           <input id="moveToolLocation" class="border rounded p-2 w-full mt-1" placeholder="z. B. 12F" value="${escapeHtml(currentLocation || "")}" />
         </label>
+        <p class="text-xs text-slate-500">Ein Fach darf nur von einem Werkzeug belegt sein.</p>
 
         <div class="flex justify-end gap-2">
           <button class="px-3 py-2 rounded bg-slate-200" onclick="closeStorageLocationModal()">Abbrechen</button>
@@ -5221,6 +5242,14 @@ async function confirmMoveTool(toolId) {
   const oldLocation = getToolStorageLocationKey(tool);
   if (oldLocation === newLocation) {
     alert("Das Werkzeug liegt bereits in diesem Fach.");
+    return;
+  }
+
+  const occupiedBy = findToolByStorageLocation(newLocation, toolId);
+  if (occupiedBy) {
+    alert(
+      `Fach ${newLocation} ist bereits belegt durch T ${occupiedBy.tNumber} · ${occupiedBy.label || "-"}`,
+    );
     return;
   }
 
