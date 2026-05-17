@@ -56,8 +56,13 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.64";
+const APP_VERSION = "0.4.65";
 const VERSION_LOG = [
+  {
+    version: "0.4.65",
+    date: "2026-05-17 09:18",
+    changes: ["Werkzeug-Umlagerung aus Lagerfachansicht ergänzt"],
+  },
   {
     version: "0.4.64",
     date: "2026-05-17 09:11",
@@ -1622,10 +1627,26 @@ function getToolStockWarningLevel(tool) {
   return "";
 }
 
-function getToolStorageLocationKey(tool) {
-  return String(tool?.location || tool?.storageLocation || tool?.shelf || "")
+function normalizeStorageLocation(value) {
+  return String(value || "")
     .trim()
+    .replace(/\s+/g, "")
     .toUpperCase();
+}
+
+function isValidStorageLocation(value) {
+  const normalized = normalizeStorageLocation(value);
+  const match = normalized.match(/^(\d{1,2})([A-Y])$/);
+  if (!match) return false;
+
+  const rack = Number(match[1]);
+  return rack >= 1 && rack <= 26;
+}
+
+function getToolStorageLocationKey(tool) {
+  return normalizeStorageLocation(
+    tool?.location || tool?.storageLocation || tool?.shelf || "",
+  );
 }
 
 function buildToolStorageMap() {
@@ -5094,9 +5115,7 @@ function closeToolHistory() {
 }
 
 function openStorageLocationModal(locationKey) {
-  const normalizedKey = String(locationKey || "")
-    .trim()
-    .toUpperCase();
+  const normalizedKey = normalizeStorageLocation(locationKey);
   const storageMap = buildToolStorageMap();
   const tools = storageMap[normalizedKey] || [];
   const rows = tools
@@ -5107,6 +5126,9 @@ function openStorageLocationModal(locationKey) {
         <td class='p-2'>${escapeHtml(tool.stock ?? "-")}</td>
         <td class='p-2'>${escapeHtml(tool.holder || "-")}</td>
         <td class='p-2'>${escapeHtml(tool.manufacturer || "-")}</td>
+        <td class='p-2 text-right'>
+          <button class='px-2 py-1 rounded bg-blue-700 text-white text-xs' onclick="openMoveToolModal('${tool.id}')">Umlagern</button>
+        </td>
       </tr>`,
     )
     .join("");
@@ -5129,9 +5151,10 @@ function openStorageLocationModal(locationKey) {
               <th class="p-2 text-left">Bestand</th>
               <th class="p-2 text-left">Aufnahme</th>
               <th class="p-2 text-left">Hersteller</th>
+              <th class="p-2 text-right">Aktion</th>
             </tr>
           </thead>
-          <tbody>${rows || '<tr><td class="p-2" colspan="5">Kein Werkzeug in diesem Fach</td></tr>'}</tbody>
+          <tbody>${rows || '<tr><td class="p-2" colspan="6">Kein Werkzeug in diesem Fach</td></tr>'}</tbody>
         </table>
       </div>
     </div>
@@ -5140,6 +5163,102 @@ function openStorageLocationModal(locationKey) {
 
 function closeStorageLocationModal() {
   getModalHost().innerHTML = "";
+}
+
+function openMoveToolModal(toolId) {
+  const tool = state.tools.find((item) => item.id === toolId);
+  if (!tool) {
+    alert("Werkzeug wurde nicht gefunden.");
+    return;
+  }
+
+  const currentLocation = getToolStorageLocationKey(tool);
+
+  getModalHost().innerHTML = `<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-4">
+      <div class="flex items-start justify-between gap-3 mb-4">
+        <div>
+          <h3 class="text-lg font-bold">Werkzeug umlagern</h3>
+          <p class="text-sm text-slate-500">T ${escapeHtml(tool.tNumber || "-")} · ${escapeHtml(tool.label || "-")}</p>
+        </div>
+        <button class="px-3 py-1 rounded bg-slate-200" onclick="closeStorageLocationModal()">Abbrechen</button>
+      </div>
+
+      <div class="space-y-3">
+        <div class="rounded border bg-slate-50 p-3 text-sm">
+          <div><span class="font-semibold">Aktuelles Fach:</span> ${escapeHtml(currentLocation || "-")}</div>
+          <div><span class="font-semibold">Bestand:</span> ${escapeHtml(tool.stock ?? "-")}</div>
+        </div>
+
+        <label class="block text-sm">
+          Neues Fach
+          <input id="moveToolLocation" class="border rounded p-2 w-full mt-1" placeholder="z. B. 12F" value="${escapeHtml(currentLocation || "")}" />
+        </label>
+
+        <div class="flex justify-end gap-2">
+          <button class="px-3 py-2 rounded bg-slate-200" onclick="closeStorageLocationModal()">Abbrechen</button>
+          <button class="px-3 py-2 rounded bg-blue-700 text-white" onclick="confirmMoveTool('${tool.id}')">Umlagern</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function confirmMoveTool(toolId) {
+  const tool = state.tools.find((item) => item.id === toolId);
+  if (!tool) {
+    alert("Werkzeug wurde nicht gefunden.");
+    return;
+  }
+
+  const input = document.getElementById("moveToolLocation");
+  const newLocation = normalizeStorageLocation(input?.value || "");
+  if (!isValidStorageLocation(newLocation)) {
+    alert("Bitte ein gültiges Fach eingeben (Regal 1-26, Buchstabe A-Y, z. B. 12F).");
+    return;
+  }
+
+  const oldLocation = getToolStorageLocationKey(tool);
+  if (oldLocation === newLocation) {
+    alert("Das Werkzeug liegt bereits in diesem Fach.");
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("tools")
+    .update({ shelf: newLocation })
+    .eq("id", tool.id);
+
+  if (error) {
+    alert("Werkzeug konnte nicht umgelagert werden: " + error.message);
+    return;
+  }
+
+  state.tools = state.tools.map((item) => {
+    if (item.id !== tool.id) return item;
+    return {
+      ...item,
+      shelf: newLocation,
+      location: item.location ? newLocation : item.location,
+      storageLocation: item.storageLocation ? newLocation : item.storageLocation,
+    };
+  });
+
+  await refreshToolPageData();
+  await addToolJournalEntry({
+    toolId: tool.id,
+    toolLabel: tool.label,
+    toolTNumber: tool.tNumber,
+    action: `Werkzeug umgelagert ${oldLocation || "-"} -> ${newLocation}`,
+    qty: 0,
+    stockBefore: tool.stock,
+    stockAfter: tool.stock,
+    user: currentUser?.name || "System",
+  });
+
+  getModalHost().innerHTML = "";
+  persist();
+  render();
 }
 
 function getFilteredToolJournalEntries() {
@@ -9454,6 +9573,8 @@ window.openToolHistory = openToolHistory;
 window.closeToolHistory = closeToolHistory;
 window.openStorageLocationModal = openStorageLocationModal;
 window.closeStorageLocationModal = closeStorageLocationModal;
+window.openMoveToolModal = openMoveToolModal;
+window.confirmMoveTool = confirmMoveTool;
 window.applyStorageSearch = applyStorageSearch;
 window.resetStorageSearch = resetStorageSearch;
 window.setTab = setTab;
