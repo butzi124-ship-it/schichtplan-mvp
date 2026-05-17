@@ -56,8 +56,15 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.62";
+const APP_VERSION = "0.4.63";
 const VERSION_LOG = [
+  {
+    version: "0.4.63",
+    date: "2026-05-17 09:03",
+    changes: [
+      "Blinkende Hervorhebung für Treffer-Fächer in der Lagerfachansicht ergänzt",
+    ],
+  },
   {
     version: "0.4.62",
     date: "2026-05-17 05:48",
@@ -8085,7 +8092,7 @@ function renderTools() {
         const cellState = getStorageCellState(locationTools);
         const isSearchMatch = storageSearchLocations.has(locationKey);
         return `<button
-          class='border rounded px-2 py-1 text-xs text-left ${storageCellClasses[cellState]} ${isSearchMatch ? "ring-2 ring-blue-600 border-blue-700" : ""}'
+          class='border rounded px-2 py-1 text-xs text-left ${storageCellClasses[cellState]} ${isSearchMatch ? "ring-2 ring-blue-600 border-blue-700 animate-pulse" : ""}'
           onclick="openStorageLocationModal('${locationKey}')"
           title='Lagerfach ${locationKey}'
         >
