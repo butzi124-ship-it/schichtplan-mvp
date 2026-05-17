@@ -56,8 +56,13 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.63";
+const APP_VERSION = "0.4.64";
 const VERSION_LOG = [
+  {
+    version: "0.4.64",
+    date: "2026-05-17 09:11",
+    changes: ["Treffer-Blinken in der Lagerfachansicht deutlicher gemacht"],
+  },
   {
     version: "0.4.63",
     date: "2026-05-17 09:03",
@@ -1646,6 +1651,36 @@ function getStorageCellState(tools) {
     return "warning";
   }
   return "ok";
+}
+
+function ensureStorageHighlightStyles() {
+  if (document.getElementById("storageHighlightStyles")) return;
+
+  const style = document.createElement("style");
+  style.id = "storageHighlightStyles";
+  style.textContent = `
+    @keyframes storageHitBlink {
+      0%, 100% {
+        background-color: #dbeafe;
+        border-color: #1d4ed8;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.9), 0 0 14px rgba(37, 99, 235, 0.75);
+        transform: scale(1);
+      }
+      50% {
+        background-color: #60a5fa;
+        border-color: #1e3a8a;
+        box-shadow: 0 0 0 4px rgba(29, 78, 216, 1), 0 0 22px rgba(29, 78, 216, 0.95);
+        transform: scale(1.08);
+      }
+    }
+
+    .storage-hit-blink {
+      animation: storageHitBlink 0.9s ease-in-out infinite;
+      position: relative;
+      z-index: 1;
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 function findStorageSearchMatches() {
@@ -7749,6 +7784,8 @@ function renderTools() {
   `;
   }
 
+  ensureStorageHighlightStyles();
+
   const labels = getToolLabels();
   const filters = state.toolFilters || {
     search: "",
@@ -8092,7 +8129,7 @@ function renderTools() {
         const cellState = getStorageCellState(locationTools);
         const isSearchMatch = storageSearchLocations.has(locationKey);
         return `<button
-          class='border rounded px-2 py-1 text-xs text-left ${storageCellClasses[cellState]} ${isSearchMatch ? "ring-2 ring-blue-600 border-blue-700 animate-pulse" : ""}'
+          class='border rounded px-2 py-1 text-xs text-left ${storageCellClasses[cellState]} ${isSearchMatch ? "storage-hit-blink" : ""}'
           onclick="openStorageLocationModal('${locationKey}')"
           title='Lagerfach ${locationKey}'
         >
