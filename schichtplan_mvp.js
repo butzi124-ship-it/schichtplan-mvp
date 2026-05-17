@@ -56,8 +56,18 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.66";
+const APP_VERSION = "0.4.68";
 const VERSION_LOG = [
+  {
+    version: "0.4.68",
+    date: "2026-05-17 12:09",
+    changes: ["QR-Info im Lagerfach-Popup sichtbar platziert"],
+  },
+  {
+    version: "0.4.67",
+    date: "2026-05-17 09:30",
+    changes: ["QR-System für Lagerfächer ergänzt"],
+  },
   {
     version: "0.4.66",
     date: "2026-05-17 09:25",
@@ -1646,6 +1656,32 @@ function isValidStorageLocation(value) {
 
   const rack = Number(match[1]);
   return rack >= 1 && rack <= 26;
+}
+
+function parseStorageQrCode(value) {
+  const normalized = String(value || "")
+    .trim()
+    .toUpperCase();
+  if (!normalized.startsWith("STORAGE:")) return null;
+
+  const locationKey = normalizeStorageLocation(
+    normalized.slice("STORAGE:".length),
+  );
+  return isValidStorageLocation(locationKey) ? locationKey : null;
+}
+
+function buildStorageQrValue(locationKey) {
+  return `STORAGE:${normalizeStorageLocation(locationKey)}`;
+}
+
+function openStorageLocationByQr(value) {
+  const locationKey = parseStorageQrCode(value);
+  if (!locationKey) {
+    alert("Ungültiger Lagerfach-QR-Code");
+    return;
+  }
+
+  openStorageLocationModal(locationKey);
 }
 
 function getToolStorageLocationKey(tool) {
@@ -5136,6 +5172,7 @@ function closeToolHistory() {
 
 function openStorageLocationModal(locationKey) {
   const normalizedKey = normalizeStorageLocation(locationKey);
+  const qrValue = buildStorageQrValue(normalizedKey);
   const storageMap = buildToolStorageMap();
   const tools = storageMap[normalizedKey] || [];
   const rows = tools
@@ -5159,8 +5196,15 @@ function openStorageLocationModal(locationKey) {
         <div>
           <h3 class="text-lg font-bold">Lagerfach ${escapeHtml(normalizedKey)}</h3>
           <p class="text-sm text-slate-500">${tools.length} Werkzeug(e)</p>
+          <div class="mt-2 inline-flex flex-wrap items-center gap-2 rounded border bg-slate-50 px-3 py-2 text-sm">
+            <span class="font-semibold text-slate-700">QR-Code:</span>
+            <span class="font-mono font-semibold text-slate-900">${escapeHtml(qrValue)}</span>
+            <button class="px-2 py-1 rounded bg-blue-700 text-white text-xs" onclick="openStorageQrModal('${normalizedKey}')">QR anzeigen</button>
+          </div>
         </div>
-        <button class="px-3 py-1 rounded bg-slate-200" onclick="closeStorageLocationModal()">Schließen</button>
+        <div class="flex gap-2">
+          <button class="px-3 py-1 rounded bg-slate-200" onclick="closeStorageLocationModal()">Schließen</button>
+        </div>
       </div>
       <div class="overflow-auto">
         <table class="w-full text-sm">
@@ -5183,6 +5227,32 @@ function openStorageLocationModal(locationKey) {
 
 function closeStorageLocationModal() {
   getModalHost().innerHTML = "";
+}
+
+function openStorageQrModal(locationKey) {
+  const normalizedKey = normalizeStorageLocation(locationKey);
+  if (!isValidStorageLocation(normalizedKey)) {
+    alert("Ungültiges Lagerfach");
+    return;
+  }
+
+  const qrValue = buildStorageQrValue(normalizedKey);
+  getModalHost().innerHTML = `<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-4">
+      <div class="flex items-start justify-between gap-3 mb-4">
+        <div>
+          <h3 class="text-lg font-bold">QR-Code für Lagerfach ${escapeHtml(normalizedKey)}</h3>
+          <p class="text-sm text-slate-500">Diesen Inhalt später als QR-Code am Lagerfach anbringen.</p>
+        </div>
+        <button class="px-3 py-1 rounded bg-slate-200" onclick="closeStorageLocationModal()">Schließen</button>
+      </div>
+
+      <div class="rounded-lg border bg-slate-50 p-4 text-center">
+        <div class="text-xs uppercase tracking-wide text-slate-500 mb-2">QR-Inhalt</div>
+        <div class="font-mono text-2xl font-bold break-all">${escapeHtml(qrValue)}</div>
+      </div>
+    </div>
+  </div>`;
 }
 
 function openMoveToolModal(toolId) {
@@ -6316,6 +6386,11 @@ async function startQrScannerLoop() {
 
 async function processScannedToolQr(rawValue, mode) {
   const value = String(rawValue || "").trim();
+  if (value.toUpperCase().startsWith("STORAGE:")) {
+    openStorageLocationByQr(value);
+    return;
+  }
+
   if (!value.startsWith("TOOL:")) {
     alert("Ungültiger QR-Code");
     return;
@@ -9602,6 +9677,8 @@ window.openToolHistory = openToolHistory;
 window.closeToolHistory = closeToolHistory;
 window.openStorageLocationModal = openStorageLocationModal;
 window.closeStorageLocationModal = closeStorageLocationModal;
+window.openStorageQrModal = openStorageQrModal;
+window.openStorageLocationByQr = openStorageLocationByQr;
 window.openMoveToolModal = openMoveToolModal;
 window.confirmMoveTool = confirmMoveTool;
 window.applyStorageSearch = applyStorageSearch;
