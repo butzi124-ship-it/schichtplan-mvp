@@ -56,8 +56,13 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.59";
+const APP_VERSION = "0.4.60";
 const VERSION_LOG = [
+  {
+    version: "0.4.60",
+    date: "2026-05-16 08:33",
+    changes: ["Erste Lagerfach-/Regalansicht ergänzt"],
+  },
   {
     version: "0.4.59",
     date: "2026-05-16 08:24",
@@ -243,6 +248,33 @@ const VERSION_LOG = [
   },
 ];
 const STORAGE_KEY = "schichtplan_mvp_v_0_2";
+const STORAGE_LETTERS = [
+  "A",
+  "B",
+  "C",
+  "D",
+  "E",
+  "F",
+  "G",
+  "H",
+  "I",
+  "J",
+  "K",
+  "L",
+  "M",
+  "N",
+  "O",
+  "P",
+  "Q",
+  "R",
+  "S",
+  "T",
+  "U",
+  "V",
+  "W",
+  "X",
+  "Y",
+];
 const state = loadState();
 let currentUser = null;
 let currentTab = "schichtplan";
@@ -1563,6 +1595,35 @@ function getToolStockWarningLevel(tool) {
   if (stock < minStock) return "critical";
   if (stock === minStock) return "warning";
   return "";
+}
+
+function buildToolStorageMap() {
+  const storageMap = {};
+  const tools = Array.isArray(state.tools) ? state.tools : [];
+
+  tools.forEach((tool) => {
+    const locationKey = String(
+      tool.location || tool.storageLocation || tool.shelf || "",
+    )
+      .trim()
+      .toUpperCase();
+    if (!locationKey) return;
+    if (!storageMap[locationKey]) storageMap[locationKey] = [];
+    storageMap[locationKey].push(tool);
+  });
+
+  return storageMap;
+}
+
+function getStorageCellState(tools) {
+  if (!Array.isArray(tools) || tools.length === 0) return "empty";
+  if (tools.some((tool) => getToolStockWarningLevel(tool) === "critical")) {
+    return "critical";
+  }
+  if (tools.some((tool) => getToolStockWarningLevel(tool) === "warning")) {
+    return "warning";
+  }
+  return "ok";
 }
 
 function shouldOrderTool(tool) {
@@ -4933,6 +4994,55 @@ function closeToolHistory() {
   getModalHost().innerHTML = "";
 }
 
+function openStorageLocationModal(locationKey) {
+  const normalizedKey = String(locationKey || "")
+    .trim()
+    .toUpperCase();
+  const storageMap = buildToolStorageMap();
+  const tools = storageMap[normalizedKey] || [];
+  const rows = tools
+    .map(
+      (tool) => `<tr class='border-b'>
+        <td class='p-2'>T ${escapeHtml(tool.tNumber || "-")}</td>
+        <td class='p-2'>${escapeHtml(tool.label || "-")}</td>
+        <td class='p-2'>${escapeHtml(tool.stock ?? "-")}</td>
+        <td class='p-2'>${escapeHtml(tool.holder || "-")}</td>
+        <td class='p-2'>${escapeHtml(tool.manufacturer || "-")}</td>
+      </tr>`,
+    )
+    .join("");
+
+  getModalHost().innerHTML = `<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[82vh] overflow-auto p-4">
+      <div class="flex items-start justify-between gap-3 mb-4">
+        <div>
+          <h3 class="text-lg font-bold">Lagerfach ${escapeHtml(normalizedKey)}</h3>
+          <p class="text-sm text-slate-500">${tools.length} Werkzeug(e)</p>
+        </div>
+        <button class="px-3 py-1 rounded bg-slate-200" onclick="closeStorageLocationModal()">Schließen</button>
+      </div>
+      <div class="overflow-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-100">
+            <tr>
+              <th class="p-2 text-left">T-Nummer</th>
+              <th class="p-2 text-left">Bezeichnung</th>
+              <th class="p-2 text-left">Bestand</th>
+              <th class="p-2 text-left">Aufnahme</th>
+              <th class="p-2 text-left">Hersteller</th>
+            </tr>
+          </thead>
+          <tbody>${rows || '<tr><td class="p-2" colspan="5">Kein Werkzeug in diesem Fach</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+}
+
+function closeStorageLocationModal() {
+  getModalHost().innerHTML = "";
+}
+
 function getFilteredToolJournalEntries() {
   const filters = state.toolJournalFilters || {};
   const search = String(filters.search || "")
@@ -7879,6 +7989,51 @@ function renderTools() {
     </div>
   </div>`;
 
+  const storageMap = buildToolStorageMap();
+  const storageCellClasses = {
+    empty: "bg-slate-100 text-slate-500 border-slate-200",
+    ok: "bg-green-100 text-green-900 border-green-200",
+    warning: "bg-orange-200 text-orange-950 border-orange-300",
+    critical: "bg-red-200 text-red-950 border-red-300",
+  };
+  const storageRackColumns = Array.from({ length: 26 }, (_, index) => {
+    const rackNumber = index + 1;
+    const cells = [...STORAGE_LETTERS]
+      .reverse()
+      .map((letter) => {
+        const locationKey = `${rackNumber}${letter}`;
+        const locationTools = storageMap[locationKey] || [];
+        const cellState = getStorageCellState(locationTools);
+        return `<button
+          class='border rounded px-2 py-1 text-xs text-left ${storageCellClasses[cellState]}'
+          onclick="openStorageLocationModal('${locationKey}')"
+          title='Lagerfach ${locationKey}'
+        >
+          <span class='font-semibold'>${locationKey}</span>
+          <span class='block text-[10px]'>${locationTools.length || ""}</span>
+        </button>`;
+      })
+      .join("");
+
+    return `<div class='min-w-[76px] border rounded bg-white p-2'>
+      <div class='text-xs font-semibold text-center mb-2'>Regal ${rackNumber}</div>
+      <div class='grid gap-1'>${cells}</div>
+    </div>`;
+  }).join("");
+
+  const storageOverviewSection = `<div class='border rounded p-3 bg-white'>
+    <h4 class='font-semibold mb-2'>Lagerfach-/Regalansicht</h4>
+    <div class='flex gap-2 text-xs text-slate-600 flex-wrap mb-3'>
+      <span class='inline-flex items-center gap-1'><span class='inline-block w-3 h-3 rounded bg-slate-100 border'></span> Leer</span>
+      <span class='inline-flex items-center gap-1'><span class='inline-block w-3 h-3 rounded bg-green-100 border border-green-200'></span> OK</span>
+      <span class='inline-flex items-center gap-1'><span class='inline-block w-3 h-3 rounded bg-orange-200 border border-orange-300'></span> Mindestbestand erreicht</span>
+      <span class='inline-flex items-center gap-1'><span class='inline-block w-3 h-3 rounded bg-red-200 border border-red-300'></span> Mindestbestand unterschritten</span>
+    </div>
+    <div class='overflow-x-auto pb-2'>
+      <div class='flex gap-2'>${storageRackColumns}</div>
+    </div>
+  </div>`;
+
   const manufacturerOptionsForPopup = availableManufacturers
     .map(
       (maker) =>
@@ -8151,6 +8306,7 @@ function renderTools() {
               </div>
             </div>
             ${toolStatisticsSection}
+            ${storageOverviewSection}
           </div>`
         : `<div class='space-y-3'>
             <div class='border-2 border-slate-300 rounded-xl p-3'>
@@ -8173,6 +8329,7 @@ function renderTools() {
               </div>
             </div>
             ${toolStatisticsSection}
+            ${storageOverviewSection}
           </div>`
     }
 
@@ -9143,6 +9300,8 @@ window.openToolMasterDataModal = openToolMasterDataModal;
 window.closeToolMasterDataModal = closeToolMasterDataModal;
 window.openToolHistory = openToolHistory;
 window.closeToolHistory = closeToolHistory;
+window.openStorageLocationModal = openStorageLocationModal;
+window.closeStorageLocationModal = closeStorageLocationModal;
 window.setTab = setTab;
 window.setStatsView = setStatsView;
 window.setPlanningSubTab = setPlanningSubTab;
