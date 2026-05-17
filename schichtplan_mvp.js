@@ -56,8 +56,13 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.61";
+const APP_VERSION = "0.4.62";
 const VERSION_LOG = [
+  {
+    version: "0.4.62",
+    date: "2026-05-17 05:48",
+    changes: ["Exakte T-Nummern-Suche in der Lagerfach-/Regalansicht ergänzt"],
+  },
   {
     version: "0.4.61",
     date: "2026-05-17 05:28",
@@ -1637,17 +1642,30 @@ function getStorageCellState(tools) {
 }
 
 function findStorageSearchMatches() {
-  const search = String(state.storageSearch || "")
-    .trim()
-    .toLowerCase();
-  if (!search) return [];
+  const raw = String(state.storageSearch || "").trim();
+  const normalized = raw.toLowerCase();
+  if (!normalized) return [];
 
   const tools = Array.isArray(state.tools) ? state.tools : [];
+  const tNumberMatch = normalized.match(/^t?\s*(\d+)$/);
+
+  if (tNumberMatch) {
+    const target = Number(tNumberMatch[1]);
+    return tools.filter((tool) => {
+      const toolNumber = Number(
+        String(tool.tNumber || "")
+          .replace(/^t/i, "")
+          .trim(),
+      );
+      return toolNumber === target;
+    });
+  }
+
   return tools.filter((tool) =>
     [tool.tNumber, tool.label, tool.articleNo, tool.manufacturer].some((value) =>
       String(value || "")
         .toLowerCase()
-        .includes(search),
+        .includes(normalized),
     ),
   );
 }
