@@ -56,8 +56,15 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.60";
+const APP_VERSION = "0.4.61";
 const VERSION_LOG = [
+  {
+    version: "0.4.61",
+    date: "2026-05-17 05:28",
+    changes: [
+      "Werkzeugsuche mit Hervorhebung in der Lagerfach-/Regalansicht ergänzt",
+    ],
+  },
   {
     version: "0.4.60",
     date: "2026-05-16 08:33",
@@ -1318,6 +1325,7 @@ function loadState() {
       range: "",
     },
     toolStatisticsRange: "30d",
+    storageSearch: "",
     toolOrderOverrides: {},
     orderArchive: [],
     orderHistory: [],
@@ -1597,16 +1605,18 @@ function getToolStockWarningLevel(tool) {
   return "";
 }
 
+function getToolStorageLocationKey(tool) {
+  return String(tool?.location || tool?.storageLocation || tool?.shelf || "")
+    .trim()
+    .toUpperCase();
+}
+
 function buildToolStorageMap() {
   const storageMap = {};
   const tools = Array.isArray(state.tools) ? state.tools : [];
 
   tools.forEach((tool) => {
-    const locationKey = String(
-      tool.location || tool.storageLocation || tool.shelf || "",
-    )
-      .trim()
-      .toUpperCase();
+    const locationKey = getToolStorageLocationKey(tool);
     if (!locationKey) return;
     if (!storageMap[locationKey]) storageMap[locationKey] = [];
     storageMap[locationKey].push(tool);
@@ -1624,6 +1634,35 @@ function getStorageCellState(tools) {
     return "warning";
   }
   return "ok";
+}
+
+function findStorageSearchMatches() {
+  const search = String(state.storageSearch || "")
+    .trim()
+    .toLowerCase();
+  if (!search) return [];
+
+  const tools = Array.isArray(state.tools) ? state.tools : [];
+  return tools.filter((tool) =>
+    [tool.tNumber, tool.label, tool.articleNo, tool.manufacturer].some((value) =>
+      String(value || "")
+        .toLowerCase()
+        .includes(search),
+    ),
+  );
+}
+
+function applyStorageSearch() {
+  state.storageSearch =
+    document.getElementById("storageSearchInput")?.value || "";
+  persist();
+  render();
+}
+
+function resetStorageSearch() {
+  state.storageSearch = "";
+  persist();
+  render();
 }
 
 function shouldOrderTool(tool) {
@@ -7990,6 +8029,28 @@ function renderTools() {
   </div>`;
 
   const storageMap = buildToolStorageMap();
+  const storageSearchMatches = findStorageSearchMatches();
+  const storageSearchLocations = new Set(
+    storageSearchMatches.map(getToolStorageLocationKey).filter(Boolean),
+  );
+  const storageSearchValue = state.storageSearch || "";
+  const storageSearchRows = storageSearchMatches
+    .map((tool) => {
+      const locationKey = getToolStorageLocationKey(tool);
+      return `<tr class='border-b'>
+        <td class='p-2'>T ${escapeHtml(tool.tNumber || "-")}</td>
+        <td class='p-2'>${escapeHtml(tool.label || "-")}</td>
+        <td class='p-2'>${escapeHtml(locationKey || "-")}</td>
+        <td class='p-2'>
+          ${
+            locationKey
+              ? `<button class='px-2 py-1 rounded bg-slate-900 text-white text-xs' onclick="openStorageLocationModal('${locationKey}')">Fach öffnen</button>`
+              : "-"
+          }
+        </td>
+      </tr>`;
+    })
+    .join("");
   const storageCellClasses = {
     empty: "bg-slate-100 text-slate-500 border-slate-200",
     ok: "bg-green-100 text-green-900 border-green-200",
@@ -8004,12 +8065,14 @@ function renderTools() {
         const locationKey = `${rackNumber}${letter}`;
         const locationTools = storageMap[locationKey] || [];
         const cellState = getStorageCellState(locationTools);
+        const isSearchMatch = storageSearchLocations.has(locationKey);
         return `<button
-          class='border rounded px-2 py-1 text-xs text-left ${storageCellClasses[cellState]}'
+          class='border rounded px-2 py-1 text-xs text-left ${storageCellClasses[cellState]} ${isSearchMatch ? "ring-2 ring-blue-600 border-blue-700" : ""}'
           onclick="openStorageLocationModal('${locationKey}')"
           title='Lagerfach ${locationKey}'
         >
           <span class='font-semibold'>${locationKey}</span>
+          ${isSearchMatch ? "<span class='block text-[10px] font-semibold text-blue-700'>Treffer</span>" : ""}
           <span class='block text-[10px]'>${locationTools.length || ""}</span>
         </button>`;
       })
@@ -8023,6 +8086,33 @@ function renderTools() {
 
   const storageOverviewSection = `<div class='border rounded p-3 bg-white'>
     <h4 class='font-semibold mb-2'>Lagerfach-/Regalansicht</h4>
+    <div class='border rounded bg-slate-50 p-3 mb-3'>
+      <div class='grid md:grid-cols-[1fr,auto,auto] gap-2 items-end'>
+        <label class='text-sm font-medium'>Werkzeug suchen
+          <input id='storageSearchInput' class='border rounded p-2 w-full mt-1' placeholder='T-Nummer, Bezeichnung, Artikelnummer oder Hersteller suchen' value='${escapeHtml(storageSearchValue)}' />
+        </label>
+        <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='applyStorageSearch()'>Suchen</button>
+        <button class='px-3 py-2 rounded bg-slate-700 text-white' onclick='resetStorageSearch()'>Zurücksetzen</button>
+      </div>
+      <div class='text-xs text-slate-500 mt-2'>${storageSearchMatches.length} Treffer</div>
+      ${
+        storageSearchMatches.length
+          ? `<div class='overflow-auto mt-3 border rounded bg-white max-h-[24vh]'>
+              <table class='w-full text-sm'>
+                <thead class='bg-slate-100 sticky top-0'>
+                  <tr>
+                    <th class='p-2 text-left'>T-Nummer</th>
+                    <th class='p-2 text-left'>Bezeichnung</th>
+                    <th class='p-2 text-left'>Fach</th>
+                    <th class='p-2 text-left'>Aktion</th>
+                  </tr>
+                </thead>
+                <tbody>${storageSearchRows}</tbody>
+              </table>
+            </div>`
+          : ""
+      }
+    </div>
     <div class='flex gap-2 text-xs text-slate-600 flex-wrap mb-3'>
       <span class='inline-flex items-center gap-1'><span class='inline-block w-3 h-3 rounded bg-slate-100 border'></span> Leer</span>
       <span class='inline-flex items-center gap-1'><span class='inline-block w-3 h-3 rounded bg-green-100 border border-green-200'></span> OK</span>
@@ -9302,6 +9392,8 @@ window.openToolHistory = openToolHistory;
 window.closeToolHistory = closeToolHistory;
 window.openStorageLocationModal = openStorageLocationModal;
 window.closeStorageLocationModal = closeStorageLocationModal;
+window.applyStorageSearch = applyStorageSearch;
+window.resetStorageSearch = resetStorageSearch;
 window.setTab = setTab;
 window.setStatsView = setStatsView;
 window.setPlanningSubTab = setPlanningSubTab;
