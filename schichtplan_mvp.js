@@ -56,8 +56,13 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.70";
+const APP_VERSION = "0.4.71";
 const VERSION_LOG = [
+  {
+    version: "0.4.71",
+    date: "2026-06-07 07:49",
+    changes: ["Eingabefeld für Ausspannlänge (AL) ergänzt"],
+  },
   {
     version: "0.4.70",
     date: "2026-06-07 07:30",
@@ -5600,6 +5605,8 @@ function collectToolFormData(root = document) {
     tNumber: root.getElementById("toolTNumber")?.value?.trim(),
     label: root.getElementById("toolLabel")?.value,
     diameter: root.getElementById("toolDiameter")?.value?.trim(),
+    overhangLength:
+      root.getElementById("toolOverhangLength")?.value?.trim() || "",
     threadPrefix: root.getElementById("toolThreadPrefix")?.value || "",
     threadPitch: root.getElementById("toolThreadPitch")?.value?.trim() || "",
     cornerRadius: root.getElementById("toolCornerRadius")?.value?.trim() || "",
@@ -5691,6 +5698,7 @@ function normalizeToolData(data) {
     tNumber: data.tNumber,
     label: data.label,
     diameter: isThreadTool ? data.diameter : String(data.diameter),
+    overhangLength: data.overhangLength || "",
     threadPrefix: isThreadTool ? data.threadPrefix : "",
     threadPitch:
       isThreadTool && data.threadPrefix === "MF" ? data.threadPitch : "",
@@ -5737,6 +5745,10 @@ function renderToolCreateForm(prefix = "tool") {
     </select>
 
     <input id='${prefix}Diameter' class='border rounded p-2' placeholder='Durchmesser' />
+    <label class='text-sm'>
+      Ausspannlänge (AL) [mm]
+      <input id='${prefix}OverhangLength' type='number' step='0.1' min='0' class='border rounded p-2 w-full mt-1' placeholder='AL' />
+    </label>
 
     <div id='${prefix}ThreadPrefixWrap' style='display:none;'>
       <select id='${prefix}ThreadPrefix' class='border rounded p-2 w-full' onchange='updateThreadPitchVisibility("${prefix}")'>
@@ -5795,6 +5807,7 @@ async function createTool() {
     t_number: String(normalized.tNumber),
     label: normalized.label,
     diameter: String(normalized.diameter),
+    overhang_length: normalized.overhangLength || null,
     thread_prefix: normalized.threadPrefix || null,
     thread_pitch: normalized.threadPitch || null,
     corner_radius: normalized.cornerRadius || null,
@@ -6966,6 +6979,7 @@ async function editTool(toolId) {
   const payload = {
     label: data.label,
     diameter: String(data.diameter),
+    overhang_length: data.overhangLength || null,
     thread_prefix: isThreadTool ? data.threadPrefix || null : null,
     thread_pitch:
       isThreadTool && data.threadPrefix === "MF"
@@ -7001,6 +7015,7 @@ async function editTool(toolId) {
           ...existingTool,
           label: data.label,
           diameter: String(data.diameter),
+          overhangLength: data.overhangLength || "",
           threadPrefix: isThreadTool ? data.threadPrefix || "" : "",
           threadPitch:
             isThreadTool && data.threadPrefix === "MF"
@@ -7057,6 +7072,11 @@ async function editToolCentered(tool) {
           <label class='text-sm font-medium'>
             Durchmesser
             <input id='editDiameter' class='border rounded p-2 w-full mt-1' placeholder='Durchmesser' value="${tool.diameter ?? ""}" />
+          </label>
+
+          <label class='text-sm font-medium'>
+            Ausspannlänge (AL) [mm]
+            <input id='editOverhangLength' type='number' step='0.1' min='0' class='border rounded p-2 w-full mt-1' placeholder='AL' value="${getToolOverhangLength(tool)}" />
           </label>
 
           <label class='text-sm font-medium'>
@@ -7198,6 +7218,8 @@ async function editToolCentered(tool) {
       const data = {
         label: document.getElementById("editLabel")?.value || "",
         diameter: document.getElementById("editDiameter")?.value?.trim() || "",
+        overhangLength:
+          document.getElementById("editOverhangLength")?.value?.trim() || "",
         threadPrefix: document.getElementById("editThreadPrefix")?.value || "",
         threadPitch:
           document.getElementById("editThreadPitch")?.value?.trim() || "",
@@ -7303,6 +7325,7 @@ async function editTool(toolId) {
   const payload = {
     label: data.label,
     diameter: String(data.diameter),
+    overhang_length: data.overhangLength || null,
     thread_prefix: isThreadTool ? data.threadPrefix || null : null,
     thread_pitch:
       isThreadTool && data.threadPrefix === "MF"
@@ -7338,6 +7361,7 @@ async function editTool(toolId) {
           ...existingTool,
           label: data.label,
           diameter: String(data.diameter),
+          overhangLength: data.overhangLength || "",
           threadPrefix: isThreadTool ? data.threadPrefix || "" : "",
           threadPitch:
             isThreadTool && data.threadPrefix === "MF"
@@ -7414,6 +7438,7 @@ function openCreateToolModal() {
       t_number: String(normalized.tNumber),
       label: normalized.label,
       diameter: String(normalized.diameter),
+      overhang_length: normalized.overhangLength || null,
       thread_prefix: normalized.threadPrefix || null,
       thread_pitch: normalized.threadPitch || null,
       corner_radius: normalized.cornerRadius || null,
