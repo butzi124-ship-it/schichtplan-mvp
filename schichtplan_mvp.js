@@ -56,8 +56,13 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.68";
+const APP_VERSION = "0.4.70";
 const VERSION_LOG = [
+  {
+    version: "0.4.70",
+    date: "2026-06-07 07:30",
+    changes: ["Ausspannlänge (AL) in Werkzeugtabelle und Detailansicht ergänzt"],
+  },
   {
     version: "0.4.68",
     date: "2026-06-07 07:17",
@@ -569,6 +574,7 @@ function normalizeToolFromDb(row) {
     tNumber: row.t_number,
     label: row.label,
     diameter: row.diameter,
+    overhangLength: row.overhang_length || "",
     threadPrefix: row.thread_prefix || "",
     threadPitch: row.thread_pitch || "",
     cornerRadius: row.corner_radius || "",
@@ -5529,6 +5535,31 @@ function formatToolSize(tool) {
     return `${base} P${tool.threadPitch}`;
   return base;
 }
+
+function getToolOverhangLength(tool) {
+  return String(tool?.overhangLength || tool?.overhang_length || "").trim();
+}
+
+function renderToolSizeCell(tool) {
+  const size = formatToolSize(tool).replace(/^⌀\s*/, "Ø");
+  const radiusLine = tool.cornerRadius
+    ? `<div>R${escapeHtml(tool.cornerRadius)}</div>`
+    : "";
+  const overhang = getToolOverhangLength(tool);
+  const overhangLine = overhang
+    ? `<div>AL${escapeHtml(overhang)}</div>`
+    : '<div class="text-slate-400">—</div>';
+
+  return `<div>${escapeHtml(size)}</div>${radiusLine}${overhangLine}`;
+}
+
+function renderToolOverhangDetailLine(tool, className = "") {
+  const overhang = getToolOverhangLength(tool);
+  if (!overhang) return "";
+
+  const classAttr = className ? ` class="${className}"` : "";
+  return `<div${classAttr}>AL: ${escapeHtml(overhang)} mm</div>`;
+}
 function isRadiusToolLabel(label) {
   return label === "Radiusfräser";
 }
@@ -5851,6 +5882,7 @@ function openToolImagePopup(toolId) {
           <div>
             <h3 class="text-lg font-bold">Werkzeugbild – T ${escapeHtml(imageNumber)}</h3>
             <p class="text-sm text-slate-500">${escapeHtml(tool.label || "-")} · ${escapeHtml(tool.holder || "-")}</p>
+            ${renderToolOverhangDetailLine(tool, "text-xs text-slate-500")}
             <p class="text-xs text-slate-400">${escapeHtml(imagePath)}</p>
           </div>
           <button class="px-3 py-1 rounded bg-slate-200" onclick="closeToolImagePopup()">Schließen</button>
@@ -6086,6 +6118,10 @@ function openToolQrPopup(toolId) {
   const manufacturer = tool.manufacturer || "-";
   const articleNo = tool.articleNo || "-";
   const shelf = tool.shelf || "-";
+  const overhangLine = renderToolOverhangDetailLine(
+    tool,
+    "text-xs text-slate-600",
+  );
   const insertRadiusLine =
     tool.insertTool && tool.insertRadius
       ? `<div class="text-xs text-slate-600">Plattenradius: R ${escapeHtml(tool.insertRadius)}</div>`
@@ -6106,6 +6142,7 @@ function openToolQrPopup(toolId) {
           <div><span class="text-xs text-slate-500">Bezeichnung</span><div>${escapeHtml(tool.label || "-")}</div></div>
           <div><span class="text-xs text-slate-500">Aufnahme</span><div>${escapeHtml(tool.holder || "-")}</div></div>
           <div><span class="text-xs text-slate-500">Lagerfach</span><div>${escapeHtml(tool.shelf || "-")}</div></div>
+          ${renderToolOverhangDetailLine(tool)}
           <div><span class="text-xs text-slate-500">QR-Inhalt</span><div class="font-mono text-xs break-all bg-white border rounded p-1 mt-1">${escapeHtml(payload)}</div></div>
         </div>
         <div class="border rounded-lg bg-white p-2 flex items-center justify-center text-center min-h-[170px]">
@@ -6118,6 +6155,7 @@ function openToolQrPopup(toolId) {
           <div class="text-2xl font-bold">${escapeHtml(toolTitle)}</div>
           <div class="text-sm mt-1">${escapeHtml(tool.label || "-")}</div>
           <div class="text-sm text-slate-700 mt-1">Ø ${escapeHtml(diameter)} · ${escapeHtml(cornerRadius)}</div>
+          ${overhangLine}
           ${insertRadiusLine}
           <div class="text-xs text-slate-600">Hersteller: ${escapeHtml(manufacturer)}</div>
           <div class="text-xs text-slate-600">Artikel: ${escapeHtml(articleNo)}</div>
@@ -6145,6 +6183,7 @@ function printToolQrLabel(toolId) {
   const manufacturer = tool.manufacturer || "-";
   const articleNo = tool.articleNo || "-";
   const shelf = tool.shelf || "-";
+  const overhangLine = renderToolOverhangDetailLine(tool, "meta");
   const insertRadiusLine =
     tool.insertTool && tool.insertRadius
       ? `<div class="meta">Plattenradius: R ${escapeHtml(tool.insertRadius)}</div>`
@@ -6175,6 +6214,7 @@ function printToolQrLabel(toolId) {
         <div class="tnumber">T ${escapeHtml(tool.tNumber)}</div>
         <div class="name">${escapeHtml(tool.label || "-")}</div>
         <div class="meta">Ø ${escapeHtml(diameter)} · ${escapeHtml(cornerRadius)}</div>
+        ${overhangLine}
         ${insertRadiusLine}
         <div class="meta">Hersteller: ${escapeHtml(manufacturer)}</div>
         <div class="meta">Artikel: ${escapeHtml(articleNo)}</div>
@@ -6439,6 +6479,7 @@ async function processScannedToolQr(rawValue, mode) {
         <div><span class="text-slate-500">T-Nummer:</span> T ${escapeHtml(tool.tNumber)}</div>
         <div><span class="text-slate-500">Bezeichnung:</span> ${escapeHtml(tool.label || "-")}</div>
         <div><span class="text-slate-500">Durchmesser:</span> ${escapeHtml(formatToolSize(tool))}</div>
+        ${renderToolOverhangDetailLine(tool)}
         <div><span class="text-slate-500">Aufnahme:</span> ${escapeHtml(tool.holder || "-")}</div>
         <div><span class="text-slate-500">Fach:</span> ${escapeHtml(tool.shelf || "-")}</div>
         <div><span class="text-slate-500">Bestand:</span> ${escapeHtml(tool.stock)}</div>
@@ -8103,7 +8144,7 @@ function renderTools() {
         <td class='p-2 align-top whitespace-nowrap'>T ${t.tNumber}</td>
         <td class='p-2 align-top'>${imageCell}</td>
         <td class='p-2 align-top'>${t.label}</td>
-        <td class='p-2 align-top whitespace-nowrap'>${formatToolSize(t)}${insertRadiusLine}</td>
+        <td class='p-2 align-top whitespace-nowrap'>${renderToolSizeCell(t)}${insertRadiusLine}</td>
         ${isAdmin ? `<td class='p-2 align-top'>${getToolMaterialNameById(t.materialId)}</td>` : ""}
         <td class='p-2 align-top whitespace-nowrap'>${t.shelf}</td>
         <td class='p-2 align-top'>${t.articleNo}</td>
@@ -8197,6 +8238,7 @@ function renderTools() {
           <div><span class='font-semibold'>T-Nummer:</span> T ${t.tNumber}</div>
           <div><span class='font-semibold'>Bezeichnung:</span> ${t.label}</div>
           <div><span class='font-semibold'>Durchmesser:</span> ${formatToolSize(t)}</div>
+          ${renderToolOverhangDetailLine(t)}
           <div><span class='font-semibold'>Schneidwerkstoff:</span> ${getToolMaterialNameById(t.materialId)}</div>
           ${detailLine}
           ${insertRadiusLine}
