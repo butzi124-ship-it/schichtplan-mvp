@@ -60,8 +60,11 @@ const APP_VERSION = "0.4.68";
 const VERSION_LOG = [
   {
     version: "0.4.68",
-    date: "2026-05-17 12:09",
-    changes: ["QR-Info im Lagerfach-Popup sichtbar platziert"],
+    date: "2026-06-07 07:17",
+    changes: [
+      "QR-Info im Lagerfach-Popup sichtbar platziert",
+      "Echte QR-Code-Darstellung für Lagerfächer ergänzt",
+    ],
   },
   {
     version: "0.4.67",
@@ -5237,19 +5240,22 @@ function openStorageQrModal(locationKey) {
   }
 
   const qrValue = buildStorageQrValue(normalizedKey);
+  const qrSvg =
+    renderSimpleQrSvg(qrValue) ||
+    '<div class="text-sm text-rose-700">QR-Code konnte nicht erzeugt werden.</div>';
   getModalHost().innerHTML = `<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-4">
       <div class="flex items-start justify-between gap-3 mb-4">
         <div>
           <h3 class="text-lg font-bold">QR-Code für Lagerfach ${escapeHtml(normalizedKey)}</h3>
-          <p class="text-sm text-slate-500">Diesen Inhalt später als QR-Code am Lagerfach anbringen.</p>
+          <p class="text-sm text-slate-500">Diesen QR-Code am Lagerfach anbringen.</p>
         </div>
         <button class="px-3 py-1 rounded bg-slate-200" onclick="closeStorageLocationModal()">Schließen</button>
       </div>
 
       <div class="rounded-lg border bg-slate-50 p-4 text-center">
-        <div class="text-xs uppercase tracking-wide text-slate-500 mb-2">QR-Inhalt</div>
-        <div class="font-mono text-2xl font-bold break-all">${escapeHtml(qrValue)}</div>
+        <div class="flex justify-center mb-3">${qrSvg}</div>
+        <div class="font-mono text-sm font-semibold break-all">${escapeHtml(qrValue)}</div>
       </div>
     </div>
   </div>`;
