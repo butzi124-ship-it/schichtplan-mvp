@@ -56,8 +56,13 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.71";
+const APP_VERSION = "0.4.72";
 const VERSION_LOG = [
+  {
+    version: "0.4.72",
+    date: "2026-06-07 10:21",
+    changes: ["Werkzeug-Ausleihstatus mit Kostenträger/Maschinennummer ergänzt"],
+  },
   {
     version: "0.4.71",
     date: "2026-06-07 07:49",
@@ -596,6 +601,9 @@ function normalizeToolFromDb(row) {
     insertTool: !!row.insert_tool,
     insertEdges: Number(row.insert_edges || 0),
     insertRadius: row.insert_radius || "",
+    isBorrowed: row.is_borrowed === true,
+    borrowedTo: row.borrowed_to || "",
+    borrowedAt: row.borrowed_at || "",
   };
 }
 
@@ -5193,7 +5201,7 @@ function openStorageLocationModal(locationKey) {
     .map(
       (tool) => `<tr class='border-b'>
         <td class='p-2'>T ${escapeHtml(tool.tNumber || "-")}</td>
-        <td class='p-2'>${escapeHtml(tool.label || "-")}</td>
+        <td class='p-2'>${escapeHtml(tool.label || "-")}${renderToolBorrowedDetailLine(tool, "text-xs text-orange-700")}</td>
         <td class='p-2'>${escapeHtml(tool.stock ?? "-")}</td>
         <td class='p-2'>${escapeHtml(tool.holder || "-")}</td>
         <td class='p-2'>${escapeHtml(tool.manufacturer || "-")}</td>
@@ -5565,6 +5573,24 @@ function renderToolOverhangDetailLine(tool, className = "") {
   const classAttr = className ? ` class="${className}"` : "";
   return `<div${classAttr}>AL: ${escapeHtml(overhang)} mm</div>`;
 }
+
+function renderToolBorrowedBadge(tool) {
+  if (!tool?.isBorrowed) return "";
+
+  const borrowedTo = tool.borrowedTo || "-";
+  return `<span class="inline-flex px-2 py-1 rounded bg-orange-100 text-orange-800 text-xs font-semibold">🟠 Ausgeliehen: ${escapeHtml(borrowedTo)}</span>`;
+}
+
+function renderToolBorrowedDetailLine(tool, className = "") {
+  if (!tool?.isBorrowed) return "";
+
+  const classAttr = className ? ` class="${className}"` : "";
+  const borrowedTo = tool.borrowedTo || "-";
+  const borrowedAt = tool.borrowedAt
+    ? `<div${classAttr}>Seit: ${escapeHtml(formatDateTime(tool.borrowedAt))}</div>`
+    : "";
+  return `<div${classAttr}>Ausgeliehen an: ${escapeHtml(borrowedTo)}</div>${borrowedAt}`;
+}
 function isRadiusToolLabel(label) {
   return label === "Radiusfräser";
 }
@@ -5626,6 +5652,8 @@ function collectToolFormData(root = document) {
     insertEdges: Number(root.getElementById("toolInsertEdges")?.value || 0),
     insertRadius:
       root.getElementById("toolInsertRadius")?.value?.trim() || "",
+    isBorrowed: !!root.getElementById("toolIsBorrowed")?.checked,
+    borrowedTo: root.getElementById("toolBorrowedTo")?.value?.trim() || "",
   };
 }
 
@@ -5687,6 +5715,14 @@ function validateToolData(data) {
     };
   }
 
+  if (data.isBorrowed && !data.borrowedTo) {
+    return {
+      ok: false,
+      message:
+        "Bitte Maschinennummer / Kostenträger für ausgeliehenes Werkzeug eintragen.",
+    };
+  }
+
   return { ok: true };
 }
 
@@ -5716,6 +5752,11 @@ function normalizeToolData(data) {
     insertTool: data.insertTool,
     insertEdges: data.insertTool ? data.insertEdges : 0,
     insertRadius: data.insertTool ? data.insertRadius || "" : "",
+    isBorrowed: !!data.isBorrowed,
+    borrowedTo: data.isBorrowed ? data.borrowedTo || "" : "",
+    borrowedAt: data.isBorrowed
+      ? data.borrowedAt || new Date().toISOString()
+      : null,
   };
 }
 
@@ -5790,6 +5831,14 @@ function renderToolCreateForm(prefix = "tool") {
     <div id='${prefix}InsertRadiusWrap' class='md:col-span-2' style='display:none;'>
       <input id='${prefix}InsertRadius' class='border rounded p-2 w-full' placeholder='Plattenradius optional, z. B. 0.8' disabled />
     </div>
+    <label class='flex items-center gap-2 text-sm md:col-span-2'>
+      <input id='${prefix}IsBorrowed' type='checkbox' />
+      Ausgeliehen
+    </label>
+    <label class='text-sm md:col-span-2'>
+      Maschinennummer / Kostenträger
+      <input id='${prefix}BorrowedTo' class='border rounded p-2 w-full mt-1' placeholder='z. B. 350 / Abteilung Montage' />
+    </label>
   </div>`;
 }
 
@@ -5824,6 +5873,9 @@ async function createTool() {
     insert_tool: !!normalized.insertTool,
     insert_edges: Number(normalized.insertEdges || 0),
     insert_radius: normalized.insertRadius || null,
+    is_borrowed: !!normalized.isBorrowed,
+    borrowed_to: normalized.borrowedTo || null,
+    borrowed_at: normalized.isBorrowed ? normalized.borrowedAt : null,
     created_by_employee_id: currentEmployeeRecord?.id || null,
   };
 
@@ -5896,6 +5948,7 @@ function openToolImagePopup(toolId) {
             <h3 class="text-lg font-bold">Werkzeugbild – T ${escapeHtml(imageNumber)}</h3>
             <p class="text-sm text-slate-500">${escapeHtml(tool.label || "-")} · ${escapeHtml(tool.holder || "-")}</p>
             ${renderToolOverhangDetailLine(tool, "text-xs text-slate-500")}
+            ${renderToolBorrowedDetailLine(tool, "text-xs text-orange-700")}
             <p class="text-xs text-slate-400">${escapeHtml(imagePath)}</p>
           </div>
           <button class="px-3 py-1 rounded bg-slate-200" onclick="closeToolImagePopup()">Schließen</button>
@@ -6156,6 +6209,7 @@ function openToolQrPopup(toolId) {
           <div><span class="text-xs text-slate-500">Aufnahme</span><div>${escapeHtml(tool.holder || "-")}</div></div>
           <div><span class="text-xs text-slate-500">Lagerfach</span><div>${escapeHtml(tool.shelf || "-")}</div></div>
           ${renderToolOverhangDetailLine(tool)}
+          ${renderToolBorrowedDetailLine(tool)}
           <div><span class="text-xs text-slate-500">QR-Inhalt</span><div class="font-mono text-xs break-all bg-white border rounded p-1 mt-1">${escapeHtml(payload)}</div></div>
         </div>
         <div class="border rounded-lg bg-white p-2 flex items-center justify-center text-center min-h-[170px]">
@@ -6169,6 +6223,7 @@ function openToolQrPopup(toolId) {
           <div class="text-sm mt-1">${escapeHtml(tool.label || "-")}</div>
           <div class="text-sm text-slate-700 mt-1">Ø ${escapeHtml(diameter)} · ${escapeHtml(cornerRadius)}</div>
           ${overhangLine}
+          ${renderToolBorrowedDetailLine(tool, "text-xs text-orange-700")}
           ${insertRadiusLine}
           <div class="text-xs text-slate-600">Hersteller: ${escapeHtml(manufacturer)}</div>
           <div class="text-xs text-slate-600">Artikel: ${escapeHtml(articleNo)}</div>
@@ -6228,6 +6283,7 @@ function printToolQrLabel(toolId) {
         <div class="name">${escapeHtml(tool.label || "-")}</div>
         <div class="meta">Ø ${escapeHtml(diameter)} · ${escapeHtml(cornerRadius)}</div>
         ${overhangLine}
+        ${renderToolBorrowedDetailLine(tool, "meta")}
         ${insertRadiusLine}
         <div class="meta">Hersteller: ${escapeHtml(manufacturer)}</div>
         <div class="meta">Artikel: ${escapeHtml(articleNo)}</div>
@@ -6493,6 +6549,7 @@ async function processScannedToolQr(rawValue, mode) {
         <div><span class="text-slate-500">Bezeichnung:</span> ${escapeHtml(tool.label || "-")}</div>
         <div><span class="text-slate-500">Durchmesser:</span> ${escapeHtml(formatToolSize(tool))}</div>
         ${renderToolOverhangDetailLine(tool)}
+        ${renderToolBorrowedDetailLine(tool)}
         <div><span class="text-slate-500">Aufnahme:</span> ${escapeHtml(tool.holder || "-")}</div>
         <div><span class="text-slate-500">Fach:</span> ${escapeHtml(tool.shelf || "-")}</div>
         <div><span class="text-slate-500">Bestand:</span> ${escapeHtml(tool.stock)}</div>
@@ -6976,6 +7033,12 @@ async function editTool(toolId) {
     return alert("Bitte Anzahl der Schneiden > 0 eingeben.");
   }
 
+  if (data.isBorrowed && !data.borrowedTo) {
+    return alert(
+      "Bitte Maschinennummer / Kostenträger für ausgeliehenes Werkzeug eintragen.",
+    );
+  }
+
   const payload = {
     label: data.label,
     diameter: String(data.diameter),
@@ -6997,6 +7060,11 @@ async function editTool(toolId) {
     insert_tool: !!data.insertTool,
     insert_edges: data.insertTool ? Number(data.insertEdges || 0) : 0,
     insert_radius: data.insertTool ? data.insertRadius || null : null,
+    is_borrowed: !!data.isBorrowed,
+    borrowed_to: data.isBorrowed ? data.borrowedTo || null : null,
+    borrowed_at: data.isBorrowed
+      ? data.borrowedAt || new Date().toISOString()
+      : null,
   };
 
   const { error } = await supabaseClient
@@ -7033,6 +7101,11 @@ async function editTool(toolId) {
           insertTool: !!data.insertTool,
           insertEdges: data.insertTool ? Number(data.insertEdges || 0) : 0,
           insertRadius: data.insertTool ? data.insertRadius || "" : "",
+          isBorrowed: !!data.isBorrowed,
+          borrowedTo: data.isBorrowed ? data.borrowedTo || "" : "",
+          borrowedAt: data.isBorrowed
+            ? data.borrowedAt || new Date().toISOString()
+            : "",
         }
       : existingTool,
   );
@@ -7166,7 +7239,15 @@ async function editToolCentered(tool) {
             <input id='editOptimalStock' type='number' class='border rounded p-2 w-full mt-1' placeholder='Optimale Stückzahl' value="${tool.optimalStock ?? 0}" />
           </label>
 
-          <div></div>
+          <label class='flex items-center gap-2 text-sm'>
+            <input id='editIsBorrowed' type='checkbox' ${tool.isBorrowed ? "checked" : ""} />
+            Ausgeliehen
+          </label>
+
+          <label class='text-sm font-medium'>
+            Maschinennummer / Kostenträger
+            <input id='editBorrowedTo' class='border rounded p-2 w-full mt-1' placeholder='z. B. 350 / Abteilung Montage' value="${escapeHtml(tool.borrowedTo || "")}" />
+          </label>
 
           <label class='flex items-center gap-2 text-sm md:col-span-2'>
             <input id='editInsertTool' type='checkbox' ${tool.insertTool ? "checked" : ""} onchange='toggleInsertToolFieldsById("editInsertTool","editInsertEdges","editInsertRadius")' />
@@ -7238,6 +7319,10 @@ async function editToolCentered(tool) {
         optimalStock: Number(
           document.getElementById("editOptimalStock")?.value || 0,
         ),
+        isBorrowed: !!document.getElementById("editIsBorrowed")?.checked,
+        borrowedTo:
+          document.getElementById("editBorrowedTo")?.value?.trim() || "",
+        borrowedAt: tool.borrowedAt || "",
         insertTool: !!document.getElementById("editInsertTool")?.checked,
         insertEdges: Number(
           document.getElementById("editInsertEdges")?.value || 0,
@@ -7322,6 +7407,12 @@ async function editTool(toolId) {
     return alert("Bitte Anzahl der Schneiden > 0 eingeben.");
   }
 
+  if (data.isBorrowed && !data.borrowedTo) {
+    return alert(
+      "Bitte Maschinennummer / Kostenträger für ausgeliehenes Werkzeug eintragen.",
+    );
+  }
+
   const payload = {
     label: data.label,
     diameter: String(data.diameter),
@@ -7343,6 +7434,11 @@ async function editTool(toolId) {
     insert_tool: !!data.insertTool,
     insert_edges: data.insertTool ? Number(data.insertEdges || 0) : 0,
     insert_radius: data.insertTool ? data.insertRadius || null : null,
+    is_borrowed: !!data.isBorrowed,
+    borrowed_to: data.isBorrowed ? data.borrowedTo || null : null,
+    borrowed_at: data.isBorrowed
+      ? data.borrowedAt || new Date().toISOString()
+      : null,
   };
 
   const { error } = await supabaseClient
@@ -7379,6 +7475,11 @@ async function editTool(toolId) {
           insertTool: !!data.insertTool,
           insertEdges: data.insertTool ? Number(data.insertEdges || 0) : 0,
           insertRadius: data.insertTool ? data.insertRadius || "" : "",
+          isBorrowed: !!data.isBorrowed,
+          borrowedTo: data.isBorrowed ? data.borrowedTo || "" : "",
+          borrowedAt: data.isBorrowed
+            ? data.borrowedAt || new Date().toISOString()
+            : "",
         }
       : existingTool,
   );
@@ -7455,6 +7556,9 @@ function openCreateToolModal() {
       insert_tool: !!normalized.insertTool,
       insert_edges: Number(normalized.insertEdges || 0),
       insert_radius: normalized.insertRadius || null,
+      is_borrowed: !!normalized.isBorrowed,
+      borrowed_to: normalized.borrowedTo || null,
+      borrowed_at: normalized.isBorrowed ? normalized.borrowedAt : null,
       created_by_employee_id: currentEmployeeRecord?.id || null,
     };
 
@@ -8150,9 +8254,13 @@ function renderTools() {
           : stockWarningLevel === "warning"
             ? "font-bold text-orange-700"
             : "";
-      const statusText = t.ordered
-        ? "Bestellt"
-        : warningBadge || "-";
+      const orderedBadge = t.ordered
+        ? '<span class="inline-flex px-2 py-1 rounded bg-emerald-100 text-emerald-800 text-xs font-semibold">Bestellt</span>'
+        : "";
+      const borrowedBadge = renderToolBorrowedBadge(t);
+      const statusText =
+        [orderedBadge, warningBadge, borrowedBadge].filter(Boolean).join(" ") ||
+        "-";
       const imagePath = getToolImagePath(t);
       const imageCell = imagePath
         ? `<button class='border rounded bg-white p-0.5 hover:bg-slate-50' onclick="openToolImagePopup('${t.id}')" title="Werkzeugbild öffnen">
@@ -8264,6 +8372,7 @@ function renderTools() {
           <div><span class='font-semibold'>Bezeichnung:</span> ${t.label}</div>
           <div><span class='font-semibold'>Durchmesser:</span> ${formatToolSize(t)}</div>
           ${renderToolOverhangDetailLine(t)}
+          ${renderToolBorrowedDetailLine(t, "text-orange-700")}
           <div><span class='font-semibold'>Schneidwerkstoff:</span> ${getToolMaterialNameById(t.materialId)}</div>
           ${detailLine}
           ${insertRadiusLine}
@@ -8424,6 +8533,7 @@ function renderTools() {
         const locationTools = storageMap[locationKey] || [];
         const cellState = getStorageCellState(locationTools);
         const isSearchMatch = storageSearchLocations.has(locationKey);
+        const hasBorrowedTool = locationTools.some((tool) => tool.isBorrowed);
         return `<button
           class='border rounded px-2 py-1 text-xs text-left ${storageCellClasses[cellState]} ${isSearchMatch ? "storage-hit-blink" : ""}'
           onclick="openStorageLocationModal('${locationKey}')"
@@ -8431,6 +8541,7 @@ function renderTools() {
         >
           <span class='font-semibold'>${locationKey}</span>
           ${isSearchMatch ? "<span class='block text-[10px] font-semibold text-blue-700'>Treffer</span>" : ""}
+          ${hasBorrowedTool ? "<span class='ml-1 inline-flex px-1 rounded bg-orange-500 text-white text-[10px] font-bold'>A</span>" : ""}
           <span class='block text-[10px]'>${locationTools.length || ""}</span>
         </button>`;
       })
