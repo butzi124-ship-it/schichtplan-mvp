@@ -56,8 +56,15 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.72";
+const APP_VERSION = "0.4.73";
 const VERSION_LOG = [
+  {
+    version: "0.4.73",
+    date: "2026-06-07 16:17",
+    changes: [
+      "Ausleihstatus aus Stammdaten entfernt und in Entnahme-/Einlagerungsworkflow verlagert",
+    ],
+  },
   {
     version: "0.4.72",
     date: "2026-06-07 10:21",
@@ -5591,6 +5598,24 @@ function renderToolBorrowedDetailLine(tool, className = "") {
     : "";
   return `<div${classAttr}>Ausgeliehen an: ${escapeHtml(borrowedTo)}</div>${borrowedAt}`;
 }
+
+function buildBorrowToolUpdateFields(borrowedTo) {
+  return {
+    is_borrowed: true,
+    borrowed_to: borrowedTo,
+    borrowed_at: new Date().toISOString(),
+  };
+}
+
+function buildReturnToolUpdateFields(tool) {
+  if (!tool?.isBorrowed) return {};
+
+  return {
+    is_borrowed: false,
+    borrowed_to: null,
+    borrowed_at: null,
+  };
+}
 function isRadiusToolLabel(label) {
   return label === "Radiusfräser";
 }
@@ -5652,8 +5677,6 @@ function collectToolFormData(root = document) {
     insertEdges: Number(root.getElementById("toolInsertEdges")?.value || 0),
     insertRadius:
       root.getElementById("toolInsertRadius")?.value?.trim() || "",
-    isBorrowed: !!root.getElementById("toolIsBorrowed")?.checked,
-    borrowedTo: root.getElementById("toolBorrowedTo")?.value?.trim() || "",
   };
 }
 
@@ -5715,14 +5738,6 @@ function validateToolData(data) {
     };
   }
 
-  if (data.isBorrowed && !data.borrowedTo) {
-    return {
-      ok: false,
-      message:
-        "Bitte Maschinennummer / Kostenträger für ausgeliehenes Werkzeug eintragen.",
-    };
-  }
-
   return { ok: true };
 }
 
@@ -5752,11 +5767,6 @@ function normalizeToolData(data) {
     insertTool: data.insertTool,
     insertEdges: data.insertTool ? data.insertEdges : 0,
     insertRadius: data.insertTool ? data.insertRadius || "" : "",
-    isBorrowed: !!data.isBorrowed,
-    borrowedTo: data.isBorrowed ? data.borrowedTo || "" : "",
-    borrowedAt: data.isBorrowed
-      ? data.borrowedAt || new Date().toISOString()
-      : null,
   };
 }
 
@@ -5831,14 +5841,6 @@ function renderToolCreateForm(prefix = "tool") {
     <div id='${prefix}InsertRadiusWrap' class='md:col-span-2' style='display:none;'>
       <input id='${prefix}InsertRadius' class='border rounded p-2 w-full' placeholder='Plattenradius optional, z. B. 0.8' disabled />
     </div>
-    <label class='flex items-center gap-2 text-sm md:col-span-2'>
-      <input id='${prefix}IsBorrowed' type='checkbox' />
-      Ausgeliehen
-    </label>
-    <label class='text-sm md:col-span-2'>
-      Maschinennummer / Kostenträger
-      <input id='${prefix}BorrowedTo' class='border rounded p-2 w-full mt-1' placeholder='z. B. 350 / Abteilung Montage' />
-    </label>
   </div>`;
 }
 
@@ -5873,9 +5875,9 @@ async function createTool() {
     insert_tool: !!normalized.insertTool,
     insert_edges: Number(normalized.insertEdges || 0),
     insert_radius: normalized.insertRadius || null,
-    is_borrowed: !!normalized.isBorrowed,
-    borrowed_to: normalized.borrowedTo || null,
-    borrowed_at: normalized.isBorrowed ? normalized.borrowedAt : null,
+    is_borrowed: false,
+    borrowed_to: null,
+    borrowed_at: null,
     created_by_employee_id: currentEmployeeRecord?.id || null,
   };
 
@@ -6368,8 +6370,11 @@ function updateScannerWithdrawPreview() {
   if (!preview) return;
 
   const tool = findToolByTNumberInput(input?.value || "");
+  const borrowedLine = tool?.isBorrowed
+    ? `<div class="mt-1 text-orange-700">Dieses Werkzeug ist ausgeliehen an ${escapeHtml(tool.borrowedTo || "-")}</div>`
+    : "";
   preview.innerHTML = tool
-    ? `<div class="text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-2">${escapeHtml(formatToolScannerSummary(tool))}</div>`
+    ? `<div class="text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-2">${escapeHtml(formatToolScannerSummary(tool))}${borrowedLine}</div>`
     : `<div class="text-sm text-slate-500 bg-slate-50 border rounded p-2">Kein Werkzeug gefunden</div>`;
 }
 
@@ -6380,8 +6385,11 @@ function updateScannerRestockPreview() {
   if (!preview) return;
 
   const tool = findToolByTNumberInput(input?.value || "");
+  const borrowedLine = tool?.isBorrowed
+    ? `<div class="mt-1 text-orange-700">Dieses Werkzeug ist ausgeliehen an ${escapeHtml(tool.borrowedTo || "-")}</div>`
+    : "";
   preview.innerHTML = tool
-    ? `<div class="text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-2">${escapeHtml(formatToolScannerSummary(tool))}</div>`
+    ? `<div class="text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-2">${escapeHtml(formatToolScannerSummary(tool))}${borrowedLine}</div>`
     : `<div class="text-sm text-slate-500 bg-slate-50 border rounded p-2">Kein Werkzeug gefunden</div>`;
 
   if (qtyInput && tool?.ordered && Number(tool.orderedQty || 0) > 0) {
@@ -6532,13 +6540,14 @@ async function processScannedToolQr(rawValue, mode) {
         Menge
         <input id="qrRestockQty" type="number" min="1" class="border rounded p-2 w-full mt-1" value="${escapeHtml(defaultRestockQty)}" />
       </label>`
-    : "";
-  const actionLabel = isRestockMode
-    ? "Einlagern bestätigen"
-    : "Entnahme bestätigen";
-  const actionCall = isRestockMode
-    ? `confirmQrToolRestock('${escapeHtml(String(tool.id || ""))}')`
-    : `confirmQrToolWithdraw('${escapeHtml(String(tool.id || ""))}')`;
+    : `<label class="block text-sm font-medium mb-4">
+        Kostenträger/Maschine bei Ausleihe
+        <input id="qrBorrowedTo" class="border rounded p-2 w-full mt-1" placeholder="z. B. 350 / Abteilung Montage" />
+      </label>`;
+  const actionButtons = isRestockMode
+    ? `<button class="px-3 py-2 rounded bg-slate-900 text-white" onclick="confirmQrToolRestock('${escapeHtml(String(tool.id || ""))}')">${tool.isBorrowed ? "Rückgabe einlagern" : "Einlagern bestätigen"}</button>`
+    : `<button class="px-3 py-2 rounded bg-emerald-700 text-white" onclick="confirmQrToolWithdraw('${escapeHtml(String(tool.id || ""))}', 'normal')">Normal entnehmen</button>
+       <button class="px-3 py-2 rounded bg-orange-700 text-white" onclick="confirmQrToolWithdraw('${escapeHtml(String(tool.id || ""))}', 'borrow')">Ausleihen</button>`;
 
   getModalHost().innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-4">
@@ -6558,13 +6567,13 @@ async function processScannedToolQr(rawValue, mode) {
       ${restockQtyInput}
       <div class="flex justify-end gap-2">
         <button class="px-3 py-2 rounded bg-slate-200" onclick="closeToolImagePopup()">Abbrechen</button>
-        <button class="px-3 py-2 rounded bg-slate-900 text-white" onclick="${actionCall}">${actionLabel}</button>
+        ${actionButtons}
       </div>
     </div>
   </div>`;
 }
 
-async function confirmQrToolWithdraw(toolId) {
+async function confirmQrToolWithdraw(toolId, mode = "normal") {
   const tool =
     (await reloadSingleToolFromSupabase(toolId)) ||
     state.tools.find((t) => t.id === toolId);
@@ -6580,9 +6589,21 @@ async function confirmQrToolWithdraw(toolId) {
   }
 
   const newStock = oldStock - 1;
+  const isBorrowing = mode === "borrow";
+  const borrowedTo = isBorrowing
+    ? String(document.getElementById("qrBorrowedTo")?.value || "").trim()
+    : "";
+  if (isBorrowing && !borrowedTo) {
+    alert("Bitte Kostenträger/Maschine eintragen.");
+    return;
+  }
+
   const { error } = await supabaseClient
     .from("tools")
-    .update({ stock: newStock })
+    .update({
+      stock: newStock,
+      ...(isBorrowing ? buildBorrowToolUpdateFields(borrowedTo) : {}),
+    })
     .eq("id", tool.id);
 
   if (error) {
@@ -6610,7 +6631,9 @@ async function confirmQrToolWithdraw(toolId) {
       toolId: refreshedTool.id,
       toolTNumber: refreshedTool.tNumber,
       toolLabel: refreshedTool.label,
-      action: "QR-Scanner Entnahme 1",
+      action: isBorrowing
+        ? `Werkzeug ausgeliehen an ${borrowedTo}`
+        : "QR-Scanner Entnahme 1",
       qty: 1,
       stockBefore: oldStock,
       stockAfter: newStock,
@@ -6640,12 +6663,14 @@ async function confirmQrToolRestock(toolId) {
 
   const oldStock = Number(tool.stock || 0);
   const newStock = oldStock + qty;
+  const returnFrom = tool.isBorrowed ? tool.borrowedTo || "-" : "";
   const { error } = await supabaseClient
     .from("tools")
     .update({
       stock: newStock,
       ordered: false,
       ordered_qty: 0,
+      ...buildReturnToolUpdateFields(tool),
     })
     .eq("id", tool.id);
 
@@ -6674,6 +6699,9 @@ async function confirmQrToolRestock(toolId) {
             ordered: false,
             orderedQty: 0,
             ordered_qty: 0,
+            isBorrowed: false,
+            borrowedTo: "",
+            borrowedAt: "",
           }
         : t,
     );
@@ -6683,6 +6711,9 @@ async function confirmQrToolRestock(toolId) {
       ordered: false,
       orderedQty: 0,
       ordered_qty: 0,
+      isBorrowed: false,
+      borrowedTo: "",
+      borrowedAt: "",
     };
   }
 
@@ -6691,7 +6722,9 @@ async function confirmQrToolRestock(toolId) {
       toolId: refreshedTool.id,
       toolTNumber: refreshedTool.tNumber,
       toolLabel: refreshedTool.label,
-      action: `QR-Scanner Einlagerung ${qty}`,
+      action: tool.isBorrowed
+        ? `Werkzeug zurück von ${returnFrom}`
+        : `QR-Scanner Einlagerung ${qty}`,
       qty,
       stockBefore: oldStock,
       stockAfter: newStock,
@@ -6729,14 +6762,19 @@ function openManualToolWithdraw(initialTNumber = "") {
       <div id="scannerWithdrawToolPreview" class="mb-4">
         <div class="text-sm text-slate-500 bg-slate-50 border rounded p-2">Kein Werkzeug gefunden</div>
       </div>
-      <div class="flex justify-end gap-2">
+      <label class="block text-sm font-medium mb-4">
+        Kostenträger/Maschine bei Ausleihe
+        <input id="scannerWithdrawBorrowedTo" class="border rounded p-2 w-full mt-1" placeholder="z. B. 350 / Abteilung Montage" />
+      </label>
+      <div class="flex justify-end gap-2 flex-wrap">
         <button class="px-3 py-2 rounded bg-slate-200" onclick="closeToolImagePopup()">Abbrechen</button>
-        <button id="scannerWithdrawSave" class="px-3 py-2 rounded bg-emerald-700 text-white">Entnehmen</button>
+        <button id="scannerWithdrawSave" class="px-3 py-2 rounded bg-emerald-700 text-white">Normal entnehmen</button>
+        <button id="scannerBorrowSave" class="px-3 py-2 rounded bg-orange-700 text-white">Ausleihen</button>
       </div>
     </div>
   </div>`;
 
-  host.querySelector("#scannerWithdrawSave")?.addEventListener("click", async () => {
+  const saveWithdraw = async (mode = "normal") => {
     const input = host.querySelector("#scannerWithdrawTNumber");
     const tool = findToolByTNumberInput(input?.value || "");
     if (!tool) {
@@ -6751,12 +6789,23 @@ function openManualToolWithdraw(initialTNumber = "") {
 
     const oldStock = Number(freshTool.stock || 0);
     const newStock = oldStock - 1;
+    const isBorrowing = mode === "borrow";
+    const borrowedTo = isBorrowing
+      ? String(host.querySelector("#scannerWithdrawBorrowedTo")?.value || "").trim()
+      : "";
+    if (isBorrowing && !borrowedTo) {
+      alert("Bitte Kostenträger/Maschine eintragen.");
+      return;
+    }
     if (newStock < 0) {
       alert("Nicht genügend Bestand vorhanden.");
       return;
     }
 
-    const payload = { stock: newStock };
+    const payload = {
+      stock: newStock,
+      ...(isBorrowing ? buildBorrowToolUpdateFields(borrowedTo) : {}),
+    };
     const { error } = await supabaseClient
       .from("tools")
       .update(payload)
@@ -6813,7 +6862,9 @@ function openManualToolWithdraw(initialTNumber = "") {
       toolId: refreshedTool.id,
       toolTNumber: refreshedTool.tNumber,
       toolLabel: refreshedTool.label,
-      action: "Werkzeug-Scanner Entnahme 1",
+      action: isBorrowing
+        ? `Werkzeug ausgeliehen an ${borrowedTo}`
+        : "Werkzeug-Scanner Entnahme 1",
       qty: 1,
       stockBefore: oldStock,
       stockAfter: newStock,
@@ -6822,6 +6873,13 @@ function openManualToolWithdraw(initialTNumber = "") {
 
     closeToolImagePopup();
     await refreshToolsAndRender();
+  };
+
+  host.querySelector("#scannerWithdrawSave")?.addEventListener("click", () => {
+    saveWithdraw("normal");
+  });
+  host.querySelector("#scannerBorrowSave")?.addEventListener("click", () => {
+    saveWithdraw("borrow");
   });
 
   host.querySelector("#scannerWithdrawTNumber")?.focus();
@@ -6863,7 +6921,11 @@ function openManualToolRestock(initialTNumber = "") {
 
     const oldStock = Number(freshTool.stock || 0);
     const newStock = oldStock + qty;
-    const payload = { stock: newStock };
+    const returnFrom = freshTool.isBorrowed ? freshTool.borrowedTo || "-" : "";
+    const payload = {
+      stock: newStock,
+      ...buildReturnToolUpdateFields(freshTool),
+    };
     const { error } = await supabaseClient
       .from("tools")
       .update(payload)
@@ -6920,7 +6982,9 @@ function openManualToolRestock(initialTNumber = "") {
       toolId: refreshedTool.id,
       toolTNumber: refreshedTool.tNumber,
       toolLabel: refreshedTool.label,
-      action: `Werkzeug-Scanner Einlagerung ${qty}`,
+      action: freshTool.isBorrowed
+        ? `Werkzeug zurück von ${returnFrom}`
+        : `Werkzeug-Scanner Einlagerung ${qty}`,
       qty,
       stockBefore: oldStock,
       stockAfter: newStock,
@@ -6987,6 +7051,34 @@ function askNumberCentered(message, initialValue = "1") {
   });
 }
 
+function askTextCentered(message, placeholder = "") {
+  const host = getModalHost();
+  return new Promise((resolve) => {
+    host.innerHTML = `<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-4">
+        <h3 class="text-lg font-bold mb-2">Eingabe</h3>
+        <p class="text-sm text-slate-700 mb-3">${escapeHtml(message)}</p>
+        <input id="modalText" class="border rounded p-2 w-full mb-4" placeholder="${escapeHtml(placeholder)}" />
+        <div class="flex justify-end gap-2">
+          <button id="modalNo" class="px-3 py-1 rounded bg-slate-200">Abbrechen</button>
+          <button id="modalOk" class="px-3 py-1 rounded bg-slate-900 text-white">Bestätigen</button>
+        </div>
+      </div>
+    </div>`;
+    const input = host.querySelector("#modalText");
+    input?.focus();
+    host.querySelector("#modalOk")?.addEventListener("click", () => {
+      const value = String(input?.value || "").trim();
+      host.innerHTML = "";
+      resolve(value);
+    });
+    host.querySelector("#modalNo")?.addEventListener("click", () => {
+      host.innerHTML = "";
+      resolve(null);
+    });
+  });
+}
+
 async function editTool(toolId) {
   const tool = state.tools.find((t) => t.id === toolId);
   if (!tool || currentUser.role !== "admin") return;
@@ -7033,12 +7125,6 @@ async function editTool(toolId) {
     return alert("Bitte Anzahl der Schneiden > 0 eingeben.");
   }
 
-  if (data.isBorrowed && !data.borrowedTo) {
-    return alert(
-      "Bitte Maschinennummer / Kostenträger für ausgeliehenes Werkzeug eintragen.",
-    );
-  }
-
   const payload = {
     label: data.label,
     diameter: String(data.diameter),
@@ -7060,11 +7146,6 @@ async function editTool(toolId) {
     insert_tool: !!data.insertTool,
     insert_edges: data.insertTool ? Number(data.insertEdges || 0) : 0,
     insert_radius: data.insertTool ? data.insertRadius || null : null,
-    is_borrowed: !!data.isBorrowed,
-    borrowed_to: data.isBorrowed ? data.borrowedTo || null : null,
-    borrowed_at: data.isBorrowed
-      ? data.borrowedAt || new Date().toISOString()
-      : null,
   };
 
   const { error } = await supabaseClient
@@ -7101,11 +7182,6 @@ async function editTool(toolId) {
           insertTool: !!data.insertTool,
           insertEdges: data.insertTool ? Number(data.insertEdges || 0) : 0,
           insertRadius: data.insertTool ? data.insertRadius || "" : "",
-          isBorrowed: !!data.isBorrowed,
-          borrowedTo: data.isBorrowed ? data.borrowedTo || "" : "",
-          borrowedAt: data.isBorrowed
-            ? data.borrowedAt || new Date().toISOString()
-            : "",
         }
       : existingTool,
   );
@@ -7239,15 +7315,7 @@ async function editToolCentered(tool) {
             <input id='editOptimalStock' type='number' class='border rounded p-2 w-full mt-1' placeholder='Optimale Stückzahl' value="${tool.optimalStock ?? 0}" />
           </label>
 
-          <label class='flex items-center gap-2 text-sm'>
-            <input id='editIsBorrowed' type='checkbox' ${tool.isBorrowed ? "checked" : ""} />
-            Ausgeliehen
-          </label>
-
-          <label class='text-sm font-medium'>
-            Maschinennummer / Kostenträger
-            <input id='editBorrowedTo' class='border rounded p-2 w-full mt-1' placeholder='z. B. 350 / Abteilung Montage' value="${escapeHtml(tool.borrowedTo || "")}" />
-          </label>
+          <div></div>
 
           <label class='flex items-center gap-2 text-sm md:col-span-2'>
             <input id='editInsertTool' type='checkbox' ${tool.insertTool ? "checked" : ""} onchange='toggleInsertToolFieldsById("editInsertTool","editInsertEdges","editInsertRadius")' />
@@ -7319,10 +7387,6 @@ async function editToolCentered(tool) {
         optimalStock: Number(
           document.getElementById("editOptimalStock")?.value || 0,
         ),
-        isBorrowed: !!document.getElementById("editIsBorrowed")?.checked,
-        borrowedTo:
-          document.getElementById("editBorrowedTo")?.value?.trim() || "",
-        borrowedAt: tool.borrowedAt || "",
         insertTool: !!document.getElementById("editInsertTool")?.checked,
         insertEdges: Number(
           document.getElementById("editInsertEdges")?.value || 0,
@@ -7407,12 +7471,6 @@ async function editTool(toolId) {
     return alert("Bitte Anzahl der Schneiden > 0 eingeben.");
   }
 
-  if (data.isBorrowed && !data.borrowedTo) {
-    return alert(
-      "Bitte Maschinennummer / Kostenträger für ausgeliehenes Werkzeug eintragen.",
-    );
-  }
-
   const payload = {
     label: data.label,
     diameter: String(data.diameter),
@@ -7434,11 +7492,6 @@ async function editTool(toolId) {
     insert_tool: !!data.insertTool,
     insert_edges: data.insertTool ? Number(data.insertEdges || 0) : 0,
     insert_radius: data.insertTool ? data.insertRadius || null : null,
-    is_borrowed: !!data.isBorrowed,
-    borrowed_to: data.isBorrowed ? data.borrowedTo || null : null,
-    borrowed_at: data.isBorrowed
-      ? data.borrowedAt || new Date().toISOString()
-      : null,
   };
 
   const { error } = await supabaseClient
@@ -7475,11 +7528,6 @@ async function editTool(toolId) {
           insertTool: !!data.insertTool,
           insertEdges: data.insertTool ? Number(data.insertEdges || 0) : 0,
           insertRadius: data.insertTool ? data.insertRadius || "" : "",
-          isBorrowed: !!data.isBorrowed,
-          borrowedTo: data.isBorrowed ? data.borrowedTo || "" : "",
-          borrowedAt: data.isBorrowed
-            ? data.borrowedAt || new Date().toISOString()
-            : "",
         }
       : existingTool,
   );
@@ -7556,9 +7604,9 @@ function openCreateToolModal() {
       insert_tool: !!normalized.insertTool,
       insert_edges: Number(normalized.insertEdges || 0),
       insert_radius: normalized.insertRadius || null,
-      is_borrowed: !!normalized.isBorrowed,
-      borrowed_to: normalized.borrowedTo || null,
-      borrowed_at: normalized.isBorrowed ? normalized.borrowedAt : null,
+      is_borrowed: false,
+      borrowed_to: null,
+      borrowed_at: null,
       created_by_employee_id: currentEmployeeRecord?.id || null,
     };
 
@@ -7703,6 +7751,7 @@ async function restockTool(toolId) {
 
   const oldStock = Number(tool.stock || 0);
   const newStock = oldStock + qty;
+  const returnFrom = tool.isBorrowed ? tool.borrowedTo || "-" : "";
 
   const { error } = await supabaseClient
     .from("tools")
@@ -7710,6 +7759,7 @@ async function restockTool(toolId) {
       stock: newStock,
       ordered: false,
       ordered_qty: 0,
+      ...buildReturnToolUpdateFields(tool),
     })
     .eq("id", tool.id);
 
@@ -7739,6 +7789,9 @@ async function restockTool(toolId) {
             ordered: false,
             orderedQty: 0,
             ordered_qty: 0,
+            isBorrowed: false,
+            borrowedTo: "",
+            borrowedAt: "",
           }
         : t,
     );
@@ -7748,6 +7801,9 @@ async function restockTool(toolId) {
       ordered: false,
       orderedQty: 0,
       ordered_qty: 0,
+      isBorrowed: false,
+      borrowedTo: "",
+      borrowedAt: "",
     };
   }
 
@@ -7772,7 +7828,9 @@ async function restockTool(toolId) {
     toolId: refreshed.id,
     toolTNumber: refreshed.tNumber,
     toolLabel: refreshed.label,
-    action: `Einlagerung bestellt ${qty}`,
+    action: tool.isBorrowed
+      ? `Werkzeug zurück von ${returnFrom}`
+      : `Einlagerung bestellt ${qty}`,
     qty,
     stockBefore: oldStock,
     stockAfter: newStock,
@@ -7807,14 +7865,29 @@ async function bookToolChange(toolId) {
   }
 
   let updatedTool = tool;
+  let borrowedTo = "";
+  let isBorrowing = false;
 
   if (takeOut && qty > 0) {
+    isBorrowing = await askYesNoCentered("Als Ausleihe buchen?");
+    if (isBorrowing) {
+      borrowedTo = await askTextCentered(
+        "Kostenträger/Maschine bei Ausleihe",
+        "z. B. 350 / Abteilung Montage",
+      );
+      if (borrowedTo === null) return;
+      if (!borrowedTo) {
+        return alert("Bitte Kostenträger/Maschine eintragen.");
+      }
+    }
+
     const nextStock = Math.max(0, Number(tool.stock || 0) - Number(qty || 0));
 
     const { data, error } = await supabaseClient
       .from("tools")
       .update({
         stock: nextStock,
+        ...(isBorrowing ? buildBorrowToolUpdateFields(borrowedTo) : {}),
       })
       .eq("id", toolId)
       .select()
@@ -7863,7 +7936,9 @@ async function bookToolChange(toolId) {
     toolTNumber: updatedTool.tNumber,
     toolLabel: updatedTool.label,
     action: takeOut
-      ? `Werkzeugwechsel + Entnahme ${qty}`
+      ? isBorrowing
+        ? `Werkzeug ausgeliehen an ${borrowedTo}`
+        : `Werkzeugwechsel + Entnahme ${qty}`
       : "Werkzeugwechsel ohne Entnahme",
     qty,
     stockBefore: Number(tool.stock || 0),
