@@ -56,8 +56,13 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.73";
+const APP_VERSION = "0.4.74";
 const VERSION_LOG = [
+  {
+    version: "0.4.74",
+    date: "2026-06-13 09:13",
+    changes: ["Ersten Inventurmodus als reine Prüfansicht ergänzt"],
+  },
   {
     version: "0.4.73",
     date: "2026-06-07 16:17",
@@ -5258,6 +5263,132 @@ function closeStorageLocationModal() {
   getModalHost().innerHTML = "";
 }
 
+function openInventoryMode() {
+  if (currentUser?.role !== "admin") {
+    alert("Inventurmodus ist nur für Administratoren verfügbar.");
+    return;
+  }
+
+  getModalHost().innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-5xl max-h-[90vh] overflow-auto p-4">
+      <div class="flex items-start justify-between gap-3 mb-4">
+        <div>
+          <h3 class="text-xl font-bold">🧾 Inventurmodus</h3>
+          <p class="text-sm text-slate-500">Reine Prüfansicht. Es werden keine Werkzeugdaten verändert.</p>
+        </div>
+        <button class="px-3 py-1 rounded bg-slate-200" onclick="closeInventoryMode()">Schließen</button>
+      </div>
+
+      <div class="border rounded-lg bg-slate-50 p-3 mb-4">
+        <label class="text-sm font-medium">
+          Fach erfassen
+          <input id="inventoryLocationInput" class="border rounded p-2 w-full mt-1" placeholder="STORAGE:12N oder 12N" />
+        </label>
+        <div class="flex gap-2 mt-3">
+          <button class="px-3 py-2 rounded bg-slate-900 text-white" onclick="processInventoryLocation()">Fach prüfen</button>
+          <button class="px-3 py-2 rounded bg-slate-200" onclick="document.getElementById('inventoryLocationInput').value=''; document.getElementById('inventoryResult').innerHTML='';">Zurücksetzen</button>
+        </div>
+      </div>
+
+      <div id="inventoryResult" class="space-y-3"></div>
+    </div>
+  </div>`;
+
+  document.getElementById("inventoryLocationInput")?.focus();
+}
+
+function closeInventoryMode() {
+  getModalHost().innerHTML = "";
+}
+
+function processInventoryLocation() {
+  const input = document.getElementById("inventoryLocationInput");
+  const result = document.getElementById("inventoryResult");
+  if (!input || !result) return;
+
+  const rawValue = String(input.value || "").trim();
+  const locationKey = rawValue.toUpperCase().startsWith("STORAGE:")
+    ? parseStorageQrCode(rawValue)
+    : normalizeStorageLocation(rawValue);
+
+  if (!locationKey || !isValidStorageLocation(locationKey)) {
+    result.innerHTML = `<div class="border border-rose-200 bg-rose-50 text-rose-800 rounded p-3 text-sm">Ungültiges Lagerfach. Bitte STORAGE:12N oder 12N eingeben.</div>`;
+    return;
+  }
+
+  const tools = (Array.isArray(state.tools) ? state.tools : []).filter((tool) => {
+    return getToolStorageLocationKey(tool) === locationKey;
+  });
+
+  const rows = tools
+    .map((tool) => {
+      const imagePath = getToolImagePath(tool);
+      const imageCell = imagePath
+        ? `<img src="${escapeHtml(imagePath)}" alt="Bild T ${escapeHtml(normalizeToolImageNumber(tool.tNumber))}" class="w-12 h-12 object-contain" onerror="this.style.display='none'" />`
+        : "-";
+      return `<tr class="border-b">
+        <td class="p-2 whitespace-nowrap">T ${escapeHtml(tool.tNumber || "-")}</td>
+        <td class="p-2">${escapeHtml(tool.label || "-")}</td>
+        <td class="p-2">${imageCell}</td>
+        <td class="p-2">${escapeHtml(tool.manufacturer || "-")}</td>
+        <td class="p-2">${escapeHtml(tool.holder || "-")}</td>
+        <td class="p-2 whitespace-nowrap">${renderToolSizeCell(tool)}</td>
+      </tr>`;
+    })
+    .join("");
+
+  result.innerHTML = `<div class="border rounded-lg bg-white p-3">
+    <div class="flex items-start justify-between gap-3 mb-3">
+      <div>
+        <h4 class="font-bold text-lg">Fach: ${escapeHtml(locationKey)}</h4>
+        <p class="text-sm text-slate-500">${tools.length} Soll-Werkzeug(e) laut System</p>
+      </div>
+    </div>
+
+    ${
+      tools.length
+        ? `<div class="overflow-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-100">
+                <tr>
+                  <th class="p-2 text-left">T-Nummer</th>
+                  <th class="p-2 text-left">Bezeichnung</th>
+                  <th class="p-2 text-left">Bild</th>
+                  <th class="p-2 text-left">Hersteller</th>
+                  <th class="p-2 text-left">Aufnahme</th>
+                  <th class="p-2 text-left">Ø / AL</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>`
+        : '<div class="text-sm text-slate-600 bg-slate-50 border rounded p-3">Kein Werkzeug laut System eingelagert</div>'
+    }
+
+    <div class="flex gap-2 justify-end mt-4">
+      <button class="px-3 py-2 rounded bg-emerald-700 text-white" onclick="confirmInventoryResult('present')">🟢 Vorhanden</button>
+      <button class="px-3 py-2 rounded bg-rose-700 text-white" onclick="confirmInventoryResult('deviation')">🔴 Abweichung</button>
+    </div>
+    <div id="inventoryFeedback" class="mt-3"></div>
+  </div>`;
+}
+
+function confirmInventoryResult(resultType) {
+  const feedback = document.getElementById("inventoryFeedback");
+  if (!feedback) return;
+
+  const message =
+    resultType === "present"
+      ? "Inventurprüfung bestätigt: vorhanden. Es wurden keine Daten gespeichert."
+      : "Inventurprüfung markiert: Abweichung. Es wurden keine Daten gespeichert.";
+  const color =
+    resultType === "present"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+      : "border-rose-200 bg-rose-50 text-rose-800";
+
+  feedback.innerHTML = `<div class="border ${color} rounded p-3 text-sm">${message}</div>`;
+}
+
 function openStorageQrModal(locationKey) {
   const normalizedKey = normalizeStorageLocation(locationKey);
   if (!isValidStorageLocation(normalizedKey)) {
@@ -8869,7 +9000,10 @@ function renderTools() {
     ${
       isAdmin
         ? `<div class='border-2 border-slate-300 rounded-xl p-3 space-y-3'>
-            <h3 class='text-lg font-bold'>Admin-Bestandsaktionen</h3>
+            <div class='flex items-center justify-between gap-2 flex-wrap'>
+              <h3 class='text-lg font-bold'>Admin-Bestandsaktionen</h3>
+              <button class='px-3 py-2 rounded bg-indigo-700 text-white text-sm' onclick='openInventoryMode()'>Inventurmodus starten</button>
+            </div>
 
             <div class='border rounded p-3 bg-white overflow-auto'>
               <h4 class='font-semibold mb-2'>Nachbestellen prüfen</h4>
@@ -9936,6 +10070,10 @@ window.openToolHistory = openToolHistory;
 window.closeToolHistory = closeToolHistory;
 window.openStorageLocationModal = openStorageLocationModal;
 window.closeStorageLocationModal = closeStorageLocationModal;
+window.openInventoryMode = openInventoryMode;
+window.closeInventoryMode = closeInventoryMode;
+window.processInventoryLocation = processInventoryLocation;
+window.confirmInventoryResult = confirmInventoryResult;
 window.openStorageQrModal = openStorageQrModal;
 window.openStorageLocationByQr = openStorageLocationByQr;
 window.openMoveToolModal = openMoveToolModal;
