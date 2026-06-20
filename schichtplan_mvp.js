@@ -56,8 +56,13 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.74";
+const APP_VERSION = "0.4.75";
 const VERSION_LOG = [
+  {
+    version: "0.4.75",
+    date: "2026-06-20 08:24",
+    changes: ["Inventurhistorie mit Supabase-Sessions und Inventurergebnissen ergänzt"],
+  },
   {
     version: "0.4.74",
     date: "2026-06-13 09:13",
@@ -356,6 +361,8 @@ let statsViewPeriod = "week";
 let qrScannerStream = null;
 let qrScannerTimer = null;
 let qrScannerMode = null;
+let activeInventorySessionId = null;
+let activeInventoryLocationKey = "";
 let toolAutoRefreshTimer = null;
 let toolPageLoadInProgress = false;
 let toolRealtimeChannel = null;
@@ -5263,12 +5270,43 @@ function closeStorageLocationModal() {
   getModalHost().innerHTML = "";
 }
 
-function openInventoryMode() {
+async function openInventoryMode() {
   if (currentUser?.role !== "admin") {
     alert("Inventurmodus ist nur für Administratoren verfügbar.");
     return;
   }
 
+  getModalHost().innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-4">
+      <h3 class="text-xl font-bold mb-2">🧾 Inventurmodus</h3>
+      <p class="text-sm text-slate-600">Inventur-Session wird gestartet ...</p>
+    </div>
+  </div>`;
+
+  const { data: session, error } = await supabaseClient
+    .from("inventory_sessions")
+    .insert({
+      user: currentUser?.name || currentEmployeeRecord?.display_name || "Admin",
+      start_time: new Date().toISOString(),
+      status: "open",
+    })
+    .select()
+    .maybeSingle();
+
+  if (error || !session?.id) {
+    console.error("Inventur-Session konnte nicht gestartet werden", error);
+    getModalHost().innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-4">
+        <h3 class="text-xl font-bold mb-2">🧾 Inventurmodus</h3>
+        <p class="text-sm text-rose-700 mb-4">Inventur-Session konnte nicht gestartet werden.</p>
+        <button class="px-3 py-2 rounded bg-slate-200" onclick="closeInventoryMode()">Schließen</button>
+      </div>
+    </div>`;
+    return;
+  }
+
+  activeInventorySessionId = session.id;
+  activeInventoryLocationKey = "";
   getModalHost().innerHTML = `<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-5xl max-h-[90vh] overflow-auto p-4">
       <div class="flex items-start justify-between gap-3 mb-4">
@@ -5293,11 +5331,27 @@ function openInventoryMode() {
       <div id="inventoryResult" class="space-y-3"></div>
     </div>
   </div>`;
-
   document.getElementById("inventoryLocationInput")?.focus();
 }
 
-function closeInventoryMode() {
+async function closeInventoryMode() {
+  const sessionId = activeInventorySessionId;
+  activeInventorySessionId = null;
+  activeInventoryLocationKey = "";
+
+  if (sessionId) {
+    const { error } = await supabaseClient
+      .from("inventory_sessions")
+      .update({
+        end_time: new Date().toISOString(),
+        status: "completed",
+      })
+      .eq("id", sessionId);
+    if (error) {
+      console.warn("Inventur-Session konnte nicht abgeschlossen werden", error);
+    }
+  }
+
   getModalHost().innerHTML = "";
 }
 
@@ -5307,6 +5361,10 @@ function processInventoryLocation() {
   if (!input || !result) return;
 
   const rawValue = String(input.value || "").trim();
+  if (!activeInventorySessionId) {
+    result.innerHTML = `<div class="border border-rose-200 bg-rose-50 text-rose-800 rounded p-3 text-sm">Keine aktive Inventur-Session.</div>`;
+    return;
+  }
   const locationKey = rawValue.toUpperCase().startsWith("STORAGE:")
     ? parseStorageQrCode(rawValue)
     : normalizeStorageLocation(rawValue);
@@ -5319,6 +5377,7 @@ function processInventoryLocation() {
   const tools = (Array.isArray(state.tools) ? state.tools : []).filter((tool) => {
     return getToolStorageLocationKey(tool) === locationKey;
   });
+  activeInventoryLocationKey = locationKey;
 
   const rows = tools
     .map((tool) => {
@@ -5333,6 +5392,13 @@ function processInventoryLocation() {
         <td class="p-2">${escapeHtml(tool.manufacturer || "-")}</td>
         <td class="p-2">${escapeHtml(tool.holder || "-")}</td>
         <td class="p-2 whitespace-nowrap">${renderToolSizeCell(tool)}</td>
+        <td class="p-2 min-w-56">
+          <input id="inventoryComment-${tool.id}" class="border rounded p-1 w-full text-xs mb-1" placeholder="Kommentar bei Abweichung" />
+          <div class="flex gap-1">
+            <button class="px-2 py-1 rounded bg-emerald-700 text-white text-xs" onclick="confirmInventoryResult('${tool.id}', 'present')">🟢 Vorhanden</button>
+            <button class="px-2 py-1 rounded bg-rose-700 text-white text-xs" onclick="confirmInventoryResult('${tool.id}', 'deviation')">🔴 Abweichung</button>
+          </div>
+        </td>
       </tr>`;
     })
     .join("");
@@ -5357,6 +5423,7 @@ function processInventoryLocation() {
                   <th class="p-2 text-left">Hersteller</th>
                   <th class="p-2 text-left">Aufnahme</th>
                   <th class="p-2 text-left">Ø / AL</th>
+                  <th class="p-2 text-left">Ergebnis</th>
                 </tr>
               </thead>
               <tbody>${rows}</tbody>
@@ -5365,22 +5432,50 @@ function processInventoryLocation() {
         : '<div class="text-sm text-slate-600 bg-slate-50 border rounded p-3">Kein Werkzeug laut System eingelagert</div>'
     }
 
-    <div class="flex gap-2 justify-end mt-4">
-      <button class="px-3 py-2 rounded bg-emerald-700 text-white" onclick="confirmInventoryResult('present')">🟢 Vorhanden</button>
-      <button class="px-3 py-2 rounded bg-rose-700 text-white" onclick="confirmInventoryResult('deviation')">🔴 Abweichung</button>
-    </div>
     <div id="inventoryFeedback" class="mt-3"></div>
   </div>`;
 }
 
-function confirmInventoryResult(resultType) {
+async function confirmInventoryResult(toolId, resultType) {
   const feedback = document.getElementById("inventoryFeedback");
   if (!feedback) return;
 
+  const tool = (Array.isArray(state.tools) ? state.tools : []).find(
+    (entry) => entry.id === toolId,
+  );
+  const fach = activeInventoryLocationKey;
+  if (
+    !activeInventorySessionId ||
+    !fach ||
+    !tool?.id ||
+    getToolStorageLocationKey(tool) !== fach
+  ) {
+    feedback.innerHTML = `<div class="border border-rose-200 bg-rose-50 text-rose-800 rounded p-3 text-sm">Inventurergebnis konnte ohne gültige Session, Fach und Werkzeug nicht gespeichert werden.</div>`;
+    return;
+  }
+
+  const comment = String(
+    document.getElementById(`inventoryComment-${toolId}`)?.value || "",
+  ).trim();
+  const { error } = await supabaseClient.from("inventory_entries").insert({
+    session_id: activeInventorySessionId,
+    fach,
+    tool_id: tool.id,
+    ergebnis: resultType === "present" ? "vorhanden" : "abweichung",
+    kommentar: comment || null,
+    timestamp: new Date().toISOString(),
+  });
+
+  if (error) {
+    console.error("Inventurergebnis konnte nicht gespeichert werden", error);
+    feedback.innerHTML = `<div class="border border-rose-200 bg-rose-50 text-rose-800 rounded p-3 text-sm">Inventurergebnis konnte nicht gespeichert werden.</div>`;
+    return;
+  }
+
   const message =
     resultType === "present"
-      ? "Inventurprüfung bestätigt: vorhanden. Es wurden keine Daten gespeichert."
-      : "Inventurprüfung markiert: Abweichung. Es wurden keine Daten gespeichert.";
+      ? `Inventurprüfung für T ${escapeHtml(tool.tNumber || "-")} als vorhanden gespeichert.`
+      : `Inventurprüfung für T ${escapeHtml(tool.tNumber || "-")} als Abweichung gespeichert.`;
   const color =
     resultType === "present"
       ? "border-emerald-200 bg-emerald-50 text-emerald-800"
