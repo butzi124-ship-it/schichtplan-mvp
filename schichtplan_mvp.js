@@ -56,8 +56,16 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.75";
+const APP_VERSION = "0.4.76";
+const INVENTORY_MODE_ENABLED = false;
 const VERSION_LOG = [
+  {
+    version: "0.4.76",
+    date: "2026-06-27 06:54",
+    changes: [
+      "Inventurmodus vorübergehend deaktiviert, damit Design und Anordnung überarbeitet werden können.",
+    ],
+  },
   {
     version: "0.4.75",
     date: "2026-06-20 08:24",
@@ -5271,6 +5279,11 @@ function closeStorageLocationModal() {
 }
 
 async function openInventoryMode() {
+  if (!INVENTORY_MODE_ENABLED) {
+    alert("Inventur ist vorübergehend deaktiviert.");
+    return;
+  }
+
   if (currentUser?.role !== "admin") {
     alert("Inventurmodus ist nur für Administratoren verfügbar.");
     return;
@@ -5339,6 +5352,11 @@ async function closeInventoryMode() {
   activeInventorySessionId = null;
   activeInventoryLocationKey = "";
 
+  if (!INVENTORY_MODE_ENABLED) {
+    getModalHost().innerHTML = "";
+    return;
+  }
+
   if (sessionId) {
     const { error } = await supabaseClient
       .from("inventory_sessions")
@@ -5359,6 +5377,11 @@ function processInventoryLocation() {
   const input = document.getElementById("inventoryLocationInput");
   const result = document.getElementById("inventoryResult");
   if (!input || !result) return;
+
+  if (!INVENTORY_MODE_ENABLED) {
+    result.innerHTML = `<div class="border border-amber-200 bg-amber-50 text-amber-800 rounded p-3 text-sm">Inventur ist vorübergehend deaktiviert.</div>`;
+    return;
+  }
 
   const rawValue = String(input.value || "").trim();
   if (!activeInventorySessionId) {
@@ -5439,6 +5462,11 @@ function processInventoryLocation() {
 async function confirmInventoryResult(toolId, resultType) {
   const feedback = document.getElementById("inventoryFeedback");
   if (!feedback) return;
+
+  if (!INVENTORY_MODE_ENABLED) {
+    feedback.innerHTML = `<div class="border border-amber-200 bg-amber-50 text-amber-800 rounded p-3 text-sm">Inventur ist vorübergehend deaktiviert.</div>`;
+    return;
+  }
 
   const tool = (Array.isArray(state.tools) ? state.tools : []).find(
     (entry) => entry.id === toolId,
@@ -9097,7 +9125,11 @@ function renderTools() {
         ? `<div class='border-2 border-slate-300 rounded-xl p-3 space-y-3'>
             <div class='flex items-center justify-between gap-2 flex-wrap'>
               <h3 class='text-lg font-bold'>Admin-Bestandsaktionen</h3>
-              <button class='px-3 py-2 rounded bg-indigo-700 text-white text-sm' onclick='openInventoryMode()'>Inventurmodus starten</button>
+              ${
+                INVENTORY_MODE_ENABLED
+                  ? "<button class='px-3 py-2 rounded bg-indigo-700 text-white text-sm' onclick='openInventoryMode()'>Inventurmodus starten</button>"
+                  : ""
+              }
             </div>
 
             <div class='border rounded p-3 bg-white overflow-auto'>
