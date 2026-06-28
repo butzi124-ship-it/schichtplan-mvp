@@ -56,9 +56,16 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.76";
+const APP_VERSION = "0.4.77";
 const INVENTORY_MODE_ENABLED = false;
 const VERSION_LOG = [
+  {
+    version: "0.4.77",
+    date: "2026-06-28 09:06",
+    changes: [
+      "Personalverwaltung für Mitarbeiter und Schichtmodell neu aufgebaut.",
+    ],
+  },
   {
     version: "0.4.76",
     date: "2026-06-27 06:54",
@@ -489,6 +496,33 @@ const PLANNING_SUBTABS = [
   { id: "wochenende", label: "Wochenendeinsätze" },
   { id: "schichttausch", label: "Schichttausch" },
 ];
+const PERSONNEL_MANAGEMENT_SUBTABS = [
+  { id: "employees", label: "Mitarbeiter" },
+  { id: "shiftModel", label: "Schichtmodell" },
+  { id: "settings", label: "Einstellungen" },
+];
+const SHIFT_DEFINITION_TYPES = [
+  {
+    shift_key: "early",
+    name: "Frühschicht",
+    requires_time: true,
+  },
+  {
+    shift_key: "late",
+    name: "Spätschicht",
+    requires_time: true,
+  },
+  {
+    shift_key: "night",
+    name: "Nachtschicht",
+    requires_time: true,
+  },
+  {
+    shift_key: "day",
+    name: "Tagschicht",
+    requires_time: false,
+  },
+];
 
 function setLoginStatus(message, isError = false) {
   const el = document.getElementById("loginStatus");
@@ -541,29 +575,47 @@ async function loadEmployeesFromSupabase() {
   const { data, error } = await supabaseClient
     .from("employees")
     .select("*")
-    .order("display_name", { ascending: true });
+    .order("created_at", { ascending: true });
 
   if (error) {
     console.error("Fehler beim Laden von employees:", error);
-    return [];
+    state.ui = state.ui || {};
+    state.ui.personalManagementEmployeesError = error.message;
+    return null;
   }
 
+  state.ui = state.ui || {};
+  state.ui.personalManagementEmployeesError = "";
   return data || [];
 }
 
 function normalizeEmployeeFromDb(row) {
+  const firstName = row.first_name || "";
+  const lastName = row.last_name || "";
+  const displayName =
+    row.display_name ||
+    [firstName, lastName].filter(Boolean).join(" ").trim() ||
+    row.personnel_no ||
+    "";
+  const isActive = row.active !== undefined ? row.active !== false : row.is_active !== false;
+
   return {
     id: row.id,
     authUserId: row.auth_user_id || null,
-    name: row.display_name,
-    display_name: row.display_name,
+    first_name: firstName,
+    last_name: lastName,
+    personnel_no: row.personnel_no || "",
+    department: row.department || "",
+    name: displayName,
+    display_name: displayName,
     role: row.role || "employee",
     type: row.employee_type || "springer",
     employee_type: row.employee_type || "springer",
     slot: row.slot_code || "",
     slot_code: row.slot_code || "",
-    isActive: row.is_active !== false,
-    is_active: row.is_active !== false,
+    isActive,
+    is_active: isActive,
+    active: isActive,
     color_key: row.color_key || "",
     created_at: row.created_at || null,
     updated_at: row.updated_at || null,
@@ -571,7 +623,16 @@ function normalizeEmployeeFromDb(row) {
 }
 
 function applyEmployeesToState(rows) {
-  const employees = (rows || []).map(normalizeEmployeeFromDb);
+  if (!Array.isArray(rows)) return;
+
+  const employees = rows
+    .map(normalizeEmployeeFromDb)
+    .sort((a, b) =>
+      `${a.last_name} ${a.first_name} ${a.display_name}`.localeCompare(
+        `${b.last_name} ${b.first_name} ${b.display_name}`,
+        "de",
+      ),
+    );
   const employeeMap = {};
   const nextSlotAssignments = { ...(state.slotAssignments || {}) };
 
@@ -603,6 +664,49 @@ function applyEmployeesToState(rows) {
   state.employees = employeeMap;
   state.employeesList = employees;
   state.slotAssignments = nextSlotAssignments;
+}
+
+async function loadShiftDefinitionsFromSupabase() {
+  const { data, error } = await supabaseClient
+    .from("shift_definitions")
+    .select("*")
+    .order("shift_key", { ascending: true });
+
+  state.ui = state.ui || {};
+
+  if (error) {
+    console.error("Fehler beim Laden von shift_definitions:", error);
+    state.ui.personalManagementShiftDefinitionsError = error.message;
+    return null;
+  }
+
+  state.ui.personalManagementShiftDefinitionsError = "";
+  return data || [];
+}
+
+function normalizeShiftDefinitionFromDb(row) {
+  const template = SHIFT_DEFINITION_TYPES.find(
+    (entry) => entry.shift_key === row.shift_key,
+  );
+  return {
+    id: row.id,
+    name: row.name || template?.name || row.shift_key || "",
+    shift_key: row.shift_key || "",
+    start_time: row.start_time || "",
+    end_time: row.end_time || "",
+    requires_time:
+      row.requires_time !== undefined
+        ? row.requires_time !== false
+        : template?.requires_time !== false,
+    active: row.active !== false,
+    created_at: row.created_at || null,
+    updated_at: row.updated_at || null,
+  };
+}
+
+function applyShiftDefinitionsToState(rows) {
+  if (!Array.isArray(rows)) return;
+  state.shiftDefinitions = rows.map(normalizeShiftDefinitionFromDb);
 }
 
 function normalizeToolFromDb(row) {
@@ -1246,10 +1350,12 @@ async function syncSupabaseSessionToApp() {
   };
 
   const employees = await loadEmployeesFromSupabase();
+  const shiftDefinitions = await loadShiftDefinitionsFromSupabase();
   const materials = await loadToolMaterialsFromSupabase();
   const planning = await loadPlanningDataFromSupabase();
 
   applyEmployeesToState(employees);
+  applyShiftDefinitionsToState(shiftDefinitions);
   toolMaterials = materials;
   await loadToolPageData();
   state.ui.supabaseReady = true;
@@ -1284,6 +1390,7 @@ async function syncSupabaseSessionToApp() {
 
   console.log("Supabase-User:", currentSupabaseUser);
   console.log("Employees-Datensatz:", currentEmployeeRecord);
+  console.log("Schichtdefinitionen nach Login geladen:", shiftDefinitions);
   console.log("Tool-Materials nach Login geladen:", materials);
   console.log("Tools nach Login geladen:", state.tools);
   console.log("Planungsdaten nach Login geladen:", planning);
@@ -1318,10 +1425,12 @@ async function bootSupabase() {
   }
 
   const employees = await loadEmployeesFromSupabase();
+  const shiftDefinitions = await loadShiftDefinitionsFromSupabase();
   const materials = await loadToolMaterialsFromSupabase();
   const planning = await loadPlanningDataFromSupabase();
 
   applyEmployeesToState(employees);
+  applyShiftDefinitionsToState(shiftDefinitions);
   toolMaterials = materials;
 
   if (planning) {
@@ -1339,6 +1448,7 @@ async function bootSupabase() {
   persist();
 
   console.log("Employees aus Supabase:", employees);
+  console.log("Schichtdefinitionen aus Supabase:", shiftDefinitions);
   console.log("Tool-Materials aus Supabase:", materials);
   console.log("Planungsdaten aus Supabase:", planning);
 
@@ -1393,6 +1503,7 @@ function loadState() {
     inactiveUsers: {},
     employees: {},
     employeesList: [],
+    shiftDefinitions: [],
     tools: [],
     toolLabelsExtra: [],
     toolManufacturersExtra: [],
@@ -1420,6 +1531,7 @@ function loadState() {
     orderListPopupOpen: false,
     selectedOrderListManufacturer: "",
     planningSubTab: "personal",
+    personnelManagementSubTab: "employees",
     absenceReplacements: {},
     replacementPlannerSelection: {},
     replacementPlannerChoice: {},
@@ -1463,6 +1575,9 @@ function loadState() {
 
 function persist() {
   const snapshot = { ...state };
+  delete snapshot.employees;
+  delete snapshot.employeesList;
+  delete snapshot.shiftDefinitions;
   delete snapshot.tools;
   delete snapshot.toolJournal;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
@@ -1584,6 +1699,7 @@ function render() {
     currentUser.role === "tool_scanner" ? ["toolscanner"] : ["schichtplan"];
   if (currentUser.role === "admin") {
     tabs.push(
+      "personalverwaltung",
       "planung",
       "werkzeuge",
       "bestellstatistik",
@@ -1631,6 +1747,8 @@ function render() {
 
   if (currentTab === "schichtplan") view.innerHTML = renderSchedule();
   if (currentTab === "meine") view.innerHTML = renderMyShifts();
+  if (currentTab === "personalverwaltung")
+    view.innerHTML = renderPersonalManagement();
   if (currentTab === "planung") view.innerHTML = renderPlanning();
   if (currentTab === "werkzeuge") view.innerHTML = renderTools();
   if (currentTab === "toolscanner") view.innerHTML = renderToolScanner();
@@ -1650,6 +1768,7 @@ function labelTab(tab) {
   return {
     schichtplan: "Schichtplan",
     meine: "Meine Schichten",
+    personalverwaltung: "Personalverwaltung",
     planung: "Planung (Admin)",
     werkzeuge: "Werkzeuge",
     toolscanner: "Werkzeug-Scanner",
@@ -1673,6 +1792,13 @@ function setStatsView(period) {
 function setPlanningSubTab(subTab) {
   if (!PLANNING_SUBTABS.some((t) => t.id === subTab)) return;
   state.planningSubTab = subTab;
+  persist();
+  render();
+}
+
+function setPersonnelManagementSubTab(subTab) {
+  if (!PERSONNEL_MANAGEMENT_SUBTABS.some((t) => t.id === subTab)) return;
+  state.personnelManagementSubTab = subTab;
   persist();
   render();
 }
@@ -2945,7 +3071,8 @@ function renderOverviewPlan(weeksToShow = 12) {
 
 function renderSchedule() {
   return `<div class='bg-white rounded-xl shadow p-4'>
-    <h2 class='text-lg font-semibold mb-3'>Gesamt-Schichtplan (90 Tage ab aktueller Woche)</h2>
+    <h2 class='text-lg font-semibold mb-1'>Gesamt-Schichtplan (Alt / deaktiviert)</h2>
+    <p class='text-sm text-slate-500 mb-3'>Dieser alte Schichtplan bleibt vorerst erhalten, ist aber nicht Grundlage der neuen Personalverwaltung.</p>
     ${renderOverviewPlan(Math.ceil(90 / 7))}
   </div>`;
 }
@@ -3474,6 +3601,399 @@ function renderPlanningPersonal() {
     </div>
   </div>`;
 }
+
+function canManagePersonnel() {
+  return currentUser?.role === "admin";
+}
+
+function getPersonalManagementErrorBanner() {
+  const employeeError = state.ui?.personalManagementEmployeesError;
+  const shiftError = state.ui?.personalManagementShiftDefinitionsError;
+  const messages = [];
+  if (employeeError) {
+    messages.push(`employees: ${employeeError}`);
+  }
+  if (shiftError) {
+    messages.push(`shift_definitions: ${shiftError}`);
+  }
+  if (!messages.length) return "";
+
+  return `<div class='rounded border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700'>
+    Supabase-Struktur nicht vollständig erreichbar: ${messages.map(escapeHtml).join(" | ")}
+  </div>`;
+}
+
+function getPersonalManagementEmployeeRows() {
+  return (state.employeesList || []).map((employee) => ({
+    ...employee,
+    first_name: employee.first_name || "",
+    last_name: employee.last_name || "",
+    personnel_no: employee.personnel_no || "",
+    department: employee.department || "",
+    active: employee.active !== false && employee.is_active !== false,
+  }));
+}
+
+function renderPersonalManagement() {
+  if (!canManagePersonnel()) {
+    return `<div class='bg-white rounded-xl shadow p-4'>
+      <h2 class='text-lg font-semibold'>Personalverwaltung</h2>
+      <p class='text-sm text-slate-600 mt-2'>Dieser Bereich ist nur für Administratoren verfügbar.</p>
+    </div>`;
+  }
+
+  const subTab = PERSONNEL_MANAGEMENT_SUBTABS.some(
+    (tab) => tab.id === state.personnelManagementSubTab,
+  )
+    ? state.personnelManagementSubTab
+    : "employees";
+  const subTabButtons = PERSONNEL_MANAGEMENT_SUBTABS.map((tab) => {
+    const active = subTab === tab.id;
+    return `<button class='px-3 py-2 rounded border ${active ? "bg-slate-900 text-white border-slate-900" : "bg-white border-slate-300"}' onclick="setPersonnelManagementSubTab('${tab.id}')">${tab.label}</button>`;
+  }).join("");
+
+  let content = "";
+  if (subTab === "employees") content = renderPersonnelEmployeesTab();
+  if (subTab === "shiftModel") content = renderShiftDefinitionsTab();
+  if (subTab === "settings") content = renderPersonnelSettingsTab();
+
+  return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
+    <div>
+      <h2 class='text-lg font-semibold'>Personalverwaltung</h2>
+      <p class='text-sm text-slate-500 mt-1'>Neue Verwaltung für Mitarbeiter und Schichtmodell. Der alte Schichtplan wird hier fachlich nicht verwendet.</p>
+    </div>
+    <div class='flex gap-2 flex-wrap'>${subTabButtons}</div>
+    ${getPersonalManagementErrorBanner()}
+    ${content}
+  </div>`;
+}
+
+function renderPersonnelEmployeesTab() {
+  const employees = getPersonalManagementEmployeeRows();
+  const rows = employees
+    .map((employee) => {
+      const active = employee.active !== false;
+      const statusClass = active
+        ? "bg-emerald-100 text-emerald-800"
+        : "bg-slate-200 text-slate-700";
+      return `<tr class='border-b align-top ${active ? "" : "bg-slate-50 text-slate-500"}'>
+        <td class='p-2'>
+          <input id='pm-employee-first-${employee.id}' class='border rounded p-2 w-full bg-white' value='${escapeHtml(employee.first_name)}' />
+        </td>
+        <td class='p-2'>
+          <input id='pm-employee-last-${employee.id}' class='border rounded p-2 w-full bg-white' value='${escapeHtml(employee.last_name)}' />
+        </td>
+        <td class='p-2'>
+          <input id='pm-employee-no-${employee.id}' class='border rounded p-2 w-full bg-white' value='${escapeHtml(employee.personnel_no)}' />
+        </td>
+        <td class='p-2'>
+          <input id='pm-employee-department-${employee.id}' class='border rounded p-2 w-full bg-white' value='${escapeHtml(employee.department)}' />
+        </td>
+        <td class='p-2 whitespace-nowrap'>
+          <span class='px-2 py-1 rounded-full text-xs font-semibold ${statusClass}'>${active ? "Aktiv" : "Inaktiv"}</span>
+        </td>
+        <td class='p-2 whitespace-nowrap'>
+          <button class='px-3 py-2 rounded bg-slate-900 text-white text-sm' onclick="savePersonnelEmployee('${employee.id}')">Speichern</button>
+          ${
+            active
+              ? `<button class='px-3 py-2 rounded bg-rose-700 text-white text-sm ml-2' onclick="deactivatePersonnelEmployee('${employee.id}')">Deaktivieren</button>`
+              : `<button class='px-3 py-2 rounded bg-emerald-700 text-white text-sm ml-2' onclick="activatePersonnelEmployee('${employee.id}')">Aktivieren</button>`
+          }
+        </td>
+      </tr>`;
+    })
+    .join("");
+
+  return `<div class='space-y-4'>
+    <div class='border rounded-lg p-3 bg-slate-50'>
+      <h3 class='font-semibold mb-3'>Mitarbeiter anlegen</h3>
+      <div class='grid sm:grid-cols-2 lg:grid-cols-5 gap-3'>
+        <input id='pmNewFirstName' class='border rounded p-2 bg-white' placeholder='Vorname' />
+        <input id='pmNewLastName' class='border rounded p-2 bg-white' placeholder='Nachname' />
+        <input id='pmNewPersonnelNo' class='border rounded p-2 bg-white' placeholder='Personalnummer' />
+        <input id='pmNewDepartment' class='border rounded p-2 bg-white' placeholder='Abteilung optional' />
+        <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='createPersonnelEmployee()'>Anlegen</button>
+      </div>
+    </div>
+    <div class='border rounded-lg bg-white overflow-auto'>
+      <table class='w-full text-sm min-w-[900px]'>
+        <thead class='bg-slate-100 sticky top-0'>
+          <tr>
+            <th class='p-2 text-left'>Vorname</th>
+            <th class='p-2 text-left'>Nachname</th>
+            <th class='p-2 text-left'>Personalnummer</th>
+            <th class='p-2 text-left'>Abteilung</th>
+            <th class='p-2 text-left'>Status</th>
+            <th class='p-2 text-left'>Aktion</th>
+          </tr>
+        </thead>
+        <tbody>${rows || "<tr><td class='p-3 text-slate-500' colspan='6'>Keine Mitarbeiter geladen.</td></tr>"}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function getShiftDefinitionByKey(shiftKey) {
+  return (state.shiftDefinitions || []).find(
+    (definition) => definition.shift_key === shiftKey,
+  );
+}
+
+function renderShiftDefinitionsTab() {
+  const rows = SHIFT_DEFINITION_TYPES.map((template) => {
+    const definition = getShiftDefinitionByKey(template.shift_key);
+    const startTime = definition?.start_time || "";
+    const endTime = definition?.end_time || "";
+    const active = definition?.active !== false;
+    const timeInputs = template.requires_time
+      ? `<div class='grid sm:grid-cols-2 gap-3'>
+          <label class='text-xs text-slate-500'>Zeit von
+            <input id='shift-start-${template.shift_key}' type='time' class='mt-1 border rounded p-2 w-full bg-white' value='${escapeHtml(startTime)}' />
+          </label>
+          <label class='text-xs text-slate-500'>Zeit bis
+            <input id='shift-end-${template.shift_key}' type='time' class='mt-1 border rounded p-2 w-full bg-white' value='${escapeHtml(endTime)}' />
+          </label>
+        </div>`
+      : `<div class='grid sm:grid-cols-2 gap-3'>
+          <label class='text-xs text-slate-500'>Zeit von
+            <input type='time' class='mt-1 border rounded p-2 w-full bg-slate-100 text-slate-400' disabled value='' />
+          </label>
+          <label class='text-xs text-slate-500'>Zeit bis
+            <input type='time' class='mt-1 border rounded p-2 w-full bg-slate-100 text-slate-400' disabled value='' />
+          </label>
+        </div>`;
+
+    return `<div class='border rounded-lg p-3 bg-white'>
+      <div class='flex items-start justify-between gap-3 mb-3'>
+        <div>
+          <h3 class='font-semibold'>${template.name}</h3>
+          <p class='text-xs text-slate-500'>${template.requires_time ? "Zeitangaben erforderlich" : "Ohne Zeitangaben"}</p>
+        </div>
+        <label class='text-sm flex items-center gap-2'>
+          <input id='shift-active-${template.shift_key}' type='checkbox' ${active ? "checked" : ""} />
+          Aktiv
+        </label>
+      </div>
+      ${timeInputs}
+      <div class='flex justify-end mt-3'>
+        <button class='px-3 py-2 rounded bg-slate-900 text-white text-sm' onclick="saveShiftDefinition('${template.shift_key}')">Speichern</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  return `<div class='grid lg:grid-cols-2 gap-4'>${rows}</div>`;
+}
+
+function renderPersonnelSettingsTab() {
+  return `<div class='space-y-4'>
+    <div class='border rounded-lg p-3 bg-slate-50'>
+      <h3 class='font-semibold mb-2'>Schichtmodell-Einstellungen</h3>
+      <p class='text-sm text-slate-600'>Die aktiven Schichten werden in <code>shift_definitions</code> gespeichert. Tagschicht darf ohne Zeiten gespeichert werden.</p>
+    </div>
+    ${renderShiftDefinitionsTab()}
+  </div>`;
+}
+
+function readPersonnelEmployeeForm(id) {
+  return {
+    firstName:
+      document.getElementById(`pm-employee-first-${id}`)?.value?.trim() || "",
+    lastName:
+      document.getElementById(`pm-employee-last-${id}`)?.value?.trim() || "",
+    personnelNo:
+      document.getElementById(`pm-employee-no-${id}`)?.value?.trim() || "",
+    department:
+      document.getElementById(`pm-employee-department-${id}`)?.value?.trim() ||
+      "",
+  };
+}
+
+function validatePersonnelEmployeeInput(values) {
+  if (!values.firstName || !values.lastName || !values.personnelNo) {
+    return "Bitte Vorname, Nachname und Personalnummer ausfüllen.";
+  }
+  return "";
+}
+
+async function findEmployeeByPersonnelNo(personnelNo, exceptId = null) {
+  const { data, error } = await supabaseClient
+    .from("employees")
+    .select("id")
+    .eq("personnel_no", personnelNo)
+    .limit(1);
+
+  if (error) return { error, exists: false };
+
+  const existing = (data || []).find((row) => row.id !== exceptId);
+  return { error: null, exists: !!existing };
+}
+
+async function createPersonnelEmployee() {
+  if (!canManagePersonnel()) return alert("Nur Admin darf Mitarbeiter anlegen.");
+  if (!supabaseReady) return alert("Supabase ist nicht erreichbar.");
+
+  const values = {
+    firstName: document.getElementById("pmNewFirstName")?.value?.trim() || "",
+    lastName: document.getElementById("pmNewLastName")?.value?.trim() || "",
+    personnelNo: document.getElementById("pmNewPersonnelNo")?.value?.trim() || "",
+    department: document.getElementById("pmNewDepartment")?.value?.trim() || "",
+  };
+  const validationMessage = validatePersonnelEmployeeInput(values);
+  if (validationMessage) return alert(validationMessage);
+
+  const duplicateCheck = await findEmployeeByPersonnelNo(values.personnelNo);
+  if (duplicateCheck.error) {
+    return alert(`Personalnummer konnte nicht geprüft werden: ${duplicateCheck.error.message}`);
+  }
+  if (duplicateCheck.exists) {
+    return alert("Diese Personalnummer ist bereits vorhanden.");
+  }
+
+  const { error } = await supabaseClient.from("employees").insert([
+    {
+      first_name: values.firstName,
+      last_name: values.lastName,
+      personnel_no: values.personnelNo,
+      department: values.department || null,
+      active: true,
+    },
+  ]);
+
+  if (error) {
+    console.error("Fehler beim Anlegen des Mitarbeiters:", error);
+    return alert(`Mitarbeiter konnte nicht gespeichert werden: ${error.message}`);
+  }
+
+  await refreshEmployeesFromSupabase();
+  render();
+}
+
+async function savePersonnelEmployee(id) {
+  if (!canManagePersonnel()) return alert("Nur Admin darf Mitarbeiter bearbeiten.");
+  if (!supabaseReady) return alert("Supabase ist nicht erreichbar.");
+
+  const values = readPersonnelEmployeeForm(id);
+  const validationMessage = validatePersonnelEmployeeInput(values);
+  if (validationMessage) return alert(validationMessage);
+
+  const duplicateCheck = await findEmployeeByPersonnelNo(values.personnelNo, id);
+  if (duplicateCheck.error) {
+    return alert(`Personalnummer konnte nicht geprüft werden: ${duplicateCheck.error.message}`);
+  }
+  if (duplicateCheck.exists) {
+    return alert("Diese Personalnummer ist bereits vorhanden.");
+  }
+
+  const { error } = await supabaseClient
+    .from("employees")
+    .update({
+      first_name: values.firstName,
+      last_name: values.lastName,
+      personnel_no: values.personnelNo,
+      department: values.department || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Fehler beim Speichern des Mitarbeiters:", error);
+    return alert(`Mitarbeiter konnte nicht gespeichert werden: ${error.message}`);
+  }
+
+  await refreshEmployeesFromSupabase();
+  render();
+}
+
+async function deactivatePersonnelEmployee(id) {
+  if (!canManagePersonnel()) return alert("Nur Admin darf Mitarbeiter deaktivieren.");
+  if (!supabaseReady) return alert("Supabase ist nicht erreichbar.");
+
+  const employee = state.employees?.[id];
+  const name = employee?.display_name || "Mitarbeiter";
+  if (!confirm(`${name} wirklich deaktivieren?`)) return;
+
+  const { error } = await supabaseClient
+    .from("employees")
+    .update({ active: false, updated_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Fehler beim Deaktivieren des Mitarbeiters:", error);
+    return alert(`Mitarbeiter konnte nicht deaktiviert werden: ${error.message}`);
+  }
+
+  await refreshEmployeesFromSupabase();
+  render();
+}
+
+async function activatePersonnelEmployee(id) {
+  if (!canManagePersonnel()) return alert("Nur Admin darf Mitarbeiter aktivieren.");
+  if (!supabaseReady) return alert("Supabase ist nicht erreichbar.");
+
+  const { error } = await supabaseClient
+    .from("employees")
+    .update({ active: true, updated_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Fehler beim Aktivieren des Mitarbeiters:", error);
+    return alert(`Mitarbeiter konnte nicht aktiviert werden: ${error.message}`);
+  }
+
+  await refreshEmployeesFromSupabase();
+  render();
+}
+
+async function saveShiftDefinition(shiftKey) {
+  if (!canManagePersonnel()) return alert("Nur Admin darf Schichten bearbeiten.");
+  if (!supabaseReady) return alert("Supabase ist nicht erreichbar.");
+
+  const template = SHIFT_DEFINITION_TYPES.find(
+    (entry) => entry.shift_key === shiftKey,
+  );
+  if (!template) return alert("Unbekannte Schichtart.");
+
+  const startTime = template.requires_time
+    ? document.getElementById(`shift-start-${shiftKey}`)?.value || ""
+    : "";
+  const endTime = template.requires_time
+    ? document.getElementById(`shift-end-${shiftKey}`)?.value || ""
+    : "";
+  const active = document.getElementById(`shift-active-${shiftKey}`)?.checked !== false;
+
+  if (template.requires_time && (!startTime || !endTime)) {
+    return alert(`${template.name}: Bitte Zeit von und Zeit bis eintragen.`);
+  }
+
+  const payload = {
+    name: template.name,
+    shift_key: template.shift_key,
+    start_time: template.requires_time ? startTime : null,
+    end_time: template.requires_time ? endTime : null,
+    requires_time: template.requires_time,
+    active,
+    updated_at: new Date().toISOString(),
+  };
+
+  const existing = getShiftDefinitionByKey(shiftKey);
+  const query = existing?.id
+    ? supabaseClient
+        .from("shift_definitions")
+        .update(payload)
+        .eq("id", existing.id)
+    : supabaseClient.from("shift_definitions").insert([payload]);
+  const { error } = await query;
+
+  if (error) {
+    console.error("Fehler beim Speichern der Schichtdefinition:", error);
+    return alert(`Schichtdefinition konnte nicht gespeichert werden: ${error.message}`);
+  }
+
+  const shiftDefinitions = await loadShiftDefinitionsFromSupabase();
+  applyShiftDefinitionsToState(shiftDefinitions);
+  render();
+}
+
 function getWeekRanges(from, to) {
   const ranges = [];
   let current = new Date(`${from}T00:00:00`);
@@ -4510,11 +5030,16 @@ async function refreshEmployeesFromSupabase() {
     const refreshed = state.employees[currentEmployeeRecord.id];
     currentEmployeeRecord = {
       ...currentEmployeeRecord,
+      first_name: refreshed.first_name,
+      last_name: refreshed.last_name,
+      personnel_no: refreshed.personnel_no,
+      department: refreshed.department,
       display_name: refreshed.display_name,
       role: refreshed.role,
       employee_type: refreshed.employee_type,
       slot_code: refreshed.slot_code,
       is_active: refreshed.is_active,
+      active: refreshed.active,
       color_key: refreshed.color_key,
     };
     currentUser = {
