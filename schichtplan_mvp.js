@@ -56,9 +56,16 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.78";
+const APP_VERSION = "0.4.79";
 const INVENTORY_MODE_ENABLED = false;
 const VERSION_LOG = [
+  {
+    version: "0.4.79",
+    date: "2026-06-28 09:35",
+    changes: [
+      "Doppelte Schichtmodell-Anzeige bereinigt und Mitarbeiter-Löschung ergänzt.",
+    ],
+  },
   {
     version: "0.4.78",
     date: "2026-06-28 09:24",
@@ -3743,6 +3750,7 @@ function renderPersonnelEmployeesTab() {
               ? `<button class='px-3 py-2 rounded bg-rose-700 text-white text-sm ml-2' onclick="deactivatePersonnelEmployee('${employee.id}')">Deaktivieren</button>`
               : `<button class='px-3 py-2 rounded bg-emerald-700 text-white text-sm ml-2' onclick="activatePersonnelEmployee('${employee.id}')">Aktivieren</button>`
           }
+          <button class='px-3 py-2 rounded bg-red-800 text-white text-sm ml-2' onclick="deletePersonnelEmployee('${employee.id}')">Löschen</button>
         </td>
       </tr>`;
     })
@@ -3831,10 +3839,9 @@ function renderShiftDefinitionsTab() {
 function renderPersonnelSettingsTab() {
   return `<div class='space-y-4'>
     <div class='border rounded-lg p-3 bg-slate-50'>
-      <h3 class='font-semibold mb-2'>Schichtmodell-Einstellungen</h3>
-      <p class='text-sm text-slate-600'>Die aktiven Schichten werden in <code>shift_definitions</code> gespeichert. Tagschicht darf ohne Zeiten gespeichert werden.</p>
+      <h3 class='font-semibold mb-2'>Einstellungen</h3>
+      <p class='text-sm text-slate-600'>Für die Personalverwaltung sind hier später weitere Einstellungen vorgesehen.</p>
     </div>
-    ${renderShiftDefinitionsTab()}
   </div>`;
 }
 
@@ -4114,6 +4121,56 @@ async function activatePersonnelEmployee(id) {
 
   await refreshEmployeesFromSupabase();
   setPersonalManagementStatus("Mitarbeiter wurde aktiviert.");
+  render();
+}
+
+async function deletePersonnelEmployee(id) {
+  if (!canManagePersonnel()) {
+    setPersonalManagementStatus("Nur Admin darf Mitarbeiter löschen.", true);
+    render();
+    return;
+  }
+  if (!id) {
+    setPersonalManagementStatus("Mitarbeiter konnte nicht gelöscht werden: gültige ID fehlt.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setPersonalManagementStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+  if (
+    !confirm(
+      "Mitarbeiter wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    )
+  ) {
+    setPersonalManagementStatus("Löschen abgebrochen.");
+    render();
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("employees")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("Fehler beim Löschen des Mitarbeiters:", error);
+    setPersonalManagementStatus(
+      formatPersonalManagementSupabaseError(
+        error,
+        "Mitarbeiter konnte nicht gelöscht werden",
+        "Mitarbeiter konnte nicht gelöscht werden: Datensatz ist noch verknüpft.",
+      ),
+      true,
+    );
+    render();
+    return;
+  }
+
+  await refreshEmployeesFromSupabase();
+  setPersonalManagementStatus("Mitarbeiter wurde gelöscht.");
   render();
 }
 
