@@ -56,9 +56,16 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.77";
+const APP_VERSION = "0.4.78";
 const INVENTORY_MODE_ENABLED = false;
 const VERSION_LOG = [
+  {
+    version: "0.4.78",
+    date: "2026-06-28 09:24",
+    changes: [
+      "Personalverwaltung an vorhandene employees-Tabelle angepasst und technische Supabase-Fehler im Bereich angezeigt.",
+    ],
+  },
   {
     version: "0.4.77",
     date: "2026-06-28 09:06",
@@ -580,7 +587,11 @@ async function loadEmployeesFromSupabase() {
   if (error) {
     console.error("Fehler beim Laden von employees:", error);
     state.ui = state.ui || {};
-    state.ui.personalManagementEmployeesError = error.message;
+    state.ui.personalManagementEmployeesError =
+      formatPersonalManagementSupabaseError(
+        error,
+        "Mitarbeiter konnten nicht geladen werden",
+      );
     return null;
   }
 
@@ -590,14 +601,20 @@ async function loadEmployeesFromSupabase() {
 }
 
 function normalizeEmployeeFromDb(row) {
-  const firstName = row.first_name || "";
-  const lastName = row.last_name || "";
+  const fallbackNameParts = String(row.display_name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  const fallbackFirstName = fallbackNameParts.shift() || row.display_name || "";
+  const fallbackLastName = fallbackNameParts.join(" ");
+  const firstName = row.first_name || fallbackFirstName || "";
+  const lastName = row.last_name || fallbackLastName || "";
   const displayName =
     row.display_name ||
     [firstName, lastName].filter(Boolean).join(" ").trim() ||
     row.personnel_no ||
     "";
-  const isActive = row.active !== undefined ? row.active !== false : row.is_active !== false;
+  const isActive = row.is_active !== false;
 
   return {
     id: row.id,
@@ -615,7 +632,6 @@ function normalizeEmployeeFromDb(row) {
     slot_code: row.slot_code || "",
     isActive,
     is_active: isActive,
-    active: isActive,
     color_key: row.color_key || "",
     created_at: row.created_at || null,
     updated_at: row.updated_at || null,
@@ -676,7 +692,11 @@ async function loadShiftDefinitionsFromSupabase() {
 
   if (error) {
     console.error("Fehler beim Laden von shift_definitions:", error);
-    state.ui.personalManagementShiftDefinitionsError = error.message;
+    state.ui.personalManagementShiftDefinitionsError =
+      formatPersonalManagementSupabaseError(
+        error,
+        "Schichtdefinitionen konnten nicht geladen werden",
+      );
     return null;
   }
 
@@ -1538,6 +1558,8 @@ function loadState() {
     ui: {
       pendingEmployeeEdits: {},
       pendingSlotAssignments: {},
+      personalManagementActionError: "",
+      personalManagementActionMessage: "",
       toolsLoading: false,
       supabaseReady: false,
       toolsInitialLoaded: false,
@@ -3606,9 +3628,22 @@ function canManagePersonnel() {
   return currentUser?.role === "admin";
 }
 
+function setPersonalManagementStatus(message = "", isError = false) {
+  state.ui = state.ui || {};
+  if (isError) {
+    state.ui.personalManagementActionError = message;
+    state.ui.personalManagementActionMessage = "";
+    return;
+  }
+  state.ui.personalManagementActionMessage = message;
+  state.ui.personalManagementActionError = "";
+}
+
 function getPersonalManagementErrorBanner() {
   const employeeError = state.ui?.personalManagementEmployeesError;
   const shiftError = state.ui?.personalManagementShiftDefinitionsError;
+  const actionError = state.ui?.personalManagementActionError;
+  const actionMessage = state.ui?.personalManagementActionMessage;
   const messages = [];
   if (employeeError) {
     messages.push(`employees: ${employeeError}`);
@@ -3616,11 +3651,20 @@ function getPersonalManagementErrorBanner() {
   if (shiftError) {
     messages.push(`shift_definitions: ${shiftError}`);
   }
-  if (!messages.length) return "";
+  if (actionError) {
+    messages.push(actionError);
+  }
 
-  return `<div class='rounded border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700'>
-    Supabase-Struktur nicht vollständig erreichbar: ${messages.map(escapeHtml).join(" | ")}
-  </div>`;
+  const errorBanner = messages.length
+    ? `<div class='rounded border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700'>
+        ${messages.map(escapeHtml).join(" | ")}
+      </div>`
+    : "";
+  const messageBanner = actionMessage
+    ? `<div class='rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700'>${escapeHtml(actionMessage)}</div>`
+    : "";
+
+  return `${errorBanner}${messageBanner}`;
 }
 
 function getPersonalManagementEmployeeRows() {
@@ -3630,7 +3674,7 @@ function getPersonalManagementEmployeeRows() {
     last_name: employee.last_name || "",
     personnel_no: employee.personnel_no || "",
     department: employee.department || "",
-    active: employee.active !== false && employee.is_active !== false,
+    is_active: employee.is_active !== false,
   }));
 }
 
@@ -3672,11 +3716,11 @@ function renderPersonnelEmployeesTab() {
   const employees = getPersonalManagementEmployeeRows();
   const rows = employees
     .map((employee) => {
-      const active = employee.active !== false;
-      const statusClass = active
+      const isActive = employee.is_active !== false;
+      const statusClass = isActive
         ? "bg-emerald-100 text-emerald-800"
         : "bg-slate-200 text-slate-700";
-      return `<tr class='border-b align-top ${active ? "" : "bg-slate-50 text-slate-500"}'>
+      return `<tr class='border-b align-top ${isActive ? "" : "bg-slate-50 text-slate-500"}'>
         <td class='p-2'>
           <input id='pm-employee-first-${employee.id}' class='border rounded p-2 w-full bg-white' value='${escapeHtml(employee.first_name)}' />
         </td>
@@ -3690,12 +3734,12 @@ function renderPersonnelEmployeesTab() {
           <input id='pm-employee-department-${employee.id}' class='border rounded p-2 w-full bg-white' value='${escapeHtml(employee.department)}' />
         </td>
         <td class='p-2 whitespace-nowrap'>
-          <span class='px-2 py-1 rounded-full text-xs font-semibold ${statusClass}'>${active ? "Aktiv" : "Inaktiv"}</span>
+          <span class='px-2 py-1 rounded-full text-xs font-semibold ${statusClass}'>${isActive ? "Aktiv" : "Inaktiv"}</span>
         </td>
         <td class='p-2 whitespace-nowrap'>
           <button class='px-3 py-2 rounded bg-slate-900 text-white text-sm' onclick="savePersonnelEmployee('${employee.id}')">Speichern</button>
           ${
-            active
+            isActive
               ? `<button class='px-3 py-2 rounded bg-rose-700 text-white text-sm ml-2' onclick="deactivatePersonnelEmployee('${employee.id}')">Deaktivieren</button>`
               : `<button class='px-3 py-2 rounded bg-emerald-700 text-white text-sm ml-2' onclick="activatePersonnelEmployee('${employee.id}')">Aktivieren</button>`
           }
@@ -3815,6 +3859,35 @@ function validatePersonnelEmployeeInput(values) {
   return "";
 }
 
+function buildPersonnelDisplayName(values) {
+  return [values.firstName, values.lastName].filter(Boolean).join(" ").trim();
+}
+
+function formatPersonalManagementSupabaseError(
+  error,
+  fallback,
+  duplicateMessage = "Diese Personalnummer ist bereits vorhanden.",
+) {
+  const message = error?.message || "";
+  const code = error?.code || "";
+  const lowerMessage = message.toLowerCase();
+  if (
+    code === "23505" ||
+    lowerMessage.includes("duplicate") ||
+    lowerMessage.includes("unique")
+  ) {
+    return duplicateMessage;
+  }
+  if (
+    lowerMessage.includes("relation") ||
+    lowerMessage.includes("does not exist") ||
+    lowerMessage.includes("schema cache")
+  ) {
+    return `${fallback}: Supabase-Tabelle oder Spalte fehlt. Bitte Datenbankstruktur prüfen.`;
+  }
+  return `${fallback}: ${message || "Unbekannter Supabase-Fehler"}`;
+}
+
 async function findEmployeeByPersonnelNo(personnelNo, exceptId = null) {
   const { data, error } = await supabaseClient
     .from("employees")
@@ -3829,8 +3902,16 @@ async function findEmployeeByPersonnelNo(personnelNo, exceptId = null) {
 }
 
 async function createPersonnelEmployee() {
-  if (!canManagePersonnel()) return alert("Nur Admin darf Mitarbeiter anlegen.");
-  if (!supabaseReady) return alert("Supabase ist nicht erreichbar.");
+  if (!canManagePersonnel()) {
+    setPersonalManagementStatus("Nur Admin darf Mitarbeiter anlegen.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setPersonalManagementStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
 
   const values = {
     firstName: document.getElementById("pmNewFirstName")?.value?.trim() || "",
@@ -3839,49 +3920,97 @@ async function createPersonnelEmployee() {
     department: document.getElementById("pmNewDepartment")?.value?.trim() || "",
   };
   const validationMessage = validatePersonnelEmployeeInput(values);
-  if (validationMessage) return alert(validationMessage);
+  if (validationMessage) {
+    setPersonalManagementStatus(validationMessage, true);
+    render();
+    return;
+  }
 
   const duplicateCheck = await findEmployeeByPersonnelNo(values.personnelNo);
   if (duplicateCheck.error) {
-    return alert(`Personalnummer konnte nicht geprüft werden: ${duplicateCheck.error.message}`);
+    setPersonalManagementStatus(
+      formatPersonalManagementSupabaseError(
+        duplicateCheck.error,
+        "Personalnummer konnte nicht geprüft werden",
+      ),
+      true,
+    );
+    render();
+    return;
   }
   if (duplicateCheck.exists) {
-    return alert("Diese Personalnummer ist bereits vorhanden.");
+    setPersonalManagementStatus("Diese Personalnummer ist bereits vorhanden.", true);
+    render();
+    return;
   }
 
   const { error } = await supabaseClient.from("employees").insert([
     {
       first_name: values.firstName,
       last_name: values.lastName,
+      display_name: buildPersonnelDisplayName(values),
       personnel_no: values.personnelNo,
       department: values.department || null,
-      active: true,
+      role: "employee",
+      employee_type: "springer",
+      is_active: true,
     },
   ]);
 
   if (error) {
     console.error("Fehler beim Anlegen des Mitarbeiters:", error);
-    return alert(`Mitarbeiter konnte nicht gespeichert werden: ${error.message}`);
+    setPersonalManagementStatus(
+      formatPersonalManagementSupabaseError(
+        error,
+        "Mitarbeiter konnte nicht gespeichert werden",
+      ),
+      true,
+    );
+    render();
+    return;
   }
 
   await refreshEmployeesFromSupabase();
+  setPersonalManagementStatus("Mitarbeiter wurde gespeichert.");
   render();
 }
 
 async function savePersonnelEmployee(id) {
-  if (!canManagePersonnel()) return alert("Nur Admin darf Mitarbeiter bearbeiten.");
-  if (!supabaseReady) return alert("Supabase ist nicht erreichbar.");
+  if (!canManagePersonnel()) {
+    setPersonalManagementStatus("Nur Admin darf Mitarbeiter bearbeiten.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setPersonalManagementStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
 
   const values = readPersonnelEmployeeForm(id);
   const validationMessage = validatePersonnelEmployeeInput(values);
-  if (validationMessage) return alert(validationMessage);
+  if (validationMessage) {
+    setPersonalManagementStatus(validationMessage, true);
+    render();
+    return;
+  }
 
   const duplicateCheck = await findEmployeeByPersonnelNo(values.personnelNo, id);
   if (duplicateCheck.error) {
-    return alert(`Personalnummer konnte nicht geprüft werden: ${duplicateCheck.error.message}`);
+    setPersonalManagementStatus(
+      formatPersonalManagementSupabaseError(
+        duplicateCheck.error,
+        "Personalnummer konnte nicht geprüft werden",
+      ),
+      true,
+    );
+    render();
+    return;
   }
   if (duplicateCheck.exists) {
-    return alert("Diese Personalnummer ist bereits vorhanden.");
+    setPersonalManagementStatus("Diese Personalnummer ist bereits vorhanden.", true);
+    render();
+    return;
   }
 
   const { error } = await supabaseClient
@@ -3889,6 +4018,7 @@ async function savePersonnelEmployee(id) {
     .update({
       first_name: values.firstName,
       last_name: values.lastName,
+      display_name: buildPersonnelDisplayName(values),
       personnel_no: values.personnelNo,
       department: values.department || null,
       updated_at: new Date().toISOString(),
@@ -3897,16 +4027,33 @@ async function savePersonnelEmployee(id) {
 
   if (error) {
     console.error("Fehler beim Speichern des Mitarbeiters:", error);
-    return alert(`Mitarbeiter konnte nicht gespeichert werden: ${error.message}`);
+    setPersonalManagementStatus(
+      formatPersonalManagementSupabaseError(
+        error,
+        "Mitarbeiter konnte nicht gespeichert werden",
+      ),
+      true,
+    );
+    render();
+    return;
   }
 
   await refreshEmployeesFromSupabase();
+  setPersonalManagementStatus("Mitarbeiter wurde gespeichert.");
   render();
 }
 
 async function deactivatePersonnelEmployee(id) {
-  if (!canManagePersonnel()) return alert("Nur Admin darf Mitarbeiter deaktivieren.");
-  if (!supabaseReady) return alert("Supabase ist nicht erreichbar.");
+  if (!canManagePersonnel()) {
+    setPersonalManagementStatus("Nur Admin darf Mitarbeiter deaktivieren.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setPersonalManagementStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
 
   const employee = state.employees?.[id];
   const name = employee?.display_name || "Mitarbeiter";
@@ -3914,44 +4061,82 @@ async function deactivatePersonnelEmployee(id) {
 
   const { error } = await supabaseClient
     .from("employees")
-    .update({ active: false, updated_at: new Date().toISOString() })
+    .update({ is_active: false, updated_at: new Date().toISOString() })
     .eq("id", id);
 
   if (error) {
     console.error("Fehler beim Deaktivieren des Mitarbeiters:", error);
-    return alert(`Mitarbeiter konnte nicht deaktiviert werden: ${error.message}`);
+    setPersonalManagementStatus(
+      formatPersonalManagementSupabaseError(
+        error,
+        "Mitarbeiter konnte nicht deaktiviert werden",
+      ),
+      true,
+    );
+    render();
+    return;
   }
 
   await refreshEmployeesFromSupabase();
+  setPersonalManagementStatus("Mitarbeiter wurde deaktiviert.");
   render();
 }
 
 async function activatePersonnelEmployee(id) {
-  if (!canManagePersonnel()) return alert("Nur Admin darf Mitarbeiter aktivieren.");
-  if (!supabaseReady) return alert("Supabase ist nicht erreichbar.");
+  if (!canManagePersonnel()) {
+    setPersonalManagementStatus("Nur Admin darf Mitarbeiter aktivieren.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setPersonalManagementStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
 
   const { error } = await supabaseClient
     .from("employees")
-    .update({ active: true, updated_at: new Date().toISOString() })
+    .update({ is_active: true, updated_at: new Date().toISOString() })
     .eq("id", id);
 
   if (error) {
     console.error("Fehler beim Aktivieren des Mitarbeiters:", error);
-    return alert(`Mitarbeiter konnte nicht aktiviert werden: ${error.message}`);
+    setPersonalManagementStatus(
+      formatPersonalManagementSupabaseError(
+        error,
+        "Mitarbeiter konnte nicht aktiviert werden",
+      ),
+      true,
+    );
+    render();
+    return;
   }
 
   await refreshEmployeesFromSupabase();
+  setPersonalManagementStatus("Mitarbeiter wurde aktiviert.");
   render();
 }
 
 async function saveShiftDefinition(shiftKey) {
-  if (!canManagePersonnel()) return alert("Nur Admin darf Schichten bearbeiten.");
-  if (!supabaseReady) return alert("Supabase ist nicht erreichbar.");
+  if (!canManagePersonnel()) {
+    setPersonalManagementStatus("Nur Admin darf Schichten bearbeiten.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setPersonalManagementStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
 
   const template = SHIFT_DEFINITION_TYPES.find(
     (entry) => entry.shift_key === shiftKey,
   );
-  if (!template) return alert("Unbekannte Schichtart.");
+  if (!template) {
+    setPersonalManagementStatus("Unbekannte Schichtart.", true);
+    render();
+    return;
+  }
 
   const startTime = template.requires_time
     ? document.getElementById(`shift-start-${shiftKey}`)?.value || ""
@@ -3962,7 +4147,12 @@ async function saveShiftDefinition(shiftKey) {
   const active = document.getElementById(`shift-active-${shiftKey}`)?.checked !== false;
 
   if (template.requires_time && (!startTime || !endTime)) {
-    return alert(`${template.name}: Bitte Zeit von und Zeit bis eintragen.`);
+    setPersonalManagementStatus(
+      `${template.name}: Bitte Zeit von und Zeit bis eintragen.`,
+      true,
+    );
+    render();
+    return;
   }
 
   const payload = {
@@ -3986,11 +4176,21 @@ async function saveShiftDefinition(shiftKey) {
 
   if (error) {
     console.error("Fehler beim Speichern der Schichtdefinition:", error);
-    return alert(`Schichtdefinition konnte nicht gespeichert werden: ${error.message}`);
+    setPersonalManagementStatus(
+      formatPersonalManagementSupabaseError(
+        error,
+        "Schichtdefinition konnte nicht gespeichert werden",
+        "Schichtdefinition existiert bereits.",
+      ),
+      true,
+    );
+    render();
+    return;
   }
 
   const shiftDefinitions = await loadShiftDefinitionsFromSupabase();
   applyShiftDefinitionsToState(shiftDefinitions);
+  setPersonalManagementStatus("Schichtdefinition wurde gespeichert.");
   render();
 }
 
@@ -5039,7 +5239,6 @@ async function refreshEmployeesFromSupabase() {
       employee_type: refreshed.employee_type,
       slot_code: refreshed.slot_code,
       is_active: refreshed.is_active,
-      active: refreshed.active,
       color_key: refreshed.color_key,
     };
     currentUser = {
