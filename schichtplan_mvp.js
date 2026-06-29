@@ -56,9 +56,16 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.81";
+const APP_VERSION = "0.4.82";
 const INVENTORY_MODE_ENABLED = false;
 const VERSION_LOG = [
+  {
+    version: "0.4.82",
+    date: "2026-06-29 11:45",
+    changes: [
+      "Abteilungszuordnung bei Mitarbeitern automatisch beim Dropdown-Wechsel gespeichert.",
+    ],
+  },
   {
     version: "0.4.81",
     date: "2026-06-29 08:45",
@@ -4433,7 +4440,7 @@ function renderPersonnelEmployeesTab() {
           <input id='pm-employee-no-${employee.id}' class='border rounded p-2 w-full bg-white' value='${escapeHtml(employee.personnel_no)}' />
         </td>
         <td class='p-2'>
-          <select id='pm-employee-department-${employee.id}' class='border rounded p-2 w-full bg-white'>${renderDepartmentOptions(effectiveDepartmentId)}</select>
+          <select id='pm-employee-department-${employee.id}' class='border rounded p-2 w-full bg-white' onchange="autosavePersonnelEmployeeDepartment('${employee.id}', this.value)">${renderDepartmentOptions(effectiveDepartmentId)}</select>
           <div class='text-xs text-slate-500 mt-1'>${escapeHtml(departmentDisplay)}</div>
           ${leaderHint ? `<div class='text-xs text-amber-700 mt-1'>${escapeHtml(leaderHint)}</div>` : ""}
         </td>
@@ -4764,6 +4771,53 @@ async function savePersonnelEmployee(id) {
 
   await refreshEmployeesFromSupabase();
   setPersonalManagementStatus("Mitarbeiter wurde gespeichert.");
+  render();
+}
+
+async function autosavePersonnelEmployeeDepartment(id, departmentId) {
+  if (!canManagePersonnel()) {
+    setPersonalManagementStatus("Nur Admin darf die Abteilung ändern.", true);
+    render();
+    return;
+  }
+  if (!id) {
+    setPersonalManagementStatus("Abteilung konnte nicht gespeichert werden: gültige Mitarbeiter-ID fehlt.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setPersonalManagementStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+
+  const normalizedDepartmentId = departmentId || "";
+  const { error } = await supabaseClient
+    .from("employees")
+    .update({
+      department_id: normalizedDepartmentId || null,
+      department: normalizedDepartmentId
+        ? getDepartmentNameForStorage(normalizedDepartmentId) || null
+        : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Fehler beim automatischen Speichern der Abteilung:", error);
+    setPersonalManagementStatus(
+      formatPersonalManagementSupabaseError(
+        error,
+        "Abteilung konnte nicht gespeichert werden",
+      ),
+      true,
+    );
+    render();
+    return;
+  }
+
+  await refreshEmployeesFromSupabase();
+  setPersonalManagementStatus("Abteilung gespeichert.");
   render();
 }
 
