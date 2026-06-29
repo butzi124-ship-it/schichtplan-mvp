@@ -56,9 +56,14 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.83";
+const APP_VERSION = "0.4.84";
 const INVENTORY_MODE_ENABLED = false;
 const VERSION_LOG = [
+  {
+    version: "0.4.84",
+    date: "2026-06-29 21:19",
+    changes: ["Maschinenverwaltung im Produktionsbereich ergänzt."],
+  },
   {
     version: "0.4.83",
     date: "2026-06-29 12:30",
@@ -817,6 +822,44 @@ function applyDepartmentsToState(rows) {
   state.departments = rows.map(normalizeDepartmentFromDb);
 }
 
+async function loadProductionMachinesFromSupabase() {
+  const { data, error } = await supabaseClient
+    .from("production_machines")
+    .select("*")
+    .order("name", { ascending: true });
+
+  state.ui = state.ui || {};
+
+  if (error) {
+    console.error("Fehler beim Laden von production_machines:", error);
+    state.ui.productionMachinesError = formatProductionSupabaseError(
+      error,
+      "Maschinen konnten nicht geladen werden",
+    );
+    return null;
+  }
+
+  state.ui.productionMachinesError = "";
+  return data || [];
+}
+
+function normalizeProductionMachineFromDb(row) {
+  return {
+    id: row.id,
+    name: row.name || "",
+    machine_code: row.machine_code || "",
+    department_id: row.department_id || "",
+    active: row.active !== false,
+    created_at: row.created_at || null,
+    updated_at: row.updated_at || null,
+  };
+}
+
+function applyProductionMachinesToState(rows) {
+  if (!Array.isArray(rows)) return;
+  state.productionMachines = rows.map(normalizeProductionMachineFromDb);
+}
+
 function normalizeToolFromDb(row) {
   return {
     id: row.id,
@@ -1465,12 +1508,14 @@ async function syncSupabaseSessionToApp() {
   const employees = await loadEmployeesFromSupabase();
   const shiftDefinitions = await loadShiftDefinitionsFromSupabase();
   const departments = await loadDepartmentsFromSupabase();
+  const productionMachines = await loadProductionMachinesFromSupabase();
   const materials = await loadToolMaterialsFromSupabase();
   const planning = await loadPlanningDataFromSupabase();
 
   applyEmployeesToState(employees);
   applyShiftDefinitionsToState(shiftDefinitions);
   applyDepartmentsToState(departments);
+  applyProductionMachinesToState(productionMachines);
   toolMaterials = materials;
   await loadToolPageData();
   state.ui.supabaseReady = true;
@@ -1507,6 +1552,7 @@ async function syncSupabaseSessionToApp() {
   console.log("Employees-Datensatz:", currentEmployeeRecord);
   console.log("Schichtdefinitionen nach Login geladen:", shiftDefinitions);
   console.log("Abteilungen nach Login geladen:", departments);
+  console.log("Produktionsmaschinen nach Login geladen:", productionMachines);
   console.log("Tool-Materials nach Login geladen:", materials);
   console.log("Tools nach Login geladen:", state.tools);
   console.log("Planungsdaten nach Login geladen:", planning);
@@ -1543,12 +1589,14 @@ async function bootSupabase() {
   const employees = await loadEmployeesFromSupabase();
   const shiftDefinitions = await loadShiftDefinitionsFromSupabase();
   const departments = await loadDepartmentsFromSupabase();
+  const productionMachines = await loadProductionMachinesFromSupabase();
   const materials = await loadToolMaterialsFromSupabase();
   const planning = await loadPlanningDataFromSupabase();
 
   applyEmployeesToState(employees);
   applyShiftDefinitionsToState(shiftDefinitions);
   applyDepartmentsToState(departments);
+  applyProductionMachinesToState(productionMachines);
   toolMaterials = materials;
 
   if (planning) {
@@ -1568,6 +1616,7 @@ async function bootSupabase() {
   console.log("Employees aus Supabase:", employees);
   console.log("Schichtdefinitionen aus Supabase:", shiftDefinitions);
   console.log("Abteilungen aus Supabase:", departments);
+  console.log("Produktionsmaschinen aus Supabase:", productionMachines);
   console.log("Tool-Materials aus Supabase:", materials);
   console.log("Planungsdaten aus Supabase:", planning);
 
@@ -1626,6 +1675,7 @@ function loadState() {
     employeesList: [],
     shiftDefinitions: [],
     departments: [],
+    productionMachines: [],
     tools: [],
     toolLabelsExtra: [],
     toolManufacturersExtra: [],
@@ -1666,6 +1716,7 @@ function loadState() {
       productionActionError: "",
       productionActionMessage: "",
       productionDepartmentsError: "",
+      productionMachinesError: "",
       toolsLoading: false,
       supabaseReady: false,
       toolsInitialLoaded: false,
@@ -1676,6 +1727,7 @@ function loadState() {
     if (!raw) return base;
     const parsed = JSON.parse(raw);
     delete parsed.departments;
+    delete parsed.productionMachines;
     delete parsed.tools;
     delete parsed.toolJournal;
     return {
@@ -1708,6 +1760,7 @@ function persist() {
   delete snapshot.employeesList;
   delete snapshot.shiftDefinitions;
   delete snapshot.departments;
+  delete snapshot.productionMachines;
   delete snapshot.tools;
   delete snapshot.toolJournal;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
@@ -3792,10 +3845,12 @@ function formatProductionSupabaseError(
 
 function getProductionStatusBanner() {
   const tableError = state.ui?.productionDepartmentsError;
+  const machinesError = state.ui?.productionMachinesError;
   const actionError = state.ui?.productionActionError;
   const actionMessage = state.ui?.productionActionMessage;
   const errors = [];
   if (tableError) errors.push(`departments: ${tableError}`);
+  if (machinesError) errors.push(`production_machines: ${machinesError}`);
   if (actionError) errors.push(actionError);
 
   const errorBanner = errors.length
@@ -4049,9 +4104,93 @@ function renderProductionDepartmentsTab() {
 }
 
 function renderProductionMachinesTab() {
-  return `<div class='border rounded-lg p-3 bg-slate-50'>
-    <h3 class='font-semibold mb-2'>Maschinen</h3>
-    <p class='text-sm text-slate-600'>Maschinen werden im nächsten Schritt den Abteilungen zugeordnet.</p>
+  const canEdit = canManageProduction();
+  const activeDepartments = getActiveDepartments();
+  const departmentInfo = !activeDepartments.length
+    ? `<div class='rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800'>Keine aktiven Abteilungen für die Auswahl vorhanden. Maschinen können ohne Abteilung angelegt werden.</div>`
+    : "";
+  const createForm = canEdit
+    ? `<div class='border rounded-lg p-3 bg-slate-50 space-y-3'>
+        <h3 class='font-semibold'>Maschine anlegen</h3>
+        ${departmentInfo}
+        <div class='grid sm:grid-cols-2 lg:grid-cols-5 gap-3'>
+          <input id='productionNewMachineName' class='border rounded p-2 bg-white' placeholder='Name' />
+          <input id='productionNewMachineCode' class='border rounded p-2 bg-white' placeholder='Maschinencode' />
+          <select id='productionNewMachineDepartment' class='border rounded p-2 bg-white'>${renderDepartmentOptions("")}</select>
+          <label class='text-sm flex items-center gap-2 border rounded p-2 bg-white'>
+            <input id='productionNewMachineActive' type='checkbox' checked />
+            Aktiv
+          </label>
+          <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='createProductionMachine()'>Anlegen</button>
+        </div>
+      </div>`
+    : `<div class='rounded border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600'>Du kannst Maschinen sehen. Bearbeiten ist in dieser Version nur für Administratoren freigegeben.</div>`;
+
+  const rows = (state.productionMachines || [])
+    .map((machine) => {
+      const active = machine.active !== false;
+      const statusClass = active
+        ? "bg-emerald-100 text-emerald-800"
+        : "bg-slate-200 text-slate-700";
+      const department = getDepartmentById(machine.department_id);
+      const departmentDisplay =
+        department?.name || department?.code || (machine.department_id ? machine.department_id : "-");
+      const actionButtons = canEdit
+        ? `<button class='px-3 py-2 rounded bg-slate-900 text-white text-sm' onclick="saveProductionMachine('${machine.id}')">Speichern</button>
+          ${
+            active
+              ? `<button class='px-3 py-2 rounded bg-rose-700 text-white text-sm ml-2' onclick="deactivateProductionMachine('${machine.id}')">Deaktivieren</button>`
+              : `<button class='px-3 py-2 rounded bg-emerald-700 text-white text-sm ml-2' onclick="activateProductionMachine('${machine.id}')">Aktivieren</button>`
+          }
+          <button class='px-3 py-2 rounded bg-red-800 text-white text-sm ml-2' onclick="deleteProductionMachine('${machine.id}')">Löschen</button>`
+        : "-";
+
+      return `<tr class='border-b align-top ${active ? "" : "bg-slate-50 text-slate-500"}'>
+        <td class='p-2'>
+          ${
+            canEdit
+              ? `<input id='production-machine-name-${machine.id}' class='border rounded p-2 w-full bg-white' value='${escapeHtml(machine.name)}' />`
+              : escapeHtml(machine.name || "-")
+          }
+        </td>
+        <td class='p-2'>
+          ${
+            canEdit
+              ? `<input id='production-machine-code-${machine.id}' class='border rounded p-2 w-full bg-white' value='${escapeHtml(machine.machine_code)}' />`
+              : escapeHtml(machine.machine_code || "-")
+          }
+        </td>
+        <td class='p-2'>
+          ${
+            canEdit
+              ? `<select id='production-machine-department-${machine.id}' class='border rounded p-2 w-full bg-white'>${renderDepartmentOptions(machine.department_id)}</select>`
+              : escapeHtml(departmentDisplay)
+          }
+        </td>
+        <td class='p-2 whitespace-nowrap'>
+          <span class='px-2 py-1 rounded-full text-xs font-semibold ${statusClass}'>${active ? "Aktiv" : "Inaktiv"}</span>
+        </td>
+        <td class='p-2 whitespace-nowrap'>${actionButtons}</td>
+      </tr>`;
+    })
+    .join("");
+
+  return `<div class='space-y-4'>
+    ${createForm}
+    <div class='border rounded-lg bg-white overflow-auto'>
+      <table class='w-full text-sm min-w-[850px]'>
+        <thead class='bg-slate-100 sticky top-0'>
+          <tr>
+            <th class='p-2 text-left'>Name</th>
+            <th class='p-2 text-left'>Maschinencode</th>
+            <th class='p-2 text-left'>Abteilung</th>
+            <th class='p-2 text-left'>Status</th>
+            <th class='p-2 text-left'>Aktion</th>
+          </tr>
+        </thead>
+        <tbody>${rows || "<tr><td class='p-3 text-slate-500' colspan='5'>Keine Maschinen geladen.</td></tr>"}</tbody>
+      </table>
+    </div>
   </div>`;
 }
 
@@ -4081,6 +4220,25 @@ function validateProductionDepartmentInput(values) {
   return "";
 }
 
+function readProductionMachineForm(id) {
+  return {
+    name:
+      document.getElementById(`production-machine-name-${id}`)?.value?.trim() ||
+      "",
+    machineCode:
+      document.getElementById(`production-machine-code-${id}`)?.value?.trim() ||
+      "",
+    departmentId:
+      document.getElementById(`production-machine-department-${id}`)?.value || "",
+  };
+}
+
+function validateProductionMachineInput(values) {
+  if (!values.name) return "Bitte Name der Maschine ausfüllen.";
+  if (!values.machineCode) return "Bitte Maschinencode ausfüllen.";
+  return "";
+}
+
 async function findDepartmentByCode(code, exceptId = null) {
   const { data, error } = await supabaseClient
     .from("departments")
@@ -4094,9 +4252,27 @@ async function findDepartmentByCode(code, exceptId = null) {
   return { error: null, exists: !!existing };
 }
 
+async function findProductionMachineByCode(machineCode, exceptId = null) {
+  const { data, error } = await supabaseClient
+    .from("production_machines")
+    .select("id")
+    .eq("machine_code", machineCode)
+    .limit(1);
+
+  if (error) return { error, exists: false };
+
+  const existing = (data || []).find((row) => row.id !== exceptId);
+  return { error: null, exists: !!existing };
+}
+
 async function refreshDepartmentsFromSupabase() {
   const departments = await loadDepartmentsFromSupabase();
   applyDepartmentsToState(departments);
+}
+
+async function refreshProductionMachinesFromSupabase() {
+  const machines = await loadProductionMachinesFromSupabase();
+  applyProductionMachinesToState(machines);
 }
 
 async function createProductionDepartment() {
@@ -4341,6 +4517,251 @@ async function deleteProductionDepartment(id) {
 
   await refreshDepartmentsFromSupabase();
   setProductionStatus("Abteilung wurde gelöscht.");
+  render();
+}
+
+async function createProductionMachine() {
+  if (!canManageProduction()) {
+    setProductionStatus("Nur Admin darf Maschinen anlegen.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+
+  const values = {
+    name:
+      document.getElementById("productionNewMachineName")?.value?.trim() || "",
+    machineCode:
+      document.getElementById("productionNewMachineCode")?.value?.trim() || "",
+    departmentId:
+      document.getElementById("productionNewMachineDepartment")?.value || "",
+    active:
+      document.getElementById("productionNewMachineActive")?.checked !== false,
+  };
+  const validationMessage = validateProductionMachineInput(values);
+  if (validationMessage) {
+    setProductionStatus(validationMessage, true);
+    render();
+    return;
+  }
+
+  const duplicateCheck = await findProductionMachineByCode(values.machineCode);
+  if (duplicateCheck.error) {
+    setProductionStatus(
+      formatProductionSupabaseError(
+        duplicateCheck.error,
+        "Maschinencode konnte nicht geprüft werden",
+      ),
+      true,
+    );
+    render();
+    return;
+  }
+  if (duplicateCheck.exists) {
+    setProductionStatus("Dieser Maschinencode ist bereits vorhanden.", true);
+    render();
+    return;
+  }
+
+  const { error } = await supabaseClient.from("production_machines").insert([
+    {
+      name: values.name,
+      machine_code: values.machineCode,
+      department_id: values.departmentId || null,
+      active: values.active,
+    },
+  ]);
+
+  if (error) {
+    console.error("Fehler beim Anlegen der Maschine:", error);
+    setProductionStatus(
+      formatProductionSupabaseError(
+        error,
+        "Maschine konnte nicht gespeichert werden",
+        "Dieser Maschinencode ist bereits vorhanden.",
+      ),
+      true,
+    );
+    render();
+    return;
+  }
+
+  await refreshProductionMachinesFromSupabase();
+  setProductionStatus("Maschine wurde gespeichert.");
+  render();
+}
+
+async function saveProductionMachine(id) {
+  if (!canManageProduction()) {
+    setProductionStatus("Nur Admin darf Maschinen bearbeiten.", true);
+    render();
+    return;
+  }
+  if (!id) {
+    setProductionStatus("Maschine konnte nicht gespeichert werden: gültige ID fehlt.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+
+  const values = readProductionMachineForm(id);
+  const validationMessage = validateProductionMachineInput(values);
+  if (validationMessage) {
+    setProductionStatus(validationMessage, true);
+    render();
+    return;
+  }
+
+  const duplicateCheck = await findProductionMachineByCode(values.machineCode, id);
+  if (duplicateCheck.error) {
+    setProductionStatus(
+      formatProductionSupabaseError(
+        duplicateCheck.error,
+        "Maschinencode konnte nicht geprüft werden",
+      ),
+      true,
+    );
+    render();
+    return;
+  }
+  if (duplicateCheck.exists) {
+    setProductionStatus("Dieser Maschinencode ist bereits vorhanden.", true);
+    render();
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("production_machines")
+    .update({
+      name: values.name,
+      machine_code: values.machineCode,
+      department_id: values.departmentId || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Fehler beim Speichern der Maschine:", error);
+    setProductionStatus(
+      formatProductionSupabaseError(
+        error,
+        "Maschine konnte nicht gespeichert werden",
+        "Dieser Maschinencode ist bereits vorhanden.",
+      ),
+      true,
+    );
+    render();
+    return;
+  }
+
+  await refreshProductionMachinesFromSupabase();
+  setProductionStatus("Maschine wurde gespeichert.");
+  render();
+}
+
+async function setProductionMachineActive(id, active) {
+  if (!canManageProduction()) {
+    setProductionStatus("Nur Admin darf Maschinen aktivieren oder deaktivieren.", true);
+    render();
+    return;
+  }
+  if (!id) {
+    setProductionStatus("Maschine konnte nicht geändert werden: gültige ID fehlt.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("production_machines")
+    .update({ active, updated_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Fehler beim Ändern der Maschine:", error);
+    setProductionStatus(
+      formatProductionSupabaseError(
+        error,
+        "Maschine konnte nicht geändert werden",
+      ),
+      true,
+    );
+    render();
+    return;
+  }
+
+  await refreshProductionMachinesFromSupabase();
+  setProductionStatus(active ? "Maschine wurde aktiviert." : "Maschine wurde deaktiviert.");
+  render();
+}
+
+function deactivateProductionMachine(id) {
+  setProductionMachineActive(id, false);
+}
+
+function activateProductionMachine(id) {
+  setProductionMachineActive(id, true);
+}
+
+async function deleteProductionMachine(id) {
+  if (!canManageProduction()) {
+    setProductionStatus("Nur Admin darf Maschinen löschen.", true);
+    render();
+    return;
+  }
+  if (!id) {
+    setProductionStatus("Maschine konnte nicht gelöscht werden: gültige ID fehlt.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+  if (
+    !confirm(
+      "Maschine wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    )
+  ) {
+    setProductionStatus("Löschen abgebrochen.");
+    render();
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("production_machines")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("Fehler beim Löschen der Maschine:", error);
+    setProductionStatus(
+      formatProductionSupabaseError(
+        error,
+        "Maschine konnte nicht gelöscht werden",
+        "Maschine konnte nicht gelöscht werden: Datensatz ist noch verknüpft.",
+      ),
+      true,
+    );
+    render();
+    return;
+  }
+
+  await refreshProductionMachinesFromSupabase();
+  setProductionStatus("Maschine wurde gelöscht.");
   render();
 }
 
