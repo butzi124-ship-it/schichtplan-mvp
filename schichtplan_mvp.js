@@ -61,9 +61,9 @@ const INVENTORY_MODE_ENABLED = false;
 const VERSION_LOG = [
   {
     version: "0.4.82",
-    date: "2026-06-29 11:45",
+    date: "2026-06-29 12:21",
     changes: [
-      "Abteilungszuordnung bei Mitarbeitern automatisch beim Dropdown-Wechsel gespeichert.",
+      "Admin-, Scanner- und Login-Systemuser in der Personalverwaltung geschützt.",
     ],
   },
   {
@@ -540,6 +540,12 @@ const PRODUCTION_SUBTABS = [
   { id: "departments", label: "Abteilungen" },
   { id: "machines", label: "Maschinen" },
   { id: "settings", label: "Einstellungen" },
+];
+const VALID_EMPLOYEE_ROLES = [
+  "admin",
+  "employee",
+  "tool_scanner",
+  "department_admin",
 ];
 const SHIFT_DEFINITION_TYPES = [
   {
@@ -1176,6 +1182,11 @@ async function getCurrentEmployeeRecord() {
 
   if (error) {
     console.error("Fehler beim Laden des employees-Datensatzes:", error);
+    return null;
+  }
+
+  if (data && !VALID_EMPLOYEE_ROLES.includes(data.role)) {
+    console.error("Ungültige employees-Rolle beim Login:", data.role);
     return null;
   }
 
@@ -4325,6 +4336,47 @@ function canManagePersonnel() {
   return currentUser?.role === "admin";
 }
 
+function isPersonnelSystemUser(employee) {
+  const role = employee?.role || "";
+  return (
+    role === "admin" ||
+    role === "tool_scanner" ||
+    role === "department_admin" ||
+    !!(employee?.authUserId || employee?.auth_user_id)
+  );
+}
+
+function isCurrentEmployee(employee) {
+  return !!employee?.id && employee.id === currentEmployeeRecord?.id;
+}
+
+function getPersonnelEmployeeBadges(employee) {
+  const badges = [];
+  if (employee?.role === "admin") badges.push("Admin");
+  if (employee?.role === "tool_scanner") badges.push("Scanner");
+  if (employee?.role === "department_admin") badges.push("Abteilungsleiter");
+  if (employee?.authUserId || employee?.auth_user_id) badges.push("Login-Konto");
+  if (
+    employee?.role !== "department_admin" &&
+    getDepartmentsLedByEmployee(employee?.id).length > 0
+  ) {
+    badges.push("Abteilungsleiter");
+  }
+
+  return [...new Set(badges)];
+}
+
+function renderPersonnelEmployeeBadges(employee) {
+  const badges = getPersonnelEmployeeBadges(employee);
+  if (!badges.length) return "";
+  return `<div class='flex flex-wrap gap-1 mt-2'>${badges
+    .map(
+      (badge) =>
+        `<span class='px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[11px] font-semibold'>${escapeHtml(badge)}</span>`,
+    )
+    .join("")}</div>`;
+}
+
 function setPersonalManagementStatus(message = "", isError = false) {
   state.ui = state.ui || {};
   if (isError) {
@@ -4423,15 +4475,25 @@ function renderPersonnelEmployeesTab() {
   const rows = employees
     .map((employee) => {
       const isActive = employee.is_active !== false;
+      const isSystemUser = isPersonnelSystemUser(employee);
       const effectiveDepartmentId = getEmployeeEffectiveDepartmentId(employee);
       const departmentDisplay = getDepartmentDisplayForEmployee(employee);
       const leaderHint = getDepartmentLeaderHint(employee);
       const statusClass = isActive
         ? "bg-emerald-100 text-emerald-800"
         : "bg-slate-200 text-slate-700";
+      const activeToggleButton = isSystemUser && isActive
+        ? `<span class='inline-block px-3 py-2 text-xs text-slate-500'>Login-Konto geschützt</span>`
+        : isActive
+          ? `<button class='px-3 py-2 rounded bg-rose-700 text-white text-sm ml-2' onclick="deactivatePersonnelEmployee('${employee.id}')">Deaktivieren</button>`
+          : `<button class='px-3 py-2 rounded bg-emerald-700 text-white text-sm ml-2' onclick="activatePersonnelEmployee('${employee.id}')">Aktivieren</button>`;
+      const deleteButton = isSystemUser
+        ? `<span class='inline-block px-3 py-2 text-xs text-slate-500'>Login-Konto geschützt</span>`
+        : `<button class='px-3 py-2 rounded bg-red-800 text-white text-sm ml-2' onclick="deletePersonnelEmployee('${employee.id}')">Löschen</button>`;
       return `<tr class='border-b align-top ${isActive ? "" : "bg-slate-50 text-slate-500"}'>
         <td class='p-2'>
           <input id='pm-employee-first-${employee.id}' class='border rounded p-2 w-full bg-white' value='${escapeHtml(employee.first_name)}' />
+          ${renderPersonnelEmployeeBadges(employee)}
         </td>
         <td class='p-2'>
           <input id='pm-employee-last-${employee.id}' class='border rounded p-2 w-full bg-white' value='${escapeHtml(employee.last_name)}' />
@@ -4449,12 +4511,8 @@ function renderPersonnelEmployeesTab() {
         </td>
         <td class='p-2 whitespace-nowrap'>
           <button class='px-3 py-2 rounded bg-slate-900 text-white text-sm' onclick="savePersonnelEmployee('${employee.id}')">Speichern</button>
-          ${
-            isActive
-              ? `<button class='px-3 py-2 rounded bg-rose-700 text-white text-sm ml-2' onclick="deactivatePersonnelEmployee('${employee.id}')">Deaktivieren</button>`
-              : `<button class='px-3 py-2 rounded bg-emerald-700 text-white text-sm ml-2' onclick="activatePersonnelEmployee('${employee.id}')">Aktivieren</button>`
-          }
-          <button class='px-3 py-2 rounded bg-red-800 text-white text-sm ml-2' onclick="deletePersonnelEmployee('${employee.id}')">Löschen</button>
+          ${activeToggleButton}
+          ${deleteButton}
         </td>
       </tr>`;
     })
@@ -4569,7 +4627,8 @@ function readPersonnelEmployeeForm(id) {
   };
 }
 
-function validatePersonnelEmployeeInput(values) {
+function validatePersonnelEmployeeInput(values, employee = null) {
+  if (isPersonnelSystemUser(employee)) return "";
   if (!values.firstName || !values.lastName || !values.personnelNo) {
     return "Bitte Vorname, Nachname und Personalnummer ausfüllen.";
   }
@@ -4578,6 +4637,16 @@ function validatePersonnelEmployeeInput(values) {
 
 function buildPersonnelDisplayName(values) {
   return [values.firstName, values.lastName].filter(Boolean).join(" ").trim();
+}
+
+function buildPersonnelDisplayNameForPayload(values, employee = null) {
+  return (
+    buildPersonnelDisplayName(values) ||
+    employee?.display_name ||
+    employee?.name ||
+    employee?.role ||
+    ""
+  );
 }
 
 function getDepartmentNameForStorage(departmentId) {
@@ -4718,29 +4787,31 @@ async function savePersonnelEmployee(id) {
 
   const values = readPersonnelEmployeeForm(id);
   const employee = state.employees?.[id] || {};
-  const validationMessage = validatePersonnelEmployeeInput(values);
+  const validationMessage = validatePersonnelEmployeeInput(values, employee);
   if (validationMessage) {
     setPersonalManagementStatus(validationMessage, true);
     render();
     return;
   }
 
-  const duplicateCheck = await findEmployeeByPersonnelNo(values.personnelNo, id);
-  if (duplicateCheck.error) {
-    setPersonalManagementStatus(
-      formatPersonalManagementSupabaseError(
-        duplicateCheck.error,
-        "Personalnummer konnte nicht geprüft werden",
-      ),
-      true,
-    );
-    render();
-    return;
-  }
-  if (duplicateCheck.exists) {
-    setPersonalManagementStatus("Diese Personalnummer ist bereits vorhanden.", true);
-    render();
-    return;
+  if (values.personnelNo) {
+    const duplicateCheck = await findEmployeeByPersonnelNo(values.personnelNo, id);
+    if (duplicateCheck.error) {
+      setPersonalManagementStatus(
+        formatPersonalManagementSupabaseError(
+          duplicateCheck.error,
+          "Personalnummer konnte nicht geprüft werden",
+        ),
+        true,
+      );
+      render();
+      return;
+    }
+    if (duplicateCheck.exists) {
+      setPersonalManagementStatus("Diese Personalnummer ist bereits vorhanden.", true);
+      render();
+      return;
+    }
   }
 
   const { error } = await supabaseClient
@@ -4748,8 +4819,8 @@ async function savePersonnelEmployee(id) {
     .update({
       first_name: values.firstName,
       last_name: values.lastName,
-      display_name: buildPersonnelDisplayName(values),
-      personnel_no: values.personnelNo,
+      display_name: buildPersonnelDisplayNameForPayload(values, employee),
+      personnel_no: values.personnelNo || null,
       department_id: values.departmentId || null,
       department: getPersonnelDepartmentTextForPayload(values.departmentId, employee),
       updated_at: new Date().toISOString(),
@@ -4835,6 +4906,21 @@ async function deactivatePersonnelEmployee(id) {
 
   const employee = state.employees?.[id];
   const name = employee?.display_name || "Mitarbeiter";
+  if (!employee?.id) {
+    setPersonalManagementStatus("Mitarbeiter konnte nicht deaktiviert werden: gültige ID fehlt.", true);
+    render();
+    return;
+  }
+  if (isCurrentEmployee(employee)) {
+    setPersonalManagementStatus("Der aktuell angemeldete Admin darf sich nicht selbst deaktivieren.", true);
+    render();
+    return;
+  }
+  if (isPersonnelSystemUser(employee)) {
+    setPersonalManagementStatus("Login- und Systemuser dürfen hier nicht deaktiviert werden.", true);
+    render();
+    return;
+  }
   if (!confirm(`${name} wirklich deaktivieren?`)) return;
 
   const { error } = await supabaseClient
@@ -4908,6 +4994,22 @@ async function deletePersonnelEmployee(id) {
   }
   if (!supabaseReady) {
     setPersonalManagementStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+  const employee = state.employees?.[id];
+  if (!employee?.id) {
+    setPersonalManagementStatus("Mitarbeiter konnte nicht gelöscht werden: gültige ID fehlt.", true);
+    render();
+    return;
+  }
+  if (isCurrentEmployee(employee)) {
+    setPersonalManagementStatus("Der aktuell angemeldete Admin darf sich nicht selbst löschen.", true);
+    render();
+    return;
+  }
+  if (isPersonnelSystemUser(employee)) {
+    setPersonalManagementStatus("Login- und Systemuser dürfen nicht gelöscht werden.", true);
     render();
     return;
   }
