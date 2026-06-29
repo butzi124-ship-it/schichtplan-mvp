@@ -56,9 +56,16 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.80";
+const APP_VERSION = "0.4.81";
 const INVENTORY_MODE_ENABLED = false;
 const VERSION_LOG = [
+  {
+    version: "0.4.81",
+    date: "2026-06-29 08:45",
+    changes: [
+      "Mitarbeiterverwaltung mit Abteilungs-Dropdown und Abteilungsleiter-Zuordnung erweitert.",
+    ],
+  },
   {
     version: "0.4.80",
     date: "2026-06-29 08:21",
@@ -642,6 +649,7 @@ function normalizeEmployeeFromDb(row) {
     last_name: lastName,
     personnel_no: row.personnel_no || "",
     department: row.department || "",
+    department_id: row.department_id || "",
     name: displayName,
     display_name: displayName,
     role: row.role || "employee",
@@ -3808,6 +3816,82 @@ function getEmployeeDisplayNameById(employeeId) {
   return employee?.display_name || employee?.name || employeeId;
 }
 
+function getActiveDepartments() {
+  return (state.departments || []).filter(
+    (department) => department.active !== false,
+  );
+}
+
+function getDepartmentById(departmentId) {
+  if (!departmentId) return null;
+  return (state.departments || []).find(
+    (department) => department.id === departmentId,
+  ) || null;
+}
+
+function getDepartmentsLedByEmployee(employeeId) {
+  if (!employeeId) return [];
+  return (state.departments || []).filter(
+    (department) => department.leader_employee_id === employeeId,
+  );
+}
+
+function getSingleLedDepartmentId(employeeId) {
+  const ledDepartments = getDepartmentsLedByEmployee(employeeId);
+  return ledDepartments.length === 1 ? ledDepartments[0].id : "";
+}
+
+function getEmployeeEffectiveDepartmentId(employee) {
+  if (employee?.department_id) return employee.department_id;
+  return getSingleLedDepartmentId(employee?.id);
+}
+
+function renderDepartmentOptions(selectedId = "") {
+  const activeDepartments = getActiveDepartments();
+  const selectedDepartment = getDepartmentById(selectedId);
+  const selectedIsActive =
+    !!selectedDepartment && selectedDepartment.active !== false;
+  const selectedInactiveOption =
+    selectedDepartment && !selectedIsActive
+      ? `<option value='${escapeHtml(selectedDepartment.id)}' selected>${escapeHtml(`${selectedDepartment.name || selectedDepartment.code || selectedDepartment.id} (inaktiv)`)}</option>`
+      : "";
+  const options = [
+    `<option value='' ${!selectedId ? "selected" : ""}>Keine Abteilung</option>`,
+    selectedInactiveOption,
+    ...activeDepartments.map((department) => {
+      const label = department.name || department.code || department.id;
+      return `<option value='${escapeHtml(department.id)}' ${selectedId === department.id ? "selected" : ""}>${escapeHtml(label)}</option>`;
+    }),
+  ];
+  return options.join("");
+}
+
+function getDepartmentDisplayForEmployee(employee) {
+  const department = getDepartmentById(employee?.department_id);
+  if (department) return department.name || department.code || department.id;
+
+  if (!employee?.department_id) {
+    const ledDepartments = getDepartmentsLedByEmployee(employee?.id);
+    if (ledDepartments.length === 1) {
+      return ledDepartments[0].name || ledDepartments[0].code || ledDepartments[0].id;
+    }
+    if (employee?.department) return employee.department;
+  }
+
+  return employee?.department || "-";
+}
+
+function getDepartmentLeaderHint(employee) {
+  const ledDepartments = getDepartmentsLedByEmployee(employee?.id);
+  if (!ledDepartments.length) return "";
+  if (ledDepartments.length > 1) {
+    return "Abteilungsleiter mehrerer Abteilungen - keine automatische Zuordnung";
+  }
+  const departmentName =
+    ledDepartments[0].name || ledDepartments[0].code || ledDepartments[0].id;
+  return `Abteilungsleiter: ${departmentName}`;
+}
+
 function renderProduction() {
   if (!canAccessProduction()) {
     return `<div class='bg-white rounded-xl shadow p-4'>
@@ -4247,12 +4331,16 @@ function setPersonalManagementStatus(message = "", isError = false) {
 
 function getPersonalManagementErrorBanner() {
   const employeeError = state.ui?.personalManagementEmployeesError;
+  const departmentError = state.ui?.productionDepartmentsError;
   const shiftError = state.ui?.personalManagementShiftDefinitionsError;
   const actionError = state.ui?.personalManagementActionError;
   const actionMessage = state.ui?.personalManagementActionMessage;
   const messages = [];
   if (employeeError) {
     messages.push(`employees: ${employeeError}`);
+  }
+  if (departmentError) {
+    messages.push(`departments: ${departmentError}`);
   }
   if (shiftError) {
     messages.push(`shift_definitions: ${shiftError}`);
@@ -4280,6 +4368,7 @@ function getPersonalManagementEmployeeRows() {
     last_name: employee.last_name || "",
     personnel_no: employee.personnel_no || "",
     department: employee.department || "",
+    department_id: employee.department_id || "",
     is_active: employee.is_active !== false,
   }));
 }
@@ -4320,9 +4409,16 @@ function renderPersonalManagement() {
 
 function renderPersonnelEmployeesTab() {
   const employees = getPersonalManagementEmployeeRows();
+  const activeDepartments = getActiveDepartments();
+  const departmentInfo = !activeDepartments.length
+    ? `<div class='rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800'>Keine aktiven Abteilungen für die Auswahl vorhanden.</div>`
+    : "";
   const rows = employees
     .map((employee) => {
       const isActive = employee.is_active !== false;
+      const effectiveDepartmentId = getEmployeeEffectiveDepartmentId(employee);
+      const departmentDisplay = getDepartmentDisplayForEmployee(employee);
+      const leaderHint = getDepartmentLeaderHint(employee);
       const statusClass = isActive
         ? "bg-emerald-100 text-emerald-800"
         : "bg-slate-200 text-slate-700";
@@ -4337,7 +4433,9 @@ function renderPersonnelEmployeesTab() {
           <input id='pm-employee-no-${employee.id}' class='border rounded p-2 w-full bg-white' value='${escapeHtml(employee.personnel_no)}' />
         </td>
         <td class='p-2'>
-          <input id='pm-employee-department-${employee.id}' class='border rounded p-2 w-full bg-white' value='${escapeHtml(employee.department)}' />
+          <select id='pm-employee-department-${employee.id}' class='border rounded p-2 w-full bg-white'>${renderDepartmentOptions(effectiveDepartmentId)}</select>
+          <div class='text-xs text-slate-500 mt-1'>${escapeHtml(departmentDisplay)}</div>
+          ${leaderHint ? `<div class='text-xs text-amber-700 mt-1'>${escapeHtml(leaderHint)}</div>` : ""}
         </td>
         <td class='p-2 whitespace-nowrap'>
           <span class='px-2 py-1 rounded-full text-xs font-semibold ${statusClass}'>${isActive ? "Aktiv" : "Inaktiv"}</span>
@@ -4358,11 +4456,12 @@ function renderPersonnelEmployeesTab() {
   return `<div class='space-y-4'>
     <div class='border rounded-lg p-3 bg-slate-50'>
       <h3 class='font-semibold mb-3'>Mitarbeiter anlegen</h3>
+      ${departmentInfo}
       <div class='grid sm:grid-cols-2 lg:grid-cols-5 gap-3'>
         <input id='pmNewFirstName' class='border rounded p-2 bg-white' placeholder='Vorname' />
         <input id='pmNewLastName' class='border rounded p-2 bg-white' placeholder='Nachname' />
         <input id='pmNewPersonnelNo' class='border rounded p-2 bg-white' placeholder='Personalnummer' />
-        <input id='pmNewDepartment' class='border rounded p-2 bg-white' placeholder='Abteilung optional' />
+        <select id='pmNewDepartmentId' class='border rounded p-2 bg-white'>${renderDepartmentOptions("")}</select>
         <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='createPersonnelEmployee()'>Anlegen</button>
       </div>
     </div>
@@ -4445,6 +4544,13 @@ function renderPersonnelSettingsTab() {
 }
 
 function readPersonnelEmployeeForm(id) {
+  const employee = state.employees?.[id] || {};
+  const selectedDepartmentId =
+    document.getElementById(`pm-employee-department-${id}`)?.value || "";
+  const autoDepartmentId =
+    !employee.department_id && !selectedDepartmentId
+      ? getSingleLedDepartmentId(id)
+      : "";
   return {
     firstName:
       document.getElementById(`pm-employee-first-${id}`)?.value?.trim() || "",
@@ -4452,9 +4558,7 @@ function readPersonnelEmployeeForm(id) {
       document.getElementById(`pm-employee-last-${id}`)?.value?.trim() || "",
     personnelNo:
       document.getElementById(`pm-employee-no-${id}`)?.value?.trim() || "",
-    department:
-      document.getElementById(`pm-employee-department-${id}`)?.value?.trim() ||
-      "",
+    departmentId: selectedDepartmentId || autoDepartmentId,
   };
 }
 
@@ -4467,6 +4571,17 @@ function validatePersonnelEmployeeInput(values) {
 
 function buildPersonnelDisplayName(values) {
   return [values.firstName, values.lastName].filter(Boolean).join(" ").trim();
+}
+
+function getDepartmentNameForStorage(departmentId) {
+  const department = getDepartmentById(departmentId);
+  return department?.name || "";
+}
+
+function getPersonnelDepartmentTextForPayload(departmentId, employee = null) {
+  if (departmentId) return getDepartmentNameForStorage(departmentId) || null;
+  if (employee?.department_id) return null;
+  return employee?.department || null;
 }
 
 function formatPersonalManagementSupabaseError(
@@ -4523,7 +4638,7 @@ async function createPersonnelEmployee() {
     firstName: document.getElementById("pmNewFirstName")?.value?.trim() || "",
     lastName: document.getElementById("pmNewLastName")?.value?.trim() || "",
     personnelNo: document.getElementById("pmNewPersonnelNo")?.value?.trim() || "",
-    department: document.getElementById("pmNewDepartment")?.value?.trim() || "",
+    departmentId: document.getElementById("pmNewDepartmentId")?.value || "",
   };
   const validationMessage = validatePersonnelEmployeeInput(values);
   if (validationMessage) {
@@ -4556,7 +4671,8 @@ async function createPersonnelEmployee() {
       last_name: values.lastName,
       display_name: buildPersonnelDisplayName(values),
       personnel_no: values.personnelNo,
-      department: values.department || null,
+      department_id: values.departmentId || null,
+      department: getPersonnelDepartmentTextForPayload(values.departmentId),
       role: "employee",
       employee_type: "springer",
       is_active: true,
@@ -4594,6 +4710,7 @@ async function savePersonnelEmployee(id) {
   }
 
   const values = readPersonnelEmployeeForm(id);
+  const employee = state.employees?.[id] || {};
   const validationMessage = validatePersonnelEmployeeInput(values);
   if (validationMessage) {
     setPersonalManagementStatus(validationMessage, true);
@@ -4626,7 +4743,8 @@ async function savePersonnelEmployee(id) {
       last_name: values.lastName,
       display_name: buildPersonnelDisplayName(values),
       personnel_no: values.personnelNo,
-      department: values.department || null,
+      department_id: values.departmentId || null,
+      department: getPersonnelDepartmentTextForPayload(values.departmentId, employee),
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);
@@ -5890,6 +6008,7 @@ async function refreshEmployeesFromSupabase() {
       last_name: refreshed.last_name,
       personnel_no: refreshed.personnel_no,
       department: refreshed.department,
+      department_id: refreshed.department_id,
       display_name: refreshed.display_name,
       role: refreshed.role,
       employee_type: refreshed.employee_type,
