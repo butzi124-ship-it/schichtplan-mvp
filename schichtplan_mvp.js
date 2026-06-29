@@ -56,9 +56,16 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.79";
+const APP_VERSION = "0.4.80";
 const INVENTORY_MODE_ENABLED = false;
 const VERSION_LOG = [
+  {
+    version: "0.4.80",
+    date: "2026-06-29 08:21",
+    changes: [
+      "Produktion-Übertab mit Abteilungsverwaltung vorbereitet.",
+    ],
+  },
   {
     version: "0.4.79",
     date: "2026-06-28 09:35",
@@ -515,6 +522,11 @@ const PERSONNEL_MANAGEMENT_SUBTABS = [
   { id: "shiftModel", label: "Schichtmodell" },
   { id: "settings", label: "Einstellungen" },
 ];
+const PRODUCTION_SUBTABS = [
+  { id: "departments", label: "Abteilungen" },
+  { id: "machines", label: "Maschinen" },
+  { id: "settings", label: "Einstellungen" },
+];
 const SHIFT_DEFINITION_TYPES = [
   {
     shift_key: "early",
@@ -734,6 +746,44 @@ function normalizeShiftDefinitionFromDb(row) {
 function applyShiftDefinitionsToState(rows) {
   if (!Array.isArray(rows)) return;
   state.shiftDefinitions = rows.map(normalizeShiftDefinitionFromDb);
+}
+
+async function loadDepartmentsFromSupabase() {
+  const { data, error } = await supabaseClient
+    .from("departments")
+    .select("*")
+    .order("name", { ascending: true });
+
+  state.ui = state.ui || {};
+
+  if (error) {
+    console.error("Fehler beim Laden von departments:", error);
+    state.ui.productionDepartmentsError = formatProductionSupabaseError(
+      error,
+      "Abteilungen konnten nicht geladen werden",
+    );
+    return null;
+  }
+
+  state.ui.productionDepartmentsError = "";
+  return data || [];
+}
+
+function normalizeDepartmentFromDb(row) {
+  return {
+    id: row.id,
+    name: row.name || "",
+    code: row.code || "",
+    leader_employee_id: row.leader_employee_id || "",
+    active: row.active !== false,
+    created_at: row.created_at || null,
+    updated_at: row.updated_at || null,
+  };
+}
+
+function applyDepartmentsToState(rows) {
+  if (!Array.isArray(rows)) return;
+  state.departments = rows.map(normalizeDepartmentFromDb);
 }
 
 function normalizeToolFromDb(row) {
@@ -1378,11 +1428,13 @@ async function syncSupabaseSessionToApp() {
 
   const employees = await loadEmployeesFromSupabase();
   const shiftDefinitions = await loadShiftDefinitionsFromSupabase();
+  const departments = await loadDepartmentsFromSupabase();
   const materials = await loadToolMaterialsFromSupabase();
   const planning = await loadPlanningDataFromSupabase();
 
   applyEmployeesToState(employees);
   applyShiftDefinitionsToState(shiftDefinitions);
+  applyDepartmentsToState(departments);
   toolMaterials = materials;
   await loadToolPageData();
   state.ui.supabaseReady = true;
@@ -1418,6 +1470,7 @@ async function syncSupabaseSessionToApp() {
   console.log("Supabase-User:", currentSupabaseUser);
   console.log("Employees-Datensatz:", currentEmployeeRecord);
   console.log("Schichtdefinitionen nach Login geladen:", shiftDefinitions);
+  console.log("Abteilungen nach Login geladen:", departments);
   console.log("Tool-Materials nach Login geladen:", materials);
   console.log("Tools nach Login geladen:", state.tools);
   console.log("Planungsdaten nach Login geladen:", planning);
@@ -1453,11 +1506,13 @@ async function bootSupabase() {
 
   const employees = await loadEmployeesFromSupabase();
   const shiftDefinitions = await loadShiftDefinitionsFromSupabase();
+  const departments = await loadDepartmentsFromSupabase();
   const materials = await loadToolMaterialsFromSupabase();
   const planning = await loadPlanningDataFromSupabase();
 
   applyEmployeesToState(employees);
   applyShiftDefinitionsToState(shiftDefinitions);
+  applyDepartmentsToState(departments);
   toolMaterials = materials;
 
   if (planning) {
@@ -1476,6 +1531,7 @@ async function bootSupabase() {
 
   console.log("Employees aus Supabase:", employees);
   console.log("Schichtdefinitionen aus Supabase:", shiftDefinitions);
+  console.log("Abteilungen aus Supabase:", departments);
   console.log("Tool-Materials aus Supabase:", materials);
   console.log("Planungsdaten aus Supabase:", planning);
 
@@ -1531,6 +1587,7 @@ function loadState() {
     employees: {},
     employeesList: [],
     shiftDefinitions: [],
+    departments: [],
     tools: [],
     toolLabelsExtra: [],
     toolManufacturersExtra: [],
@@ -1559,6 +1616,7 @@ function loadState() {
     selectedOrderListManufacturer: "",
     planningSubTab: "personal",
     personnelManagementSubTab: "employees",
+    productionSubTab: "departments",
     absenceReplacements: {},
     replacementPlannerSelection: {},
     replacementPlannerChoice: {},
@@ -1567,6 +1625,9 @@ function loadState() {
       pendingSlotAssignments: {},
       personalManagementActionError: "",
       personalManagementActionMessage: "",
+      productionActionError: "",
+      productionActionMessage: "",
+      productionDepartmentsError: "",
       toolsLoading: false,
       supabaseReady: false,
       toolsInitialLoaded: false,
@@ -1576,6 +1637,7 @@ function loadState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return base;
     const parsed = JSON.parse(raw);
+    delete parsed.departments;
     delete parsed.tools;
     delete parsed.toolJournal;
     return {
@@ -1607,6 +1669,7 @@ function persist() {
   delete snapshot.employees;
   delete snapshot.employeesList;
   delete snapshot.shiftDefinitions;
+  delete snapshot.departments;
   delete snapshot.tools;
   delete snapshot.toolJournal;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
@@ -1728,6 +1791,7 @@ function render() {
     currentUser.role === "tool_scanner" ? ["toolscanner"] : ["schichtplan"];
   if (currentUser.role === "admin") {
     tabs.push(
+      "produktion",
       "personalverwaltung",
       "planung",
       "werkzeuge",
@@ -1737,6 +1801,7 @@ function render() {
       "statistik",
     );
   }
+  if (currentUser.role === "department_admin") tabs.push("produktion");
   if (currentUser.role === "employee") tabs.push("meine", "werkzeuge", "todo");
 
   const tabsEl = document.getElementById("tabs");
@@ -1776,6 +1841,7 @@ function render() {
 
   if (currentTab === "schichtplan") view.innerHTML = renderSchedule();
   if (currentTab === "meine") view.innerHTML = renderMyShifts();
+  if (currentTab === "produktion") view.innerHTML = renderProduction();
   if (currentTab === "personalverwaltung")
     view.innerHTML = renderPersonalManagement();
   if (currentTab === "planung") view.innerHTML = renderPlanning();
@@ -1797,6 +1863,7 @@ function labelTab(tab) {
   return {
     schichtplan: "Schichtplan",
     meine: "Meine Schichten",
+    produktion: "Produktion",
     personalverwaltung: "Personalverwaltung",
     planung: "Planung (Admin)",
     werkzeuge: "Werkzeuge",
@@ -1830,6 +1897,21 @@ function setPersonnelManagementSubTab(subTab) {
   state.personnelManagementSubTab = subTab;
   persist();
   render();
+}
+
+function setProductionSubTab(subTab) {
+  if (!PRODUCTION_SUBTABS.some((t) => t.id === subTab)) return;
+  state.productionSubTab = subTab;
+  persist();
+  render();
+}
+
+function canAccessProduction() {
+  return ["admin", "department_admin"].includes(currentUser?.role);
+}
+
+function canManageProduction() {
+  return currentUser?.role === "admin";
 }
 
 function isToolBelowMinStock(tool) {
@@ -3629,6 +3711,523 @@ function renderPlanningPersonal() {
       <button class='px-4 py-2 rounded ${hasPending ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500 cursor-not-allowed"}' ${hasPending ? "" : "disabled"} onclick='saveAllPersonnelChanges()'>Alle Änderungen speichern</button>
     </div>
   </div>`;
+}
+
+function setProductionStatus(message = "", isError = false) {
+  state.ui = state.ui || {};
+  if (isError) {
+    state.ui.productionActionError = message;
+    state.ui.productionActionMessage = "";
+    return;
+  }
+  state.ui.productionActionMessage = message;
+  state.ui.productionActionError = "";
+}
+
+function formatProductionSupabaseError(
+  error,
+  fallback,
+  duplicateMessage = "Dieser Abteilungscode ist bereits vorhanden.",
+) {
+  const message = error?.message || "";
+  const code = error?.code || "";
+  const lowerMessage = message.toLowerCase();
+  if (
+    code === "23505" ||
+    lowerMessage.includes("duplicate") ||
+    lowerMessage.includes("unique")
+  ) {
+    return duplicateMessage;
+  }
+  if (code === "23503" || lowerMessage.includes("foreign key")) {
+    return `${fallback}: Datensatz ist noch verknüpft.`;
+  }
+  if (
+    lowerMessage.includes("relation") ||
+    lowerMessage.includes("does not exist") ||
+    lowerMessage.includes("schema cache")
+  ) {
+    return `${fallback}: Supabase-Tabelle oder Spalte fehlt. Bitte Datenbankstruktur prüfen.`;
+  }
+  return `${fallback}: ${message || "Unbekannter Supabase-Fehler"}`;
+}
+
+function getProductionStatusBanner() {
+  const tableError = state.ui?.productionDepartmentsError;
+  const actionError = state.ui?.productionActionError;
+  const actionMessage = state.ui?.productionActionMessage;
+  const errors = [];
+  if (tableError) errors.push(`departments: ${tableError}`);
+  if (actionError) errors.push(actionError);
+
+  const errorBanner = errors.length
+    ? `<div class='rounded border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700'>${errors.map(escapeHtml).join(" | ")}</div>`
+    : "";
+  const messageBanner = actionMessage
+    ? `<div class='rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700'>${escapeHtml(actionMessage)}</div>`
+    : "";
+
+  return `${errorBanner}${messageBanner}`;
+}
+
+function getActiveDepartmentLeaderOptions(selectedId = "") {
+  const activeEmployees = (state.employeesList || []).filter(
+    (employee) => employee.is_active !== false,
+  );
+  const selectedEmployee = selectedId
+    ? (state.employeesList || []).find((employee) => employee.id === selectedId)
+    : null;
+  const selectedIsActive =
+    !!selectedEmployee && selectedEmployee.is_active !== false;
+  const selectedInactiveOption =
+    selectedEmployee && !selectedIsActive
+      ? `<option value='${escapeHtml(selectedEmployee.id)}' selected>${escapeHtml(`${selectedEmployee.display_name || selectedEmployee.name || selectedEmployee.id} (inaktiv)`)}</option>`
+      : "";
+  const options = [
+    `<option value='' ${!selectedId ? "selected" : ""}>Kein Abteilungsleiter</option>`,
+    selectedInactiveOption,
+    ...activeEmployees.map((employee) => {
+      const label =
+        employee.display_name ||
+        [employee.first_name, employee.last_name].filter(Boolean).join(" ") ||
+        employee.personnel_no ||
+        employee.id;
+      return `<option value='${escapeHtml(employee.id)}' ${selectedId === employee.id ? "selected" : ""}>${escapeHtml(label)}</option>`;
+    }),
+  ];
+
+  return {
+    activeEmployees,
+    html: options.join(""),
+  };
+}
+
+function getEmployeeDisplayNameById(employeeId) {
+  if (!employeeId) return "-";
+  const employee = (state.employeesList || []).find((entry) => entry.id === employeeId);
+  return employee?.display_name || employee?.name || employeeId;
+}
+
+function renderProduction() {
+  if (!canAccessProduction()) {
+    return `<div class='bg-white rounded-xl shadow p-4'>
+      <h2 class='text-lg font-semibold'>Produktion</h2>
+      <p class='text-sm text-slate-600 mt-2'>Dieser Bereich ist für deine Rolle nicht verfügbar.</p>
+    </div>`;
+  }
+
+  const subTab = PRODUCTION_SUBTABS.some((tab) => tab.id === state.productionSubTab)
+    ? state.productionSubTab
+    : "departments";
+  const subTabButtons = PRODUCTION_SUBTABS.map((tab) => {
+    const active = subTab === tab.id;
+    return `<button class='px-3 py-2 rounded border ${active ? "bg-slate-900 text-white border-slate-900" : "bg-white border-slate-300"}' onclick="setProductionSubTab('${tab.id}')">${tab.label}</button>`;
+  }).join("");
+
+  let content = "";
+  if (subTab === "departments") content = renderProductionDepartmentsTab();
+  if (subTab === "machines") content = renderProductionMachinesTab();
+  if (subTab === "settings") content = renderProductionSettingsTab();
+
+  return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
+    <div>
+      <h2 class='text-lg font-semibold'>Produktion</h2>
+      <p class='text-sm text-slate-500 mt-1'>Grundstruktur für Abteilungen und spätere Maschinenverwaltung.</p>
+    </div>
+    <div class='flex gap-2 flex-wrap'>${subTabButtons}</div>
+    ${getProductionStatusBanner()}
+    ${content}
+  </div>`;
+}
+
+function renderProductionDepartmentsTab() {
+  const canEdit = canManageProduction();
+  const leaderOptions = getActiveDepartmentLeaderOptions();
+  const employeeInfo = !leaderOptions.activeEmployees.length
+    ? `<div class='rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800'>Keine aktiven Mitarbeiter für die Auswahl als Abteilungsleiter vorhanden.</div>`
+    : "";
+  const createForm = canEdit
+    ? `<div class='border rounded-lg p-3 bg-slate-50 space-y-3'>
+        <h3 class='font-semibold'>Abteilung anlegen</h3>
+        ${employeeInfo}
+        <div class='grid sm:grid-cols-2 lg:grid-cols-5 gap-3'>
+          <input id='productionNewDepartmentName' class='border rounded p-2 bg-white' placeholder='Name' />
+          <input id='productionNewDepartmentCode' class='border rounded p-2 bg-white' placeholder='Code' />
+          <select id='productionNewDepartmentLeader' class='border rounded p-2 bg-white'>${leaderOptions.html}</select>
+          <label class='text-sm flex items-center gap-2 border rounded p-2 bg-white'>
+            <input id='productionNewDepartmentActive' type='checkbox' checked />
+            Aktiv
+          </label>
+          <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='createProductionDepartment()'>Anlegen</button>
+        </div>
+      </div>`
+    : `<div class='rounded border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600'>Du kannst die Produktionsstruktur sehen. Bearbeiten ist in dieser Version nur für Administratoren freigegeben.</div>`;
+
+  const rows = (state.departments || [])
+    .map((department) => {
+      const rowLeaderOptions = getActiveDepartmentLeaderOptions(
+        department.leader_employee_id,
+      );
+      const active = department.active !== false;
+      const statusClass = active
+        ? "bg-emerald-100 text-emerald-800"
+        : "bg-slate-200 text-slate-700";
+      const leaderDisplay = getEmployeeDisplayNameById(
+        department.leader_employee_id,
+      );
+      const actionButtons = canEdit
+        ? `<button class='px-3 py-2 rounded bg-slate-900 text-white text-sm' onclick="saveProductionDepartment('${department.id}')">Speichern</button>
+          ${
+            active
+              ? `<button class='px-3 py-2 rounded bg-rose-700 text-white text-sm ml-2' onclick="deactivateProductionDepartment('${department.id}')">Deaktivieren</button>`
+              : `<button class='px-3 py-2 rounded bg-emerald-700 text-white text-sm ml-2' onclick="activateProductionDepartment('${department.id}')">Aktivieren</button>`
+          }
+          <button class='px-3 py-2 rounded bg-red-800 text-white text-sm ml-2' onclick="deleteProductionDepartment('${department.id}')">Löschen</button>`
+        : "-";
+
+      return `<tr class='border-b align-top ${active ? "" : "bg-slate-50 text-slate-500"}'>
+        <td class='p-2'>
+          ${
+            canEdit
+              ? `<input id='production-department-name-${department.id}' class='border rounded p-2 w-full bg-white' value='${escapeHtml(department.name)}' />`
+              : escapeHtml(department.name || "-")
+          }
+        </td>
+        <td class='p-2'>
+          ${
+            canEdit
+              ? `<input id='production-department-code-${department.id}' class='border rounded p-2 w-full bg-white' value='${escapeHtml(department.code)}' />`
+              : escapeHtml(department.code || "-")
+          }
+        </td>
+        <td class='p-2'>
+          ${
+            canEdit
+              ? `<select id='production-department-leader-${department.id}' class='border rounded p-2 w-full bg-white'>${rowLeaderOptions.html}</select>`
+              : escapeHtml(leaderDisplay)
+          }
+        </td>
+        <td class='p-2 whitespace-nowrap'>
+          <span class='px-2 py-1 rounded-full text-xs font-semibold ${statusClass}'>${active ? "Aktiv" : "Inaktiv"}</span>
+        </td>
+        <td class='p-2 whitespace-nowrap'>${actionButtons}</td>
+      </tr>`;
+    })
+    .join("");
+
+  return `<div class='space-y-4'>
+    ${createForm}
+    <div class='border rounded-lg bg-white overflow-auto'>
+      <table class='w-full text-sm min-w-[850px]'>
+        <thead class='bg-slate-100 sticky top-0'>
+          <tr>
+            <th class='p-2 text-left'>Name</th>
+            <th class='p-2 text-left'>Code</th>
+            <th class='p-2 text-left'>Abteilungsleiter</th>
+            <th class='p-2 text-left'>Status</th>
+            <th class='p-2 text-left'>Aktion</th>
+          </tr>
+        </thead>
+        <tbody>${rows || "<tr><td class='p-3 text-slate-500' colspan='5'>Keine Abteilungen geladen.</td></tr>"}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function renderProductionMachinesTab() {
+  return `<div class='border rounded-lg p-3 bg-slate-50'>
+    <h3 class='font-semibold mb-2'>Maschinen</h3>
+    <p class='text-sm text-slate-600'>Maschinen werden im nächsten Schritt den Abteilungen zugeordnet.</p>
+  </div>`;
+}
+
+function renderProductionSettingsTab() {
+  return `<div class='border rounded-lg p-3 bg-slate-50'>
+    <h3 class='font-semibold mb-2'>Einstellungen</h3>
+    <p class='text-sm text-slate-600'>Produktionseinstellungen folgen später.</p>
+  </div>`;
+}
+
+function readProductionDepartmentForm(id) {
+  return {
+    name:
+      document.getElementById(`production-department-name-${id}`)?.value?.trim() ||
+      "",
+    code:
+      document.getElementById(`production-department-code-${id}`)?.value?.trim() ||
+      "",
+    leaderEmployeeId:
+      document.getElementById(`production-department-leader-${id}`)?.value || "",
+  };
+}
+
+function validateProductionDepartmentInput(values) {
+  if (!values.name) return "Bitte Name der Abteilung ausfüllen.";
+  if (!values.code) return "Bitte Code der Abteilung ausfüllen.";
+  return "";
+}
+
+async function findDepartmentByCode(code, exceptId = null) {
+  const { data, error } = await supabaseClient
+    .from("departments")
+    .select("id")
+    .eq("code", code)
+    .limit(1);
+
+  if (error) return { error, exists: false };
+
+  const existing = (data || []).find((row) => row.id !== exceptId);
+  return { error: null, exists: !!existing };
+}
+
+async function refreshDepartmentsFromSupabase() {
+  const departments = await loadDepartmentsFromSupabase();
+  applyDepartmentsToState(departments);
+}
+
+async function createProductionDepartment() {
+  if (!canManageProduction()) {
+    setProductionStatus("Nur Admin darf Abteilungen anlegen.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+
+  const values = {
+    name:
+      document.getElementById("productionNewDepartmentName")?.value?.trim() ||
+      "",
+    code:
+      document.getElementById("productionNewDepartmentCode")?.value?.trim() ||
+      "",
+    leaderEmployeeId:
+      document.getElementById("productionNewDepartmentLeader")?.value || "",
+    active:
+      document.getElementById("productionNewDepartmentActive")?.checked !== false,
+  };
+  const validationMessage = validateProductionDepartmentInput(values);
+  if (validationMessage) {
+    setProductionStatus(validationMessage, true);
+    render();
+    return;
+  }
+
+  const duplicateCheck = await findDepartmentByCode(values.code);
+  if (duplicateCheck.error) {
+    setProductionStatus(
+      formatProductionSupabaseError(
+        duplicateCheck.error,
+        "Abteilungscode konnte nicht geprüft werden",
+      ),
+      true,
+    );
+    render();
+    return;
+  }
+  if (duplicateCheck.exists) {
+    setProductionStatus("Dieser Abteilungscode ist bereits vorhanden.", true);
+    render();
+    return;
+  }
+
+  const { error } = await supabaseClient.from("departments").insert([
+    {
+      name: values.name,
+      code: values.code,
+      leader_employee_id: values.leaderEmployeeId || null,
+      active: values.active,
+    },
+  ]);
+
+  if (error) {
+    console.error("Fehler beim Anlegen der Abteilung:", error);
+    setProductionStatus(
+      formatProductionSupabaseError(
+        error,
+        "Abteilung konnte nicht gespeichert werden",
+      ),
+      true,
+    );
+    render();
+    return;
+  }
+
+  await refreshDepartmentsFromSupabase();
+  setProductionStatus("Abteilung wurde gespeichert.");
+  render();
+}
+
+async function saveProductionDepartment(id) {
+  if (!canManageProduction()) {
+    setProductionStatus("Nur Admin darf Abteilungen bearbeiten.", true);
+    render();
+    return;
+  }
+  if (!id) {
+    setProductionStatus("Abteilung konnte nicht gespeichert werden: gültige ID fehlt.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+
+  const values = readProductionDepartmentForm(id);
+  const validationMessage = validateProductionDepartmentInput(values);
+  if (validationMessage) {
+    setProductionStatus(validationMessage, true);
+    render();
+    return;
+  }
+
+  const duplicateCheck = await findDepartmentByCode(values.code, id);
+  if (duplicateCheck.error) {
+    setProductionStatus(
+      formatProductionSupabaseError(
+        duplicateCheck.error,
+        "Abteilungscode konnte nicht geprüft werden",
+      ),
+      true,
+    );
+    render();
+    return;
+  }
+  if (duplicateCheck.exists) {
+    setProductionStatus("Dieser Abteilungscode ist bereits vorhanden.", true);
+    render();
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("departments")
+    .update({
+      name: values.name,
+      code: values.code,
+      leader_employee_id: values.leaderEmployeeId || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Fehler beim Speichern der Abteilung:", error);
+    setProductionStatus(
+      formatProductionSupabaseError(
+        error,
+        "Abteilung konnte nicht gespeichert werden",
+      ),
+      true,
+    );
+    render();
+    return;
+  }
+
+  await refreshDepartmentsFromSupabase();
+  setProductionStatus("Abteilung wurde gespeichert.");
+  render();
+}
+
+async function setProductionDepartmentActive(id, active) {
+  if (!canManageProduction()) {
+    setProductionStatus("Nur Admin darf Abteilungen aktivieren oder deaktivieren.", true);
+    render();
+    return;
+  }
+  if (!id) {
+    setProductionStatus("Abteilung konnte nicht geändert werden: gültige ID fehlt.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("departments")
+    .update({ active, updated_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Fehler beim Ändern der Abteilung:", error);
+    setProductionStatus(
+      formatProductionSupabaseError(
+        error,
+        "Abteilung konnte nicht geändert werden",
+      ),
+      true,
+    );
+    render();
+    return;
+  }
+
+  await refreshDepartmentsFromSupabase();
+  setProductionStatus(active ? "Abteilung wurde aktiviert." : "Abteilung wurde deaktiviert.");
+  render();
+}
+
+function deactivateProductionDepartment(id) {
+  setProductionDepartmentActive(id, false);
+}
+
+function activateProductionDepartment(id) {
+  setProductionDepartmentActive(id, true);
+}
+
+async function deleteProductionDepartment(id) {
+  if (!canManageProduction()) {
+    setProductionStatus("Nur Admin darf Abteilungen löschen.", true);
+    render();
+    return;
+  }
+  if (!id) {
+    setProductionStatus("Abteilung konnte nicht gelöscht werden: gültige ID fehlt.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+  if (
+    !confirm(
+      "Abteilung wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    )
+  ) {
+    setProductionStatus("Löschen abgebrochen.");
+    render();
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("departments")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("Fehler beim Löschen der Abteilung:", error);
+    setProductionStatus(
+      formatProductionSupabaseError(
+        error,
+        "Abteilung konnte nicht gelöscht werden",
+        "Abteilung konnte nicht gelöscht werden: Datensatz ist noch verknüpft.",
+      ),
+      true,
+    );
+    render();
+    return;
+  }
+
+  await refreshDepartmentsFromSupabase();
+  setProductionStatus("Abteilung wurde gelöscht.");
+  render();
 }
 
 function canManagePersonnel() {
