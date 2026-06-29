@@ -56,9 +56,16 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.82";
+const APP_VERSION = "0.4.83";
 const INVENTORY_MODE_ENABLED = false;
 const VERSION_LOG = [
+  {
+    version: "0.4.83",
+    date: "2026-06-29 12:30",
+    changes: [
+      "Systemuser-Schutz in der Mitarbeiterliste sichtbar und wirksam gemacht.",
+    ],
+  },
   {
     version: "0.4.82",
     date: "2026-06-29 12:21",
@@ -654,10 +661,13 @@ function normalizeEmployeeFromDb(row) {
     row.personnel_no ||
     "";
   const isActive = row.is_active !== false;
+  const role = String(row.role || "employee").trim().toLowerCase();
+  const authUserId = row.auth_user_id || "";
 
   return {
     id: row.id,
-    authUserId: row.auth_user_id || null,
+    authUserId,
+    auth_user_id: authUserId,
     first_name: firstName,
     last_name: lastName,
     personnel_no: row.personnel_no || "",
@@ -665,7 +675,7 @@ function normalizeEmployeeFromDb(row) {
     department_id: row.department_id || "",
     name: displayName,
     display_name: displayName,
-    role: row.role || "employee",
+    role,
     type: row.employee_type || "springer",
     employee_type: row.employee_type || "springer",
     slot: row.slot_code || "",
@@ -1568,6 +1578,8 @@ function allUsers() {
   if (Array.isArray(state.employeesList) && state.employeesList.length) {
     return state.employeesList.map((employee) => ({
       id: employee.id,
+      authUserId: employee.authUserId || employee.auth_user_id || "",
+      auth_user_id: employee.auth_user_id || employee.authUserId || "",
       name: employee.name || employee.display_name,
       display_name: employee.display_name || employee.name,
       slot: employee.slot || employee.slot_code || "",
@@ -4337,12 +4349,14 @@ function canManagePersonnel() {
 }
 
 function isPersonnelSystemUser(employee) {
-  const role = employee?.role || "";
+  const role = String(employee?.role || "").trim().toLowerCase();
+  const authUserId = employee?.authUserId || employee?.auth_user_id || "";
   return (
     role === "admin" ||
     role === "tool_scanner" ||
     role === "department_admin" ||
-    !!(employee?.authUserId || employee?.auth_user_id)
+    !!authUserId ||
+    isCurrentEmployee(employee)
   );
 }
 
@@ -4352,16 +4366,18 @@ function isCurrentEmployee(employee) {
 
 function getPersonnelEmployeeBadges(employee) {
   const badges = [];
-  if (employee?.role === "admin") badges.push("Admin");
-  if (employee?.role === "tool_scanner") badges.push("Scanner");
-  if (employee?.role === "department_admin") badges.push("Abteilungsleiter");
+  const role = String(employee?.role || "").trim().toLowerCase();
+  if (role === "admin") badges.push("Admin");
+  if (role === "tool_scanner") badges.push("Scanner");
+  if (role === "department_admin") badges.push("Abteilungsleiter");
   if (employee?.authUserId || employee?.auth_user_id) badges.push("Login-Konto");
   if (
-    employee?.role !== "department_admin" &&
+    role !== "department_admin" &&
     getDepartmentsLedByEmployee(employee?.id).length > 0
   ) {
     badges.push("Abteilungsleiter");
   }
+  if (isPersonnelSystemUser(employee)) badges.push("Geschützt");
 
   return [...new Set(badges)];
 }
@@ -4370,10 +4386,13 @@ function renderPersonnelEmployeeBadges(employee) {
   const badges = getPersonnelEmployeeBadges(employee);
   if (!badges.length) return "";
   return `<div class='flex flex-wrap gap-1 mt-2'>${badges
-    .map(
-      (badge) =>
-        `<span class='px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[11px] font-semibold'>${escapeHtml(badge)}</span>`,
-    )
+    .map((badge) => {
+      const badgeClass =
+        badge === "Geschützt"
+          ? "bg-rose-100 text-rose-800 border border-rose-200"
+          : "bg-slate-200 text-slate-700 border border-slate-200";
+      return `<span class='px-2 py-0.5 rounded-full ${badgeClass} text-[11px] font-semibold'>${escapeHtml(badge)}</span>`;
+    })
     .join("")}</div>`;
 }
 
@@ -4482,13 +4501,13 @@ function renderPersonnelEmployeesTab() {
       const statusClass = isActive
         ? "bg-emerald-100 text-emerald-800"
         : "bg-slate-200 text-slate-700";
-      const activeToggleButton = isSystemUser && isActive
-        ? `<span class='inline-block px-3 py-2 text-xs text-slate-500'>Login-Konto geschützt</span>`
+      const activeToggleButton = isSystemUser
+        ? ""
         : isActive
           ? `<button class='px-3 py-2 rounded bg-rose-700 text-white text-sm ml-2' onclick="deactivatePersonnelEmployee('${employee.id}')">Deaktivieren</button>`
           : `<button class='px-3 py-2 rounded bg-emerald-700 text-white text-sm ml-2' onclick="activatePersonnelEmployee('${employee.id}')">Aktivieren</button>`;
       const deleteButton = isSystemUser
-        ? `<span class='inline-block px-3 py-2 text-xs text-slate-500'>Login-Konto geschützt</span>`
+        ? `<span class='inline-block px-3 py-2 rounded bg-slate-100 text-slate-600 text-xs font-semibold ml-2'>Geschützt</span>`
         : `<button class='px-3 py-2 rounded bg-red-800 text-white text-sm ml-2' onclick="deletePersonnelEmployee('${employee.id}')">Löschen</button>`;
       return `<tr class='border-b align-top ${isActive ? "" : "bg-slate-50 text-slate-500"}'>
         <td class='p-2'>
@@ -4508,6 +4527,7 @@ function renderPersonnelEmployeesTab() {
         </td>
         <td class='p-2 whitespace-nowrap'>
           <span class='px-2 py-1 rounded-full text-xs font-semibold ${statusClass}'>${isActive ? "Aktiv" : "Inaktiv"}</span>
+          ${renderPersonnelEmployeeBadges(employee)}
         </td>
         <td class='p-2 whitespace-nowrap'>
           <button class='px-3 py-2 rounded bg-slate-900 text-white text-sm' onclick="savePersonnelEmployee('${employee.id}')">Speichern</button>
