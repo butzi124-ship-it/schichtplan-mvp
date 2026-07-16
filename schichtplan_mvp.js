@@ -56,9 +56,16 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.84";
+const APP_VERSION = "0.4.85";
 const INVENTORY_MODE_ENABLED = false;
 const VERSION_LOG = [
+  {
+    version: "0.4.85",
+    date: "2026-07-16 11:25",
+    changes: [
+      "Abteilungsleiter-Ansicht für Produktion auf eigene Abteilungen begrenzt.",
+    ],
+  },
   {
     version: "0.4.84",
     date: "2026-06-29 21:19",
@@ -3914,6 +3921,43 @@ function getDepartmentById(departmentId) {
   ) || null;
 }
 
+function getManagedDepartmentIds() {
+  if (currentUser?.role === "admin") {
+    return (state.departments || []).map((department) => department.id);
+  }
+  if (currentUser?.role !== "department_admin" || !currentEmployeeRecord?.id) {
+    return [];
+  }
+  return (state.departments || [])
+    .filter((department) => department.leader_employee_id === currentEmployeeRecord.id)
+    .map((department) => department.id);
+}
+
+function getVisibleProductionDepartments() {
+  if (currentUser?.role === "admin") return state.departments || [];
+  const managedDepartmentIds = new Set(getManagedDepartmentIds());
+  return (state.departments || []).filter((department) =>
+    managedDepartmentIds.has(department.id),
+  );
+}
+
+function getVisibleProductionMachines() {
+  if (currentUser?.role === "admin") return state.productionMachines || [];
+  const managedDepartmentIds = new Set(getManagedDepartmentIds());
+  return (state.productionMachines || []).filter(
+    (machine) => machine.department_id && managedDepartmentIds.has(machine.department_id),
+  );
+}
+
+function renderProductionDepartmentAdminNotice() {
+  if (currentUser?.role !== "department_admin") return "";
+  const managedDepartmentIds = getManagedDepartmentIds();
+  if (!managedDepartmentIds.length) {
+    return `<div class='rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800'>Keine Abteilung als Abteilungsleiter zugeordnet.</div>`;
+  }
+  return `<div class='rounded border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800'>Abteilungsleiter-Ansicht: nur eigene Abteilung</div>`;
+}
+
 function getDepartmentsLedByEmployee(employeeId) {
   if (!employeeId) return [];
   return (state.departments || []).filter(
@@ -4005,6 +4049,7 @@ function renderProduction() {
     </div>
     <div class='flex gap-2 flex-wrap'>${subTabButtons}</div>
     ${getProductionStatusBanner()}
+    ${renderProductionDepartmentAdminNotice()}
     ${content}
   </div>`;
 }
@@ -4032,7 +4077,7 @@ function renderProductionDepartmentsTab() {
       </div>`
     : `<div class='rounded border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600'>Du kannst die Produktionsstruktur sehen. Bearbeiten ist in dieser Version nur für Administratoren freigegeben.</div>`;
 
-  const rows = (state.departments || [])
+  const rows = getVisibleProductionDepartments()
     .map((department) => {
       const rowLeaderOptions = getActiveDepartmentLeaderOptions(
         department.leader_employee_id,
@@ -4126,7 +4171,7 @@ function renderProductionMachinesTab() {
       </div>`
     : `<div class='rounded border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600'>Du kannst Maschinen sehen. Bearbeiten ist in dieser Version nur für Administratoren freigegeben.</div>`;
 
-  const rows = (state.productionMachines || [])
+  const rows = getVisibleProductionMachines()
     .map((machine) => {
       const active = machine.active !== false;
       const statusClass = active
