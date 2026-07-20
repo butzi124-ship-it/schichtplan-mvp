@@ -56,9 +56,14 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.87";
+const APP_VERSION = "0.4.88";
 const INVENTORY_MODE_ENABLED = false;
 const VERSION_LOG = [
+  {
+    version: "0.4.88",
+    date: "2026-07-20 13:08",
+    changes: ["Werkzeugverwaltung-Untertabs wieder korrekt angebunden."],
+  },
   {
     version: "0.4.87",
     date: "2026-07-20 12:29",
@@ -2146,7 +2151,11 @@ function setModuleSubTab(stateKey, subTab, allowedTabs) {
 }
 
 function setToolManagementSubTab(subTab) {
-  setModuleSubTab("toolManagementSubTab", subTab, TOOL_MANAGEMENT_SUBTABS);
+  if (!TOOL_MANAGEMENT_SUBTABS.some((t) => t.id === subTab)) return;
+  state.toolManagementSubTab = subTab;
+  persist();
+  render();
+  setTimeout(scrollToActiveToolManagementSection, 0);
 }
 
 function setStorageManagementSubTab(subTab) {
@@ -2239,15 +2248,21 @@ function renderToolManagement() {
     : "list";
   let content = "";
   if (subTab === "list") content = renderTools();
-  if (subTab === "stock") content = renderTools();
-  if (subTab === "movement") content = renderTools();
-  if (subTab === "reorder") content = renderTools();
-  if (subTab === "journal") content = renderTools();
+  if (subTab === "stock") {
+    content = `${renderToolManagementSubtabHint("Bestand", "Vorhandene Bestands-, Lager- und Mindestbestandsansicht.")}
+      ${renderTools()}`;
+  }
+  if (subTab === "movement") content = renderToolScanner();
+  if (subTab === "reorder") {
+    content = `${renderToolManagementSubtabHint("Nachbestellen", "Vorhandene Nachbestellprüfung, Bestellliste und Bestellmengenvorschläge.")}
+      ${renderTools()}`;
+  }
+  if (subTab === "journal") {
+    content = `${renderToolManagementSubtabHint("Journal", "Vorhandenes Werkzeugjournal mit Filterleiste.")}
+      ${renderTools()}`;
+  }
   if (subTab === "qrLabels") {
-    content = renderModulePlaceholder(
-      "QR-Etiketten",
-      "QR-Etiketten werden später als eigener Werkzeug-Unterbereich vorbereitet.",
-    );
+    content = renderToolQrLabelsTab();
   }
   if (subTab === "settings") {
     content = renderModulePlaceholder(
@@ -2264,6 +2279,72 @@ function renderToolManagement() {
       <div class='flex gap-2 flex-wrap'>${renderModuleSubTabs(TOOL_MANAGEMENT_SUBTABS, subTab, "setToolManagementSubTab")}</div>
     </div>
     ${content}
+  </div>`;
+}
+
+function getToolManagementSectionId(subTab) {
+  return {
+    stock: "toolManagementStockSection",
+    reorder: "toolManagementReorderSection",
+    journal: "toolManagementJournalSection",
+  }[subTab] || "";
+}
+
+function scrollToActiveToolManagementSection() {
+  if (currentTab !== "werkzeugverwaltung") return;
+  const sectionId = getToolManagementSectionId(state.toolManagementSubTab);
+  if (!sectionId) return;
+  document.getElementById(sectionId)?.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
+}
+
+function renderToolManagementSubtabHint(title, text) {
+  return `<div class='rounded border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800'>
+    <span class='font-semibold'>${escapeHtml(title)}:</span> ${escapeHtml(text)}
+  </div>`;
+}
+
+function renderToolQrLabelsTab() {
+  const tools = (state.tools || []).slice().sort((a, b) =>
+    String(a.tNumber || "").localeCompare(String(b.tNumber || ""), "de", {
+      numeric: true,
+    }),
+  );
+  const rows = tools
+    .map((tool) => {
+      const label = [tool.label, formatToolSize(tool), tool.holder]
+        .filter(Boolean)
+        .join(" · ");
+      return `<tr class='border-b'>
+        <td class='p-2 whitespace-nowrap'>T ${escapeHtml(tool.tNumber || "-")}</td>
+        <td class='p-2'>${escapeHtml(label || "-")}</td>
+        <td class='p-2'>${escapeHtml(tool.articleNo || "-")}</td>
+        <td class='p-2 whitespace-nowrap'>
+          <button class='px-3 py-2 rounded bg-slate-900 text-white text-sm' onclick="openToolQrPopup('${tool.id}')">QR anzeigen</button>
+        </td>
+      </tr>`;
+    })
+    .join("");
+  return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
+    <div>
+      <h2 class='text-xl font-bold'>QR-Etiketten</h2>
+      <p class='text-sm text-slate-500 mt-1'>Vorhandene Werkzeug-QR-Funktionen pro Werkzeug öffnen.</p>
+    </div>
+    <div class='border rounded-lg overflow-auto max-h-[65vh]'>
+      <table class='w-full text-sm'>
+        <thead class='bg-slate-100 sticky top-0'>
+          <tr>
+            <th class='p-2 text-left'>Werkzeug</th>
+            <th class='p-2 text-left'>Bezeichnung</th>
+            <th class='p-2 text-left'>Artikel</th>
+            <th class='p-2 text-left'>Aktion</th>
+          </tr>
+        </thead>
+        <tbody>${rows || '<tr><td class="p-3 text-slate-500" colspan="4">Keine Werkzeuge geladen.</td></tr>'}</tbody>
+      </table>
+    </div>
   </div>`;
 }
 
@@ -12175,7 +12256,7 @@ function renderTools() {
     <p class='text-sm text-slate-600 mb-2'>Werkzeugbestand, Stammdaten, Bestellungen und Journal sind getrennt untereinander dargestellt.</p>
     ${toolsLoadingBanner}
 
-    <div class='border-2 border-slate-300 rounded-xl p-3 w-full max-w-none'>
+    <div id='toolManagementStockSection' class='border-2 border-slate-300 rounded-xl p-3 w-full max-w-none'>
       <div class='flex items-center justify-between gap-3 flex-wrap mb-3'>
         <div>
           <h3 class='text-lg font-bold'>Werkzeugbestand</h3>
@@ -12237,7 +12318,7 @@ function renderTools() {
 
     ${
       isAdmin
-        ? `<div class='border-2 border-slate-300 rounded-xl p-3 space-y-3'>
+        ? `<div id='toolManagementAdminActionsSection' class='border-2 border-slate-300 rounded-xl p-3 space-y-3'>
             <div class='flex items-center justify-between gap-2 flex-wrap'>
               <h3 class='text-lg font-bold'>Admin-Bestandsaktionen</h3>
               ${
@@ -12247,7 +12328,7 @@ function renderTools() {
               }
             </div>
 
-            <div class='border rounded p-3 bg-white overflow-auto'>
+            <div id='toolManagementReorderSection' class='border rounded p-3 bg-white overflow-auto'>
               <h4 class='font-semibold mb-2'>Nachbestellen prüfen</h4>
               <table class='w-full text-sm'>
                 <thead class='bg-slate-100'>
@@ -12296,7 +12377,7 @@ function renderTools() {
               </table>
             </div>
 
-            <div class='border rounded p-3 bg-white'>
+            <div id='toolManagementJournalSection' class='border rounded p-3 bg-white'>
               <h4 class='font-semibold mb-2'>Schichtjournal – Werkzeugwechsel</h4>
               ${journalFilterBar}
               <div class='overflow-auto max-h-[25vh]'>
@@ -12319,7 +12400,7 @@ function renderTools() {
             ${storageOverviewSection}
           </div>`
         : `<div class='space-y-3'>
-            <div class='border-2 border-slate-300 rounded-xl p-3'>
+            <div id='toolManagementJournalSection' class='border-2 border-slate-300 rounded-xl p-3'>
               <h3 class='text-lg font-bold mb-2'>Schichtjournal – Werkzeugwechsel</h3>
               ${journalFilterBar}
               <div class='overflow-auto max-h-[25vh]'>
