@@ -56,9 +56,14 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.86";
+const APP_VERSION = "0.4.87";
 const INVENTORY_MODE_ENABLED = false;
 const VERSION_LOG = [
+  {
+    version: "0.4.87",
+    date: "2026-07-20 12:29",
+    changes: ["Modulstruktur und Funktionslandkarte der App vorbereitet."],
+  },
   {
     version: "0.4.86",
     date: "2026-07-20 12:13",
@@ -557,16 +562,68 @@ const PLANNING_SUBTABS = [
   { id: "wochenende", label: "Wochenendeinsätze" },
   { id: "schichttausch", label: "Schichttausch" },
 ];
+const DASHBOARD_SUBTABS = [
+  { id: "overview", label: "Übersicht" },
+  { id: "myShifts", label: "Meine Schichten" },
+  { id: "todo", label: "To-Do" },
+  { id: "oldSchedule", label: "Alt-Schichtplan" },
+];
 const PERSONNEL_MANAGEMENT_SUBTABS = [
   { id: "employees", label: "Mitarbeiter" },
   { id: "shiftModel", label: "Schichtmodell" },
+  { id: "shiftPlanning", label: "Schichtplanung" },
   { id: "settings", label: "Einstellungen" },
 ];
 const PRODUCTION_SUBTABS = [
   { id: "departments", label: "Abteilungen" },
   { id: "machines", label: "Maschinen" },
+  { id: "orders", label: "Aufträge / BA" },
   { id: "counts", label: "Stückzahl" },
+  { id: "setups", label: "Spannungen" },
+  { id: "scrap", label: "Ausschuss / Abklärung" },
+  { id: "protocol", label: "Protokoll" },
   { id: "settings", label: "Einstellungen" },
+];
+const TOOL_MANAGEMENT_SUBTABS = [
+  { id: "list", label: "Werkzeugliste" },
+  { id: "stock", label: "Bestand" },
+  { id: "movement", label: "Entnahme / Einlagerung" },
+  { id: "reorder", label: "Nachbestellen" },
+  { id: "journal", label: "Journal" },
+  { id: "qrLabels", label: "QR-Etiketten" },
+  { id: "settings", label: "Einstellungen" },
+];
+const STORAGE_MANAGEMENT_SUBTABS = [
+  { id: "overview", label: "Lagerübersicht" },
+  { id: "search", label: "Fachsuche" },
+  { id: "move", label: "Umlagern" },
+  { id: "qr", label: "Lagerfach-QR" },
+  { id: "inventory", label: "Inventur" },
+  { id: "settings", label: "Einstellungen" },
+];
+const SCANNER_SUBTABS = [
+  { id: "toolScan", label: "Werkzeug scannen" },
+  { id: "storageScan", label: "Lagerfach scannen" },
+  { id: "withdraw", label: "Entnahme" },
+  { id: "restock", label: "Einlagerung" },
+  { id: "return", label: "Rückgabe" },
+  { id: "countScan", label: "Stückzahl-Scan" },
+];
+const ANALYTICS_SUBTABS = [
+  { id: "toolStats", label: "Werkzeugstatistik" },
+  { id: "orderStats", label: "Bestellstatistik" },
+  { id: "productionStats", label: "Produktionszahlen" },
+  { id: "employeesDepartments", label: "Mitarbeiter / Abteilung" },
+  { id: "protocols", label: "Protokolle" },
+  { id: "export", label: "Export" },
+];
+const ADMIN_SYSTEM_SUBTABS = [
+  { id: "roles", label: "Rollen" },
+  { id: "accounts", label: "Benutzer / Login-Konten" },
+  { id: "company", label: "Firmen-Einstellungen" },
+  { id: "version", label: "Version / Logs" },
+  { id: "backup", label: "Backup" },
+  { id: "setup", label: "Setup-Assistent" },
 ];
 const VALID_EMPLOYEE_ROLES = [
   "admin",
@@ -1768,9 +1825,15 @@ function loadState() {
     orderSuggestionState: {},
     orderListPopupOpen: false,
     selectedOrderListManufacturer: "",
+    dashboardSubTab: "overview",
     planningSubTab: "personal",
     personnelManagementSubTab: "employees",
     productionSubTab: "departments",
+    toolManagementSubTab: "list",
+    storageManagementSubTab: "overview",
+    scannerSubTab: "toolScan",
+    analyticsSubTab: "toolStats",
+    adminSystemSubTab: "roles",
     absenceReplacements: {},
     replacementPlannerSelection: {},
     replacementPlannerChoice: {},
@@ -1948,21 +2011,20 @@ function render() {
   cleanupOrderArchive();
 
   const tabs =
-    currentUser.role === "tool_scanner" ? ["toolscanner"] : ["schichtplan"];
+    currentUser.role === "tool_scanner" ? ["scanner"] : ["dashboard"];
   if (currentUser.role === "admin") {
     tabs.push(
-      "produktion",
       "personalverwaltung",
-      "planung",
-      "werkzeuge",
-      "bestellstatistik",
-      "todo",
-      "konflikte",
-      "statistik",
+      "produktion",
+      "werkzeugverwaltung",
+      "lagerverwaltung",
+      "scanner",
+      "auswertung",
+      "adminsystem",
     );
   }
   if (currentUser.role === "department_admin") tabs.push("produktion");
-  if (currentUser.role === "employee") tabs.push("meine", "werkzeuge", "todo");
+  if (currentUser.role === "employee") tabs.push("werkzeugverwaltung");
 
   const tabsEl = document.getElementById("tabs");
   tabsEl.className = "flex gap-2 flex-wrap";
@@ -1984,7 +2046,7 @@ function render() {
     `Angemeldet: ${currentUser.name} (${currentUser.role})`;
 
   if (!tabs.includes(currentTab)) currentTab = tabs[0];
-  if (currentTab === "werkzeuge") {
+  if (["werkzeugverwaltung", "lagerverwaltung"].includes(currentTab)) {
     startToolRealtimeSubscription().catch(console.warn);
     startToolAutoRefresh();
   } else {
@@ -1994,23 +2056,20 @@ function render() {
   const view = document.getElementById("view");
   if (view?.parentElement) {
     view.parentElement.className =
-      currentTab === "werkzeuge"
+      ["werkzeugverwaltung", "lagerverwaltung"].includes(currentTab)
         ? "w-full max-w-none p-4 space-y-4"
         : "max-w-7xl mx-auto p-4 space-y-4";
   }
 
-  if (currentTab === "schichtplan") view.innerHTML = renderSchedule();
-  if (currentTab === "meine") view.innerHTML = renderMyShifts();
+  if (currentTab === "dashboard") view.innerHTML = renderDashboard();
   if (currentTab === "produktion") view.innerHTML = renderProduction();
   if (currentTab === "personalverwaltung")
     view.innerHTML = renderPersonalManagement();
-  if (currentTab === "planung") view.innerHTML = renderPlanning();
-  if (currentTab === "werkzeuge") view.innerHTML = renderTools();
-  if (currentTab === "toolscanner") view.innerHTML = renderToolScanner();
-  if (currentTab === "bestellstatistik") view.innerHTML = renderOrderStats();
-  if (currentTab === "todo") view.innerHTML = renderTodo();
-  if (currentTab === "konflikte") view.innerHTML = renderConflicts();
-  if (currentTab === "statistik") view.innerHTML = renderStats();
+  if (currentTab === "werkzeugverwaltung") view.innerHTML = renderToolManagement();
+  if (currentTab === "lagerverwaltung") view.innerHTML = renderStorageManagement();
+  if (currentTab === "scanner") view.innerHTML = renderScannerModule();
+  if (currentTab === "auswertung") view.innerHTML = renderAnalyticsModule();
+  if (currentTab === "adminsystem") view.innerHTML = renderAdminSystemModule();
   ensureVersionFooter();
   if (currentUser.role === "tool_scanner") return;
   maybeShowMachinePrompt();
@@ -2021,21 +2080,34 @@ function render() {
 
 function labelTab(tab) {
   return {
-    schichtplan: "Schichtplan",
-    meine: "Meine Schichten",
+    dashboard: "Start / Dashboard",
     produktion: "Produktion",
     personalverwaltung: "Personalverwaltung",
-    planung: "Planung (Admin)",
-    werkzeuge: "Werkzeuge",
-    toolscanner: "Werkzeug-Scanner",
-    bestellstatistik: "Bestell-Statistik",
-    todo: "To-Do",
-    konflikte: "Konflikte",
-    statistik: "Statistik",
+    werkzeugverwaltung: "Werkzeugverwaltung",
+    lagerverwaltung: "Lagerverwaltung",
+    scanner: "Scanner",
+    auswertung: "Auswertung",
+    adminsystem: "Admin / System",
   }[tab];
 }
 
 function setTab(tab) {
+  const legacyTabMap = {
+    schichtplan: "dashboard",
+    meine: "dashboard",
+    werkzeuge: "werkzeugverwaltung",
+    toolscanner: "scanner",
+    bestellstatistik: "auswertung",
+    statistik: "auswertung",
+    planung: "personalverwaltung",
+    todo: "dashboard",
+    konflikte: "auswertung",
+  };
+  if (legacyTabMap[tab]) {
+    currentTab = legacyTabMap[tab];
+    render();
+    return;
+  }
   currentTab = tab;
   render();
 }
@@ -2064,6 +2136,270 @@ function setProductionSubTab(subTab) {
   state.productionSubTab = subTab;
   persist();
   render();
+}
+
+function setModuleSubTab(stateKey, subTab, allowedTabs) {
+  if (!allowedTabs.some((t) => t.id === subTab)) return;
+  state[stateKey] = subTab;
+  persist();
+  render();
+}
+
+function setToolManagementSubTab(subTab) {
+  setModuleSubTab("toolManagementSubTab", subTab, TOOL_MANAGEMENT_SUBTABS);
+}
+
+function setStorageManagementSubTab(subTab) {
+  setModuleSubTab("storageManagementSubTab", subTab, STORAGE_MANAGEMENT_SUBTABS);
+}
+
+function setScannerSubTab(subTab) {
+  setModuleSubTab("scannerSubTab", subTab, SCANNER_SUBTABS);
+}
+
+function setAnalyticsSubTab(subTab) {
+  setModuleSubTab("analyticsSubTab", subTab, ANALYTICS_SUBTABS);
+}
+
+function setAdminSystemSubTab(subTab) {
+  setModuleSubTab("adminSystemSubTab", subTab, ADMIN_SYSTEM_SUBTABS);
+}
+
+function setDashboardSubTab(subTab) {
+  setModuleSubTab("dashboardSubTab", subTab, DASHBOARD_SUBTABS);
+}
+
+function renderModuleSubTabs(tabs, activeId, setterName) {
+  return tabs
+    .map((tab) => {
+      const active = activeId === tab.id;
+      return `<button class='px-3 py-2 rounded border ${active ? "bg-slate-900 text-white border-slate-900" : "bg-white border-slate-300"}' onclick="${setterName}('${tab.id}')">${tab.label}</button>`;
+    })
+    .join("");
+}
+
+function renderModulePlaceholder(title, text) {
+  return `<div class='border rounded-lg p-4 bg-slate-50'>
+    <h3 class='font-semibold mb-2'>${escapeHtml(title)}</h3>
+    <p class='text-sm text-slate-600'>${escapeHtml(text)}</p>
+  </div>`;
+}
+
+function renderDashboard() {
+  const subTab = DASHBOARD_SUBTABS.some((tab) => tab.id === state.dashboardSubTab)
+    ? state.dashboardSubTab
+    : "overview";
+  const cards = [
+    ["Personalverwaltung", "Mitarbeiter, Schichtmodell und spätere Schichtplanung."],
+    ["Produktion", "Abteilungen, Maschinen, Stückzahl und künftige Produktionsmodule."],
+    ["Werkzeugverwaltung", "Werkzeugliste, Bestand, Buchungen, Nachbestellung und Journal."],
+    ["Lagerverwaltung", "Lagerübersicht, Fachsuche, Umlagerung, QR und Inventur-Platz."],
+    ["Scanner", "Scanner-Flows für Werkzeug, Lagerfach und spätere Stückzahl-Scans."],
+    ["Auswertung", "Statistiken, Produktionszahlen, Protokolle und Export."],
+    ["Admin / System", "Rollen, Login-Konten, Versionen, Backup und Setup."],
+  ];
+  let content = "";
+  if (subTab === "overview") {
+    content = `<div class='grid md:grid-cols-2 xl:grid-cols-3 gap-3'>
+      ${cards.map(([title, text]) => `<div class='border rounded-lg p-3 bg-slate-50'><h3 class='font-semibold'>${escapeHtml(title)}</h3><p class='text-sm text-slate-600 mt-1'>${escapeHtml(text)}</p></div>`).join("")}
+    </div>`;
+  }
+  if (subTab === "myShifts") {
+    content =
+      currentUser?.role === "employee"
+        ? renderMyShifts()
+        : renderModulePlaceholder(
+            "Meine Schichten",
+            "Meine Schichten ist für Mitarbeiter vorgesehen.",
+          );
+  }
+  if (subTab === "todo") content = renderTodo();
+  if (subTab === "oldSchedule") {
+    content = renderModulePlaceholder(
+      "Alt-Schichtplan",
+      "Alter Schichtplan bleibt Alt / deaktiviert und wird nicht als neue Struktur weiterverwendet.",
+    );
+  }
+  return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
+    <div>
+      <h2 class='text-lg font-semibold'>Start / Dashboard</h2>
+      <p class='text-sm text-slate-500 mt-1'>Modulstruktur der Humbel Schichtplan- und Werkzeug-App.</p>
+    </div>
+    <div class='flex gap-2 flex-wrap'>${renderModuleSubTabs(DASHBOARD_SUBTABS, subTab, "setDashboardSubTab")}</div>
+    ${content}
+    <div class='rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800'>Alter Schichtplan bleibt Alt / deaktiviert und wird nicht als neue Struktur weiterverwendet.</div>
+  </div>`;
+}
+
+function renderToolManagement() {
+  const subTab = TOOL_MANAGEMENT_SUBTABS.some(
+    (tab) => tab.id === state.toolManagementSubTab,
+  )
+    ? state.toolManagementSubTab
+    : "list";
+  let content = "";
+  if (subTab === "list") content = renderTools();
+  if (subTab === "stock") content = renderTools();
+  if (subTab === "movement") content = renderTools();
+  if (subTab === "reorder") content = renderTools();
+  if (subTab === "journal") content = renderTools();
+  if (subTab === "qrLabels") {
+    content = renderModulePlaceholder(
+      "QR-Etiketten",
+      "QR-Etiketten werden später als eigener Werkzeug-Unterbereich vorbereitet.",
+    );
+  }
+  if (subTab === "settings") {
+    content = renderModulePlaceholder(
+      "Werkzeug-Einstellungen",
+      "Werkzeugeinstellungen folgen später.",
+    );
+  }
+  return `<div class='space-y-4'>
+    <div class='bg-white rounded-xl shadow p-4 space-y-3'>
+      <div>
+        <h2 class='text-lg font-semibold'>Werkzeugverwaltung</h2>
+        <p class='text-sm text-slate-500 mt-1'>Bestehende Werkzeugfunktionen bleiben erhalten und sind hier einsortiert.</p>
+      </div>
+      <div class='flex gap-2 flex-wrap'>${renderModuleSubTabs(TOOL_MANAGEMENT_SUBTABS, subTab, "setToolManagementSubTab")}</div>
+    </div>
+    ${content}
+  </div>`;
+}
+
+function renderStorageManagement() {
+  const subTab = STORAGE_MANAGEMENT_SUBTABS.some(
+    (tab) => tab.id === state.storageManagementSubTab,
+  )
+    ? state.storageManagementSubTab
+    : "overview";
+  let content = "";
+  if (subTab === "overview" || subTab === "search") content = renderTools();
+  if (subTab === "move") {
+    content = renderModulePlaceholder("Umlagern", "Umlagern wird später als eigener Lagerprozess ergänzt.");
+  }
+  if (subTab === "qr") {
+    content = renderModulePlaceholder("Lagerfach-QR", "Lagerfach-QR-Codes werden später vorbereitet.");
+  }
+  if (subTab === "inventory") {
+    content = renderModulePlaceholder("Inventur", "Inventur bleibt aktuell deaktiviert.");
+  }
+  if (subTab === "settings") {
+    content = renderModulePlaceholder("Lager-Einstellungen", "Lagereinstellungen folgen später.");
+  }
+  return `<div class='space-y-4'>
+    <div class='bg-white rounded-xl shadow p-4 space-y-3'>
+      <div>
+        <h2 class='text-lg font-semibold'>Lagerverwaltung</h2>
+        <p class='text-sm text-slate-500 mt-1'>Bestehende Lagerbezüge bleiben erhalten und bekommen feste Unterbereiche.</p>
+      </div>
+      <div class='flex gap-2 flex-wrap'>${renderModuleSubTabs(STORAGE_MANAGEMENT_SUBTABS, subTab, "setStorageManagementSubTab")}</div>
+    </div>
+    ${content}
+  </div>`;
+}
+
+function renderScannerModule() {
+  const subTab = SCANNER_SUBTABS.some((tab) => tab.id === state.scannerSubTab)
+    ? state.scannerSubTab
+    : "toolScan";
+  let content = "";
+  if (subTab === "toolScan" || subTab === "withdraw" || subTab === "restock") {
+    content = renderToolScanner();
+  }
+  if (subTab === "storageScan") {
+    content = renderModulePlaceholder("Lagerfach scannen", "Lagerfach-Scanner wird später ergänzt.");
+  }
+  if (subTab === "return") {
+    content = renderModulePlaceholder("Rückgabe", "Rückgabe wird später als Scanner-Flow ergänzt.");
+  }
+  if (subTab === "countScan") {
+    content = renderModulePlaceholder("Stückzahl-Scan", "Stückzahl-Scan wird später mit dem Produktionszähler verbunden.");
+  }
+  return `<div class='space-y-4'>
+    <div class='bg-white rounded-xl shadow p-4 space-y-3'>
+      <div>
+        <h2 class='text-lg font-semibold'>Scanner</h2>
+        <p class='text-sm text-slate-500 mt-1'>Scanner-Flows für Werkzeug, Lager und Produktion.</p>
+      </div>
+      <div class='flex gap-2 flex-wrap'>${renderModuleSubTabs(SCANNER_SUBTABS, subTab, "setScannerSubTab")}</div>
+    </div>
+    ${content}
+  </div>`;
+}
+
+function renderAnalyticsModule() {
+  if (currentUser?.role !== "admin") {
+    return `<div class='bg-white rounded-xl shadow p-4'><p>Kein Zugriff.</p></div>`;
+  }
+  const subTab = ANALYTICS_SUBTABS.some((tab) => tab.id === state.analyticsSubTab)
+    ? state.analyticsSubTab
+    : "toolStats";
+  let content = "";
+  if (subTab === "toolStats") content = renderStats();
+  if (subTab === "orderStats") content = renderOrderStats();
+  if (subTab === "productionStats") {
+    content = renderModulePlaceholder("Produktionszahlen", "Produktionsauswertungen folgen später auf Basis der Stückzahl-Zähler.");
+  }
+  if (subTab === "employeesDepartments") {
+    content = renderModulePlaceholder("Mitarbeiter / Abteilung", "Auswertung nach Mitarbeitern und Abteilungen folgt später.");
+  }
+  if (subTab === "protocols") content = renderConflicts();
+  if (subTab === "export") {
+    content = renderModulePlaceholder("Export", "Exportfunktionen werden später ergänzt.");
+  }
+  return `<div class='space-y-4'>
+    <div class='bg-white rounded-xl shadow p-4 space-y-3'>
+      <div>
+        <h2 class='text-lg font-semibold'>Auswertung</h2>
+        <p class='text-sm text-slate-500 mt-1'>Statistiken, Protokolle und spätere Exporte.</p>
+      </div>
+      <div class='flex gap-2 flex-wrap'>${renderModuleSubTabs(ANALYTICS_SUBTABS, subTab, "setAnalyticsSubTab")}</div>
+    </div>
+    ${content}
+  </div>`;
+}
+
+function renderAdminSystemModule() {
+  if (currentUser?.role !== "admin") {
+    return `<div class='bg-white rounded-xl shadow p-4'><p>Kein Zugriff.</p></div>`;
+  }
+  const subTab = ADMIN_SYSTEM_SUBTABS.some(
+    (tab) => tab.id === state.adminSystemSubTab,
+  )
+    ? state.adminSystemSubTab
+    : "roles";
+  let content = "";
+  if (subTab === "roles") {
+    content = renderModulePlaceholder("Rollen", "Rollenverwaltung bleibt vorbereitet und wird später ausgebaut.");
+  }
+  if (subTab === "accounts") {
+    content = renderModulePlaceholder("Benutzer / Login-Konten", "Login-Konten werden weiterhin nicht automatisch verändert.");
+  }
+  if (subTab === "company") {
+    content = renderModulePlaceholder("Firmen-Einstellungen", "Firmen-Einstellungen folgen später.");
+  }
+  if (subTab === "version") {
+    content = `<div class='border rounded-lg p-4 bg-slate-50 space-y-3'>
+      <h3 class='font-semibold'>Version / Logs</h3>
+      <p class='text-sm text-slate-600'>Aktuelle Version: v${APP_VERSION}</p>
+      <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='openVersionLog()'>Versionslog öffnen</button>
+    </div>`;
+  }
+  if (subTab === "backup") {
+    content = renderModulePlaceholder("Backup", "Backup-Funktionen werden später ergänzt.");
+  }
+  if (subTab === "setup") {
+    content = renderModulePlaceholder("Setup-Assistent", "Setup-Assistent wird später ergänzt.");
+  }
+  return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
+    <div>
+      <h2 class='text-lg font-semibold'>Admin / System</h2>
+      <p class='text-sm text-slate-500 mt-1'>Systembereiche als feste Funktionslandkarte.</p>
+    </div>
+    <div class='flex gap-2 flex-wrap'>${renderModuleSubTabs(ADMIN_SYSTEM_SUBTABS, subTab, "setAdminSystemSubTab")}</div>
+    ${content}
+  </div>`;
 }
 
 function canAccessProduction() {
@@ -2255,6 +2591,11 @@ function shouldOrderTool(tool) {
 function tabNeedsAttention(tab) {
   if (tab === "planung") return generateThreeMonths().some((s) => s.open);
   if (tab === "todo") return state.tasks.some((t) => t.status !== "done");
+  if (tab === "dashboard") return state.tasks.some((t) => t.status !== "done");
+  if (tab === "werkzeugverwaltung" && currentUser?.role === "admin")
+    return state.tools.some((t) => shouldOrderTool(t));
+  if (tab === "auswertung" && currentUser?.role === "admin")
+    return (state.orderHistory || []).length > 0;
   if (tab === "werkzeuge" && currentUser?.role === "admin")
     return state.tools.some((t) => shouldOrderTool(t));
   if (tab === "bestellstatistik" && currentUser?.role === "admin")
@@ -4195,7 +4536,31 @@ function renderProduction() {
   let content = "";
   if (subTab === "departments") content = renderProductionDepartmentsTab();
   if (subTab === "machines") content = renderProductionMachinesTab();
+  if (subTab === "orders") {
+    content = renderModulePlaceholder(
+      "Aufträge / BA",
+      "Aufträge und Betriebsaufträge werden später im Produktionsbereich ergänzt.",
+    );
+  }
   if (subTab === "counts") content = renderProductionCountsTab();
+  if (subTab === "setups") {
+    content = renderModulePlaceholder(
+      "Spannungen",
+      "Spannungen werden später Maschinen und Aufträgen zugeordnet.",
+    );
+  }
+  if (subTab === "scrap") {
+    content = renderModulePlaceholder(
+      "Ausschuss / Abklärung",
+      "Ausschuss-Abklärung wird später mit Stückzahl und Protokoll verbunden.",
+    );
+  }
+  if (subTab === "protocol") {
+    content = renderModulePlaceholder(
+      "Protokoll",
+      "Produktionsprotokolle folgen später.",
+    );
+  }
   if (subTab === "settings") content = renderProductionSettingsTab();
 
   return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
@@ -5541,6 +5906,12 @@ function renderPersonalManagement() {
   let content = "";
   if (subTab === "employees") content = renderPersonnelEmployeesTab();
   if (subTab === "shiftModel") content = renderShiftDefinitionsTab();
+  if (subTab === "shiftPlanning") {
+    content = renderModulePlaceholder(
+      "Schichtplanung",
+      "Alter Schichtplan bleibt Alt / deaktiviert. Neue Schichtplanung wird später aufgebaut.",
+    );
+  }
   if (subTab === "settings") content = renderPersonnelSettingsTab();
 
   return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
