@@ -56,9 +56,16 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.85";
+const APP_VERSION = "0.4.86";
 const INVENTORY_MODE_ENABLED = false;
 const VERSION_LOG = [
+  {
+    version: "0.4.86",
+    date: "2026-07-20 12:13",
+    changes: [
+      "Stückzahl-Zähler im Produktionsbereich als Grundmodul ergänzt.",
+    ],
+  },
   {
     version: "0.4.85",
     date: "2026-07-16 11:25",
@@ -558,6 +565,7 @@ const PERSONNEL_MANAGEMENT_SUBTABS = [
 const PRODUCTION_SUBTABS = [
   { id: "departments", label: "Abteilungen" },
   { id: "machines", label: "Maschinen" },
+  { id: "counts", label: "Stückzahl" },
   { id: "settings", label: "Einstellungen" },
 ];
 const VALID_EMPLOYEE_ROLES = [
@@ -865,6 +873,50 @@ function normalizeProductionMachineFromDb(row) {
 function applyProductionMachinesToState(rows) {
   if (!Array.isArray(rows)) return;
   state.productionMachines = rows.map(normalizeProductionMachineFromDb);
+}
+
+async function loadProductionCountsFromSupabase() {
+  const { data, error } = await supabaseClient
+    .from("production_counts")
+    .select("*")
+    .order("updated_at", { ascending: false });
+
+  state.ui = state.ui || {};
+
+  if (error) {
+    console.error("Fehler beim Laden von production_counts:", error);
+    state.ui.productionCountsError = formatProductionSupabaseError(
+      error,
+      "Stückzahlen konnten nicht geladen werden",
+    );
+    return null;
+  }
+
+  state.ui.productionCountsError = "";
+  return data || [];
+}
+
+function normalizeProductionCountFromDb(row) {
+  return {
+    id: row.id,
+    machine_id: row.machine_id || "",
+    department_id: row.department_id || "",
+    employee_id: row.employee_id || "",
+    order_no: row.order_no || "",
+    article_no: row.article_no || "",
+    good_qty: Math.max(0, Number(row.good_qty || 0)),
+    scrap_qty: Math.max(0, Number(row.scrap_qty || 0)),
+    note: row.note || "",
+    status: row.status || "running",
+    started_at: row.started_at || null,
+    updated_at: row.updated_at || null,
+    completed_at: row.completed_at || null,
+  };
+}
+
+function applyProductionCountsToState(rows) {
+  if (!Array.isArray(rows)) return;
+  state.productionCounts = rows.map(normalizeProductionCountFromDb);
 }
 
 function normalizeToolFromDb(row) {
@@ -1516,6 +1568,7 @@ async function syncSupabaseSessionToApp() {
   const shiftDefinitions = await loadShiftDefinitionsFromSupabase();
   const departments = await loadDepartmentsFromSupabase();
   const productionMachines = await loadProductionMachinesFromSupabase();
+  const productionCounts = await loadProductionCountsFromSupabase();
   const materials = await loadToolMaterialsFromSupabase();
   const planning = await loadPlanningDataFromSupabase();
 
@@ -1523,6 +1576,7 @@ async function syncSupabaseSessionToApp() {
   applyShiftDefinitionsToState(shiftDefinitions);
   applyDepartmentsToState(departments);
   applyProductionMachinesToState(productionMachines);
+  applyProductionCountsToState(productionCounts);
   toolMaterials = materials;
   await loadToolPageData();
   state.ui.supabaseReady = true;
@@ -1560,6 +1614,7 @@ async function syncSupabaseSessionToApp() {
   console.log("Schichtdefinitionen nach Login geladen:", shiftDefinitions);
   console.log("Abteilungen nach Login geladen:", departments);
   console.log("Produktionsmaschinen nach Login geladen:", productionMachines);
+  console.log("Produktionsstückzahlen nach Login geladen:", productionCounts);
   console.log("Tool-Materials nach Login geladen:", materials);
   console.log("Tools nach Login geladen:", state.tools);
   console.log("Planungsdaten nach Login geladen:", planning);
@@ -1597,6 +1652,7 @@ async function bootSupabase() {
   const shiftDefinitions = await loadShiftDefinitionsFromSupabase();
   const departments = await loadDepartmentsFromSupabase();
   const productionMachines = await loadProductionMachinesFromSupabase();
+  const productionCounts = await loadProductionCountsFromSupabase();
   const materials = await loadToolMaterialsFromSupabase();
   const planning = await loadPlanningDataFromSupabase();
 
@@ -1604,6 +1660,7 @@ async function bootSupabase() {
   applyShiftDefinitionsToState(shiftDefinitions);
   applyDepartmentsToState(departments);
   applyProductionMachinesToState(productionMachines);
+  applyProductionCountsToState(productionCounts);
   toolMaterials = materials;
 
   if (planning) {
@@ -1624,6 +1681,7 @@ async function bootSupabase() {
   console.log("Schichtdefinitionen aus Supabase:", shiftDefinitions);
   console.log("Abteilungen aus Supabase:", departments);
   console.log("Produktionsmaschinen aus Supabase:", productionMachines);
+  console.log("Produktionsstückzahlen aus Supabase:", productionCounts);
   console.log("Tool-Materials aus Supabase:", materials);
   console.log("Planungsdaten aus Supabase:", planning);
 
@@ -1683,6 +1741,7 @@ function loadState() {
     shiftDefinitions: [],
     departments: [],
     productionMachines: [],
+    productionCounts: [],
     tools: [],
     toolLabelsExtra: [],
     toolManufacturersExtra: [],
@@ -1724,6 +1783,7 @@ function loadState() {
       productionActionMessage: "",
       productionDepartmentsError: "",
       productionMachinesError: "",
+      productionCountsError: "",
       toolsLoading: false,
       supabaseReady: false,
       toolsInitialLoaded: false,
@@ -1735,6 +1795,7 @@ function loadState() {
     const parsed = JSON.parse(raw);
     delete parsed.departments;
     delete parsed.productionMachines;
+    delete parsed.productionCounts;
     delete parsed.tools;
     delete parsed.toolJournal;
     return {
@@ -1768,6 +1829,7 @@ function persist() {
   delete snapshot.shiftDefinitions;
   delete snapshot.departments;
   delete snapshot.productionMachines;
+  delete snapshot.productionCounts;
   delete snapshot.tools;
   delete snapshot.toolJournal;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
@@ -3853,11 +3915,13 @@ function formatProductionSupabaseError(
 function getProductionStatusBanner() {
   const tableError = state.ui?.productionDepartmentsError;
   const machinesError = state.ui?.productionMachinesError;
+  const countsError = state.ui?.productionCountsError;
   const actionError = state.ui?.productionActionError;
   const actionMessage = state.ui?.productionActionMessage;
   const errors = [];
   if (tableError) errors.push(`departments: ${tableError}`);
   if (machinesError) errors.push(`production_machines: ${machinesError}`);
+  if (countsError) errors.push(`production_counts: ${countsError}`);
   if (actionError) errors.push(actionError);
 
   const errorBanner = errors.length
@@ -3947,6 +4011,97 @@ function getVisibleProductionMachines() {
   return (state.productionMachines || []).filter(
     (machine) => machine.department_id && managedDepartmentIds.has(machine.department_id),
   );
+}
+
+function getVisibleProductionCounts() {
+  if (currentUser?.role === "admin") return state.productionCounts || [];
+  const managedDepartmentIds = new Set(getManagedDepartmentIds());
+  return (state.productionCounts || []).filter(
+    (count) => count.department_id && managedDepartmentIds.has(count.department_id),
+  );
+}
+
+function getActiveProductionCountMachines() {
+  return getVisibleProductionMachines().filter(
+    (machine) => machine.active !== false,
+  );
+}
+
+function getProductionMachineById(machineId) {
+  if (!machineId) return null;
+  return (state.productionMachines || []).find(
+    (machine) => machine.id === machineId,
+  ) || null;
+}
+
+function getProductionCountById(countId) {
+  if (!countId) return null;
+  return (state.productionCounts || []).find((count) => count.id === countId) || null;
+}
+
+function canEditProductionCount(count) {
+  if (!canAccessProduction() || !count) return false;
+  if (currentUser?.role === "admin") return true;
+  if (currentUser?.role !== "department_admin" || count.status === "completed") {
+    return false;
+  }
+  return getManagedDepartmentIds().includes(count.department_id);
+}
+
+function renderProductionMachineOptions(selectedId = "") {
+  const machines = getActiveProductionCountMachines();
+  const selectedMachine = getProductionMachineById(selectedId);
+  const selectedIsActive =
+    !!selectedMachine && selectedMachine.active !== false;
+  const selectedInactiveOption =
+    selectedMachine && !selectedIsActive
+      ? `<option value='${escapeHtml(selectedMachine.id)}' selected>${escapeHtml(`${selectedMachine.name || selectedMachine.machine_code || selectedMachine.id} (inaktiv)`)}</option>`
+      : "";
+  const options = [
+    `<option value='' ${!selectedId ? "selected" : ""}>Maschine auswählen</option>`,
+    selectedInactiveOption,
+    ...machines.map((machine) => {
+      const department = getDepartmentById(machine.department_id);
+      const departmentLabel =
+        department?.name || department?.code || (machine.department_id ? machine.department_id : "ohne Abteilung");
+      const label = `${machine.name || machine.machine_code || machine.id} - ${departmentLabel}`;
+      return `<option value='${escapeHtml(machine.id)}' ${selectedId === machine.id ? "selected" : ""}>${escapeHtml(label)}</option>`;
+    }),
+  ];
+  return options.join("");
+}
+
+function renderProductionCountEmployeeOptions(selectedId = "") {
+  const selectedEmployeeId = selectedId || currentEmployeeRecord?.id || "";
+  const activeEmployees = (state.employeesList || []).filter(
+    (employee) => employee.is_active !== false,
+  );
+  const selectedEmployee =
+    selectedEmployeeId && !activeEmployees.some((employee) => employee.id === selectedEmployeeId)
+      ? (state.employeesList || []).find((employee) => employee.id === selectedEmployeeId)
+      : null;
+  const selectedInactiveOption =
+    selectedEmployee
+      ? `<option value='${escapeHtml(selectedEmployee.id)}' selected>${escapeHtml(`${selectedEmployee.display_name || selectedEmployee.name || selectedEmployee.id} (inaktiv)`)}</option>`
+      : "";
+  const options = [
+    selectedInactiveOption,
+    ...activeEmployees.map((employee) => {
+      const label =
+        employee.display_name ||
+        [employee.first_name, employee.last_name].filter(Boolean).join(" ") ||
+        employee.personnel_no ||
+        employee.id;
+      return `<option value='${escapeHtml(employee.id)}' ${selectedEmployeeId === employee.id ? "selected" : ""}>${escapeHtml(label)}</option>`;
+    }),
+  ];
+  return options.join("");
+}
+
+function getProductionCountDepartmentDisplay(machineId) {
+  const machine = getProductionMachineById(machineId);
+  const department = getDepartmentById(machine?.department_id);
+  return department?.name || department?.code || (machine?.department_id ? machine.department_id : "-");
 }
 
 function renderProductionDepartmentAdminNotice() {
@@ -4040,6 +4195,7 @@ function renderProduction() {
   let content = "";
   if (subTab === "departments") content = renderProductionDepartmentsTab();
   if (subTab === "machines") content = renderProductionMachinesTab();
+  if (subTab === "counts") content = renderProductionCountsTab();
   if (subTab === "settings") content = renderProductionSettingsTab();
 
   return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
@@ -4239,6 +4395,143 @@ function renderProductionMachinesTab() {
   </div>`;
 }
 
+function renderProductionCountsTab() {
+  const machines = getActiveProductionCountMachines();
+  const machineInfo = !machines.length
+    ? `<div class='rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800'>Keine aktiven Maschinen für den Stückzahl-Zähler verfügbar.</div>`
+    : "";
+  const currentEmployeeName =
+    currentEmployeeRecord?.display_name ||
+    currentEmployeeRecord?.name ||
+    currentUser?.name ||
+    "-";
+  const newForm = `<div class='border rounded-lg p-3 bg-slate-50 space-y-3'>
+      <h3 class='font-semibold'>Neuen Zähler starten</h3>
+      ${machineInfo}
+      <div class='grid md:grid-cols-2 lg:grid-cols-3 gap-3'>
+        <label class='text-sm space-y-1'>
+          <span class='font-medium'>Maschine</span>
+          <select id='productionNewCountMachine' class='border rounded p-2 bg-white w-full' onchange='updateProductionCountDepartmentPreview("productionNewCountMachine", "productionNewCountDepartmentPreview")'>${renderProductionMachineOptions("")}</select>
+        </label>
+        <label class='text-sm space-y-1'>
+          <span class='font-medium'>Abteilung</span>
+          <div id='productionNewCountDepartmentPreview' class='border rounded p-2 bg-white text-slate-600 min-h-[42px]'>-</div>
+        </label>
+        <label class='text-sm space-y-1'>
+          <span class='font-medium'>Mitarbeiter</span>
+          ${
+            currentUser?.role === "admin"
+              ? `<select id='productionNewCountEmployee' class='border rounded p-2 bg-white w-full'>${renderProductionCountEmployeeOptions(currentEmployeeRecord?.id || "")}</select>`
+              : `<div class='border rounded p-2 bg-white text-slate-600 min-h-[42px]'>${escapeHtml(currentEmployeeName)}</div>`
+          }
+        </label>
+        <input id='productionNewCountOrder' class='border rounded p-2 bg-white' placeholder='Auftrag' />
+        <input id='productionNewCountArticle' class='border rounded p-2 bg-white' placeholder='Artikel' />
+        <textarea id='productionNewCountNote' class='border rounded p-2 bg-white md:col-span-2 lg:col-span-1' rows='2' placeholder='Notiz'></textarea>
+      </div>
+      <div class='grid sm:grid-cols-2 gap-3'>
+        ${renderProductionCountStepper("productionNewCountGood", "Gutteile", 0)}
+        ${renderProductionCountStepper("productionNewCountScrap", "Ausschuss", 0)}
+      </div>
+      <div class='flex gap-2 flex-wrap'>
+        <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='createProductionCount()' ${machines.length ? "" : "disabled"}>Speichern</button>
+        <button class='px-3 py-2 rounded bg-slate-200 text-slate-800' onclick='resetNewProductionCountForm()'>Zurücksetzen</button>
+      </div>
+    </div>`;
+
+  const rows = getVisibleProductionCounts()
+    .map((count) => renderProductionCountRow(count))
+    .join("");
+
+  return `<div class='space-y-4'>
+    ${newForm}
+    <div class='border rounded-lg bg-white overflow-auto'>
+      <table class='w-full text-sm min-w-[1050px]'>
+        <thead class='bg-slate-100 sticky top-0'>
+          <tr>
+            <th class='p-2 text-left'>Status</th>
+            <th class='p-2 text-left'>Maschine</th>
+            <th class='p-2 text-left'>Abteilung</th>
+            <th class='p-2 text-left'>Auftrag</th>
+            <th class='p-2 text-left'>Artikel</th>
+            <th class='p-2 text-left'>Mitarbeiter</th>
+            <th class='p-2 text-left'>Gutteile</th>
+            <th class='p-2 text-left'>Ausschuss</th>
+            <th class='p-2 text-left'>Notiz</th>
+            <th class='p-2 text-left'>Aktion</th>
+          </tr>
+        </thead>
+        <tbody>${rows || "<tr><td class='p-3 text-slate-500' colspan='10'>Keine Stückzahl-Zähler geladen.</td></tr>"}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function renderProductionCountStepper(inputId, label, value) {
+  const safeValue = Math.max(0, Number(value || 0));
+  return `<div class='border rounded-lg bg-white p-3 space-y-2'>
+    <div class='text-sm font-medium'>${escapeHtml(label)}</div>
+    <div class='flex items-center gap-2'>
+      <button class='px-3 py-2 rounded bg-slate-200 text-slate-800' onclick="adjustProductionCountField('${inputId}', -1)">-1</button>
+      <input id='${inputId}' type='number' min='0' step='1' class='border rounded p-2 w-24 text-center bg-white' value='${safeValue}' />
+      <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick="adjustProductionCountField('${inputId}', 1)">+1</button>
+    </div>
+  </div>`;
+}
+
+function renderProductionCountRow(count) {
+  const canEdit = canEditProductionCount(count);
+  const isRunning = count.status !== "completed";
+  const editable = canEdit && isRunning;
+  const machine = getProductionMachineById(count.machine_id);
+  const machineDisplay = machine?.name || machine?.machine_code || count.machine_id || "-";
+  const departmentDisplay = getProductionCountDepartmentDisplay(count.machine_id);
+  const employeeDisplay = getEmployeeDisplayNameById(count.employee_id);
+  const statusClass =
+    count.status === "completed"
+      ? "bg-slate-200 text-slate-700"
+      : "bg-emerald-100 text-emerald-800";
+  const actionButtons = editable
+    ? `<button class='px-3 py-2 rounded bg-slate-900 text-white text-sm' onclick="saveProductionCount('${count.id}')">Speichern</button>
+      <button class='px-3 py-2 rounded bg-emerald-700 text-white text-sm ml-2' onclick="completeProductionCount('${count.id}')">Abschließen</button>
+      <button class='px-3 py-2 rounded bg-slate-200 text-slate-800 text-sm ml-2' onclick="resetProductionCount('${count.id}')">Zurücksetzen</button>`
+    : "-";
+
+  return `<tr class='border-b align-top ${isRunning ? "" : "bg-slate-50 text-slate-500"}'>
+    <td class='p-2 whitespace-nowrap'><span class='px-2 py-1 rounded-full text-xs font-semibold ${statusClass}'>${count.status === "completed" ? "Abgeschlossen" : "Laufend"}</span></td>
+    <td class='p-2'>
+      ${
+        editable
+          ? `<select id='productionCountMachine-${count.id}' class='border rounded p-2 w-full bg-white' onchange='updateProductionCountDepartmentPreview("productionCountMachine-${count.id}", "productionCountDepartment-${count.id}")'>${renderProductionMachineOptions(count.machine_id)}</select>`
+          : escapeHtml(machineDisplay)
+      }
+    </td>
+    <td class='p-2'><div id='productionCountDepartment-${count.id}'>${escapeHtml(departmentDisplay)}</div></td>
+    <td class='p-2'>${editable ? `<input id='productionCountOrder-${count.id}' class='border rounded p-2 w-full bg-white' value='${escapeHtml(count.order_no)}' />` : escapeHtml(count.order_no || "-")}</td>
+    <td class='p-2'>${editable ? `<input id='productionCountArticle-${count.id}' class='border rounded p-2 w-full bg-white' value='${escapeHtml(count.article_no)}' />` : escapeHtml(count.article_no || "-")}</td>
+    <td class='p-2'>
+      ${
+        editable && currentUser?.role === "admin"
+          ? `<select id='productionCountEmployee-${count.id}' class='border rounded p-2 w-full bg-white'>${renderProductionCountEmployeeOptions(count.employee_id)}</select>`
+          : escapeHtml(employeeDisplay)
+      }
+    </td>
+    <td class='p-2'>${editable ? renderProductionCountInlineStepper(`productionCountGood-${count.id}`, count.good_qty) : escapeHtml(count.good_qty)}</td>
+    <td class='p-2'>${editable ? renderProductionCountInlineStepper(`productionCountScrap-${count.id}`, count.scrap_qty) : escapeHtml(count.scrap_qty)}</td>
+    <td class='p-2'>${editable ? `<textarea id='productionCountNote-${count.id}' class='border rounded p-2 w-full bg-white' rows='2'>${escapeHtml(count.note)}</textarea>` : escapeHtml(count.note || "-")}</td>
+    <td class='p-2 whitespace-nowrap'>${actionButtons}</td>
+  </tr>`;
+}
+
+function renderProductionCountInlineStepper(inputId, value) {
+  const safeValue = Math.max(0, Number(value || 0));
+  return `<div class='flex items-center gap-1'>
+    <button class='px-2 py-1 rounded bg-slate-200 text-slate-800' onclick="adjustProductionCountField('${inputId}', -1)">-1</button>
+    <input id='${inputId}' type='number' min='0' step='1' class='border rounded p-1 w-20 text-center bg-white' value='${safeValue}' />
+    <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick="adjustProductionCountField('${inputId}', 1)">+1</button>
+  </div>`;
+}
+
 function renderProductionSettingsTab() {
   return `<div class='border rounded-lg p-3 bg-slate-50'>
     <h3 class='font-semibold mb-2'>Einstellungen</h3>
@@ -4284,6 +4577,56 @@ function validateProductionMachineInput(values) {
   return "";
 }
 
+function getAllowedProductionCountMachine(machineId) {
+  if (!machineId) return null;
+  return getActiveProductionCountMachines().find(
+    (machine) => machine.id === machineId,
+  ) || null;
+}
+
+function readProductionCountValues(prefix, id = "") {
+  const suffix = id ? `-${id}` : "";
+  const machineId =
+    document.getElementById(`${prefix}Machine${suffix}`)?.value || "";
+  const machine = getAllowedProductionCountMachine(machineId);
+  const existingCount = id ? getProductionCountById(id) : null;
+  const employeeId =
+    currentUser?.role === "admin"
+      ? document.getElementById(`${prefix}Employee${suffix}`)?.value || currentEmployeeRecord?.id || ""
+      : existingCount?.employee_id || currentEmployeeRecord?.id || "";
+  return {
+    machineId,
+    departmentId: machine?.department_id || "",
+    employeeId,
+    orderNo:
+      document.getElementById(`${prefix}Order${suffix}`)?.value?.trim() || "",
+    articleNo:
+      document.getElementById(`${prefix}Article${suffix}`)?.value?.trim() || "",
+    goodQty: Math.max(
+      0,
+      Number(document.getElementById(`${prefix}Good${suffix}`)?.value || 0),
+    ),
+    scrapQty: Math.max(
+      0,
+      Number(document.getElementById(`${prefix}Scrap${suffix}`)?.value || 0),
+    ),
+    note:
+      document.getElementById(`${prefix}Note${suffix}`)?.value?.trim() || "",
+  };
+}
+
+function validateProductionCountInput(values) {
+  if (!values.machineId) return "Bitte Maschine auswählen.";
+  if (!getAllowedProductionCountMachine(values.machineId)) {
+    return "Diese Maschine ist für den Stückzahl-Zähler nicht verfügbar.";
+  }
+  if (!values.employeeId) return "Bitte Mitarbeiter auswählen.";
+  if (values.goodQty < 0 || values.scrapQty < 0) {
+    return "Stückzahlen dürfen nicht negativ sein.";
+  }
+  return "";
+}
+
 async function findDepartmentByCode(code, exceptId = null) {
   const { data, error } = await supabaseClient
     .from("departments")
@@ -4318,6 +4661,11 @@ async function refreshDepartmentsFromSupabase() {
 async function refreshProductionMachinesFromSupabase() {
   const machines = await loadProductionMachinesFromSupabase();
   applyProductionMachinesToState(machines);
+}
+
+async function refreshProductionCountsFromSupabase() {
+  const counts = await loadProductionCountsFromSupabase();
+  applyProductionCountsToState(counts);
 }
 
 async function createProductionDepartment() {
@@ -4807,6 +5155,261 @@ async function deleteProductionMachine(id) {
 
   await refreshProductionMachinesFromSupabase();
   setProductionStatus("Maschine wurde gelöscht.");
+  render();
+}
+
+function adjustProductionCountField(inputId, delta) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const currentValue = Math.max(0, Number(input.value || 0));
+  input.value = String(Math.max(0, currentValue + Number(delta || 0)));
+}
+
+function updateProductionCountDepartmentPreview(selectId, targetId) {
+  const select = document.getElementById(selectId);
+  const target = document.getElementById(targetId);
+  if (!select || !target) return;
+  target.textContent = getProductionCountDepartmentDisplay(select.value);
+}
+
+function resetNewProductionCountForm() {
+  if (!confirm("Stückzahl-Zähler wirklich zurücksetzen?")) return;
+  const fieldIds = [
+    "productionNewCountMachine",
+    "productionNewCountOrder",
+    "productionNewCountArticle",
+    "productionNewCountGood",
+    "productionNewCountScrap",
+    "productionNewCountNote",
+  ];
+  fieldIds.forEach((fieldId) => {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+    if (fieldId === "productionNewCountGood" || fieldId === "productionNewCountScrap") {
+      field.value = "0";
+    } else {
+      field.value = "";
+    }
+  });
+  updateProductionCountDepartmentPreview(
+    "productionNewCountMachine",
+    "productionNewCountDepartmentPreview",
+  );
+}
+
+async function createProductionCount() {
+  if (!canAccessProduction()) {
+    setProductionStatus("Du darfst keine Stückzahl-Zähler anlegen.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+
+  const values = readProductionCountValues("productionNewCount");
+  const validationMessage = validateProductionCountInput(values);
+  if (validationMessage) {
+    setProductionStatus(validationMessage, true);
+    render();
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const { error } = await supabaseClient.from("production_counts").insert([
+    {
+      machine_id: values.machineId,
+      department_id: values.departmentId || null,
+      employee_id: values.employeeId,
+      order_no: values.orderNo,
+      article_no: values.articleNo,
+      good_qty: values.goodQty,
+      scrap_qty: values.scrapQty,
+      note: values.note,
+      status: "running",
+      started_at: now,
+      updated_at: now,
+    },
+  ]);
+
+  if (error) {
+    console.error("Fehler beim Anlegen des Stückzahl-Zählers:", error);
+    setProductionStatus(
+      formatProductionSupabaseError(
+        error,
+        "Stückzahl-Zähler konnte nicht gespeichert werden",
+      ),
+      true,
+    );
+    render();
+    return;
+  }
+
+  await refreshProductionCountsFromSupabase();
+  setProductionStatus("Stückzahl-Zähler wurde gespeichert.");
+  render();
+}
+
+async function saveProductionCount(id) {
+  const count = getProductionCountById(id);
+  if (!canEditProductionCount(count) || count?.status === "completed") {
+    setProductionStatus("Du darfst diesen Stückzahl-Zähler nicht bearbeiten.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+
+  const values = readProductionCountValues("productionCount", id);
+  const validationMessage = validateProductionCountInput(values);
+  if (validationMessage) {
+    setProductionStatus(validationMessage, true);
+    render();
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("production_counts")
+    .update({
+      machine_id: values.machineId,
+      department_id: values.departmentId || null,
+      employee_id: values.employeeId,
+      order_no: values.orderNo,
+      article_no: values.articleNo,
+      good_qty: values.goodQty,
+      scrap_qty: values.scrapQty,
+      note: values.note,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Fehler beim Speichern des Stückzahl-Zählers:", error);
+    setProductionStatus(
+      formatProductionSupabaseError(
+        error,
+        "Stückzahl-Zähler konnte nicht gespeichert werden",
+      ),
+      true,
+    );
+    render();
+    return;
+  }
+
+  await refreshProductionCountsFromSupabase();
+  setProductionStatus("Stückzahl-Zähler wurde gespeichert.");
+  render();
+}
+
+async function completeProductionCount(id) {
+  const count = getProductionCountById(id);
+  if (!canEditProductionCount(count) || count?.status === "completed") {
+    setProductionStatus("Du darfst diesen Stückzahl-Zähler nicht abschließen.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+  if (!confirm("Stückzahl-Zähler wirklich abschließen?")) {
+    setProductionStatus("Abschließen abgebrochen.");
+    render();
+    return;
+  }
+
+  const values = readProductionCountValues("productionCount", id);
+  const validationMessage = validateProductionCountInput(values);
+  if (validationMessage) {
+    setProductionStatus(validationMessage, true);
+    render();
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const { error } = await supabaseClient
+    .from("production_counts")
+    .update({
+      machine_id: values.machineId,
+      department_id: values.departmentId || null,
+      employee_id: values.employeeId,
+      order_no: values.orderNo,
+      article_no: values.articleNo,
+      good_qty: values.goodQty,
+      scrap_qty: values.scrapQty,
+      note: values.note,
+      status: "completed",
+      updated_at: now,
+      completed_at: now,
+    })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Fehler beim Abschließen des Stückzahl-Zählers:", error);
+    setProductionStatus(
+      formatProductionSupabaseError(
+        error,
+        "Stückzahl-Zähler konnte nicht abgeschlossen werden",
+      ),
+      true,
+    );
+    render();
+    return;
+  }
+
+  await refreshProductionCountsFromSupabase();
+  setProductionStatus("Stückzahl-Zähler wurde abgeschlossen.");
+  render();
+}
+
+async function resetProductionCount(id) {
+  const count = getProductionCountById(id);
+  if (!canEditProductionCount(count) || count?.status === "completed") {
+    setProductionStatus("Du darfst diesen Stückzahl-Zähler nicht zurücksetzen.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+  if (!confirm("Stückzahl-Zähler wirklich zurücksetzen?")) {
+    setProductionStatus("Zurücksetzen abgebrochen.");
+    render();
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("production_counts")
+    .update({
+      good_qty: 0,
+      scrap_qty: 0,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Fehler beim Zurücksetzen des Stückzahl-Zählers:", error);
+    setProductionStatus(
+      formatProductionSupabaseError(
+        error,
+        "Stückzahl-Zähler konnte nicht zurückgesetzt werden",
+      ),
+      true,
+    );
+    render();
+    return;
+  }
+
+  await refreshProductionCountsFromSupabase();
+  setProductionStatus("Stückzahl-Zähler wurde zurückgesetzt.");
   render();
 }
 
