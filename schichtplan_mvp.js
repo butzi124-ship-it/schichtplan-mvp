@@ -56,9 +56,16 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.89";
+const APP_VERSION = "0.4.90";
 const INVENTORY_MODE_ENABLED = false;
 const VERSION_LOG = [
+  {
+    version: "0.4.90",
+    date: "2026-07-27 08:09",
+    changes: [
+      "Lagerfach-QR druckbar gemacht und Werkzeugbuchungen mit Menge und Journal korrigiert.",
+    ],
+  },
   {
     version: "0.4.89",
     date: "2026-07-27 07:02",
@@ -2365,11 +2372,11 @@ function renderStorageManagement() {
     : "overview";
   let content = "";
   if (subTab === "overview") {
-    content = `${renderStorageManagementSubtabHint("Lagerübersicht", "Vorhandene Lagerfach-/Regalansicht mit Fach-Popup und belegten Fächern.")}
+    content = `${renderStorageManagementSubtabHint("Lagerübersicht", "Regal-/Fachstruktur mit belegten Fächern und Fach-Popup. Für gezielte Suche bitte den Untertab Fachsuche verwenden.")}
       ${renderTools()}`;
   }
   if (subTab === "search") {
-    content = `${renderStorageManagementSubtabHint("Fachsuche", "Vorhandene Fachsuche mit Trefferliste und blinkender Hervorhebung.")}
+    content = `${renderStorageManagementSubtabHint("Fachsuche", "Sucheingabe, Trefferliste, Blinkmarkierung und Fach-Popup der vorhandenen Lagerfachansicht.")}
       ${renderTools()}`;
   }
   if (subTab === "move") {
@@ -2475,6 +2482,7 @@ function renderStorageQrTab() {
       </label>
       <div class='flex gap-2 flex-wrap'>
         <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='openStorageQrFromInput()'>QR anzeigen</button>
+        <button class='px-3 py-2 rounded bg-blue-700 text-white' onclick='printStorageQrFromInput()'>QR drucken</button>
         <button class='px-3 py-2 rounded bg-slate-700 text-white' onclick='openStorageLocationFromInput()'>Fach öffnen</button>
       </div>
     </div>
@@ -2505,6 +2513,15 @@ function openStorageLocationFromInput() {
     return;
   }
   openStorageLocationModal(locationKey);
+}
+
+function printStorageQrFromInput() {
+  const locationKey = readStorageQrInputLocation();
+  if (!locationKey) {
+    alert("Bitte ein gültiges Lagerfach eingeben, z. B. 12N oder STORAGE:12N.");
+    return;
+  }
+  printStorageQrLabel(locationKey);
 }
 
 function renderScannerModule() {
@@ -2630,6 +2647,19 @@ function getToolStockWarningLevel(tool) {
   if (stock < minStock) return "critical";
   if (stock === minStock) return "warning";
   return "";
+}
+
+function getDefaultToolBookingQty(tool) {
+  const insertEdges = Number(tool?.insertEdges || tool?.insert_edges || 0);
+  if (tool?.insertTool && Number.isFinite(insertEdges) && insertEdges > 0) {
+    return insertEdges;
+  }
+  return 1;
+}
+
+function readPositiveQtyInput(inputId) {
+  const qty = Number(document.getElementById(inputId)?.value || 0);
+  return Number.isFinite(qty) && qty > 0 ? qty : 0;
 }
 
 function normalizeStorageLocation(value) {
@@ -8860,8 +8890,57 @@ function openStorageQrModal(locationKey) {
         <div class="flex justify-center mb-3">${qrSvg}</div>
         <div class="font-mono text-sm font-semibold break-all">${escapeHtml(qrValue)}</div>
       </div>
+      <div class="flex justify-end gap-2 mt-4">
+        <button class="px-3 py-2 rounded bg-slate-900 text-white" onclick="printStorageQrLabel('${escapeHtml(normalizedKey)}')">Drucken</button>
+      </div>
     </div>
   </div>`;
+}
+
+function printStorageQrLabel(locationKey) {
+  const normalizedKey = normalizeStorageLocation(locationKey);
+  if (!isValidStorageLocation(normalizedKey)) {
+    alert("Ungültiges Lagerfach");
+    return;
+  }
+
+  const qrValue = buildStorageQrValue(normalizedKey);
+  const qrSvg = renderSimpleQrSvg(qrValue);
+  const printWindow = window.open("", "_blank", "width=420,height=520");
+  if (!printWindow) {
+    alert("Druckfenster konnte nicht geöffnet werden.");
+    return;
+  }
+
+  printWindow.document.write(`<!doctype html>
+  <html>
+    <head>
+      <title>Lagerfach ${escapeHtml(normalizedKey)}</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 24px; color: #0f172a; }
+        .label { border: 2px solid #0f172a; border-radius: 12px; padding: 18px; text-align: center; max-width: 340px; }
+        .location { font-size: 38px; font-weight: 800; margin: 0 0 8px; }
+        .meta { font-size: 13px; color: #475569; line-height: 1.3; }
+        .qr-wrap { display: flex; justify-content: center; margin: 12px 0 10px; }
+        .payload { font-family: monospace; font-size: 11px; word-break: break-all; }
+        svg { width: 170px; height: 170px; }
+      </style>
+    </head>
+    <body>
+      <div class="label">
+        <div class="location">${escapeHtml(normalizedKey)}</div>
+        <div class="meta">Lagerfach</div>
+        <div class="qr-wrap">${qrSvg}</div>
+        <div class="payload">${escapeHtml(qrValue)}</div>
+      </div>
+      <script>
+        window.onload = function() {
+          window.print();
+        };
+      </script>
+    </body>
+  </html>`);
+  printWindow.document.close();
 }
 
 function openMoveToolModal(toolId) {
@@ -9944,6 +10023,7 @@ function formatToolScannerSummary(tool) {
 function updateScannerWithdrawPreview() {
   const input = document.getElementById("scannerWithdrawTNumber");
   const preview = document.getElementById("scannerWithdrawToolPreview");
+  const qtyInput = document.getElementById("scannerWithdrawQty");
   if (!preview) return;
 
   const tool = findToolByTNumberInput(input?.value || "");
@@ -9953,6 +10033,12 @@ function updateScannerWithdrawPreview() {
   preview.innerHTML = tool
     ? `<div class="text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-2">${escapeHtml(formatToolScannerSummary(tool))}${borrowedLine}</div>`
     : `<div class="text-sm text-slate-500 bg-slate-50 border rounded p-2">Kein Werkzeug gefunden</div>`;
+
+  if (qtyInput && tool) {
+    qtyInput.value = String(getDefaultToolBookingQty(tool));
+  } else if (qtyInput && !qtyInput.value) {
+    qtyInput.value = "1";
+  }
 }
 
 function updateScannerRestockPreview() {
@@ -9971,6 +10057,8 @@ function updateScannerRestockPreview() {
 
   if (qtyInput && tool?.ordered && Number(tool.orderedQty || 0) > 0) {
     qtyInput.value = String(tool.orderedQty);
+  } else if (qtyInput && tool) {
+    qtyInput.value = String(getDefaultToolBookingQty(tool));
   } else if (qtyInput && !qtyInput.value) {
     qtyInput.value = "1";
   }
@@ -10107,7 +10195,9 @@ async function processScannedToolQr(rawValue, mode) {
   const isRestockMode = mode === "restock";
   const modeLabel = isRestockMode ? "Einlagerung" : "Entnahme";
   const orderedQty = Number(tool.orderedQty || tool.ordered_qty || 0);
-  const defaultRestockQty = tool.ordered || orderedQty > 0 ? orderedQty : 1;
+  const defaultRestockQty =
+    tool.ordered || orderedQty > 0 ? orderedQty : getDefaultToolBookingQty(tool);
+  const defaultWithdrawQty = getDefaultToolBookingQty(tool);
   const orderedQtyLine =
     isRestockMode && (tool.ordered || orderedQty > 0)
       ? `<div><span class="text-slate-500">Bestellmenge:</span> ${escapeHtml(orderedQty)}</div>`
@@ -10117,10 +10207,16 @@ async function processScannedToolQr(rawValue, mode) {
         Menge
         <input id="qrRestockQty" type="number" min="1" class="border rounded p-2 w-full mt-1" value="${escapeHtml(defaultRestockQty)}" />
       </label>`
-    : `<label class="block text-sm font-medium mb-4">
-        Kostenträger/Maschine bei Ausleihe
-        <input id="qrBorrowedTo" class="border rounded p-2 w-full mt-1" placeholder="z. B. 350 / Abteilung Montage" />
-      </label>`;
+    : `<div class="space-y-3 mb-4">
+        <label class="block text-sm font-medium">
+          Menge
+          <input id="qrWithdrawQty" type="number" min="1" class="border rounded p-2 w-full mt-1" value="${escapeHtml(defaultWithdrawQty)}" />
+        </label>
+        <label class="block text-sm font-medium">
+          Kostenträger/Maschine bei Ausleihe
+          <input id="qrBorrowedTo" class="border rounded p-2 w-full mt-1" placeholder="z. B. 350 / Abteilung Montage" />
+        </label>
+      </div>`;
   const actionButtons = isRestockMode
     ? `<button class="px-3 py-2 rounded bg-slate-900 text-white" onclick="confirmQrToolRestock('${escapeHtml(String(tool.id || ""))}')">${tool.isBorrowed ? "Rückgabe einlagern" : "Einlagern bestätigen"}</button>`
     : `<button class="px-3 py-2 rounded bg-emerald-700 text-white" onclick="confirmQrToolWithdraw('${escapeHtml(String(tool.id || ""))}', 'normal')">Normal entnehmen</button>
@@ -10160,12 +10256,17 @@ async function confirmQrToolWithdraw(toolId, mode = "normal") {
   }
 
   const oldStock = Number(tool.stock || 0);
-  if (oldStock <= 0) {
-    alert("Bestand ist 0. Entnahme nicht möglich.");
+  const qty = readPositiveQtyInput("qrWithdrawQty");
+  if (!qty) {
+    alert("Bitte eine gültige Entnahmemenge eingeben.");
+    return;
+  }
+  if (oldStock < qty) {
+    alert("Nicht genügend Bestand vorhanden.");
     return;
   }
 
-  const newStock = oldStock - 1;
+  const newStock = oldStock - qty;
   const isBorrowing = mode === "borrow";
   const borrowedTo = isBorrowing
     ? String(document.getElementById("qrBorrowedTo")?.value || "").trim()
@@ -10190,6 +10291,13 @@ async function confirmQrToolWithdraw(toolId, mode = "normal") {
   }
 
   const tools = await loadToolsFromSupabase();
+  if (!Array.isArray(tools) || tools.length === 0) {
+    console.error("QR-Scanner Entnahme konnte nicht neu geladen werden", {
+      toolId: tool.id,
+    });
+    alert("QR-Entnahme konnte nicht geprüft werden.");
+    return;
+  }
   const refreshedTool = tools.find((t) => t.id === tool.id);
 
   if (!refreshedTool || Number(refreshedTool.stock) !== newStock) {
@@ -10210,8 +10318,8 @@ async function confirmQrToolWithdraw(toolId, mode = "normal") {
       toolLabel: refreshedTool.label,
       action: isBorrowing
         ? `Werkzeug ausgeliehen an ${borrowedTo}`
-        : "QR-Scanner Entnahme 1",
-      qty: 1,
+        : `QR-Scanner Entnahme ${qty}`,
+      qty,
       stockBefore: oldStock,
       stockAfter: newStock,
       user: currentUser?.name || "Werkzeug-Scanner",
@@ -10340,6 +10448,10 @@ function openManualToolWithdraw(initialTNumber = "") {
         <div class="text-sm text-slate-500 bg-slate-50 border rounded p-2">Kein Werkzeug gefunden</div>
       </div>
       <label class="block text-sm font-medium mb-4">
+        Menge
+        <input id="scannerWithdrawQty" type="number" min="1" class="border rounded p-2 w-full mt-1" value="1" />
+      </label>
+      <label class="block text-sm font-medium mb-4">
         Kostenträger/Maschine bei Ausleihe
         <input id="scannerWithdrawBorrowedTo" class="border rounded p-2 w-full mt-1" placeholder="z. B. 350 / Abteilung Montage" />
       </label>
@@ -10359,13 +10471,18 @@ function openManualToolWithdraw(initialTNumber = "") {
       return;
     }
     const freshTool = (await reloadSingleToolFromSupabase(tool.id)) || tool;
-    if (Number(freshTool.stock || 0) <= 0) {
+    const qty = Number(host.querySelector("#scannerWithdrawQty")?.value || 0);
+    if (!Number.isFinite(qty) || qty <= 0) {
+      alert("Bitte eine gültige Entnahmemenge eingeben.");
+      return;
+    }
+    if (Number(freshTool.stock || 0) < qty) {
       alert("Nicht genügend Bestand vorhanden.");
       return;
     }
 
     const oldStock = Number(freshTool.stock || 0);
-    const newStock = oldStock - 1;
+    const newStock = oldStock - qty;
     const isBorrowing = mode === "borrow";
     const borrowedTo = isBorrowing
       ? String(host.querySelector("#scannerWithdrawBorrowedTo")?.value || "").trim()
@@ -10433,7 +10550,7 @@ function openManualToolWithdraw(initialTNumber = "") {
       tool: refreshedTool,
       oldStock,
       newStock,
-      qty: 1,
+      qty,
     });
     await addToolJournalEntry({
       toolId: refreshedTool.id,
@@ -10441,8 +10558,8 @@ function openManualToolWithdraw(initialTNumber = "") {
       toolLabel: refreshedTool.label,
       action: isBorrowing
         ? `Werkzeug ausgeliehen an ${borrowedTo}`
-        : "Werkzeug-Scanner Entnahme 1",
-      qty: 1,
+        : `Werkzeug-Scanner Entnahme ${qty}`,
+      qty,
       stockBefore: oldStock,
       stockAfter: newStock,
       user: currentUser?.name || "Werkzeug-Scanner",
@@ -10474,7 +10591,10 @@ function openManualToolRestock(initialTNumber = "") {
       <div id="scannerRestockToolPreview" class="mb-3">
         <div class="text-sm text-slate-500 bg-slate-50 border rounded p-2">Kein Werkzeug gefunden</div>
       </div>
-      <input id="scannerRestockQty" type="number" min="1" class="border rounded p-2 w-full mb-4" value="1" />
+      <label class="block text-sm font-medium mb-4">
+        Menge
+        <input id="scannerRestockQty" type="number" min="1" class="border rounded p-2 w-full mt-1" value="1" />
+      </label>
       <div class="flex justify-end gap-2">
         <button class="px-3 py-2 rounded bg-slate-200" onclick="closeToolImagePopup()">Abbrechen</button>
         <button id="scannerRestockSave" class="px-3 py-2 rounded bg-blue-700 text-white">Einlagern</button>
@@ -11424,10 +11544,7 @@ async function bookToolChange(toolId) {
   let qty = 0;
 
   if (takeOut) {
-    const defaultQty =
-      tool.insertTool && Number(tool.insertEdges || 0) > 0
-        ? String(tool.insertEdges)
-        : "1";
+    const defaultQty = String(getDefaultToolBookingQty(tool));
 
     qty = await askNumberCentered("Entnahmemenge eingeben:", defaultQty);
     if (qty === null) return;
@@ -13528,6 +13645,8 @@ window.openStorageQrModal = openStorageQrModal;
 window.openStorageLocationByQr = openStorageLocationByQr;
 window.openStorageQrFromInput = openStorageQrFromInput;
 window.openStorageLocationFromInput = openStorageLocationFromInput;
+window.printStorageQrFromInput = printStorageQrFromInput;
+window.printStorageQrLabel = printStorageQrLabel;
 window.openMoveToolModal = openMoveToolModal;
 window.confirmMoveTool = confirmMoveTool;
 window.applyStorageSearch = applyStorageSearch;
