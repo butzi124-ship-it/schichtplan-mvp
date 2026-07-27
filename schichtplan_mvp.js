@@ -56,9 +56,14 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.88";
+const APP_VERSION = "0.4.89";
 const INVENTORY_MODE_ENABLED = false;
 const VERSION_LOG = [
+  {
+    version: "0.4.89",
+    date: "2026-07-27 07:02",
+    changes: ["Lagerverwaltung-Untertabs korrekt angebunden."],
+  },
   {
     version: "0.4.88",
     date: "2026-07-20 13:08",
@@ -2159,7 +2164,11 @@ function setToolManagementSubTab(subTab) {
 }
 
 function setStorageManagementSubTab(subTab) {
-  setModuleSubTab("storageManagementSubTab", subTab, STORAGE_MANAGEMENT_SUBTABS);
+  if (!STORAGE_MANAGEMENT_SUBTABS.some((t) => t.id === subTab)) return;
+  state.storageManagementSubTab = subTab;
+  persist();
+  render();
+  setTimeout(scrollToActiveStorageManagementSection, 0);
 }
 
 function setScannerSubTab(subTab) {
@@ -2355,12 +2364,19 @@ function renderStorageManagement() {
     ? state.storageManagementSubTab
     : "overview";
   let content = "";
-  if (subTab === "overview" || subTab === "search") content = renderTools();
+  if (subTab === "overview") {
+    content = `${renderStorageManagementSubtabHint("Lagerübersicht", "Vorhandene Lagerfach-/Regalansicht mit Fach-Popup und belegten Fächern.")}
+      ${renderTools()}`;
+  }
+  if (subTab === "search") {
+    content = `${renderStorageManagementSubtabHint("Fachsuche", "Vorhandene Fachsuche mit Trefferliste und blinkender Hervorhebung.")}
+      ${renderTools()}`;
+  }
   if (subTab === "move") {
-    content = renderModulePlaceholder("Umlagern", "Umlagern wird später als eigener Lagerprozess ergänzt.");
+    content = renderStorageMoveTab();
   }
   if (subTab === "qr") {
-    content = renderModulePlaceholder("Lagerfach-QR", "Lagerfach-QR-Codes werden später vorbereitet.");
+    content = renderStorageQrTab();
   }
   if (subTab === "inventory") {
     content = renderModulePlaceholder("Inventur", "Inventur bleibt aktuell deaktiviert.");
@@ -2378,6 +2394,117 @@ function renderStorageManagement() {
     </div>
     ${content}
   </div>`;
+}
+
+function renderStorageManagementSubtabHint(title, text) {
+  return `<div class='rounded border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800'>
+    <span class='font-semibold'>${escapeHtml(title)}:</span> ${escapeHtml(text)}
+  </div>`;
+}
+
+function findStorageOverviewElement() {
+  return Array.from(document.querySelectorAll("h4")).find((heading) =>
+    (heading.textContent || "").includes("Lagerfach-/Regalansicht"),
+  )?.closest("div");
+}
+
+function scrollToActiveStorageManagementSection() {
+  if (currentTab !== "lagerverwaltung") return;
+  if (["overview", "search"].includes(state.storageManagementSubTab)) {
+    findStorageOverviewElement()?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+  if (state.storageManagementSubTab === "search") {
+    document.getElementById("storageSearchInput")?.focus();
+  }
+}
+
+function renderStorageMoveTab() {
+  const tools = (state.tools || []).slice().sort((a, b) =>
+    String(a.tNumber || "").localeCompare(String(b.tNumber || ""), "de", {
+      numeric: true,
+    }),
+  );
+  const rows = tools
+    .map((tool) => {
+      const location = getToolStorageLocationKey(tool);
+      return `<tr class='border-b'>
+        <td class='p-2 whitespace-nowrap'>T ${escapeHtml(tool.tNumber || "-")}</td>
+        <td class='p-2'>${escapeHtml(tool.label || "-")}</td>
+        <td class='p-2'>${escapeHtml(formatToolSize(tool))}</td>
+        <td class='p-2 whitespace-nowrap'>${escapeHtml(location || "-")}</td>
+        <td class='p-2 whitespace-nowrap'>
+          <button class='px-3 py-2 rounded bg-blue-700 text-white text-sm' onclick="openMoveToolModal('${tool.id}')">Umlagern</button>
+        </td>
+      </tr>`;
+    })
+    .join("");
+  return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
+    <div>
+      <h2 class='text-xl font-bold'>Umlagern</h2>
+      <p class='text-sm text-slate-500 mt-1'>Vorhandene Werkzeug-Umlagerung aus der Lagerfachansicht verwenden.</p>
+    </div>
+    <div class='border rounded-lg overflow-auto max-h-[65vh]'>
+      <table class='w-full text-sm'>
+        <thead class='bg-slate-100 sticky top-0'>
+          <tr>
+            <th class='p-2 text-left'>Werkzeug</th>
+            <th class='p-2 text-left'>Bezeichnung</th>
+            <th class='p-2 text-left'>Größe</th>
+            <th class='p-2 text-left'>Fach</th>
+            <th class='p-2 text-left'>Aktion</th>
+          </tr>
+        </thead>
+        <tbody>${rows || '<tr><td class="p-3 text-slate-500" colspan="5">Keine Werkzeuge geladen.</td></tr>'}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function renderStorageQrTab() {
+  return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
+    <div>
+      <h2 class='text-xl font-bold'>Lagerfach-QR</h2>
+      <p class='text-sm text-slate-500 mt-1'>Vorhandene STORAGE:XX QR-Logik für Lagerfächer verwenden.</p>
+    </div>
+    <div class='border rounded-lg p-3 bg-slate-50 space-y-3'>
+      <label class='text-sm font-medium'>Lagerfach
+        <input id='storageQrLocationInput' class='border rounded p-2 w-full mt-1 bg-white' placeholder='12N oder STORAGE:12N' />
+      </label>
+      <div class='flex gap-2 flex-wrap'>
+        <button class='px-3 py-2 rounded bg-slate-900 text-white' onclick='openStorageQrFromInput()'>QR anzeigen</button>
+        <button class='px-3 py-2 rounded bg-slate-700 text-white' onclick='openStorageLocationFromInput()'>Fach öffnen</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function readStorageQrInputLocation() {
+  const rawValue = document.getElementById("storageQrLocationInput")?.value || "";
+  const locationKey = rawValue.toUpperCase().startsWith("STORAGE:")
+    ? parseStorageQrCode(rawValue)
+    : normalizeStorageLocation(rawValue);
+  return isValidStorageLocation(locationKey) ? locationKey : "";
+}
+
+function openStorageQrFromInput() {
+  const locationKey = readStorageQrInputLocation();
+  if (!locationKey) {
+    alert("Bitte ein gültiges Lagerfach eingeben, z. B. 12N oder STORAGE:12N.");
+    return;
+  }
+  openStorageQrModal(locationKey);
+}
+
+function openStorageLocationFromInput() {
+  const locationKey = readStorageQrInputLocation();
+  if (!locationKey) {
+    alert("Bitte ein gültiges Lagerfach eingeben, z. B. 12N oder STORAGE:12N.");
+    return;
+  }
+  openStorageLocationModal(locationKey);
 }
 
 function renderScannerModule() {
@@ -13399,6 +13526,8 @@ window.processInventoryLocation = processInventoryLocation;
 window.confirmInventoryResult = confirmInventoryResult;
 window.openStorageQrModal = openStorageQrModal;
 window.openStorageLocationByQr = openStorageLocationByQr;
+window.openStorageQrFromInput = openStorageQrFromInput;
+window.openStorageLocationFromInput = openStorageLocationFromInput;
 window.openMoveToolModal = openMoveToolModal;
 window.confirmMoveTool = confirmMoveTool;
 window.applyStorageSearch = applyStorageSearch;
