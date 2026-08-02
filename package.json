@@ -1,0 +1,13 @@
+{
+  "name": "schichtplan-mvp",
+  "version": "0.4.91",
+  "private": true,
+  "scripts": {
+    "check:syntax": "node --check schichtplan_mvp.js",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.2"
+  }
+}

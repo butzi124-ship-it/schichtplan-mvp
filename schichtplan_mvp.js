@@ -56,9 +56,14 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.90";
+const APP_VERSION = "0.4.91";
 const INVENTORY_MODE_ENABLED = false;
 const VERSION_LOG = [
+  {
+    version: "0.4.91",
+    date: "2026-08-02 08:31",
+    changes: ["Automatisierte Smoke-Tests mit Playwright vorbereitet."],
+  },
   {
     version: "0.4.90",
     date: "2026-07-27 08:09",
@@ -13652,8 +13657,16 @@ window.confirmMoveTool = confirmMoveTool;
 window.applyStorageSearch = applyStorageSearch;
 window.resetStorageSearch = resetStorageSearch;
 window.setTab = setTab;
+window.setDashboardSubTab = setDashboardSubTab;
 window.setStatsView = setStatsView;
 window.setPlanningSubTab = setPlanningSubTab;
+window.setPersonnelManagementSubTab = setPersonnelManagementSubTab;
+window.setProductionSubTab = setProductionSubTab;
+window.setToolManagementSubTab = setToolManagementSubTab;
+window.setStorageManagementSubTab = setStorageManagementSubTab;
+window.setScannerSubTab = setScannerSubTab;
+window.setAnalyticsSubTab = setAnalyticsSubTab;
+window.setAdminSystemSubTab = setAdminSystemSubTab;
 window.markAbsent = markAbsent;
 window.assignShift = assignShift;
 window.cancelShift = cancelShift;
