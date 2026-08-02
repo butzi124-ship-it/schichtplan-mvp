@@ -253,25 +253,41 @@ test.describe("Humbel app smoke", () => {
     ]);
 
     await clickMain(page, "Werkzeugverwaltung");
-    await clickSubtabs(page, [
-      "Werkzeugliste",
-      "Bestand",
-      "Entnahme / Einlagerung",
-      "Nachbestellen",
-      "Journal",
-      "QR-Etiketten",
-      "Einstellungen",
-    ]);
+    await clickSubtab(page, "Werkzeugliste");
+    await expectViewHeading(page, "Werkzeugbestand");
+    await expectNoViewHeading(page, "Schichtjournal");
+    await clickSubtab(page, "Bestand");
+    await expectViewHeading(page, "Werkzeugbestand");
+    await expectNoViewHeading(page, "Schichtjournal");
+    await clickSubtab(page, "Entnahme / Einlagerung");
+    await expectViewHeading(page, "Werkzeug-Scanner");
+    await clickSubtab(page, "Nachbestellen");
+    await expectViewHeading(page, "Nachbestellen prüfen");
+    await expectNoViewHeading(page, "Schichtjournal – Werkzeugwechsel");
+    await expectNoViewHeading(page, "Lagerfach-/Regalansicht");
+    await clickSubtab(page, "Journal");
+    await expectViewHeading(page, "Schichtjournal – Werkzeugwechsel");
+    await expectNoViewHeading(page, "Nachbestellen prüfen");
+    await expectNoViewHeading(page, "Lagerfach-/Regalansicht");
+    await clickSubtab(page, "QR-Etiketten");
+    await expectViewHeading(page, "QR-Etiketten");
+    await expectNoViewHeading(page, "Werkzeugbestand");
+    await clickSubtab(page, "Einstellungen");
 
     await clickMain(page, "Lagerverwaltung");
-    await clickSubtabs(page, [
-      "Lagerübersicht",
-      "Fachsuche",
-      "Umlagern",
-      "Lagerfach-QR",
-      "Inventur",
-      "Einstellungen",
-    ]);
+    await clickSubtab(page, "Lagerübersicht");
+    await expectViewHeading(page, "Lagerfach-/Regalansicht");
+    await expectNoViewHeading(page, "Fachsuche");
+    await clickSubtab(page, "Fachsuche");
+    await expectViewHeading(page, "Fachsuche");
+    await expectNoViewHeading(page, "Lagerfach-/Regalansicht");
+    await clickSubtab(page, "Umlagern");
+    await expectViewHeading(page, "Umlagern");
+    await clickSubtab(page, "Lagerfach-QR");
+    await expectViewHeading(page, "Lagerfach-QR");
+    await clickSubtab(page, "Inventur");
+    await expect(page.locator("#view")).toContainText("Inventur bleibt aktuell deaktiviert");
+    await clickSubtab(page, "Einstellungen");
 
     await clickMain(page, "Scanner");
     await expect(page.getByRole("heading", { name: "Scanner", exact: true })).toBeVisible();
@@ -291,9 +307,21 @@ async function clickMain(page, name) {
 
 async function clickSubtabs(page, names) {
   for (const name of names) {
-    const button = page.locator("#view").getByRole("button", { name }).first();
-    await expect(button).toBeVisible();
-    await button.click();
-    await expect(button).toHaveClass(/humbel-subtab-active/);
+    await clickSubtab(page, name);
   }
+}
+
+async function clickSubtab(page, name) {
+  const button = page.locator("#view").getByRole("button", { name }).first();
+  await expect(button).toBeVisible();
+  await button.click();
+  await expect(button).toHaveClass(/humbel-subtab-active/);
+}
+
+async function expectViewHeading(page, name) {
+  await expect(page.locator("#view").getByRole("heading", { name, exact: true })).toBeVisible();
+}
+
+async function expectNoViewHeading(page, name) {
+  await expect(page.locator("#view").getByRole("heading", { name, exact: true })).toHaveCount(0);
 }
