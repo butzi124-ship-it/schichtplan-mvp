@@ -56,9 +56,24 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.91";
+const APP_VERSION = "0.4.92";
 const INVENTORY_MODE_ENABLED = false;
+const HUMBEL_COLORS = Object.freeze({
+  primary: "#0d4682",
+  primaryDark: "#08345f",
+  accent: "#3fb498",
+  background: "#f4f7fa",
+  card: "#ffffff",
+  text: "#102033",
+  textMuted: "#5b6b80",
+  border: "#d8e2ee",
+});
 const VERSION_LOG = [
+  {
+    version: "0.4.92",
+    date: "2026-08-02 09:06",
+    changes: ["Humbel Corporate Design und Farbgrundlage angewendet."],
+  },
   {
     version: "0.4.91",
     date: "2026-08-02 08:31",
@@ -675,6 +690,188 @@ const SHIFT_DEFINITION_TYPES = [
     requires_time: false,
   },
 ];
+
+function injectHumbelDesignStyles() {
+  if (document.getElementById("humbelCorporateDesignStyles")) return;
+  const style = document.createElement("style");
+  style.id = "humbelCorporateDesignStyles";
+  style.textContent = `
+    :root {
+      --humbel-blue: ${HUMBEL_COLORS.primary};
+      --humbel-blue-dark: ${HUMBEL_COLORS.primaryDark};
+      --humbel-accent: ${HUMBEL_COLORS.accent};
+      --humbel-bg: ${HUMBEL_COLORS.background};
+      --humbel-card: ${HUMBEL_COLORS.card};
+      --humbel-text: ${HUMBEL_COLORS.text};
+      --humbel-muted: ${HUMBEL_COLORS.textMuted};
+      --humbel-border: ${HUMBEL_COLORS.border};
+    }
+
+    body {
+      background: var(--humbel-bg) !important;
+      color: var(--humbel-text) !important;
+    }
+
+    header.bg-white,
+    #loginBox,
+    #view > .bg-white,
+    .bg-white.rounded-xl.shadow,
+    .bg-white.rounded-xl.shadow-xl {
+      background: var(--humbel-card) !important;
+      border: 1px solid var(--humbel-border) !important;
+      box-shadow: 0 12px 32px rgba(13, 70, 130, 0.08) !important;
+    }
+
+    h1,
+    h2,
+    h3,
+    .text-slate-900 {
+      color: var(--humbel-text) !important;
+    }
+
+    .text-slate-500,
+    .text-slate-600,
+    .text-slate-700 {
+      color: var(--humbel-muted) !important;
+    }
+
+    input,
+    select,
+    textarea {
+      border-color: var(--humbel-border) !important;
+      color: var(--humbel-text) !important;
+      background: #ffffff !important;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: 2px solid rgba(63, 180, 152, 0.28) !important;
+      border-color: var(--humbel-accent) !important;
+    }
+
+    .border,
+    .border-slate-100,
+    .border-slate-200,
+    .border-slate-300,
+    .border-slate-400 {
+      border-color: var(--humbel-border) !important;
+    }
+
+    .bg-slate-50,
+    .bg-slate-100 {
+      background-color: #f7fafc !important;
+    }
+
+    thead.bg-slate-100,
+    thead.bg-slate-200,
+    .sticky.bg-slate-100,
+    .sticky.bg-slate-200 {
+      background-color: #e8f0f7 !important;
+      color: var(--humbel-blue-dark) !important;
+    }
+
+    table tbody tr:hover {
+      background-color: rgba(13, 70, 130, 0.04);
+    }
+
+    .humbel-main-nav {
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid var(--humbel-border);
+      border-radius: 12px;
+      padding: 8px;
+      box-shadow: 0 10px 26px rgba(13, 70, 130, 0.06);
+    }
+
+    .humbel-main-tab,
+    .humbel-subtab {
+      background: #ffffff !important;
+      color: var(--humbel-blue-dark) !important;
+      border-color: var(--humbel-border) !important;
+      font-weight: 600;
+      box-shadow: 0 1px 2px rgba(16, 32, 51, 0.04);
+    }
+
+    .humbel-main-tab:hover,
+    .humbel-subtab:hover {
+      background: #eef5fb !important;
+      border-color: rgba(13, 70, 130, 0.34) !important;
+    }
+
+    .humbel-main-tab-active,
+    .humbel-subtab-active {
+      background: var(--humbel-blue) !important;
+      color: #ffffff !important;
+      border-color: var(--humbel-blue) !important;
+      box-shadow: 0 8px 20px rgba(13, 70, 130, 0.22);
+    }
+
+    .humbel-tab-attention {
+      border-color: #fb7185 !important;
+    }
+
+    button.bg-slate-900,
+    button.bg-blue-600,
+    button.bg-blue-700 {
+      background-color: var(--humbel-blue) !important;
+      color: #ffffff !important;
+    }
+
+    button.bg-slate-700,
+    button.bg-slate-800 {
+      background-color: var(--humbel-blue-dark) !important;
+      color: #ffffff !important;
+    }
+
+    button.bg-emerald-600,
+    button.bg-emerald-700,
+    button.bg-green-600,
+    button.bg-green-700 {
+      background-color: var(--humbel-accent) !important;
+      color: #ffffff !important;
+    }
+
+    button.bg-slate-200,
+    button.bg-slate-100 {
+      background-color: #eef3f8 !important;
+      color: var(--humbel-blue-dark) !important;
+      border: 1px solid var(--humbel-border);
+    }
+
+    button.bg-red-100,
+    button.bg-red-700,
+    button.bg-red-800,
+    button.bg-rose-700 {
+      background-color: #b42318 !important;
+      color: #ffffff;
+    }
+
+    .bg-emerald-50 {
+      background-color: rgba(63, 180, 152, 0.12) !important;
+    }
+
+    .bg-emerald-100 {
+      background-color: rgba(63, 180, 152, 0.18) !important;
+      color: #0f6f5e !important;
+    }
+
+    .bg-blue-50,
+    .bg-sky-50 {
+      background-color: rgba(13, 70, 130, 0.08) !important;
+    }
+
+    .text-blue-800,
+    .text-sky-800 {
+      color: var(--humbel-blue-dark) !important;
+    }
+
+    .text-emerald-700,
+    .text-emerald-800 {
+      color: #0f6f5e !important;
+    }
+  `;
+  document.head.appendChild(style);
+}
 
 function setLoginStatus(message, isError = false) {
   const el = document.getElementById("loginStatus");
@@ -2049,18 +2246,17 @@ function render() {
   if (currentUser.role === "employee") tabs.push("werkzeugverwaltung");
 
   const tabsEl = document.getElementById("tabs");
-  tabsEl.className = "flex gap-2 flex-wrap";
+  tabsEl.className = "humbel-main-nav flex gap-2 flex-wrap";
   tabsEl.innerHTML =
     tabs
       .map((t) => {
-        const statusClass = tabNeedsAttention(t)
-          ? "bg-rose-100 border-rose-400"
-          : "bg-emerald-100 border-emerald-400";
-        const activeClass = currentTab === t ? "ring-2 ring-slate-900" : "";
-        return `<button class="px-3 py-2 rounded border ${statusClass} ${activeClass}" onclick="setTab('${t}')">${labelTab(t)}</button>`;
+        const statusClass = tabNeedsAttention(t) ? "humbel-tab-attention" : "";
+        const activeClass =
+          currentTab === t ? "humbel-main-tab-active" : "humbel-main-tab";
+        return `<button class="px-3 py-2 rounded border ${activeClass} ${statusClass}" onclick="setTab('${t}')">${labelTab(t)}</button>`;
       })
       .join("") +
-    `<button class="px-3 py-2 rounded bg-red-100" onclick="logout()">Abmelden</button>`;
+    `<button class="px-3 py-2 rounded bg-red-700 text-white" onclick="logout()">Abmelden</button>`;
 
   tabsEl.classList.remove("hidden");
 
@@ -2203,7 +2399,7 @@ function renderModuleSubTabs(tabs, activeId, setterName) {
   return tabs
     .map((tab) => {
       const active = activeId === tab.id;
-      return `<button class='px-3 py-2 rounded border ${active ? "bg-slate-900 text-white border-slate-900" : "bg-white border-slate-300"}' onclick="${setterName}('${tab.id}')">${tab.label}</button>`;
+      return `<button class='px-3 py-2 rounded border ${active ? "humbel-subtab-active" : "humbel-subtab"}' onclick="${setterName}('${tab.id}')">${tab.label}</button>`;
     })
     .join("");
 }
@@ -4268,7 +4464,7 @@ function renderPlanning() {
 
   const subTabButtons = PLANNING_SUBTABS.map((tab) => {
     const active = subTab === tab.id;
-    return `<button class='px-3 py-2 rounded border ${active ? "bg-slate-900 text-white border-slate-900" : "bg-white border-slate-300"}' onclick="setPlanningSubTab('${tab.id}')">${tab.label}</button>`;
+    return `<button class='px-3 py-2 rounded border ${active ? "humbel-subtab-active" : "humbel-subtab"}' onclick="setPlanningSubTab('${tab.id}')">${tab.label}</button>`;
   }).join("");
 
   let content = "";
@@ -4773,7 +4969,7 @@ function renderProduction() {
     : "departments";
   const subTabButtons = PRODUCTION_SUBTABS.map((tab) => {
     const active = subTab === tab.id;
-    return `<button class='px-3 py-2 rounded border ${active ? "bg-slate-900 text-white border-slate-900" : "bg-white border-slate-300"}' onclick="setProductionSubTab('${tab.id}')">${tab.label}</button>`;
+    return `<button class='px-3 py-2 rounded border ${active ? "humbel-subtab-active" : "humbel-subtab"}' onclick="setProductionSubTab('${tab.id}')">${tab.label}</button>`;
   }).join("");
 
   let content = "";
@@ -6143,7 +6339,7 @@ function renderPersonalManagement() {
     : "employees";
   const subTabButtons = PERSONNEL_MANAGEMENT_SUBTABS.map((tab) => {
     const active = subTab === tab.id;
-    return `<button class='px-3 py-2 rounded border ${active ? "bg-slate-900 text-white border-slate-900" : "bg-white border-slate-300"}' onclick="setPersonnelManagementSubTab('${tab.id}')">${tab.label}</button>`;
+    return `<button class='px-3 py-2 rounded border ${active ? "humbel-subtab-active" : "humbel-subtab"}' onclick="setPersonnelManagementSubTab('${tab.id}')">${tab.label}</button>`;
   }).join("");
 
   let content = "";
@@ -13624,6 +13820,7 @@ async function approveSaturdayRequest(shiftId, user) {
   render();
 }
 
+injectHumbelDesignStyles();
 render();
 bootSupabase();
 

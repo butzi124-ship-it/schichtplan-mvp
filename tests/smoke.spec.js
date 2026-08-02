@@ -294,6 +294,6 @@ async function clickSubtabs(page, names) {
     const button = page.locator("#view").getByRole("button", { name }).first();
     await expect(button).toBeVisible();
     await button.click();
-    await expect(button).toHaveClass(/bg-slate-900/);
+    await expect(button).toHaveClass(/humbel-subtab-active/);
   }
 }
