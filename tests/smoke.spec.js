@@ -79,6 +79,27 @@ const rowsByTable = {
       active: true,
     },
   ],
+  production_orders: [
+    {
+      id: "order-one",
+      machine_id: "machine-one",
+      department_id: "department-one",
+      ba_number: "BA-100",
+      article_number: "ART-100",
+      ba_quantity: 100,
+      target_quantity: 100,
+      pallet_count: 2,
+      pieces_per_pallet: 50,
+      use_chain_logic: false,
+      status: "running",
+      started_at: "2026-01-01T00:00:00Z",
+      completed_at: null,
+      created_by_employee_id: "employee-admin",
+      updated_by_employee_id: "employee-admin",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    },
+  ],
   production_counts: [],
   tool_materials: [],
   tools: [
@@ -251,6 +272,11 @@ test.describe("Humbel app smoke", () => {
       "Protokoll",
       "Einstellungen",
     ]);
+
+    await clickSubtab(page, "Aufträge / BA");
+    await expectViewHeading(page, "Neuen Auftrag / BA anlegen");
+    await expectViewHeading(page, "Laufende Aufträge");
+    await expectViewHeading(page, "Abgeschlossene / abgebrochene Aufträge");
 
     await clickMain(page, "Werkzeugverwaltung");
     await clickSubtab(page, "Werkzeugliste");
