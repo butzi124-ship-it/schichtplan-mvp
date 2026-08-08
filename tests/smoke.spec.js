@@ -277,6 +277,11 @@ test.describe("Humbel app smoke", () => {
     await expectViewHeading(page, "Neuen Auftrag / BA anlegen");
     await expectViewHeading(page, "Laufende Aufträge");
     await expectViewHeading(page, "Abgeschlossene / abgebrochene Aufträge");
+    await clickSubtab(page, "Stückzahl");
+    await expectViewHeading(page, "Zähler-Dashboard");
+    await expectViewHeading(page, "Maschinenübersicht");
+    await expect(page.locator("#view")).toContainText("Maschine 50");
+    await expect(page.locator("#view")).toContainText("BA-100");
 
     await clickMain(page, "Werkzeugverwaltung");
     await clickSubtab(page, "Werkzeugliste");

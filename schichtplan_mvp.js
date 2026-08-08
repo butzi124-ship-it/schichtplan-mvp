@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.94";
+const APP_VERSION = "0.4.95";
 const INVENTORY_MODE_ENABLED = false;
 const HUMBEL_COLORS = Object.freeze({
   primary: "#0d4682",
@@ -69,6 +69,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.4.95",
+    date: "2026-08-08 06:41",
+    changes: ["Zähler-Dashboard mit Maschinen- und Auftragsübersicht vorbereitet."],
+  },
   {
     version: "0.4.94",
     date: "2026-08-02 08:37",
@@ -2132,6 +2137,7 @@ function loadState() {
       productionMachinesError: "",
       productionCountsError: "",
       productionOrdersError: "",
+      productionCounterSelectedMachineId: "",
       toolsLoading: false,
       supabaseReady: false,
       toolsInitialLoaded: false,
@@ -5410,7 +5416,212 @@ function getProductionOrderStatusLabel(status) {
   }[status] || status || "-";
 }
 
+function getActiveProductionOrdersForMachine(machineId) {
+  if (!machineId) return [];
+  return getVisibleProductionOrders().filter(
+    (order) =>
+      order.machine_id === machineId &&
+      ["running", "paused"].includes(order.status),
+  );
+}
+
+function getProductionMachineDashboardStatus(machine) {
+  const orders = getActiveProductionOrdersForMachine(machine.id);
+  if (!orders.length) return "idle";
+  if (orders.some((order) => order.status === "running")) return "active";
+  return "paused";
+}
+
+function getProductionMachineDashboardStatusLabel(status) {
+  return {
+    idle: "Leerlauf",
+    active: "Aktiv",
+    paused: "Pausiert",
+  }[status] || "Leerlauf";
+}
+
+function getProductionMachineDashboardStatusClass(status) {
+  return {
+    idle: "bg-slate-100 text-slate-700",
+    active: "bg-emerald-100 text-emerald-800",
+    paused: "bg-amber-100 text-amber-800",
+  }[status] || "bg-slate-100 text-slate-700";
+}
+
+function selectProductionCounterMachine(machineId) {
+  state.ui = state.ui || {};
+  state.ui.productionCounterSelectedMachineId = machineId || "";
+  persist();
+  render();
+}
+
 function renderProductionCountsTab() {
+  const machines = getVisibleProductionMachines().filter(
+    (machine) => machine.active !== false,
+  );
+  const groupedMachines = new Map();
+  machines.forEach((machine) => {
+    const departmentKey = machine.department_id || "__none__";
+    if (!groupedMachines.has(departmentKey)) groupedMachines.set(departmentKey, []);
+    groupedMachines.get(departmentKey).push(machine);
+  });
+
+  const selectedMachineId = state.ui?.productionCounterSelectedMachineId || "";
+  const selectedMachine = machines.find((machine) => machine.id === selectedMachineId);
+  const selectedOrders = selectedMachine
+    ? getActiveProductionOrdersForMachine(selectedMachine.id)
+    : [];
+  const firstMachineWithOrders = machines.find(
+    (machine) => getActiveProductionOrdersForMachine(machine.id).length > 0,
+  );
+  const detailMachine = selectedMachine || firstMachineWithOrders || machines[0] || null;
+  const detailOrders = detailMachine
+    ? getActiveProductionOrdersForMachine(detailMachine.id)
+    : [];
+  const detailActive =
+    selectedMachine && selectedOrders.length
+      ? renderProductionCounterMachineDetail(selectedMachine, selectedOrders)
+      : selectedMachine
+        ? renderProductionCounterNoOrderNotice(selectedMachine)
+        : detailMachine && detailOrders.length
+          ? renderProductionCounterMachineDetail(detailMachine, detailOrders)
+          : `<div class='border rounded-lg bg-slate-50 p-4 text-sm text-slate-600'>Bitte eine Maschinenkarte auswählen. Ohne laufenden Auftrag zuerst unter Aufträge / BA einen Auftrag anlegen.</div>`;
+
+  const departmentSections = Array.from(groupedMachines.entries())
+    .map(([departmentId, departmentMachines]) => {
+      const department = getDepartmentById(departmentId === "__none__" ? "" : departmentId);
+      const departmentName =
+        department?.name || department?.code || (departmentId === "__none__" ? "Ohne Abteilung" : departmentId);
+      const cards = departmentMachines
+        .map((machine) => renderProductionCounterMachineCard(machine, selectedMachineId))
+        .join("");
+      return `<section class='space-y-3'>
+        <div class='flex items-center justify-between gap-2 flex-wrap'>
+          <h3 class='text-base font-semibold'>${escapeHtml(departmentName)}</h3>
+          <span class='text-xs text-slate-500'>${departmentMachines.length} Maschine(n)</span>
+        </div>
+        <div class='grid md:grid-cols-2 xl:grid-cols-3 gap-3'>${cards}</div>
+      </section>`;
+    })
+    .join("");
+
+  return `<div class='space-y-4'>
+    <div class='border rounded-lg p-4 bg-slate-50'>
+      <h3 class='text-xl font-bold'>Zähler-Dashboard</h3>
+      <p class='text-sm text-slate-600 mt-1'>Zählansicht wird schrittweise aus der alten Zählerapp migriert.</p>
+      <p class='text-xs text-slate-500 mt-2'>Diese Version zeigt Maschinen und aktive Aufträge nur lesend. Keine Zählung, keine Spannungen, keine Buchung.</p>
+    </div>
+    <div class='grid xl:grid-cols-[minmax(0,2fr),minmax(360px,1fr)] gap-4 items-start'>
+      <div class='space-y-5'>
+        <div>
+          <h3 class='font-semibold'>Maschinenübersicht</h3>
+          <p class='text-sm text-slate-500 mt-1'>Maschinen gruppiert nach Abteilung mit laufenden und pausierten Aufträgen.</p>
+        </div>
+        ${departmentSections || "<div class='border rounded-lg bg-white p-4 text-sm text-slate-500'>Keine Maschinen sichtbar.</div>"}
+      </div>
+      <aside class='bg-white border rounded-lg p-4 space-y-3 sticky top-3'>
+        <h3 class='font-semibold'>Maschinenvorschau</h3>
+        ${detailActive}
+      </aside>
+    </div>
+    <details class='border rounded-lg bg-slate-50 p-3 text-sm text-slate-600'>
+      <summary class='font-semibold cursor-pointer'>Alt / einfacher Zähler zurückgestellt</summary>
+      <p class='mt-2'>Der einfache production_counts-Zähler bleibt im Code erhalten, ist aber in dieser Ansicht nicht mehr die primäre Zähleroberfläche.</p>
+    </details>
+  </div>`;
+}
+
+function renderProductionCounterMachineCard(machine, selectedMachineId = "") {
+  const orders = getActiveProductionOrdersForMachine(machine.id);
+  const status = getProductionMachineDashboardStatus(machine);
+  const departmentDisplay = getProductionOrderDepartmentDisplay(
+    machine.id,
+    machine.department_id,
+  );
+  const runningCount = orders.filter((order) => order.status === "running").length;
+  const pausedCount = orders.filter((order) => order.status === "paused").length;
+  const selectedClass = selectedMachineId === machine.id ? "ring-2 ring-[var(--humbel-blue)]" : "";
+  const orderList = orders.length
+    ? `<div class='space-y-2 mt-3'>
+        ${orders.map((order) => renderProductionCounterOrderSummary(order)).join("")}
+      </div>`
+    : `<div class='mt-3 rounded border border-slate-200 bg-white p-3 text-sm text-slate-500'>Auftrag unter Aufträge / BA anlegen</div>`;
+  return `<button type='button' class='text-left border rounded-lg bg-white p-4 shadow-sm hover:bg-slate-50 ${selectedClass}' onclick="selectProductionCounterMachine('${machine.id}')">
+    <div class='flex items-start justify-between gap-3'>
+      <div>
+        <div class='font-semibold text-slate-900'>${escapeHtml(machine.name || machine.machine_code || "-")}</div>
+        <div class='text-xs text-slate-500'>${escapeHtml(machine.machine_code || machine.id || "-")}</div>
+        <div class='text-xs text-slate-500 mt-1'>${escapeHtml(departmentDisplay)}</div>
+      </div>
+      <span class='px-2 py-1 rounded-full text-xs font-semibold ${getProductionMachineDashboardStatusClass(status)}'>${getProductionMachineDashboardStatusLabel(status)}</span>
+    </div>
+    <div class='text-xs text-slate-600 mt-3'>${runningCount} laufend / ${pausedCount} pausiert</div>
+    ${orderList}
+  </button>`;
+}
+
+function renderProductionCounterOrderSummary(order) {
+  return `<div class='rounded border border-slate-200 bg-slate-50 p-2 text-xs'>
+    <div class='flex items-center justify-between gap-2'>
+      <span class='font-semibold'>${escapeHtml(order.ba_number || "-")}</span>
+      <span>${escapeHtml(getProductionOrderStatusLabel(order.status))}</span>
+    </div>
+    <div class='text-slate-500 mt-1'>Artikel: ${escapeHtml(order.article_number || "-")}</div>
+    <div class='text-slate-500'>BA ${escapeHtml(order.ba_quantity)} / Ziel ${escapeHtml(order.target_quantity)}</div>
+  </div>`;
+}
+
+function renderProductionCounterMachineDetail(machine, orders) {
+  const departmentDisplay = getProductionOrderDepartmentDisplay(
+    machine.id,
+    machine.department_id,
+  );
+  const rows = orders
+    .map(
+      (order) => `<tr class='border-b'>
+        <td class='p-2 font-semibold'>${escapeHtml(order.ba_number || "-")}</td>
+        <td class='p-2'>${escapeHtml(order.article_number || "-")}</td>
+        <td class='p-2'>${escapeHtml(getProductionOrderStatusLabel(order.status))}</td>
+        <td class='p-2'>${escapeHtml(order.ba_quantity)}</td>
+        <td class='p-2'>${escapeHtml(order.target_quantity)}</td>
+      </tr>`,
+    )
+    .join("");
+  return `<div class='space-y-3'>
+    <div>
+      <div class='font-semibold'>${escapeHtml(machine.name || machine.machine_code || "-")}</div>
+      <div class='text-xs text-slate-500'>${escapeHtml(machine.machine_code || "-")} · ${escapeHtml(departmentDisplay)}</div>
+    </div>
+    <div class='overflow-auto border rounded'>
+      <table class='w-full text-sm'>
+        <thead class='bg-slate-100'>
+          <tr>
+            <th class='p-2 text-left'>BA</th>
+            <th class='p-2 text-left'>Artikel</th>
+            <th class='p-2 text-left'>Status</th>
+            <th class='p-2 text-left'>BA-Stückzahl</th>
+            <th class='p-2 text-left'>Ziel</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <button type='button' class='px-3 py-2 rounded bg-slate-200 text-slate-800 cursor-not-allowed' disabled>Produktionsansicht öffnen</button>
+    <p class='text-xs text-slate-500'>Produktionsansicht, Spannungen und echte Zählung folgen später.</p>
+  </div>`;
+}
+
+function renderProductionCounterNoOrderNotice(machine) {
+  return `<div class='space-y-3'>
+    <div>
+      <div class='font-semibold'>${escapeHtml(machine.name || machine.machine_code || "-")}</div>
+      <div class='text-xs text-slate-500'>${escapeHtml(machine.machine_code || "-")}</div>
+    </div>
+    <div class='rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800'>Für diese Maschine ist kein laufender oder pausierter Auftrag vorhanden. Auftrag zuerst unter Aufträge / BA anlegen.</div>
+  </div>`;
+}
+
+function renderLegacyProductionCountsTab() {
   const machines = getActiveProductionCountMachines();
   const machineInfo = !machines.length
     ? `<div class='rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800'>Keine aktiven Maschinen für den Stückzahl-Zähler verfügbar.</div>`
@@ -14322,6 +14533,7 @@ window.pauseProductionOrder = pauseProductionOrder;
 window.resumeProductionOrder = resumeProductionOrder;
 window.completeProductionOrder = completeProductionOrder;
 window.cancelProductionOrder = cancelProductionOrder;
+window.selectProductionCounterMachine = selectProductionCounterMachine;
 window.markAbsent = markAbsent;
 window.assignShift = assignShift;
 window.cancelShift = cancelShift;
