@@ -282,6 +282,13 @@ test.describe("Humbel app smoke", () => {
     await expectViewHeading(page, "Maschinenübersicht");
     await expect(page.locator("#view")).toContainText("Maschine 50");
     await expect(page.locator("#view")).toContainText("BA-100");
+    await page.locator("#view").getByRole("button", { name: /Maschine 50/ }).click();
+    await expectViewHeading(page, "Produktionsvorschau");
+    await expect(page.locator("#view").getByRole("button", { name: /BA BA-100/ })).toBeVisible();
+    await expect(page.locator("#view")).toContainText("Restmenge vorbereitet");
+    await expect(page.locator("#view")).toContainText("Spannungen und Mitarbeiterzählung");
+    await page.getByRole("button", { name: "Zurück zur Maschinenübersicht" }).click();
+    await expectViewHeading(page, "Maschinenübersicht");
 
     await clickMain(page, "Werkzeugverwaltung");
     await clickSubtab(page, "Werkzeugliste");
