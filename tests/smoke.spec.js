@@ -100,6 +100,26 @@ const rowsByTable = {
       updated_at: "2026-01-01T00:00:00Z",
     },
   ],
+  production_order_stations: [
+    {
+      id: "station-one",
+      order_id: "order-one",
+      station_no: 1,
+      name: "Spannung 1",
+      lock_name: false,
+      op_number: "10",
+      time_status: "ok",
+      actual_time_minutes: null,
+      scrap_total: 0,
+      clarify_total: 0,
+      scrap_lifetime: 0,
+      clarify_lifetime: 0,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    },
+  ],
+  production_station_counts: [],
+  production_station_events: [],
   production_counts: [],
   tool_materials: [],
   tools: [
@@ -151,23 +171,46 @@ function installSupabaseMock(rowsByTableArg) {
       this.filters = [];
       this.useSingle = false;
       this.useMaybeSingle = false;
+      this.pendingUpdate = null;
+      this.pendingDelete = false;
     }
 
     select() { return this; }
     order() { return this; }
     limit() { return this; }
-    insert() { return Promise.resolve({ data: [], error: null }); }
-    update() { return this; }
-    delete() { return this; }
-    upsert() { return this; }
+    insert(payload) {
+      const rows = Array.isArray(payload) ? payload : [payload];
+      const tableRows = rowsByTable[this.table] || [];
+      rowsByTable[this.table] = tableRows;
+      const created = rows.map((row, index) => ({
+        id: row.id || `${this.table}-${Date.now()}-${index}`,
+        created_at: row.created_at || new Date().toISOString(),
+        updated_at: row.updated_at || new Date().toISOString(),
+        ...row,
+      }));
+      tableRows.push(...created);
+      return Promise.resolve({ data: created, error: null });
+    }
+    update(payload) { this.pendingUpdate = payload || {}; return this; }
+    delete() { this.pendingDelete = true; return this; }
+    upsert(payload) { return this.insert(payload); }
     single() { this.useSingle = true; return this; }
     maybeSingle() { this.useMaybeSingle = true; return this; }
     eq(column, value) { this.filters.push({ column, value }); return this; }
 
     result() {
-      let data = [...(rowsByTable[this.table] || [])];
+      const tableRows = rowsByTable[this.table] || [];
+      let data = [...tableRows];
       for (const { column, value } of this.filters) {
         data = data.filter((row) => String(row[column]) === String(value));
+      }
+      if (this.pendingUpdate) {
+        data.forEach((row) => Object.assign(row, this.pendingUpdate));
+        return { data, error: null };
+      }
+      if (this.pendingDelete) {
+        rowsByTable[this.table] = tableRows.filter((row) => !data.includes(row));
+        return { data, error: null };
       }
       if (this.useSingle || this.useMaybeSingle) {
         return { data: data[0] || null, error: null };
@@ -286,6 +329,10 @@ test.describe("Humbel app smoke", () => {
     await expectViewHeading(page, "Produktionsvorschau");
     await expect(page.locator("#view").getByRole("button", { name: /BA BA-100/ })).toBeVisible();
     await expect(page.locator("#view")).toContainText("Restmenge vorbereitet");
+    await expect(page.locator("#view")).toContainText("Spannung 1");
+    await expect(page.locator("#view").getByRole("button", { name: /\+1/ })).toHaveCount(0);
+    await page.locator("#view").getByRole("button", { name: /Spannung/ }).filter({ hasText: /hinzuf/ }).click();
+    await expect(page.locator("#view")).toContainText("Spannung 2");
     await expect(page.locator("#view")).toContainText("Spannungen und Mitarbeiterzählung");
     await page.getByRole("button", { name: "Zurück zur Maschinenübersicht" }).click();
     await expectViewHeading(page, "Maschinenübersicht");

@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.96";
+const APP_VERSION = "0.4.97";
 const INVENTORY_MODE_ENABLED = false;
 const HUMBEL_COLORS = Object.freeze({
   primary: "#0d4682",
@@ -69,6 +69,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.4.97",
+    date: "2026-08-09 08:34",
+    changes: ["Spannungen je Produktionsauftrag vorbereitet."],
+  },
   {
     version: "0.4.96",
     date: "2026-08-08 06:57",
@@ -1213,6 +1218,27 @@ async function loadProductionOrdersFromSupabase() {
   return data || [];
 }
 
+async function loadProductionOrderStationsFromSupabase() {
+  const { data, error } = await supabaseClient
+    .from("production_order_stations")
+    .select("*")
+    .order("station_no", { ascending: true });
+
+  state.ui = state.ui || {};
+
+  if (error) {
+    console.error("Fehler beim Laden von production_order_stations:", error);
+    state.ui.productionStationsError = formatProductionSupabaseError(
+      error,
+      "Spannungen konnten nicht geladen werden",
+    );
+    return null;
+  }
+
+  state.ui.productionStationsError = "";
+  return data || [];
+}
+
 function normalizeProductionOrderFromDb(row) {
   return {
     id: row.id,
@@ -1238,6 +1264,37 @@ function normalizeProductionOrderFromDb(row) {
 function applyProductionOrdersToState(rows) {
   if (!Array.isArray(rows)) return;
   state.productionOrders = rows.map(normalizeProductionOrderFromDb);
+}
+
+function normalizeProductionOrderStationFromDb(row) {
+  const stationNo = Math.max(1, Math.trunc(Number(row.station_no || 1)));
+  const actualMinutes =
+    row.actual_time_minutes === null || row.actual_time_minutes === undefined || row.actual_time_minutes === ""
+      ? null
+      : Math.max(0, Math.trunc(Number(row.actual_time_minutes || 0)));
+  return {
+    id: row.id,
+    order_id: row.order_id || "",
+    station_no: stationNo,
+    name: row.name || `Spannung ${stationNo}`,
+    lock_name: row.lock_name === true,
+    op_number: row.op_number || "",
+    time_status: row.time_status === "changed" ? "changed" : "ok",
+    actual_time_minutes: actualMinutes,
+    scrap_total: Math.max(0, Number(row.scrap_total || 0)),
+    clarify_total: Math.max(0, Number(row.clarify_total || 0)),
+    scrap_lifetime: Math.max(0, Number(row.scrap_lifetime || 0)),
+    clarify_lifetime: Math.max(0, Number(row.clarify_lifetime || 0)),
+    created_at: row.created_at || null,
+    updated_at: row.updated_at || null,
+  };
+}
+
+function applyProductionOrderStationsToState(rows) {
+  if (!Array.isArray(rows)) return;
+  state.productionOrderStations = rows
+    .map(normalizeProductionOrderStationFromDb)
+    .sort((a, b) => a.station_no - b.station_no);
 }
 
 function normalizeProductionCountFromDb(row) {
@@ -1914,6 +1971,7 @@ async function syncSupabaseSessionToApp() {
   const productionMachines = await loadProductionMachinesFromSupabase();
   const productionCounts = await loadProductionCountsFromSupabase();
   const productionOrders = await loadProductionOrdersFromSupabase();
+  const productionOrderStations = await loadProductionOrderStationsFromSupabase();
   const materials = await loadToolMaterialsFromSupabase();
   const planning = await loadPlanningDataFromSupabase();
 
@@ -1923,6 +1981,7 @@ async function syncSupabaseSessionToApp() {
   applyProductionMachinesToState(productionMachines);
   applyProductionCountsToState(productionCounts);
   applyProductionOrdersToState(productionOrders);
+  applyProductionOrderStationsToState(productionOrderStations);
   toolMaterials = materials;
   await loadToolPageData();
   state.ui.supabaseReady = true;
@@ -1962,6 +2021,7 @@ async function syncSupabaseSessionToApp() {
   console.log("Produktionsmaschinen nach Login geladen:", productionMachines);
   console.log("Produktionsstückzahlen nach Login geladen:", productionCounts);
   console.log("Produktionsaufträge nach Login geladen:", productionOrders);
+  console.log("Produktionsspannungen nach Login geladen:", productionOrderStations);
   console.log("Tool-Materials nach Login geladen:", materials);
   console.log("Tools nach Login geladen:", state.tools);
   console.log("Planungsdaten nach Login geladen:", planning);
@@ -2001,6 +2061,7 @@ async function bootSupabase() {
   const productionMachines = await loadProductionMachinesFromSupabase();
   const productionCounts = await loadProductionCountsFromSupabase();
   const productionOrders = await loadProductionOrdersFromSupabase();
+  const productionOrderStations = await loadProductionOrderStationsFromSupabase();
   const materials = await loadToolMaterialsFromSupabase();
   const planning = await loadPlanningDataFromSupabase();
 
@@ -2010,6 +2071,7 @@ async function bootSupabase() {
   applyProductionMachinesToState(productionMachines);
   applyProductionCountsToState(productionCounts);
   applyProductionOrdersToState(productionOrders);
+  applyProductionOrderStationsToState(productionOrderStations);
   toolMaterials = materials;
 
   if (planning) {
@@ -2032,6 +2094,7 @@ async function bootSupabase() {
   console.log("Produktionsmaschinen aus Supabase:", productionMachines);
   console.log("Produktionsstückzahlen aus Supabase:", productionCounts);
   console.log("Produktionsaufträge aus Supabase:", productionOrders);
+  console.log("Produktionsspannungen aus Supabase:", productionOrderStations);
   console.log("Tool-Materials aus Supabase:", materials);
   console.log("Planungsdaten aus Supabase:", planning);
 
@@ -2093,6 +2156,7 @@ function loadState() {
     productionMachines: [],
     productionCounts: [],
     productionOrders: [],
+    productionOrderStations: [],
     tools: [],
     toolLabelsExtra: [],
     toolManufacturersExtra: [],
@@ -2142,6 +2206,7 @@ function loadState() {
       productionMachinesError: "",
       productionCountsError: "",
       productionOrdersError: "",
+      productionStationsError: "",
       productionCounterSelectedMachineId: "",
       productionCounterActiveOrderId: "",
       toolsLoading: false,
@@ -2157,6 +2222,7 @@ function loadState() {
     delete parsed.productionMachines;
     delete parsed.productionCounts;
     delete parsed.productionOrders;
+    delete parsed.productionOrderStations;
     delete parsed.tools;
     delete parsed.toolJournal;
     return {
@@ -2192,6 +2258,7 @@ function persist() {
   delete snapshot.productionMachines;
   delete snapshot.productionCounts;
   delete snapshot.productionOrders;
+  delete snapshot.productionOrderStations;
   delete snapshot.tools;
   delete snapshot.toolJournal;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
@@ -4738,6 +4805,7 @@ function getProductionStatusBanner() {
   const machinesError = state.ui?.productionMachinesError;
   const countsError = state.ui?.productionCountsError;
   const ordersError = state.ui?.productionOrdersError;
+  const stationsError = state.ui?.productionStationsError;
   const actionError = state.ui?.productionActionError;
   const actionMessage = state.ui?.productionActionMessage;
   const errors = [];
@@ -4745,6 +4813,7 @@ function getProductionStatusBanner() {
   if (machinesError) errors.push(`production_machines: ${machinesError}`);
   if (countsError) errors.push(`production_counts: ${countsError}`);
   if (ordersError) errors.push(`production_orders: ${ordersError}`);
+  if (stationsError) errors.push(`production_order_stations: ${stationsError}`);
   if (actionError) errors.push(actionError);
 
   const errorBanner = errors.length
@@ -5454,22 +5523,98 @@ function getProductionMachineDashboardStatusClass(status) {
   }[status] || "bg-slate-100 text-slate-700";
 }
 
-function selectProductionCounterMachine(machineId) {
+function getProductionOrderStations(orderId) {
+  if (!orderId) return [];
+  return (state.productionOrderStations || [])
+    .filter((station) => station.order_id === orderId)
+    .sort((a, b) => a.station_no - b.station_no);
+}
+
+function getProductionOrderStationById(stationId) {
+  if (!stationId) return null;
+  return (state.productionOrderStations || []).find((station) => station.id === stationId) || null;
+}
+
+function calculatePreparedRemainingQuantity(order) {
+  if (!order) return 0;
+  return Math.max(0, Math.trunc(Number(order.target_quantity || 0)));
+}
+
+function getProductionStationTimeStatusLabel(status) {
+  return status === "changed" ? "Zeit geändert" : "Zeit ok";
+}
+
+async function refreshProductionOrderStationsFromSupabase() {
+  const stations = await loadProductionOrderStationsFromSupabase();
+  applyProductionOrderStationsToState(stations);
+}
+
+async function ensureProductionOrderStationsForOrder(orderId) {
+  const order = getProductionOrderById(orderId);
+  if (!canEditProductionOrder(order)) return;
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    return;
+  }
+  if (getProductionOrderStations(order.id).length) return;
+
+  const { error } = await supabaseClient.from("production_order_stations").insert([
+    {
+      order_id: order.id,
+      station_no: 1,
+      name: "Spannung 1",
+      lock_name: false,
+      op_number: null,
+      time_status: "ok",
+      actual_time_minutes: null,
+      scrap_total: 0,
+      clarify_total: 0,
+      scrap_lifetime: 0,
+      clarify_lifetime: 0,
+      updated_at: new Date().toISOString(),
+    },
+  ]);
+
+  if (error) {
+    console.error("Fehler beim Anlegen der ersten Spannung:", error);
+    const duplicateCode =
+      error.code === "23505" || String(error.message || "").toLowerCase().includes("duplicate");
+    if (!duplicateCode) {
+      setProductionStatus(
+        formatProductionSupabaseError(
+          error,
+          "Erste Spannung konnte nicht angelegt werden",
+        ),
+        true,
+      );
+    }
+  }
+
+  await refreshProductionOrderStationsFromSupabase();
+}
+
+async function selectProductionCounterMachine(machineId) {
   state.ui = state.ui || {};
   state.ui.productionCounterSelectedMachineId = machineId || "";
   const activeOrders = getActiveProductionOrdersForMachine(machineId);
   state.ui.productionCounterActiveOrderId = activeOrders[0]?.id || "";
   persist();
   render();
+  if (state.ui.productionCounterActiveOrderId) {
+    await ensureProductionOrderStationsForOrder(state.ui.productionCounterActiveOrderId);
+    render();
+  }
 }
 
-function selectProductionCounterOrder(orderId) {
+async function selectProductionCounterOrder(orderId) {
   state.ui = state.ui || {};
   const order = getProductionOrderById(orderId);
   if (!order || !["running", "paused"].includes(order.status)) return;
   state.ui.productionCounterSelectedMachineId = order.machine_id || "";
   state.ui.productionCounterActiveOrderId = order.id || "";
   persist();
+  render();
+  await ensureProductionOrderStationsForOrder(order.id);
   render();
 }
 
@@ -5620,7 +5765,7 @@ function renderProductionMachineOrderPreview(machine, orders) {
     ? Number(activeOrder.target_quantity || 0) - Number(activeOrder.ba_quantity || 0)
     : 0;
   const remaining = activeOrder
-    ? Math.max(0, Number(activeOrder.target_quantity || 0))
+    ? calculatePreparedRemainingQuantity(activeOrder)
     : 0;
   const metrics = activeOrder
     ? `<div class='grid sm:grid-cols-2 xl:grid-cols-4 gap-3'>
@@ -5640,10 +5785,7 @@ function renderProductionMachineOrderPreview(machine, orders) {
           <span class='px-2 py-1 rounded-full text-xs font-semibold ${activeOrder.status === "running" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}'>${escapeHtml(getProductionOrderStatusLabel(activeOrder.status))}</span>
         </div>
         ${metrics}
-        <div class='border rounded-lg bg-slate-50 p-4'>
-          <h4 class='font-semibold'>Spannungen</h4>
-          <p class='text-sm text-slate-600 mt-1'>Spannungen und Mitarbeiterzählung werden im nächsten Schritt migriert.</p>
-        </div>
+        ${renderProductionOrderStationsSection(activeOrder)}
       </div>`
     : `<div class='border rounded-lg bg-slate-50 p-4 text-sm text-slate-600'>Kein aktiver BA ausgewählt.</div>`;
 
@@ -5668,6 +5810,83 @@ function renderProductionMachineOrderPreview(machine, orders) {
       ${details}
     </div>
   </div>`;
+}
+
+function renderProductionOrderStationsSection(order) {
+  const stations = getProductionOrderStations(order.id);
+  const canEdit = canEditProductionOrder(order);
+  const addButton = canEdit
+    ? `<button type='button' class='px-3 py-2 rounded bg-slate-900 text-white text-sm' onclick="createProductionOrderStation('${order.id}')">Spannung hinzufügen</button>`
+    : "";
+  const stationCards = stations.length
+    ? stations.map((station) => renderProductionOrderStationCard(station, canEdit)).join("")
+    : `<div class='rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800'>Noch keine Spannung geladen. Beim Öffnen des BA wird Spannung 1 automatisch vorbereitet.</div>`;
+  return `<section class='border rounded-lg bg-slate-50 p-4 space-y-4'>
+    <div class='flex items-start justify-between gap-3 flex-wrap'>
+      <div>
+        <h4 class='font-semibold'>Spannungen</h4>
+        <p class='text-sm text-slate-600 mt-1'>Spannungen und Mitarbeiterzählung folgen im nächsten Schritt. Aktuell werden nur Spannungen je BA vorbereitet.</p>
+      </div>
+      ${addButton}
+    </div>
+    <div class='grid lg:grid-cols-2 gap-3'>${stationCards}</div>
+  </section>`;
+}
+
+function renderProductionOrderStationCard(station, canEdit) {
+  const readonly = canEdit ? "" : "disabled";
+  const actualMinutesValue =
+    station.actual_time_minutes === null || station.actual_time_minutes === undefined
+      ? ""
+      : station.actual_time_minutes;
+  const actionButtons = canEdit
+    ? `<div class='flex gap-2 flex-wrap'>
+        <button type='button' class='px-3 py-2 rounded bg-slate-900 text-white text-sm' onclick="saveProductionOrderStation('${station.id}')">Speichern</button>
+        <button type='button' class='px-3 py-2 rounded bg-rose-700 text-white text-sm' onclick="deleteProductionOrderStation('${station.id}')">Löschen</button>
+      </div>`
+    : `<span class='text-sm text-slate-500'>Nur lesbar</span>`;
+  return `<article class='border rounded-lg bg-white p-4 space-y-3'>
+    <div class='flex items-start justify-between gap-3'>
+      <div>
+        <h5 class='font-semibold'>Spannung ${escapeHtml(station.station_no)}</h5>
+        <p class='text-xs text-slate-500'>${escapeHtml(getProductionStationTimeStatusLabel(station.time_status))}</p>
+      </div>
+      <span class='px-2 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700'>OP ${escapeHtml(station.op_number || "-")}</span>
+    </div>
+    <label class='block text-sm'>
+      Name
+      <input id='productionStationName-${station.id}' class='border rounded p-2 w-full mt-1 bg-white' value="${escapeHtml(station.name || "")}" ${readonly} />
+    </label>
+    <div class='grid sm:grid-cols-2 gap-3'>
+      <label class='block text-sm'>
+        OP-Nummer
+        <input id='productionStationOp-${station.id}' class='border rounded p-2 w-full mt-1 bg-white' value="${escapeHtml(station.op_number || "")}" ${readonly} />
+      </label>
+      <label class='block text-sm'>
+        Zeitstatus
+        <select id='productionStationTimeStatus-${station.id}' class='border rounded p-2 w-full mt-1 bg-white' ${readonly}>
+          <option value='ok' ${station.time_status === "ok" ? "selected" : ""}>Zeit ok</option>
+          <option value='changed' ${station.time_status === "changed" ? "selected" : ""}>Zeit geändert</option>
+        </select>
+      </label>
+    </div>
+    <label class='block text-sm'>
+      Ist-Zeit Minuten
+      <input id='productionStationActualMinutes-${station.id}' type='number' min='0' step='1' class='border rounded p-2 w-full mt-1 bg-white' value="${escapeHtml(actualMinutesValue)}" ${readonly} />
+    </label>
+    <div class='grid grid-cols-2 gap-2 text-sm'>
+      <div class='rounded border bg-slate-50 p-2'>
+        <div class='text-xs text-slate-500'>Ausschuss gesamt</div>
+        <div class='font-semibold'>${escapeHtml(station.scrap_total)}</div>
+      </div>
+      <div class='rounded border bg-slate-50 p-2'>
+        <div class='text-xs text-slate-500'>In Abklärung gesamt</div>
+        <div class='font-semibold'>${escapeHtml(station.clarify_total)}</div>
+      </div>
+    </div>
+    <div class='text-xs text-slate-500'>Lebenslauf: Ausschuss ${escapeHtml(station.scrap_lifetime)} / Abklärung ${escapeHtml(station.clarify_lifetime)}</div>
+    ${actionButtons}
+  </article>`;
 }
 
 function renderProductionPreviewMetric(label, value) {
@@ -5950,6 +6169,32 @@ function validateProductionOrderInput(values) {
   return "";
 }
 
+function readProductionOrderStationValues(stationId) {
+  const actualMinutesRaw =
+    document.getElementById(`productionStationActualMinutes-${stationId}`)?.value?.trim() || "";
+  return {
+    name:
+      document.getElementById(`productionStationName-${stationId}`)?.value?.trim() || "",
+    opNumber:
+      document.getElementById(`productionStationOp-${stationId}`)?.value?.trim() || "",
+    timeStatus:
+      document.getElementById(`productionStationTimeStatus-${stationId}`)?.value === "changed"
+        ? "changed"
+        : "ok",
+    actualMinutesRaw,
+    actualMinutes:
+      actualMinutesRaw === "" ? null : Math.trunc(Number(actualMinutesRaw)),
+  };
+}
+
+function validateProductionOrderStationInput(values) {
+  if (!values.name) return "Bitte Namen der Spannung ausfüllen.";
+  if (values.actualMinutesRaw !== "" && !/^\d+$/.test(values.actualMinutesRaw)) {
+    return "Ist-Zeit muss eine ganze Zahl ab 0 sein.";
+  }
+  return "";
+}
+
 function getAllowedProductionCountMachine(machineId) {
   if (!machineId) return null;
   return getActiveProductionCountMachines().find(
@@ -6044,6 +6289,205 @@ async function refreshProductionCountsFromSupabase() {
 async function refreshProductionOrdersFromSupabase() {
   const orders = await loadProductionOrdersFromSupabase();
   applyProductionOrdersToState(orders);
+}
+
+async function createProductionOrderStation(orderId) {
+  const order = getProductionOrderById(orderId);
+  if (!canEditProductionOrder(order)) {
+    setProductionStatus("Du darfst für diesen Auftrag keine Spannung anlegen.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+
+  const stations = getProductionOrderStations(order.id);
+  const nextStationNo = stations.length
+    ? Math.max(...stations.map((station) => Number(station.station_no || 0))) + 1
+    : 1;
+  const { error } = await supabaseClient.from("production_order_stations").insert([
+    {
+      order_id: order.id,
+      station_no: nextStationNo,
+      name: `Spannung ${nextStationNo}`,
+      lock_name: false,
+      op_number: null,
+      time_status: "ok",
+      actual_time_minutes: null,
+      scrap_total: 0,
+      clarify_total: 0,
+      scrap_lifetime: 0,
+      clarify_lifetime: 0,
+      updated_at: new Date().toISOString(),
+    },
+  ]);
+
+  if (error) {
+    console.error("Fehler beim Anlegen der Spannung:", error);
+    setProductionStatus(
+      formatProductionSupabaseError(
+        error,
+        "Spannung konnte nicht angelegt werden",
+        "Spannung konnte nicht angelegt werden: Nummer ist bereits vorhanden.",
+      ),
+      true,
+    );
+    render();
+    return;
+  }
+
+  await refreshProductionOrderStationsFromSupabase();
+  setProductionStatus("Spannung wurde angelegt.");
+  render();
+}
+
+async function saveProductionOrderStation(stationId) {
+  const station = getProductionOrderStationById(stationId);
+  const order = getProductionOrderById(station?.order_id);
+  if (!station || !canEditProductionOrder(order)) {
+    setProductionStatus("Du darfst diese Spannung nicht bearbeiten.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+
+  const values = readProductionOrderStationValues(station.id);
+  const validationMessage = validateProductionOrderStationInput(values);
+  if (validationMessage) {
+    setProductionStatus(validationMessage, true);
+    render();
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("production_order_stations")
+    .update({
+      name: values.name,
+      lock_name: values.name !== `Spannung ${station.station_no}` || station.lock_name === true,
+      op_number: values.opNumber || null,
+      time_status: values.timeStatus,
+      actual_time_minutes: values.actualMinutes,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", station.id);
+
+  if (error) {
+    console.error("Fehler beim Speichern der Spannung:", error);
+    setProductionStatus(
+      formatProductionSupabaseError(error, "Spannung konnte nicht gespeichert werden"),
+      true,
+    );
+    render();
+    return;
+  }
+
+  await refreshProductionOrderStationsFromSupabase();
+  setProductionStatus("Spannung wurde gespeichert.");
+  render();
+}
+
+function productionOrderStationHasTotals(station) {
+  return (
+    Number(station?.scrap_total || 0) > 0 ||
+    Number(station?.clarify_total || 0) > 0 ||
+    Number(station?.scrap_lifetime || 0) > 0 ||
+    Number(station?.clarify_lifetime || 0) > 0
+  );
+}
+
+async function productionOrderStationHasRelatedEntries(stationId) {
+  const checks = [
+    { table: "production_station_counts", label: "Zählungen" },
+    { table: "production_station_events", label: "Protokolle" },
+  ];
+  for (const check of checks) {
+    const { data, error } = await supabaseClient
+      .from(check.table)
+      .select("id")
+      .eq("station_id", stationId)
+      .limit(1);
+    if (error) {
+      return {
+        error: formatProductionSupabaseError(
+          error,
+          `${check.label} zur Spannung konnten nicht geprüft werden`,
+        ),
+        exists: false,
+      };
+    }
+    if (Array.isArray(data) && data.length) {
+      return { error: "", exists: true };
+    }
+  }
+  return { error: "", exists: false };
+}
+
+async function deleteProductionOrderStation(stationId) {
+  const station = getProductionOrderStationById(stationId);
+  const order = getProductionOrderById(station?.order_id);
+  if (!station || !canEditProductionOrder(order)) {
+    setProductionStatus("Du darfst diese Spannung nicht löschen.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+  if (productionOrderStationHasTotals(station)) {
+    setProductionStatus("Spannung kann nicht gelöscht werden, weil bereits Ausschuss oder Abklärung erfasst ist.", true);
+    render();
+    return;
+  }
+
+  const relatedCheck = await productionOrderStationHasRelatedEntries(station.id);
+  if (relatedCheck.error) {
+    setProductionStatus(relatedCheck.error, true);
+    render();
+    return;
+  }
+  if (relatedCheck.exists) {
+    setProductionStatus("Spannung kann nicht gelöscht werden, weil bereits Zählungen oder Protokolle verknüpft sind.", true);
+    render();
+    return;
+  }
+  if (!confirm("Spannung wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.")) {
+    setProductionStatus("Löschen abgebrochen.");
+    render();
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("production_order_stations")
+    .delete()
+    .eq("id", station.id);
+
+  if (error) {
+    console.error("Fehler beim Löschen der Spannung:", error);
+    setProductionStatus(
+      formatProductionSupabaseError(
+        error,
+        "Spannung konnte nicht gelöscht werden",
+        "Spannung konnte nicht gelöscht werden: Datensatz ist noch verknüpft.",
+      ),
+      true,
+    );
+    render();
+    return;
+  }
+
+  await refreshProductionOrderStationsFromSupabase();
+  await ensureProductionOrderStationsForOrder(order.id);
+  setProductionStatus("Spannung wurde gelöscht.");
+  render();
 }
 
 async function createProductionDepartment() {
@@ -14642,6 +15086,9 @@ window.cancelProductionOrder = cancelProductionOrder;
 window.selectProductionCounterMachine = selectProductionCounterMachine;
 window.selectProductionCounterOrder = selectProductionCounterOrder;
 window.resetProductionCounterSelection = resetProductionCounterSelection;
+window.createProductionOrderStation = createProductionOrderStation;
+window.saveProductionOrderStation = saveProductionOrderStation;
+window.deleteProductionOrderStation = deleteProductionOrderStation;
 window.markAbsent = markAbsent;
 window.assignShift = assignShift;
 window.cancelShift = cancelShift;
