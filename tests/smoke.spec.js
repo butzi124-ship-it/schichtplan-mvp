@@ -118,6 +118,7 @@ const rowsByTable = {
       updated_at: "2026-01-01T00:00:00Z",
     },
   ],
+  production_order_employees: [],
   production_station_counts: [],
   production_station_events: [],
   production_counts: [],
@@ -162,6 +163,7 @@ const rowsByTable = {
 
 function installSupabaseMock(rowsByTableArg) {
   const rowsByTable = rowsByTableArg;
+  window.__SUPABASE_WRITE_LOG = [];
   window.TEST_ADMIN_EMAIL = "admin@example.test";
   window.TEST_EMPLOYEE_EMAIL = "employee@example.test";
 
@@ -179,6 +181,7 @@ function installSupabaseMock(rowsByTableArg) {
     order() { return this; }
     limit() { return this; }
     insert(payload) {
+      window.__SUPABASE_WRITE_LOG.push({ table: this.table, action: "insert" });
       const rows = Array.isArray(payload) ? payload : [payload];
       const tableRows = rowsByTable[this.table] || [];
       rowsByTable[this.table] = tableRows;
@@ -191,8 +194,16 @@ function installSupabaseMock(rowsByTableArg) {
       tableRows.push(...created);
       return Promise.resolve({ data: created, error: null });
     }
-    update(payload) { this.pendingUpdate = payload || {}; return this; }
-    delete() { this.pendingDelete = true; return this; }
+    update(payload) {
+      window.__SUPABASE_WRITE_LOG.push({ table: this.table, action: "update" });
+      this.pendingUpdate = payload || {};
+      return this;
+    }
+    delete() {
+      window.__SUPABASE_WRITE_LOG.push({ table: this.table, action: "delete" });
+      this.pendingDelete = true;
+      return this;
+    }
     upsert(payload) { return this.insert(payload); }
     single() { this.useSingle = true; return this; }
     maybeSingle() { this.useMaybeSingle = true; return this; }
@@ -329,11 +340,22 @@ test.describe("Humbel app smoke", () => {
     await expectViewHeading(page, "Produktionsvorschau");
     await expect(page.locator("#view").getByRole("button", { name: /BA BA-100/ })).toBeVisible();
     await expect(page.locator("#view")).toContainText("Restmenge vorbereitet");
+    await expect(page.locator("#view")).toContainText("Mitarbeiter am Auftrag");
+    await page.locator("#view").getByLabel("Mitarbeiter hinzufügen").selectOption("employee-one");
+    await page.locator("#view").getByRole("button", { name: "Hinzufügen", exact: true }).click();
+    await expect(page.locator("#view")).toContainText("Lavdrim");
+    await expect(page.locator("#view")).toContainText("PN 100");
     await expect(page.locator("#view")).toContainText("Spannung 1");
+    await expect(page.locator("#view").locator("article").filter({ hasText: "Spannung 1" })).toContainText("Lavdrim");
+    await expect(page.locator("#view")).toContainText("Gutteile zählen folgt im nächsten Schritt.");
+    await expect(page.locator("#view")).toContainText("Zählung folgt im nächsten Schritt.");
     await expect(page.locator("#view").getByRole("button", { name: /\+1/ })).toHaveCount(0);
     await page.locator("#view").getByRole("button", { name: /Spannung/ }).filter({ hasText: /hinzuf/ }).click();
     await expect(page.locator("#view")).toContainText("Spannung 2");
     await expect(page.locator("#view")).toContainText("Spannungen und Mitarbeiterzählung");
+    await expect
+      .poll(() => page.evaluate(() => window.__SUPABASE_WRITE_LOG || []))
+      .not.toContainEqual(expect.objectContaining({ table: "production_station_counts" }));
     await page.getByRole("button", { name: "Zurück zur Maschinenübersicht" }).click();
     await expectViewHeading(page, "Maschinenübersicht");
 

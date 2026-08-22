@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.97";
+const APP_VERSION = "0.4.98";
 const INVENTORY_MODE_ENABLED = false;
 const HUMBEL_COLORS = Object.freeze({
   primary: "#0d4682",
@@ -69,6 +69,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.4.98",
+    date: "2026-08-22 07:15",
+    changes: ["Mitarbeiterzuordnung je Produktionsauftrag vorbereitet."],
+  },
   {
     version: "0.4.97",
     date: "2026-08-09 08:34",
@@ -1239,6 +1244,27 @@ async function loadProductionOrderStationsFromSupabase() {
   return data || [];
 }
 
+async function loadProductionOrderEmployeesFromSupabase() {
+  const { data, error } = await supabaseClient
+    .from("production_order_employees")
+    .select("*")
+    .order("sort_order", { ascending: true });
+
+  state.ui = state.ui || {};
+
+  if (error) {
+    console.error("Fehler beim Laden von production_order_employees:", error);
+    state.ui.productionOrderEmployeesError = formatProductionSupabaseError(
+      error,
+      "Auftragsmitarbeiter konnten nicht geladen werden",
+    );
+    return null;
+  }
+
+  state.ui.productionOrderEmployeesError = "";
+  return data || [];
+}
+
 function normalizeProductionOrderFromDb(row) {
   return {
     id: row.id,
@@ -1295,6 +1321,28 @@ function applyProductionOrderStationsToState(rows) {
   state.productionOrderStations = rows
     .map(normalizeProductionOrderStationFromDb)
     .sort((a, b) => a.station_no - b.station_no);
+}
+
+function normalizeProductionOrderEmployeeFromDb(row) {
+  return {
+    id: row.id,
+    order_id: row.order_id || "",
+    employee_id: row.employee_id || "",
+    employee_name: row.employee_name || "",
+    personnel_no: row.personnel_no || "",
+    role: row.role || "worker",
+    sort_order: Math.max(0, Math.trunc(Number(row.sort_order || 0))),
+    active: row.active !== false,
+    created_at: row.created_at || null,
+    updated_at: row.updated_at || null,
+  };
+}
+
+function applyProductionOrderEmployeesToState(rows) {
+  if (!Array.isArray(rows)) return;
+  state.productionOrderEmployees = rows
+    .map(normalizeProductionOrderEmployeeFromDb)
+    .sort((a, b) => a.sort_order - b.sort_order);
 }
 
 function normalizeProductionCountFromDb(row) {
@@ -1972,6 +2020,7 @@ async function syncSupabaseSessionToApp() {
   const productionCounts = await loadProductionCountsFromSupabase();
   const productionOrders = await loadProductionOrdersFromSupabase();
   const productionOrderStations = await loadProductionOrderStationsFromSupabase();
+  const productionOrderEmployees = await loadProductionOrderEmployeesFromSupabase();
   const materials = await loadToolMaterialsFromSupabase();
   const planning = await loadPlanningDataFromSupabase();
 
@@ -1982,6 +2031,7 @@ async function syncSupabaseSessionToApp() {
   applyProductionCountsToState(productionCounts);
   applyProductionOrdersToState(productionOrders);
   applyProductionOrderStationsToState(productionOrderStations);
+  applyProductionOrderEmployeesToState(productionOrderEmployees);
   toolMaterials = materials;
   await loadToolPageData();
   state.ui.supabaseReady = true;
@@ -2022,6 +2072,7 @@ async function syncSupabaseSessionToApp() {
   console.log("Produktionsstückzahlen nach Login geladen:", productionCounts);
   console.log("Produktionsaufträge nach Login geladen:", productionOrders);
   console.log("Produktionsspannungen nach Login geladen:", productionOrderStations);
+  console.log("Produktionsmitarbeiter nach Login geladen:", productionOrderEmployees);
   console.log("Tool-Materials nach Login geladen:", materials);
   console.log("Tools nach Login geladen:", state.tools);
   console.log("Planungsdaten nach Login geladen:", planning);
@@ -2062,6 +2113,7 @@ async function bootSupabase() {
   const productionCounts = await loadProductionCountsFromSupabase();
   const productionOrders = await loadProductionOrdersFromSupabase();
   const productionOrderStations = await loadProductionOrderStationsFromSupabase();
+  const productionOrderEmployees = await loadProductionOrderEmployeesFromSupabase();
   const materials = await loadToolMaterialsFromSupabase();
   const planning = await loadPlanningDataFromSupabase();
 
@@ -2072,6 +2124,7 @@ async function bootSupabase() {
   applyProductionCountsToState(productionCounts);
   applyProductionOrdersToState(productionOrders);
   applyProductionOrderStationsToState(productionOrderStations);
+  applyProductionOrderEmployeesToState(productionOrderEmployees);
   toolMaterials = materials;
 
   if (planning) {
@@ -2095,6 +2148,7 @@ async function bootSupabase() {
   console.log("Produktionsstückzahlen aus Supabase:", productionCounts);
   console.log("Produktionsaufträge aus Supabase:", productionOrders);
   console.log("Produktionsspannungen aus Supabase:", productionOrderStations);
+  console.log("Produktionsmitarbeiter aus Supabase:", productionOrderEmployees);
   console.log("Tool-Materials aus Supabase:", materials);
   console.log("Planungsdaten aus Supabase:", planning);
 
@@ -2157,6 +2211,7 @@ function loadState() {
     productionCounts: [],
     productionOrders: [],
     productionOrderStations: [],
+    productionOrderEmployees: [],
     tools: [],
     toolLabelsExtra: [],
     toolManufacturersExtra: [],
@@ -2207,6 +2262,7 @@ function loadState() {
       productionCountsError: "",
       productionOrdersError: "",
       productionStationsError: "",
+      productionOrderEmployeesError: "",
       productionCounterSelectedMachineId: "",
       productionCounterActiveOrderId: "",
       toolsLoading: false,
@@ -2223,6 +2279,7 @@ function loadState() {
     delete parsed.productionCounts;
     delete parsed.productionOrders;
     delete parsed.productionOrderStations;
+    delete parsed.productionOrderEmployees;
     delete parsed.tools;
     delete parsed.toolJournal;
     return {
@@ -2259,6 +2316,7 @@ function persist() {
   delete snapshot.productionCounts;
   delete snapshot.productionOrders;
   delete snapshot.productionOrderStations;
+  delete snapshot.productionOrderEmployees;
   delete snapshot.tools;
   delete snapshot.toolJournal;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
@@ -4806,6 +4864,7 @@ function getProductionStatusBanner() {
   const countsError = state.ui?.productionCountsError;
   const ordersError = state.ui?.productionOrdersError;
   const stationsError = state.ui?.productionStationsError;
+  const orderEmployeesError = state.ui?.productionOrderEmployeesError;
   const actionError = state.ui?.productionActionError;
   const actionMessage = state.ui?.productionActionMessage;
   const errors = [];
@@ -4814,6 +4873,7 @@ function getProductionStatusBanner() {
   if (countsError) errors.push(`production_counts: ${countsError}`);
   if (ordersError) errors.push(`production_orders: ${ordersError}`);
   if (stationsError) errors.push(`production_order_stations: ${stationsError}`);
+  if (orderEmployeesError) errors.push(`production_order_employees: ${orderEmployeesError}`);
   if (actionError) errors.push(actionError);
 
   const errorBanner = errors.length
@@ -5535,6 +5595,45 @@ function getProductionOrderStationById(stationId) {
   return (state.productionOrderStations || []).find((station) => station.id === stationId) || null;
 }
 
+function getProductionOrderEmployees(orderId, activeOnly = true) {
+  if (!orderId) return [];
+  return (state.productionOrderEmployees || [])
+    .filter((entry) => entry.order_id === orderId)
+    .filter((entry) => (activeOnly ? entry.active !== false : true))
+    .sort((a, b) => a.sort_order - b.sort_order);
+}
+
+function getProductionOrderEmployeeById(entryId) {
+  if (!entryId) return null;
+  return (state.productionOrderEmployees || []).find((entry) => entry.id === entryId) || null;
+}
+
+function getAssignableProductionEmployees(orderId = "") {
+  const assignedActiveIds = new Set(
+    getProductionOrderEmployees(orderId, true)
+      .map((entry) => entry.employee_id)
+      .filter(Boolean),
+  );
+  return (state.employeesList || [])
+    .filter((employee) => employee.is_active !== false)
+    .filter((employee) => !["admin", "tool_scanner"].includes(employee.role))
+    .filter((employee) => !assignedActiveIds.has(employee.id));
+}
+
+function getProductionOrderEmployeeRoleLabel(role) {
+  return role === "worker" ? "Mitarbeiter" : role || "Mitarbeiter";
+}
+
+function getProductionEmployeeDisplayName(employee) {
+  return (
+    [employee?.first_name, employee?.last_name].filter(Boolean).join(" ").trim() ||
+    employee?.display_name ||
+    employee?.name ||
+    employee?.personnel_no ||
+    "Mitarbeiter"
+  );
+}
+
 function calculatePreparedRemainingQuantity(order) {
   if (!order) return 0;
   return Math.max(0, Math.trunc(Number(order.target_quantity || 0)));
@@ -5785,6 +5884,7 @@ function renderProductionMachineOrderPreview(machine, orders) {
           <span class='px-2 py-1 rounded-full text-xs font-semibold ${activeOrder.status === "running" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}'>${escapeHtml(getProductionOrderStatusLabel(activeOrder.status))}</span>
         </div>
         ${metrics}
+        ${renderProductionOrderEmployeesSection(activeOrder)}
         ${renderProductionOrderStationsSection(activeOrder)}
       </div>`
     : `<div class='border rounded-lg bg-slate-50 p-4 text-sm text-slate-600'>Kein aktiver BA ausgewählt.</div>`;
@@ -5833,8 +5933,77 @@ function renderProductionOrderStationsSection(order) {
   </section>`;
 }
 
+function renderProductionOrderEmployeesSection(order) {
+  const canEdit = canEditProductionOrder(order);
+  const activeEmployees = getProductionOrderEmployees(order.id, true);
+  const inactiveEmployees = getProductionOrderEmployees(order.id, false)
+    .filter((entry) => entry.active === false);
+  const assignableEmployees = getAssignableProductionEmployees(order.id);
+  const employeeOptions = assignableEmployees
+    .map((employee) => {
+      const label = `${getProductionEmployeeDisplayName(employee)}${employee.personnel_no ? ` (${employee.personnel_no})` : ""}`;
+      return `<option value='${escapeHtml(employee.id)}'>${escapeHtml(label)}</option>`;
+    })
+    .join("");
+  const addControl = canEdit
+    ? `<div class='flex gap-2 flex-wrap items-end'>
+        <label class='block text-sm min-w-[240px] flex-1'>
+          Mitarbeiter hinzufügen
+          <select id='productionOrderEmployeeSelect-${order.id}' class='border rounded p-2 w-full mt-1 bg-white' ${assignableEmployees.length ? "" : "disabled"}>
+            <option value=''>Bitte auswählen</option>
+            ${employeeOptions}
+          </select>
+        </label>
+        <button type='button' class='px-3 py-2 rounded bg-slate-900 text-white text-sm' onclick="addProductionOrderEmployee('${order.id}')" ${assignableEmployees.length ? "" : "disabled"}>Hinzufügen</button>
+      </div>`
+    : "";
+  const activeList = activeEmployees.length
+    ? `<div class='grid sm:grid-cols-2 gap-2'>${activeEmployees.map((entry) => renderProductionOrderEmployeePill(entry, canEdit, true)).join("")}</div>`
+    : `<div class='rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800'>Noch kein Mitarbeiter dem Auftrag zugeordnet.</div>`;
+  const inactiveList = inactiveEmployees.length
+    ? `<details class='text-sm'>
+        <summary class='cursor-pointer font-semibold text-slate-600'>Früher zugeordnet</summary>
+        <div class='grid sm:grid-cols-2 gap-2 mt-2'>${inactiveEmployees.map((entry) => renderProductionOrderEmployeePill(entry, canEdit, false)).join("")}</div>
+      </details>`
+    : "";
+  const noEmployeesNotice =
+    canEdit && !assignableEmployees.length
+      ? `<div class='text-xs text-slate-500'>Keine weiteren aktiven Mitarbeiter verfügbar.</div>`
+      : "";
+
+  return `<section class='border rounded-lg bg-slate-50 p-4 space-y-4'>
+    <div>
+      <h4 class='font-semibold'>Mitarbeiter am Auftrag</h4>
+      <p class='text-sm text-slate-600 mt-1'>Gutteile zählen folgt im nächsten Schritt.</p>
+    </div>
+    ${addControl}
+    ${noEmployeesNotice}
+    ${activeList}
+    ${inactiveList}
+  </section>`;
+}
+
+function renderProductionOrderEmployeePill(entry, canEdit, isActive) {
+  const action = canEdit
+    ? isActive
+      ? `<button type='button' class='px-2 py-1 rounded bg-slate-200 text-slate-800 text-xs' onclick="deactivateProductionOrderEmployee('${entry.id}')">Entfernen</button>`
+      : `<button type='button' class='px-2 py-1 rounded bg-emerald-700 text-white text-xs' onclick="reactivateProductionOrderEmployee('${entry.id}')">Reaktivieren</button>`
+    : "";
+  return `<div class='rounded border bg-white p-3 flex items-start justify-between gap-3'>
+    <div>
+      <div class='font-semibold text-sm'>${escapeHtml(entry.employee_name || "Mitarbeiter")}</div>
+      <div class='text-xs text-slate-500'>${entry.personnel_no ? `PN ${escapeHtml(entry.personnel_no)} · ` : ""}${escapeHtml(getProductionOrderEmployeeRoleLabel(entry.role))}</div>
+    </div>
+    ${action}
+  </div>`;
+}
+
 function renderProductionOrderStationCard(station, canEdit) {
   const readonly = canEdit ? "" : "disabled";
+  const orderEmployees = getProductionOrderEmployees(station.order_id, true);
+  const employeesList = orderEmployees.length
+    ? `<div class='space-y-1'>${orderEmployees.map((entry) => `<div class='rounded border border-slate-200 bg-slate-50 p-2 text-xs'><span class='font-semibold'>${escapeHtml(entry.employee_name || "Mitarbeiter")}</span>${entry.personnel_no ? ` · PN ${escapeHtml(entry.personnel_no)}` : ""}</div>`).join("")}</div>`
+    : `<div class='rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800'>Noch kein Mitarbeiter dem Auftrag zugeordnet.</div>`;
   const actualMinutesValue =
     station.actual_time_minutes === null || station.actual_time_minutes === undefined
       ? ""
@@ -5885,6 +6054,11 @@ function renderProductionOrderStationCard(station, canEdit) {
       </div>
     </div>
     <div class='text-xs text-slate-500'>Lebenslauf: Ausschuss ${escapeHtml(station.scrap_lifetime)} / Abklärung ${escapeHtml(station.clarify_lifetime)}</div>
+    <div class='space-y-2'>
+      <div class='text-sm font-semibold'>Mitarbeiter</div>
+      ${employeesList}
+      <div class='text-xs text-slate-500'>Zählung folgt im nächsten Schritt.</div>
+    </div>
     ${actionButtons}
   </article>`;
 }
@@ -6289,6 +6463,139 @@ async function refreshProductionCountsFromSupabase() {
 async function refreshProductionOrdersFromSupabase() {
   const orders = await loadProductionOrdersFromSupabase();
   applyProductionOrdersToState(orders);
+}
+
+async function refreshProductionOrderEmployeesFromSupabase() {
+  const employees = await loadProductionOrderEmployeesFromSupabase();
+  applyProductionOrderEmployeesToState(employees);
+}
+
+async function setProductionOrderEmployeeActive(entryId, active) {
+  const entry = getProductionOrderEmployeeById(entryId);
+  const order = getProductionOrderById(entry?.order_id);
+  if (!entry || !canEditProductionOrder(order)) {
+    setProductionStatus("Du darfst diese Mitarbeiterzuordnung nicht ändern.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("production_order_employees")
+    .update({ active, updated_at: new Date().toISOString() })
+    .eq("id", entry.id);
+
+  if (error) {
+    console.error("Fehler beim Ändern der Auftragsmitarbeiter:", error);
+    setProductionStatus(
+      formatProductionSupabaseError(
+        error,
+        "Mitarbeiterzuordnung konnte nicht geändert werden",
+      ),
+      true,
+    );
+    render();
+    return;
+  }
+
+  await refreshProductionOrderEmployeesFromSupabase();
+  setProductionStatus(active ? "Mitarbeiter wurde reaktiviert." : "Mitarbeiter wurde vom Auftrag entfernt.");
+  render();
+}
+
+function deactivateProductionOrderEmployee(entryId) {
+  setProductionOrderEmployeeActive(entryId, false);
+}
+
+function reactivateProductionOrderEmployee(entryId) {
+  setProductionOrderEmployeeActive(entryId, true);
+}
+
+async function addProductionOrderEmployee(orderId) {
+  const order = getProductionOrderById(orderId);
+  if (!canEditProductionOrder(order)) {
+    setProductionStatus("Du darfst diesem Auftrag keine Mitarbeiter zuordnen.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+
+  const employeeId = document.getElementById(`productionOrderEmployeeSelect-${order.id}`)?.value || "";
+  const employee = getAssignableProductionEmployees("").find((entry) => entry.id === employeeId);
+  if (!employee) {
+    setProductionStatus("Bitte aktiven Mitarbeiter auswählen.", true);
+    render();
+    return;
+  }
+
+  const existing = getProductionOrderEmployees(order.id, false).find(
+    (entry) => entry.employee_id === employee.id,
+  );
+  if (existing && existing.active !== false) {
+    setProductionStatus("Mitarbeiter ist bereits zugeordnet.", true);
+    render();
+    return;
+  }
+  if (existing && existing.active === false) {
+    await setProductionOrderEmployeeActive(existing.id, true);
+    return;
+  }
+
+  const currentEntries = getProductionOrderEmployees(order.id, false);
+  const nextSortOrder = currentEntries.length
+    ? Math.max(...currentEntries.map((entry) => Number(entry.sort_order || 0))) + 1
+    : 1;
+  const { error } = await supabaseClient.from("production_order_employees").insert([
+    {
+      order_id: order.id,
+      employee_id: employee.id,
+      employee_name: getProductionEmployeeDisplayName(employee),
+      personnel_no: employee.personnel_no || null,
+      role: "worker",
+      sort_order: nextSortOrder,
+      active: true,
+      updated_at: new Date().toISOString(),
+    },
+  ]);
+
+  if (error) {
+    console.error("Fehler beim Hinzufügen des Auftragsmitarbeiters:", error);
+    await refreshProductionOrderEmployeesFromSupabase();
+    const duplicate = getProductionOrderEmployees(order.id, false).find(
+      (entry) => entry.employee_id === employee.id,
+    );
+    if (duplicate?.active === false) {
+      await setProductionOrderEmployeeActive(duplicate.id, true);
+      return;
+    }
+    if (duplicate && duplicate.active !== false) {
+      setProductionStatus("Mitarbeiter ist bereits zugeordnet.", true);
+      render();
+      return;
+    }
+    setProductionStatus(
+      formatProductionSupabaseError(
+        error,
+        "Mitarbeiter konnte nicht zugeordnet werden",
+        "Mitarbeiter ist bereits zugeordnet.",
+      ),
+      true,
+    );
+    render();
+    return;
+  }
+
+  await refreshProductionOrderEmployeesFromSupabase();
+  setProductionStatus("Mitarbeiter wurde dem Auftrag zugeordnet.");
+  render();
 }
 
 async function createProductionOrderStation(orderId) {
@@ -15089,6 +15396,9 @@ window.resetProductionCounterSelection = resetProductionCounterSelection;
 window.createProductionOrderStation = createProductionOrderStation;
 window.saveProductionOrderStation = saveProductionOrderStation;
 window.deleteProductionOrderStation = deleteProductionOrderStation;
+window.addProductionOrderEmployee = addProductionOrderEmployee;
+window.deactivateProductionOrderEmployee = deactivateProductionOrderEmployee;
+window.reactivateProductionOrderEmployee = reactivateProductionOrderEmployee;
 window.markAbsent = markAbsent;
 window.assignShift = assignShift;
 window.cancelShift = cancelShift;
