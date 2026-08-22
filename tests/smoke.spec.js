@@ -78,6 +78,13 @@ const rowsByTable = {
       department_id: "department-one",
       active: true,
     },
+    {
+      id: "machine-two",
+      name: "Maschine 51",
+      machine_code: "M51",
+      department_id: "department-one",
+      active: true,
+    },
   ],
   production_orders: [
     {
@@ -89,6 +96,25 @@ const rowsByTable = {
       ba_quantity: 100,
       target_quantity: 100,
       pallet_count: 2,
+      pieces_per_pallet: 50,
+      use_chain_logic: false,
+      status: "running",
+      started_at: "2026-01-01T00:00:00Z",
+      completed_at: null,
+      created_by_employee_id: "employee-admin",
+      updated_by_employee_id: "employee-admin",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    },
+    {
+      id: "order-two",
+      machine_id: "machine-two",
+      department_id: "department-one",
+      ba_number: "BA-200",
+      article_number: "ART-200",
+      ba_quantity: 50,
+      target_quantity: 50,
+      pallet_count: 1,
       pieces_per_pallet: 50,
       use_chain_logic: false,
       status: "running",
@@ -163,9 +189,21 @@ const rowsByTable = {
 
 function installSupabaseMock(rowsByTableArg) {
   const rowsByTable = rowsByTableArg;
+  window.__SUPABASE_MOCK_ROWS = rowsByTable;
   window.__SUPABASE_WRITE_LOG = [];
+  window.__SUPABASE_MOCK_ERRORS = {};
   window.TEST_ADMIN_EMAIL = "admin@example.test";
   window.TEST_EMPLOYEE_EMAIL = "employee@example.test";
+
+  function consumeMockError(table, action) {
+    const tableErrors = window.__SUPABASE_MOCK_ERRORS?.[table];
+    const error = tableErrors?.[action];
+    if (error) {
+      delete tableErrors[action];
+      return error;
+    }
+    return null;
+  }
 
   class QueryMock {
     constructor(table) {
@@ -182,6 +220,8 @@ function installSupabaseMock(rowsByTableArg) {
     limit() { return this; }
     insert(payload) {
       window.__SUPABASE_WRITE_LOG.push({ table: this.table, action: "insert" });
+      const mockError = consumeMockError(this.table, "insert");
+      if (mockError) return Promise.resolve({ data: null, error: mockError });
       const rows = Array.isArray(payload) ? payload : [payload];
       const tableRows = rowsByTable[this.table] || [];
       rowsByTable[this.table] = tableRows;
@@ -215,6 +255,9 @@ function installSupabaseMock(rowsByTableArg) {
       for (const { column, value } of this.filters) {
         data = data.filter((row) => String(row[column]) === String(value));
       }
+      const mockAction = this.pendingUpdate ? "update" : this.pendingDelete ? "delete" : "select";
+      const mockError = consumeMockError(this.table, mockAction);
+      if (mockError) return { data: null, error: mockError };
       if (this.pendingUpdate) {
         data.forEach((row) => Object.assign(row, this.pendingUpdate));
         return { data, error: null };
@@ -266,6 +309,7 @@ test.describe("Humbel app smoke", () => {
         "Tailwind",
         "cdn.tailwindcss.com",
         "supabase",
+        "production_order_stations Supabase-Fehler",
       ];
       if (!ignored.some((entry) => text.includes(entry))) {
         consoleErrors.push(text);
@@ -348,6 +392,21 @@ test.describe("Humbel app smoke", () => {
     await expect(page.locator("#view")).toContainText("Spannung 1");
     const stationOne = page.locator("#view").locator("article").filter({ hasText: "Spannung 1" });
     await expect(stationOne).toContainText("Lavdrim");
+    const stationInsertsBeforeSave = await page.evaluate(() =>
+      (window.__SUPABASE_WRITE_LOG || []).filter(
+        (entry) => entry.table === "production_order_stations" && entry.action === "insert",
+      ).length,
+    );
+    await stationOne.getByLabel("OP-Nummer").fill("20");
+    await stationOne.getByRole("button", { name: "Speichern" }).click();
+    await expect(stationOne).toContainText("OP 20");
+    await expect(page.locator("#view")).toContainText("Spannung wurde gespeichert.");
+    const stationInsertsAfterSave = await page.evaluate(() =>
+      (window.__SUPABASE_WRITE_LOG || []).filter(
+        (entry) => entry.table === "production_order_stations" && entry.action === "insert",
+      ).length,
+    );
+    expect(stationInsertsAfterSave).toBe(stationInsertsBeforeSave);
     await expect(stationOne).toContainText(/Gutteile\s+0/);
     await stationOne.getByRole("button", { name: /Gutteile \+1/ }).click();
     await expect(stationOne).toContainText(/Gutteile\s+1/);
@@ -387,6 +446,21 @@ test.describe("Humbel app smoke", () => {
       (window.__SUPABASE_WRITE_LOG || []).filter((entry) => entry.table === "production_station_counts"),
     );
     expect(stationCountWrites.every((entry) => ["insert", "update"].includes(entry.action))).toBeTruthy();
+    await page.getByRole("button", { name: "Zurück zur Maschinenübersicht" }).click();
+    await expectViewHeading(page, "Maschinenübersicht");
+    await page.evaluate(() => {
+      window.__SUPABASE_MOCK_ERRORS.production_order_stations = {
+        insert: {
+          code: "42501",
+          message: "new row violates row-level security policy for table \"production_order_stations\"",
+        },
+      };
+    });
+    await page.locator("#view").getByRole("button", { name: /Maschine 51/ }).click();
+    await expectViewHeading(page, "Produktionsvorschau");
+    await expect(page.locator("#view")).toContainText("Maschine 51");
+    await expect(page.locator("#view")).toContainText("Erste Spannung konnte nicht angelegt werden");
+    await expect(page.locator("#view")).toContainText("Noch keine Spannung geladen");
     await page.getByRole("button", { name: "Zurück zur Maschinenübersicht" }).click();
     await expectViewHeading(page, "Maschinenübersicht");
 

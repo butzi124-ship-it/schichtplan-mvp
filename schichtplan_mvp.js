@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.5.00";
+const APP_VERSION = "0.5.01";
 const INVENTORY_MODE_ENABLED = false;
 const HUMBEL_COLORS = Object.freeze({
   primary: "#0d4682",
@@ -69,6 +69,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.5.01",
+    date: "2026-08-22 08:31",
+    changes: ["Speichern und Fehlerbehandlung für Produktionsspannungen stabilisiert."],
+  },
   {
     version: "0.5.00",
     date: "2026-08-22 07:44",
@@ -5756,18 +5761,38 @@ function getProductionStationTimeStatusLabel(status) {
   return status === "changed" ? "Zeit geändert" : "Zeit ok";
 }
 
+function logProductionStationSupabaseError(action, error, details = {}) {
+  console.error("production_order_stations Supabase-Fehler:", {
+    action,
+    order_id: details.order_id || "",
+    station_id: details.station_id || "",
+    station_no: details.station_no || "",
+    current_user_role: currentUser?.role || "",
+    current_employee_role: currentEmployeeRecord?.role || "",
+    error,
+  });
+}
+
 async function refreshProductionOrderStationsFromSupabase() {
   const stations = await loadProductionOrderStationsFromSupabase();
+  if (!Array.isArray(stations)) return false;
   applyProductionOrderStationsToState(stations);
+  return true;
 }
 
 async function ensureProductionOrderStationsForOrder(orderId) {
   const order = getProductionOrderById(orderId);
-  if (!canEditProductionOrder(order)) return;
+  if (
+    !order ||
+    !order.id ||
+    !["running", "paused"].includes(order.status) ||
+    !canEditProductionOrder(order)
+  ) return;
   if (!supabaseReady) {
     setProductionStatus("Supabase ist nicht erreichbar.", true);
     return;
   }
+  if (state.ui?.productionStationsError) return;
   if (getProductionOrderStations(order.id).length) return;
 
   const { error } = await supabaseClient.from("production_order_stations").insert([
@@ -5788,7 +5813,10 @@ async function ensureProductionOrderStationsForOrder(orderId) {
   ]);
 
   if (error) {
-    console.error("Fehler beim Anlegen der ersten Spannung:", error);
+    logProductionStationSupabaseError("insert", error, {
+      order_id: order.id,
+      station_no: 1,
+    });
     const duplicateCode =
       error.code === "23505" || String(error.message || "").toLowerCase().includes("duplicate");
     if (!duplicateCode) {
@@ -5800,6 +5828,8 @@ async function ensureProductionOrderStationsForOrder(orderId) {
         true,
       );
     }
+    await refreshProductionOrderStationsFromSupabase();
+    return;
   }
 
   await refreshProductionOrderStationsFromSupabase();
@@ -6746,7 +6776,11 @@ async function adjustProductionStationAmount(stationId, type, delta) {
     .eq("id", station.id);
 
   if (error) {
-    console.error("Fehler beim Speichern der Stationsmenge:", error);
+    logProductionStationSupabaseError("update", error, {
+      order_id: station.order_id,
+      station_id: station.id,
+      station_no: station.station_no,
+    });
     state.ui.productionStationAmountSavingKey = "";
     setProductionStatus(
       formatProductionSupabaseError(error, "Menge konnte nicht gespeichert werden"),
@@ -7031,7 +7065,10 @@ async function createProductionOrderStation(orderId) {
   ]);
 
   if (error) {
-    console.error("Fehler beim Anlegen der Spannung:", error);
+    logProductionStationSupabaseError("insert", error, {
+      order_id: order.id,
+      station_no: nextStationNo,
+    });
     setProductionStatus(
       formatProductionSupabaseError(
         error,
@@ -7084,7 +7121,11 @@ async function saveProductionOrderStation(stationId) {
     .eq("id", station.id);
 
   if (error) {
-    console.error("Fehler beim Speichern der Spannung:", error);
+    logProductionStationSupabaseError("update", error, {
+      order_id: station.order_id,
+      station_id: station.id,
+      station_no: station.station_no,
+    });
     setProductionStatus(
       formatProductionSupabaseError(error, "Spannung konnte nicht gespeichert werden"),
       true,
@@ -7176,7 +7217,11 @@ async function deleteProductionOrderStation(stationId) {
     .eq("id", station.id);
 
   if (error) {
-    console.error("Fehler beim Löschen der Spannung:", error);
+    logProductionStationSupabaseError("delete", error, {
+      order_id: station.order_id,
+      station_id: station.id,
+      station_no: station.station_no,
+    });
     setProductionStatus(
       formatProductionSupabaseError(
         error,
