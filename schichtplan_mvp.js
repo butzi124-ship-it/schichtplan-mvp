@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.5.06";
+const APP_VERSION = "0.5.07";
 const INVENTORY_MODE_ENABLED = false;
 const HUMBEL_COLORS = Object.freeze({
   primary: "#0d4682",
@@ -69,6 +69,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.5.07",
+    date: "2026-08-22 10:51",
+    changes: ["Gutteilzählung und Anzeige bei Kettenlogik stabilisiert."],
+  },
   {
     version: "0.5.06",
     date: "2026-08-22 10:41",
@@ -6375,14 +6380,20 @@ function renderProductionMachineOrderPreview(machine, orders) {
     ? calculatePreparedRemainingQuantity(activeOrder)
     : 0;
   const orderGoodTotal = activeOrder ? getProductionOrderGoodTotal(activeOrder.id) : 0;
+  const completedGoodTotal = activeOrder ? getProductionOrderCompletedGoodTotal(activeOrder.id) : 0;
   const orderScrapTotal = activeOrder ? getProductionOrderScrapTotal(activeOrder.id) : 0;
   const orderClarifyTotal = activeOrder ? getProductionOrderClarifyTotal(activeOrder.id) : 0;
+  const chainHint =
+    activeOrder && activeOrder.use_chain_logic !== false
+      ? `<div class='rounded border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800'>Restmenge wird nach letzter Spannung berechnet.</div>`
+      : "";
   const metrics = activeOrder
     ? `<div class='grid sm:grid-cols-2 xl:grid-cols-4 gap-3'>
         ${renderProductionPreviewMetric("BA-Stückzahl", activeOrder.ba_quantity)}
         ${renderProductionPreviewMetric("Zielstückzahl", activeOrder.target_quantity)}
         ${renderProductionPreviewMetric("Differenz", diff)}
-        ${renderProductionPreviewMetric("Gutteile Auftrag", orderGoodTotal)}
+        ${renderProductionPreviewMetric("Gutteile gesamt", orderGoodTotal)}
+        ${renderProductionPreviewMetric("Fertige Gutteile", completedGoodTotal)}
         ${renderProductionPreviewMetric("Ausschuss Auftrag", orderScrapTotal)}
         ${renderProductionPreviewMetric("In Abklärung Auftrag", orderClarifyTotal)}
         ${renderProductionPreviewMetric("Restmenge vorbereitet", remaining)}
@@ -6398,6 +6409,7 @@ function renderProductionMachineOrderPreview(machine, orders) {
           <span class='px-2 py-1 rounded-full text-xs font-semibold ${activeOrder.status === "running" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}'>${escapeHtml(getProductionOrderStatusLabel(activeOrder.status))}</span>
         </div>
         ${metrics}
+        ${chainHint}
         ${renderProductionOrderEmployeesSection(activeOrder)}
         ${renderProductionOrderStationsSection(activeOrder)}
         ${renderProductionOrderChecklistSection(activeOrder, false)}
@@ -7313,7 +7325,9 @@ async function refreshProductionOrderEmployeesFromSupabase() {
 
 async function refreshProductionStationCountsFromSupabase() {
   const counts = await loadProductionStationCountsFromSupabase();
+  if (!Array.isArray(counts)) return false;
   applyProductionStationCountsToState(counts);
+  return true;
 }
 
 async function refreshProductionStationEventsFromSupabase() {
@@ -7480,6 +7494,37 @@ function updateProductionOrderStationInState(stationId, patch) {
   state.productionOrderStations = (state.productionOrderStations || []).map((station) =>
     station.id === stationId ? { ...station, ...patch } : station,
   );
+}
+
+function logProductionStationCountSupabaseError(action, error, details = {}) {
+  console.error("production_station_counts Supabase-Fehler:", {
+    action,
+    table: "production_station_counts",
+    order_id: details.order_id || "",
+    station_id: details.station_id || "",
+    order_employee_id: details.order_employee_id || "",
+    delta: details.delta || 0,
+    current_user_role: currentUser?.role || "",
+    current_employee_role: currentEmployeeRecord?.role || "",
+    error,
+  });
+}
+
+function updateProductionStationCountInState(count) {
+  if (!count || !count.station_id || !count.order_employee_id) return;
+  const normalized = normalizeProductionStationCountFromDb(count);
+  const existingIndex = (state.productionStationCounts || []).findIndex(
+    (entry) =>
+      entry.station_id === normalized.station_id &&
+      entry.order_employee_id === normalized.order_employee_id,
+  );
+  if (existingIndex >= 0) {
+    state.productionStationCounts = state.productionStationCounts.map((entry, index) =>
+      index === existingIndex ? { ...entry, ...normalized } : entry,
+    );
+    return;
+  }
+  state.productionStationCounts = [...(state.productionStationCounts || []), normalized];
 }
 
 function getProductionQaCauseById(causeId) {
@@ -7752,14 +7797,26 @@ async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta,
 
   state.ui = state.ui || {};
   state.ui.productionGoodQtySavingKey = savingKey;
+  state.ui.productionActionError = "";
+  state.ui.productionActionMessage = "";
   render();
 
   const nextQty = Math.max(0, currentQty + delta);
   let countError = null;
+  const now = new Date().toISOString();
+  const nextCount = {
+    id: currentCount?.id || `local-${station.id}-${orderEmployee.id}`,
+    order_id: station.order_id,
+    station_id: station.id,
+    order_employee_id: orderEmployee.id,
+    good_qty: nextQty,
+    created_at: currentCount?.created_at || null,
+    updated_at: now,
+  };
   if (currentCount) {
     const { error } = await supabaseClient
       .from("production_station_counts")
-      .update({ good_qty: nextQty, updated_at: new Date().toISOString() })
+      .update({ good_qty: nextQty, updated_at: now })
       .eq("id", currentCount.id);
     countError = error;
   } else {
@@ -7769,14 +7826,19 @@ async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta,
         station_id: station.id,
         order_employee_id: orderEmployee.id,
         good_qty: nextQty,
-        updated_at: new Date().toISOString(),
+        updated_at: now,
       },
     ]);
     countError = error;
   }
 
   if (countError) {
-    console.error("Fehler beim Speichern der Gutteile:", countError);
+    logProductionStationCountSupabaseError(currentCount ? "update" : "insert", countError, {
+      order_id: station.order_id,
+      station_id: station.id,
+      order_employee_id: orderEmployee.id,
+      delta,
+    });
     state.ui.productionGoodQtySavingKey = "";
     if (!retried && isProductionDuplicateError(countError)) {
       await refreshProductionStationCountsFromSupabase();
@@ -7795,17 +7857,35 @@ async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta,
     return;
   }
 
+  updateProductionStationCountInState(nextCount);
   const { error: eventError } = await writeProductionStationGoodEvent(
     station,
     orderEmployee,
     delta,
   );
-  await refreshProductionStationCountsFromSupabase();
-  await refreshProductionStationEventsFromSupabase();
-  state.ui.productionGoodQtySavingKey = "";
   if (eventError) {
-    console.error("Fehler beim Schreiben des Gutteil-Protokolls:", eventError);
+    logProductionStationEventSupabaseError("insert", eventError, {
+      order_id: station.order_id,
+      station_id: station.id,
+      event_type: delta > 0 ? "good" : "good_correction",
+      qty: delta,
+    });
+    state.ui.productionGoodQtySavingKey = "";
     setProductionStatus("Gutteil gespeichert, Protokolleintrag konnte nicht geschrieben werden.", true);
+    render();
+    return;
+  }
+
+  const countsRefreshed = await refreshProductionStationCountsFromSupabase();
+  const eventsRefreshed = await refreshProductionStationEventsFromSupabase();
+  state.ui.productionGoodQtySavingKey = "";
+  if (!countsRefreshed) {
+    setProductionStatus("Gutteil gespeichert, Zähler konnte nicht neu geladen werden.", true);
+    render();
+    return;
+  }
+  if (!eventsRefreshed) {
+    setProductionStatus("Gutteil gespeichert, Protokoll konnte nicht neu geladen werden.", true);
     render();
     return;
   }

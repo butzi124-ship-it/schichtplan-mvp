@@ -97,7 +97,7 @@ const rowsByTable = {
       target_quantity: 1,
       pallet_count: 2,
       pieces_per_pallet: 50,
-      use_chain_logic: false,
+      use_chain_logic: true,
       status: "running",
       started_at: "2026-01-01T00:00:00Z",
       completed_at: null,
@@ -401,6 +401,7 @@ test.describe("Humbel app smoke", () => {
         "production_order_stations Supabase-Fehler",
         "production_station_events Supabase-Fehler",
         "Fehler beim Laden von production_station_events",
+        "Fehler beim Laden von production_station_counts",
       ];
       if (!ignored.some((entry) => text.includes(entry))) {
         consoleErrors.push(text);
@@ -581,14 +582,90 @@ test.describe("Humbel app smoke", () => {
     await expect(stationOne).toContainText(/Gutteile\s+0/);
     await stationOne.getByRole("button", { name: /Gutteile \+1/ }).click();
     await expect(stationOne).toContainText(/Gutteile\s+1/);
-    await expect(page.locator("#view")).toContainText("Gutteile Auftrag");
+    await expect(page.locator("#view")).toContainText("Gutteil wurde gezählt.");
+    await expect(page.locator("#view")).not.toContainText("Protokolleintrag konnte nicht geschrieben werden");
+    await expectViewHeading(page, "Produktionsvorschau");
+    await expect(page.locator("#view").getByRole("button", { name: /BA BA-100/ })).toBeVisible();
+    await expect(stationOne).toContainText("Lavdrim");
+    await expect
+      .poll(() => page.evaluate(() =>
+        (window.__SUPABASE_WRITE_LOG || []).some(
+          (entry) =>
+            entry.table === "production_station_counts" &&
+            ["insert", "update"].includes(entry.action),
+        ),
+      ))
+      .toBeTruthy();
+    await expect
+      .poll(() => page.evaluate(() =>
+        (window.__SUPABASE_WRITE_LOG || []).some(
+          (entry) =>
+            entry.table === "production_station_events" &&
+            entry.action === "insert" &&
+            entry.payload?.[0]?.event_type === "good" &&
+            entry.payload?.[0]?.qty === 1,
+        ),
+      ))
+      .toBeTruthy();
+    await expect(page.locator("#view")).toContainText("Gutteile gesamt");
+    await expect(page.locator("#view")).toContainText("Fertige Gutteile");
+    await expect(page.locator("#view")).toContainText("Restmenge wird nach letzter Spannung berechnet.");
     await expect(page.locator("#view")).toContainText("Restmenge vorbereitet");
     await expect(page.locator("#view")).toContainText("0");
     await stationOne.getByRole("button", { name: /Gutteile -1/ }).click();
     await expect(stationOne).toContainText(/Gutteile\s+0/);
+    await expect(page.locator("#view")).toContainText("Gutteil-Korrektur wurde gespeichert.");
+    await expect
+      .poll(() => page.evaluate(() =>
+        (window.__SUPABASE_WRITE_LOG || []).some(
+          (entry) =>
+            entry.table === "production_station_events" &&
+            entry.action === "insert" &&
+            entry.payload?.[0]?.event_type === "good_correction" &&
+            entry.payload?.[0]?.qty === -1,
+        ),
+      ))
+      .toBeTruthy();
     await stationOne.getByRole("button", { name: /Gutteile -1/ }).click();
     await expect(page.locator("#view")).toContainText("Gutmenge kann nicht unter 0 fallen.");
     await expect(stationOne).toContainText(/Gutteile\s+0/);
+    await page.evaluate(() => {
+      window.__SUPABASE_MOCK_ERRORS.production_station_counts = {
+        select: {
+          code: "42501",
+          message: "new row violates row-level security policy for table \"production_station_counts\"",
+        },
+      };
+    });
+    await stationOne.getByRole("button", { name: /Gutteile \+1/ }).click();
+    await expect(stationOne).toContainText(/Gutteile\s+1/);
+    await expect(page.locator("#view")).toContainText("Gutteil gespeichert, Zähler konnte nicht neu geladen werden.");
+    await expectViewHeading(page, "Produktionsvorschau");
+    await expect(stationOne).toContainText("Spannung 1");
+    await page.evaluate(() => {
+      window.__SUPABASE_MOCK_ERRORS.production_station_events = {
+        select: {
+          code: "42501",
+          message: "new row violates row-level security policy for table \"production_station_events\"",
+        },
+      };
+    });
+    await stationOne.getByRole("button", { name: /Gutteile -1/ }).click();
+    await expect(stationOne).toContainText(/Gutteile\s+0/);
+    await expect(page.locator("#view")).toContainText("Gutteil gespeichert, Protokoll konnte nicht neu geladen werden.");
+    await expect(page.locator("#view")).not.toContainText("Protokolleintrag konnte nicht geschrieben werden");
+    await page.evaluate(() => {
+      window.__SUPABASE_MOCK_ERRORS.production_station_events = {
+        insert: {
+          code: "42501",
+          message: "new row violates row-level security policy for table \"production_station_events\"",
+        },
+      };
+    });
+    await stationOne.getByRole("button", { name: /Gutteile \+1/ }).click();
+    await expect(stationOne).toContainText(/Gutteile\s+1/);
+    await expect(page.locator("#view")).toContainText("Gutteil gespeichert, Protokolleintrag konnte nicht geschrieben werden.");
+    await expectViewHeading(page, "Produktionsvorschau");
     await expect(stationOne).toContainText(/Ausschuss gesamt\s+0/);
     await stationOne.getByRole("button", { name: "Ausschuss +1" }).click();
     await expect(page.getByRole("heading", { name: "6M-Ursache für Ausschuss" })).toBeVisible();
@@ -710,7 +787,9 @@ test.describe("Humbel app smoke", () => {
     await expect(page.locator("#view")).toContainText("Ursache wird beim +1 erfasst.");
     await page.locator("#view").getByRole("button", { name: /Spannung/ }).filter({ hasText: /hinzuf/ }).click();
     await expect(page.locator("#view")).toContainText("Spannung 2");
-    await stationOne.getByRole("button", { name: /Gutteile \+1/ }).click();
+    const stationTwo = page.locator("#view").locator("article").filter({ hasText: "Spannung 2" });
+    await expect(stationTwo).toContainText("Lavdrim");
+    await stationTwo.getByRole("button", { name: /Gutteile \+1/ }).click();
     await expect(page.locator("#view")).toContainText("Restmenge vorbereitet");
     await expect(page.locator("#view")).toContainText("0");
     await page.locator("#view").getByRole("button", { name: "Auftrag fertig melden" }).click();
