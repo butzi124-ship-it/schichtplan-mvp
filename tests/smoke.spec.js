@@ -349,22 +349,44 @@ test.describe("Humbel app smoke", () => {
     const stationOne = page.locator("#view").locator("article").filter({ hasText: "Spannung 1" });
     await expect(stationOne).toContainText("Lavdrim");
     await expect(stationOne).toContainText(/Gutteile\s+0/);
-    await stationOne.getByRole("button", { name: "+1" }).click();
+    await stationOne.getByRole("button", { name: /Gutteile \+1/ }).click();
     await expect(stationOne).toContainText(/Gutteile\s+1/);
     await expect(page.locator("#view")).toContainText("Gutteile Auftrag");
     await expect(page.locator("#view")).toContainText("Restmenge vorbereitet");
     await expect(page.locator("#view")).toContainText("99");
-    await stationOne.getByRole("button", { name: "-1" }).click();
+    await stationOne.getByRole("button", { name: /Gutteile -1/ }).click();
     await expect(stationOne).toContainText(/Gutteile\s+0/);
-    await stationOne.getByRole("button", { name: "-1" }).click();
+    await stationOne.getByRole("button", { name: /Gutteile -1/ }).click();
     await expect(page.locator("#view")).toContainText("Gutmenge kann nicht unter 0 fallen.");
     await expect(stationOne).toContainText(/Gutteile\s+0/);
-    await expect(stationOne.getByRole("button", { name: /Ausschuss|Abklärung/ })).toHaveCount(0);
+    await expect(stationOne).toContainText(/Ausschuss gesamt\s+0/);
+    await stationOne.getByRole("button", { name: "Ausschuss +1" }).click();
+    await expect(stationOne).toContainText(/Ausschuss gesamt\s+1/);
+    await stationOne.getByRole("button", { name: "Ausschuss -1" }).click();
+    await expect(stationOne).toContainText(/Ausschuss gesamt\s+0/);
+    await stationOne.getByRole("button", { name: "Ausschuss -1" }).click();
+    await expect(page.locator("#view")).toContainText("Ausschuss kann nicht unter 0 fallen.");
+    await expect(stationOne).toContainText(/Ausschuss gesamt\s+0/);
+    await expect(stationOne).toContainText(/In Abklärung gesamt\s+0/);
+    await stationOne.getByRole("button", { name: "In Abklärung +1" }).click();
+    await expect(stationOne).toContainText(/In Abklärung gesamt\s+1/);
+    await stationOne.getByRole("button", { name: "In Abklärung -1" }).click();
+    await expect(stationOne).toContainText(/In Abklärung gesamt\s+0/);
+    await stationOne.getByRole("button", { name: "In Abklärung -1" }).click();
+    await expect(page.locator("#view")).toContainText("Abklärmenge kann nicht unter 0 fallen.");
+    await expect(stationOne).toContainText(/In Abklärung gesamt\s+0/);
+    await expect(page.locator("#view")).toContainText("Ausschuss Auftrag");
+    await expect(page.locator("#view")).toContainText("In Abklärung Auftrag");
+    await expect(page.locator("#view")).toContainText("Ursachen werden im nächsten Schritt ergänzt.");
     await page.locator("#view").getByRole("button", { name: /Spannung/ }).filter({ hasText: /hinzuf/ }).click();
     await expect(page.locator("#view")).toContainText("Spannung 2");
     await expect
       .poll(() => page.evaluate(() => window.__SUPABASE_WRITE_LOG || []))
       .not.toContainEqual(expect.objectContaining({ table: "production_counts" }));
+    const stationCountWrites = await page.evaluate(() =>
+      (window.__SUPABASE_WRITE_LOG || []).filter((entry) => entry.table === "production_station_counts"),
+    );
+    expect(stationCountWrites.every((entry) => ["insert", "update"].includes(entry.action))).toBeTruthy();
     await page.getByRole("button", { name: "Zurück zur Maschinenübersicht" }).click();
     await expectViewHeading(page, "Maschinenübersicht");
 

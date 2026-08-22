@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.4.99";
+const APP_VERSION = "0.5.00";
 const INVENTORY_MODE_ENABLED = false;
 const HUMBEL_COLORS = Object.freeze({
   primary: "#0d4682",
@@ -69,6 +69,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.5.00",
+    date: "2026-08-22 07:44",
+    changes: ["Ausschuss und Abklärung je Spannung vorbereitet."],
+  },
   {
     version: "0.4.99",
     date: "2026-08-22 07:30",
@@ -2315,6 +2320,7 @@ function loadState() {
       productionOrderEmployeesError: "",
       productionStationCountsError: "",
       productionGoodQtySavingKey: "",
+      productionStationAmountSavingKey: "",
       productionCounterSelectedMachineId: "",
       productionCounterActiveOrderId: "",
       toolsLoading: false,
@@ -5689,6 +5695,20 @@ function getProductionOrderGoodTotal(orderId) {
     .reduce((sum, count) => sum + Number(count.good_qty || 0), 0);
 }
 
+function getProductionOrderScrapTotal(orderId) {
+  return getProductionOrderStations(orderId).reduce(
+    (sum, station) => sum + Number(station.scrap_total || 0),
+    0,
+  );
+}
+
+function getProductionOrderClarifyTotal(orderId) {
+  return getProductionOrderStations(orderId).reduce(
+    (sum, station) => sum + Number(station.clarify_total || 0),
+    0,
+  );
+}
+
 function getProductionOrderCompletedGoodTotal(orderId) {
   const stations = getProductionOrderStations(orderId);
   if (!stations.length) return 0;
@@ -5729,7 +5749,7 @@ function calculatePreparedRemainingQuantity(order) {
     order.use_chain_logic !== false
       ? getProductionOrderCompletedGoodTotal(order.id)
       : getProductionOrderGoodTotal(order.id);
-  return Math.max(0, targetQuantity - finishedGoodQty);
+  return Math.max(0, targetQuantity - finishedGoodQty - getProductionOrderScrapTotal(order.id));
 }
 
 function getProductionStationTimeStatusLabel(status) {
@@ -5960,12 +5980,16 @@ function renderProductionMachineOrderPreview(machine, orders) {
     ? calculatePreparedRemainingQuantity(activeOrder)
     : 0;
   const orderGoodTotal = activeOrder ? getProductionOrderGoodTotal(activeOrder.id) : 0;
+  const orderScrapTotal = activeOrder ? getProductionOrderScrapTotal(activeOrder.id) : 0;
+  const orderClarifyTotal = activeOrder ? getProductionOrderClarifyTotal(activeOrder.id) : 0;
   const metrics = activeOrder
-    ? `<div class='grid sm:grid-cols-2 xl:grid-cols-5 gap-3'>
+    ? `<div class='grid sm:grid-cols-2 xl:grid-cols-4 gap-3'>
         ${renderProductionPreviewMetric("BA-Stückzahl", activeOrder.ba_quantity)}
         ${renderProductionPreviewMetric("Zielstückzahl", activeOrder.target_quantity)}
         ${renderProductionPreviewMetric("Differenz", diff)}
         ${renderProductionPreviewMetric("Gutteile Auftrag", orderGoodTotal)}
+        ${renderProductionPreviewMetric("Ausschuss Auftrag", orderScrapTotal)}
+        ${renderProductionPreviewMetric("In Abklärung Auftrag", orderClarifyTotal)}
         ${renderProductionPreviewMetric("Restmenge vorbereitet", remaining)}
       </div>`
     : "";
@@ -6020,7 +6044,7 @@ function renderProductionOrderStationsSection(order) {
     <div class='flex items-start justify-between gap-3 flex-wrap'>
       <div>
         <h4 class='font-semibold'>Spannungen</h4>
-        <p class='text-sm text-slate-600 mt-1'>Gutteile werden je Spannung und Mitarbeiter gezählt. Ausschuss und Abklärung folgen später.</p>
+        <p class='text-sm text-slate-600 mt-1'>Gutteile werden je Mitarbeiter gezählt. Ausschuss und Abklärung werden je Spannung erfasst.</p>
       </div>
       ${addButton}
     </div>
@@ -6097,6 +6121,10 @@ function renderProductionOrderStationCard(station, canEdit) {
   const readonly = canEdit ? "" : "disabled";
   const orderEmployees = getProductionOrderEmployees(station.order_id, true);
   const stationGoodTotal = getProductionStationGoodTotal(station.id);
+  const stationScrapClarifyControls = renderProductionStationScrapClarifyControls(
+    station,
+    canEdit,
+  );
   const employeesList = orderEmployees.length
     ? `<div class='space-y-2'>${orderEmployees.map((entry) => renderProductionStationEmployeeCounter(station, entry, canEdit)).join("")}</div>`
     : `<div class='rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800'>Noch kein Mitarbeiter dem Auftrag zugeordnet.</div>`;
@@ -6148,8 +6176,16 @@ function renderProductionOrderStationCard(station, canEdit) {
         <div class='text-xs text-slate-500'>In Abklärung gesamt</div>
         <div class='font-semibold'>${escapeHtml(station.clarify_total)}</div>
       </div>
+      <div class='rounded border bg-slate-50 p-2'>
+        <div class='text-xs text-slate-500'>Ausschuss Lebenslauf</div>
+        <div class='font-semibold'>${escapeHtml(station.scrap_lifetime)}</div>
+      </div>
+      <div class='rounded border bg-slate-50 p-2'>
+        <div class='text-xs text-slate-500'>In Abklärung Lebenslauf</div>
+        <div class='font-semibold'>${escapeHtml(station.clarify_lifetime)}</div>
+      </div>
     </div>
-    <div class='text-xs text-slate-500'>Lebenslauf: Ausschuss ${escapeHtml(station.scrap_lifetime)} / Abklärung ${escapeHtml(station.clarify_lifetime)}</div>
+    ${stationScrapClarifyControls}
     <div class='space-y-2'>
       <div class='flex items-center justify-between gap-2'>
         <div class='text-sm font-semibold'>Mitarbeiter</div>
@@ -6159,6 +6195,33 @@ function renderProductionOrderStationCard(station, canEdit) {
     </div>
     ${actionButtons}
   </article>`;
+}
+
+function renderProductionStationScrapClarifyControls(station, canEdit) {
+  return `<div class='rounded border border-slate-200 bg-slate-50 p-3 space-y-3'>
+    <div>
+      <div class='text-sm font-semibold'>Ausschuss / In Abklärung</div>
+      <div class='text-xs text-slate-500 mt-1'>Ursachen werden im nächsten Schritt ergänzt.</div>
+    </div>
+    <div class='grid sm:grid-cols-2 gap-3'>
+      ${renderProductionStationAmountControl(station, "scrap", "Ausschuss", station.scrap_total, canEdit)}
+      ${renderProductionStationAmountControl(station, "clarify", "In Abklärung", station.clarify_total, canEdit)}
+    </div>
+  </div>`;
+}
+
+function renderProductionStationAmountControl(station, type, label, value, canEdit) {
+  const savingKey = `${station.id}:${type}`;
+  const saving = state.ui?.productionStationAmountSavingKey === savingKey;
+  const disabled = !canEdit || saving ? "disabled" : "";
+  return `<div class='rounded bg-white border p-3'>
+    <div class='text-xs text-slate-500'>${escapeHtml(label)}</div>
+    <div class='flex items-center gap-2 mt-2'>
+      <button type='button' aria-label='${escapeHtml(label)} -1' class='px-3 py-2 rounded bg-slate-200 text-slate-900 font-semibold disabled:opacity-50' onclick="adjustProductionStationAmount('${station.id}', '${type}', -1)" ${disabled}>-1</button>
+      <div class='min-w-[72px] rounded bg-slate-50 border px-3 py-2 text-center text-lg font-bold'>${escapeHtml(value)}</div>
+      <button type='button' aria-label='${escapeHtml(label)} +1' class='px-3 py-2 rounded ${type === "scrap" ? "bg-rose-700" : "bg-amber-600"} text-white font-semibold disabled:opacity-50' onclick="adjustProductionStationAmount('${station.id}', '${type}', 1)" ${disabled}>+1</button>
+    </div>
+  </div>`;
 }
 
 function renderProductionStationEmployeeCounter(station, entry, canEdit) {
@@ -6173,12 +6236,12 @@ function renderProductionStationEmployeeCounter(station, entry, canEdit) {
         <div class='text-xs text-slate-500'>${entry.personnel_no ? `PN ${escapeHtml(entry.personnel_no)} · ` : ""}${escapeHtml(getProductionOrderEmployeeRoleLabel(entry.role))}</div>
       </div>
       <div class='flex items-center gap-2'>
-        <button type='button' class='px-3 py-2 rounded bg-slate-200 text-slate-900 font-semibold disabled:opacity-50' onclick="adjustProductionStationGoodQty('${station.id}', '${entry.id}', -1)" ${disabled}>-1</button>
+        <button type='button' aria-label='Gutteile -1 ${escapeHtml(entry.employee_name || "Mitarbeiter")}' class='px-3 py-2 rounded bg-slate-200 text-slate-900 font-semibold disabled:opacity-50' onclick="adjustProductionStationGoodQty('${station.id}', '${entry.id}', -1)" ${disabled}>-1</button>
         <div class='min-w-[72px] rounded bg-white border px-3 py-2 text-center'>
           <div class='text-xs text-slate-500'>Gutteile</div>
           <div class='text-lg font-bold'>${escapeHtml(goodQty)}</div>
         </div>
-        <button type='button' class='px-3 py-2 rounded bg-emerald-700 text-white font-semibold disabled:opacity-50' onclick="adjustProductionStationGoodQty('${station.id}', '${entry.id}', 1)" ${disabled}>+1</button>
+        <button type='button' aria-label='Gutteile +1 ${escapeHtml(entry.employee_name || "Mitarbeiter")}' class='px-3 py-2 rounded bg-emerald-700 text-white font-semibold disabled:opacity-50' onclick="adjustProductionStationGoodQty('${station.id}', '${entry.id}', 1)" ${disabled}>+1</button>
       </div>
     </div>
   </div>`;
@@ -6614,6 +6677,105 @@ async function writeProductionStationGoodEvent(station, orderEmployee, delta) {
       note: null,
     },
   ]);
+}
+
+async function writeProductionStationAmountEvent(station, type, delta) {
+  const eventType =
+    type === "scrap"
+      ? delta > 0 ? "scrap" : "scrap_correction"
+      : delta > 0 ? "clarify" : "clarify_correction";
+  return supabaseClient.from("production_station_events").insert([
+    {
+      order_id: station.order_id,
+      station_id: station.id,
+      order_employee_id: null,
+      employee_id: currentEmployeeRecord?.id || null,
+      event_type: eventType,
+      qty: delta,
+      qa_cause_id: null,
+      note: null,
+    },
+  ]);
+}
+
+async function adjustProductionStationAmount(stationId, type, delta) {
+  const station = getProductionOrderStationById(stationId);
+  const order = getProductionOrderById(station?.order_id);
+  if (!station || !["scrap", "clarify"].includes(type) || !canEditProductionOrder(order)) {
+    setProductionStatus("Du darfst diese Menge nicht ändern.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+
+  delta = delta > 0 ? 1 : -1;
+  const totalField = type === "scrap" ? "scrap_total" : "clarify_total";
+  const lifetimeField = type === "scrap" ? "scrap_lifetime" : "clarify_lifetime";
+  const currentTotal = Math.max(0, Number(station[totalField] || 0));
+  const currentLifetime = Math.max(0, Number(station[lifetimeField] || 0));
+  if (delta < 0 && currentTotal <= 0) {
+    setProductionStatus(
+      type === "scrap"
+        ? "Ausschuss kann nicht unter 0 fallen."
+        : "Abklärmenge kann nicht unter 0 fallen.",
+      true,
+    );
+    render();
+    return;
+  }
+
+  state.ui = state.ui || {};
+  const savingKey = `${station.id}:${type}`;
+  if (state.ui.productionStationAmountSavingKey === savingKey) return;
+  state.ui.productionStationAmountSavingKey = savingKey;
+  render();
+
+  const payload = {
+    [totalField]: Math.max(0, currentTotal + delta),
+    updated_at: new Date().toISOString(),
+  };
+  if (delta > 0) payload[lifetimeField] = currentLifetime + 1;
+
+  const { error } = await supabaseClient
+    .from("production_order_stations")
+    .update(payload)
+    .eq("id", station.id);
+
+  if (error) {
+    console.error("Fehler beim Speichern der Stationsmenge:", error);
+    state.ui.productionStationAmountSavingKey = "";
+    setProductionStatus(
+      formatProductionSupabaseError(error, "Menge konnte nicht gespeichert werden"),
+      true,
+    );
+    render();
+    return;
+  }
+
+  const { error: eventError } = await writeProductionStationAmountEvent(
+    station,
+    type,
+    delta,
+  );
+  await refreshProductionOrderStationsFromSupabase();
+  state.ui.productionStationAmountSavingKey = "";
+  if (eventError) {
+    console.error("Fehler beim Schreiben des Mengen-Protokolls:", eventError);
+    setProductionStatus("Menge gespeichert, Protokolleintrag konnte nicht geschrieben werden.", true);
+    render();
+    return;
+  }
+
+  setProductionStatus(
+    type === "scrap"
+      ? delta > 0 ? "Ausschuss wurde gezählt." : "Ausschuss-Korrektur wurde gespeichert."
+      : delta > 0 ? "Abklärmenge wurde gezählt." : "Abklär-Korrektur wurde gespeichert.",
+  );
+  render();
 }
 
 async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta, retried = false) {
@@ -15636,6 +15798,7 @@ window.addProductionOrderEmployee = addProductionOrderEmployee;
 window.deactivateProductionOrderEmployee = deactivateProductionOrderEmployee;
 window.reactivateProductionOrderEmployee = reactivateProductionOrderEmployee;
 window.adjustProductionStationGoodQty = adjustProductionStationGoodQty;
+window.adjustProductionStationAmount = adjustProductionStationAmount;
 window.markAbsent = markAbsent;
 window.assignShift = assignShift;
 window.cancelShift = cancelShift;
