@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.5.02";
+const APP_VERSION = "0.5.03";
 const INVENTORY_MODE_ENABLED = false;
 const HUMBEL_COLORS = Object.freeze({
   primary: "#0d4682",
@@ -69,6 +69,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.5.03",
+    date: "2026-08-22 08:53",
+    changes: ["Abschluss-Checkliste und Fertigmeldung für Produktionsaufträge ergänzt."],
+  },
   {
     version: "0.5.02",
     date: "2026-08-22 08:42",
@@ -1330,6 +1335,51 @@ async function loadProductionQaCausesFromSupabase() {
   return data || [];
 }
 
+async function loadProductionChecklistTemplatesFromSupabase() {
+  const { data, error } = await supabaseClient
+    .from("production_checklist_templates")
+    .select("*")
+    .eq("active", true)
+    .order("sort_order", { ascending: true })
+    .order("item_label", { ascending: true });
+
+  state.ui = state.ui || {};
+
+  if (error) {
+    console.error("Fehler beim Laden von production_checklist_templates:", error);
+    state.ui.productionChecklistTemplatesError = formatProductionSupabaseError(
+      error,
+      "Abschluss-Checklisten-Vorlagen konnten nicht geladen werden",
+    );
+    return null;
+  }
+
+  state.ui.productionChecklistTemplatesError = "";
+  return data || [];
+}
+
+async function loadProductionOrderChecklistFromSupabase() {
+  const { data, error } = await supabaseClient
+    .from("production_order_checklist")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("item_label", { ascending: true });
+
+  state.ui = state.ui || {};
+
+  if (error) {
+    console.error("Fehler beim Laden von production_order_checklist:", error);
+    state.ui.productionOrderChecklistError = formatProductionSupabaseError(
+      error,
+      "Abschluss-Checkliste konnte nicht geladen werden",
+    );
+    return null;
+  }
+
+  state.ui.productionOrderChecklistError = "";
+  return data || [];
+}
+
 function normalizeProductionOrderFromDb(row) {
   return {
     id: row.id,
@@ -1449,6 +1499,59 @@ function applyProductionQaCausesToState(rows) {
     .sort((a, b) =>
       `${a.group_label} ${String(a.sort_order).padStart(6, "0")} ${a.reason_label}`.localeCompare(
         `${b.group_label} ${String(b.sort_order).padStart(6, "0")} ${b.reason_label}`,
+        "de",
+      ),
+    );
+}
+
+function normalizeProductionChecklistTemplateFromDb(row) {
+  return {
+    id: row.id,
+    item_key: row.item_key || "",
+    item_label: row.item_label || "",
+    active: row.active !== false,
+    sort_order: Math.max(0, Math.trunc(Number(row.sort_order || 0))),
+    created_at: row.created_at || null,
+    updated_at: row.updated_at || null,
+  };
+}
+
+function applyProductionChecklistTemplatesToState(rows) {
+  if (!Array.isArray(rows)) return;
+  state.productionChecklistTemplates = rows
+    .map(normalizeProductionChecklistTemplateFromDb)
+    .filter((item) => item.active && item.item_key && item.item_label)
+    .sort((a, b) =>
+      `${String(a.sort_order).padStart(6, "0")} ${a.item_label}`.localeCompare(
+        `${String(b.sort_order).padStart(6, "0")} ${b.item_label}`,
+        "de",
+      ),
+    );
+}
+
+function normalizeProductionOrderChecklistFromDb(row) {
+  return {
+    id: row.id,
+    order_id: row.order_id || "",
+    item_key: row.item_key || "",
+    item_label: row.item_label || "",
+    checked: row.checked === true,
+    checked_at: row.checked_at || null,
+    checked_by_employee_id: row.checked_by_employee_id || "",
+    sort_order: Math.max(0, Math.trunc(Number(row.sort_order || 0))),
+    created_at: row.created_at || null,
+    updated_at: row.updated_at || null,
+  };
+}
+
+function applyProductionOrderChecklistToState(rows) {
+  if (!Array.isArray(rows)) return;
+  state.productionOrderChecklist = rows
+    .map(normalizeProductionOrderChecklistFromDb)
+    .filter((item) => item.order_id && item.item_key)
+    .sort((a, b) =>
+      `${String(a.sort_order).padStart(6, "0")} ${a.item_label}`.localeCompare(
+        `${String(b.sort_order).padStart(6, "0")} ${b.item_label}`,
         "de",
       ),
     );
@@ -2132,6 +2235,8 @@ async function syncSupabaseSessionToApp() {
   const productionOrderEmployees = await loadProductionOrderEmployeesFromSupabase();
   const productionStationCounts = await loadProductionStationCountsFromSupabase();
   const productionQaCauses = await loadProductionQaCausesFromSupabase();
+  const productionChecklistTemplates = await loadProductionChecklistTemplatesFromSupabase();
+  const productionOrderChecklist = await loadProductionOrderChecklistFromSupabase();
   const materials = await loadToolMaterialsFromSupabase();
   const planning = await loadPlanningDataFromSupabase();
 
@@ -2145,6 +2250,8 @@ async function syncSupabaseSessionToApp() {
   applyProductionOrderEmployeesToState(productionOrderEmployees);
   applyProductionStationCountsToState(productionStationCounts);
   applyProductionQaCausesToState(productionQaCauses);
+  applyProductionChecklistTemplatesToState(productionChecklistTemplates);
+  applyProductionOrderChecklistToState(productionOrderChecklist);
   toolMaterials = materials;
   await loadToolPageData();
   state.ui.supabaseReady = true;
@@ -2188,6 +2295,8 @@ async function syncSupabaseSessionToApp() {
   console.log("Produktionsmitarbeiter nach Login geladen:", productionOrderEmployees);
   console.log("Produktions-Gutteilzähler nach Login geladen:", productionStationCounts);
   console.log("Produktions-6M-Ursachen nach Login geladen:", productionQaCauses);
+  console.log("Produktions-Checklisten-Vorlagen nach Login geladen:", productionChecklistTemplates);
+  console.log("Produktions-Auftragschecklisten nach Login geladen:", productionOrderChecklist);
   console.log("Tool-Materials nach Login geladen:", materials);
   console.log("Tools nach Login geladen:", state.tools);
   console.log("Planungsdaten nach Login geladen:", planning);
@@ -2231,6 +2340,8 @@ async function bootSupabase() {
   const productionOrderEmployees = await loadProductionOrderEmployeesFromSupabase();
   const productionStationCounts = await loadProductionStationCountsFromSupabase();
   const productionQaCauses = await loadProductionQaCausesFromSupabase();
+  const productionChecklistTemplates = await loadProductionChecklistTemplatesFromSupabase();
+  const productionOrderChecklist = await loadProductionOrderChecklistFromSupabase();
   const materials = await loadToolMaterialsFromSupabase();
   const planning = await loadPlanningDataFromSupabase();
 
@@ -2244,6 +2355,8 @@ async function bootSupabase() {
   applyProductionOrderEmployeesToState(productionOrderEmployees);
   applyProductionStationCountsToState(productionStationCounts);
   applyProductionQaCausesToState(productionQaCauses);
+  applyProductionChecklistTemplatesToState(productionChecklistTemplates);
+  applyProductionOrderChecklistToState(productionOrderChecklist);
   toolMaterials = materials;
 
   if (planning) {
@@ -2270,6 +2383,8 @@ async function bootSupabase() {
   console.log("Produktionsmitarbeiter aus Supabase:", productionOrderEmployees);
   console.log("Produktions-Gutteilzähler aus Supabase:", productionStationCounts);
   console.log("Produktions-6M-Ursachen aus Supabase:", productionQaCauses);
+  console.log("Produktions-Checklisten-Vorlagen aus Supabase:", productionChecklistTemplates);
+  console.log("Produktions-Auftragschecklisten aus Supabase:", productionOrderChecklist);
   console.log("Tool-Materials aus Supabase:", materials);
   console.log("Planungsdaten aus Supabase:", planning);
 
@@ -2335,6 +2450,8 @@ function loadState() {
     productionOrderEmployees: [],
     productionStationCounts: [],
     productionQaCauses: [],
+    productionChecklistTemplates: [],
+    productionOrderChecklist: [],
     tools: [],
     toolLabelsExtra: [],
     toolManufacturersExtra: [],
@@ -2388,6 +2505,10 @@ function loadState() {
       productionOrderEmployeesError: "",
       productionStationCountsError: "",
       productionQaCausesError: "",
+      productionChecklistTemplatesError: "",
+      productionOrderChecklistError: "",
+      productionChecklistSavingKey: "",
+      productionOrderCompletingId: "",
       productionGoodQtySavingKey: "",
       productionStationAmountSavingKey: "",
       productionCounterSelectedMachineId: "",
@@ -2409,6 +2530,8 @@ function loadState() {
     delete parsed.productionOrderEmployees;
     delete parsed.productionStationCounts;
     delete parsed.productionQaCauses;
+    delete parsed.productionChecklistTemplates;
+    delete parsed.productionOrderChecklist;
     delete parsed.tools;
     delete parsed.toolJournal;
     return {
@@ -2448,6 +2571,8 @@ function persist() {
   delete snapshot.productionOrderEmployees;
   delete snapshot.productionStationCounts;
   delete snapshot.productionQaCauses;
+  delete snapshot.productionChecklistTemplates;
+  delete snapshot.productionOrderChecklist;
   delete snapshot.tools;
   delete snapshot.toolJournal;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
@@ -2550,8 +2675,18 @@ function closeVersionLog() {
 function loginAs(name) {
   if (name === "admin") {
     currentUser = { name: "Admin", role: "admin" };
+    currentEmployeeRecord =
+      (state.employeesList || []).find(
+        (employee) => employee.role === "admin" && employee.is_active !== false,
+      ) || currentEmployeeRecord;
   } else {
     currentUser = { name, role: "employee" };
+    currentEmployeeRecord =
+      (state.employeesList || []).find(
+        (employee) =>
+          employee.is_active !== false &&
+          (employee.display_name === name || employee.name === name),
+      ) || null;
   }
   document.getElementById("loginBox")?.classList.add("hidden");
   render();
@@ -4998,6 +5133,8 @@ function getProductionStatusBanner() {
   const orderEmployeesError = state.ui?.productionOrderEmployeesError;
   const stationCountsError = state.ui?.productionStationCountsError;
   const qaCausesError = state.ui?.productionQaCausesError;
+  const checklistTemplatesError = state.ui?.productionChecklistTemplatesError;
+  const orderChecklistError = state.ui?.productionOrderChecklistError;
   const actionError = state.ui?.productionActionError;
   const actionMessage = state.ui?.productionActionMessage;
   const errors = [];
@@ -5009,6 +5146,8 @@ function getProductionStatusBanner() {
   if (orderEmployeesError) errors.push(`production_order_employees: ${orderEmployeesError}`);
   if (stationCountsError) errors.push(`production_station_counts: ${stationCountsError}`);
   if (qaCausesError) errors.push(`production_qa_causes: ${qaCausesError}`);
+  if (checklistTemplatesError) errors.push(`production_checklist_templates: ${checklistTemplatesError}`);
+  if (orderChecklistError) errors.push(`production_order_checklist: ${orderChecklistError}`);
   if (actionError) errors.push(actionError);
 
   const errorBanner = errors.length
@@ -5790,6 +5929,28 @@ function getProductionOrderCompletedGoodTotal(orderId) {
   return getProductionStationGoodTotal(lastStation.id);
 }
 
+function getProductionOrderChecklistItems(orderId) {
+  if (!orderId) return [];
+  return (state.productionOrderChecklist || [])
+    .filter((item) => item.order_id === orderId)
+    .sort((a, b) =>
+      `${String(a.sort_order).padStart(6, "0")} ${a.item_label}`.localeCompare(
+        `${String(b.sort_order).padStart(6, "0")} ${b.item_label}`,
+        "de",
+      ),
+    );
+}
+
+function getProductionOrderChecklistItemById(itemId) {
+  if (!itemId) return null;
+  return (state.productionOrderChecklist || []).find((item) => item.id === itemId) || null;
+}
+
+function isProductionOrderChecklistComplete(orderId) {
+  const items = getProductionOrderChecklistItems(orderId);
+  return !!items.length && items.every((item) => item.checked === true);
+}
+
 function getAssignableProductionEmployees(orderId = "") {
   const assignedActiveIds = new Set(
     getProductionOrderEmployees(orderId, true)
@@ -5913,6 +6074,7 @@ async function selectProductionCounterMachine(machineId) {
   render();
   if (state.ui.productionCounterActiveOrderId) {
     await ensureProductionOrderStationsForOrder(state.ui.productionCounterActiveOrderId);
+    await ensureProductionOrderChecklistForOrder(state.ui.productionCounterActiveOrderId);
     render();
   }
 }
@@ -5926,6 +6088,7 @@ async function selectProductionCounterOrder(orderId) {
   persist();
   render();
   await ensureProductionOrderStationsForOrder(order.id);
+  await ensureProductionOrderChecklistForOrder(order.id);
   render();
 }
 
@@ -6104,6 +6267,7 @@ function renderProductionMachineOrderPreview(machine, orders) {
         ${metrics}
         ${renderProductionOrderEmployeesSection(activeOrder)}
         ${renderProductionOrderStationsSection(activeOrder)}
+        ${renderProductionOrderChecklistSection(activeOrder)}
       </div>`
     : `<div class='border rounded-lg bg-slate-50 p-4 text-sm text-slate-600'>Kein aktiver BA ausgewählt.</div>`;
 
@@ -6149,6 +6313,88 @@ function renderProductionOrderStationsSection(order) {
     </div>
     <div class='grid lg:grid-cols-2 gap-3'>${stationCards}</div>
   </section>`;
+}
+
+function renderProductionOrderChecklistSection(order) {
+  const templates = state.productionChecklistTemplates || [];
+  const checklistItems = getProductionOrderChecklistItems(order.id);
+  const canEdit =
+    canEditProductionOrder(order) &&
+    ["running", "paused"].includes(order.status);
+  const stations = getProductionOrderStations(order.id);
+  const remaining = calculatePreparedRemainingQuantity(order);
+  const checklistComplete = isProductionOrderChecklistComplete(order.id);
+  const completing = state.ui?.productionOrderCompletingId === order.id;
+  const missingTemplatesNotice = !templates.length
+    ? `<div class='rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800'>Keine Abschluss-Checkliste eingerichtet.</div>`
+    : "";
+  const missingItemsNotice = templates.length && !checklistItems.length
+    ? `<div class='rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800'>Abschluss-Checkliste wird vorbereitet.</div>`
+    : "";
+  const itemsHtml = checklistItems.length
+    ? `<div class='space-y-2'>${checklistItems.map((item) => renderProductionOrderChecklistItem(item, canEdit)).join("")}</div>`
+    : "";
+  const blockers = [];
+  if (!templates.length) {
+    blockers.push("Keine Abschluss-Checkliste eingerichtet.");
+  } else if (!checklistComplete) {
+    blockers.push("Alle Checklistenpunkte müssen erledigt sein.");
+  }
+  if (!stations.length) blockers.push("Mindestens eine Spannung muss vorhanden sein.");
+  if (Number(order.target_quantity || 0) > 0 && remaining > 0) {
+    blockers.push("Auftrag hat noch Restmenge. Abschluss nicht möglich.");
+  }
+  const blockerHtml = blockers.length
+    ? `<div class='rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800'>${blockers.map(escapeHtml).join(" ")}</div>`
+    : "";
+  const completeButton =
+    ["running", "paused"].includes(order.status)
+      ? `<button type='button' class='px-3 py-2 rounded bg-emerald-700 text-white text-sm disabled:opacity-50' onclick="completeProductionOrderWithChecklist('${order.id}')" ${canEdit && !completing ? "" : "disabled"}>${completing ? "Fertigmeldung läuft..." : "Auftrag fertig melden"}</button>`
+      : "";
+  const completedNotice =
+    ["completed", "cancelled"].includes(order.status)
+      ? `<div class='rounded border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600'>Auftrag ist ${escapeHtml(getProductionOrderStatusLabel(order.status).toLowerCase())}; Checkliste ist nur lesbar.</div>`
+      : "";
+
+  return `<section class='border rounded-lg bg-slate-50 p-4 space-y-4'>
+    <div class='flex items-start justify-between gap-3 flex-wrap'>
+      <div>
+        <h4 class='font-semibold'>Abschluss-Checkliste</h4>
+        <p class='text-sm text-slate-600 mt-1'>Pflichtpunkte je Auftrag vor der Fertigmeldung.</p>
+      </div>
+      ${completeButton}
+    </div>
+    ${missingTemplatesNotice}
+    ${missingItemsNotice}
+    ${itemsHtml}
+    ${blockerHtml}
+    ${completedNotice}
+  </section>`;
+}
+
+function renderProductionOrderChecklistItem(item, canEdit) {
+  const saving = state.ui?.productionChecklistSavingKey === item.id;
+  const checkedAt = item.checked_at
+    ? new Date(item.checked_at).toLocaleString("de-DE")
+    : "";
+  const checkedBy = item.checked_by_employee_id
+    ? getEmployeeDisplayNameById(item.checked_by_employee_id)
+    : "";
+  const statusClass = item.checked
+    ? "bg-emerald-100 text-emerald-800"
+    : "bg-slate-100 text-slate-700";
+  const statusLabel = item.checked ? "erledigt" : "offen";
+  const detail = item.checked
+    ? [checkedAt, checkedBy && `von ${checkedBy}`].filter(Boolean).join(" · ")
+    : "";
+  return `<label class='flex items-start gap-3 rounded border bg-white p-3 text-sm'>
+    <input type='checkbox' class='mt-1 h-4 w-4' onchange="toggleProductionOrderChecklistItem('${item.id}', this.checked)" ${item.checked ? "checked" : ""} ${canEdit && !saving ? "" : "disabled"} />
+    <span class='flex-1'>
+      <span class='font-semibold block'>${escapeHtml(item.item_label)}</span>
+      ${detail ? `<span class='text-xs text-slate-500 block mt-1'>${escapeHtml(detail)}</span>` : ""}
+    </span>
+    <span class='px-2 py-1 rounded-full text-xs font-semibold ${statusClass}'>${escapeHtml(statusLabel)}</span>
+  </label>`;
 }
 
 function renderProductionOrderEmployeesSection(order) {
@@ -6758,9 +7004,70 @@ async function refreshProductionStationCountsFromSupabase() {
   applyProductionStationCountsToState(counts);
 }
 
+async function refreshProductionOrderChecklistFromSupabase() {
+  const checklist = await loadProductionOrderChecklistFromSupabase();
+  if (!Array.isArray(checklist)) return false;
+  applyProductionOrderChecklistToState(checklist);
+  return true;
+}
+
 function isProductionDuplicateError(error) {
   const message = String(error?.message || "").toLowerCase();
   return error?.code === "23505" || message.includes("duplicate") || message.includes("unique");
+}
+
+async function ensureProductionOrderChecklistForOrder(orderId) {
+  const order = getProductionOrderById(orderId);
+  if (!order || !order.id || state.ui?.productionOrderChecklistError) return false;
+  const templates = state.productionChecklistTemplates || [];
+  if (!templates.length) return false;
+  const existingKeys = new Set(
+    getProductionOrderChecklistItems(order.id).map((item) => item.item_key),
+  );
+  const missingTemplates = templates.filter((template) => !existingKeys.has(template.item_key));
+  if (!missingTemplates.length) return true;
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    return false;
+  }
+
+  const now = new Date().toISOString();
+  const payload = missingTemplates.map((template) => ({
+    order_id: order.id,
+    item_key: template.item_key,
+    item_label: template.item_label,
+    checked: false,
+    checked_at: null,
+    checked_by_employee_id: null,
+    sort_order: template.sort_order,
+    updated_at: now,
+  }));
+  const { error } = await supabaseClient.from("production_order_checklist").insert(payload);
+  if (error && !isProductionDuplicateError(error)) {
+    console.error("Fehler beim Vorbereiten der Abschluss-Checkliste:", error);
+    setProductionStatus(
+      formatProductionSupabaseError(error, "Abschluss-Checkliste konnte nicht vorbereitet werden"),
+      true,
+    );
+    await refreshProductionOrderChecklistFromSupabase();
+    return false;
+  }
+  await refreshProductionOrderChecklistFromSupabase();
+  return true;
+}
+
+async function writeProductionOrderHistory(order, historyType, payload = {}, qty = 0, note = null) {
+  return supabaseClient.from("production_order_history").insert([
+    {
+      order_id: order.id,
+      station_id: null,
+      employee_id: currentEmployeeRecord?.id || null,
+      history_type: historyType,
+      qty,
+      payload,
+      note,
+    },
+  ]);
 }
 
 async function writeProductionStationGoodEvent(station, orderEmployee, delta) {
@@ -8094,12 +8401,7 @@ function resumeProductionOrder(id) {
 }
 
 function completeProductionOrder(id) {
-  if (!confirm("Auftrag / BA wirklich abschließen?")) {
-    setProductionStatus("Abschließen abgebrochen.");
-    render();
-    return;
-  }
-  updateProductionOrderStatus(id, "completed");
+  completeProductionOrderWithChecklist(id);
 }
 
 function cancelProductionOrder(id) {
@@ -8109,6 +8411,170 @@ function cancelProductionOrder(id) {
     return;
   }
   updateProductionOrderStatus(id, "cancelled");
+}
+
+async function toggleProductionOrderChecklistItem(itemId, checked) {
+  const item = getProductionOrderChecklistItemById(itemId);
+  const order = getProductionOrderById(item?.order_id);
+  if (!item || !order || !canEditProductionOrder(order) || !["running", "paused"].includes(order.status)) {
+    setProductionStatus("Diese Abschluss-Checkliste kann nicht bearbeitet werden.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+
+  const now = new Date().toISOString();
+  state.ui = state.ui || {};
+  state.ui.productionChecklistSavingKey = item.id;
+  render();
+
+  const { error } = await supabaseClient
+    .from("production_order_checklist")
+    .update({
+      checked: checked === true,
+      checked_at: checked === true ? now : null,
+      checked_by_employee_id: checked === true ? currentEmployeeRecord?.id || null : null,
+      updated_at: now,
+    })
+    .eq("id", item.id);
+
+  if (error) {
+    console.error("Fehler beim Speichern der Abschluss-Checkliste:", error);
+    state.ui.productionChecklistSavingKey = "";
+    setProductionStatus(
+      formatProductionSupabaseError(error, "Checklistenpunkt konnte nicht gespeichert werden"),
+      true,
+    );
+    render();
+    return;
+  }
+
+  const historyPayload = {
+    item_key: item.item_key,
+    item_label: item.item_label,
+    checked: checked === true,
+  };
+  const { error: historyError } = await writeProductionOrderHistory(
+    order,
+    "checklist",
+    historyPayload,
+    0,
+    null,
+  );
+  await refreshProductionOrderChecklistFromSupabase();
+  state.ui.productionChecklistSavingKey = "";
+  if (historyError) {
+    console.error("Fehler beim Schreiben der Checklisten-Historie:", historyError);
+    setProductionStatus("Checklistenpunkt gespeichert, Historie konnte nicht geschrieben werden.", true);
+    render();
+    return;
+  }
+
+  setProductionStatus(checked === true ? "Checklistenpunkt erledigt." : "Checklistenpunkt wieder geöffnet.");
+  render();
+}
+
+function getProductionOrderCompletionBlocker(order) {
+  if (!order || !canEditProductionOrder(order)) {
+    return "Du darfst diesen Auftrag nicht fertig melden.";
+  }
+  if (!["running", "paused"].includes(order.status)) {
+    return "Dieser Auftrag kann nicht fertig gemeldet werden.";
+  }
+  if (!(state.productionChecklistTemplates || []).length) {
+    return "Keine Abschluss-Checkliste eingerichtet.";
+  }
+  if (!isProductionOrderChecklistComplete(order.id)) {
+    return "Alle Checklistenpunkte müssen erledigt sein.";
+  }
+  if (!getProductionOrderStations(order.id).length) {
+    return "Mindestens eine Spannung muss vorhanden sein.";
+  }
+  if (Number(order.target_quantity || 0) > 0 && calculatePreparedRemainingQuantity(order) > 0) {
+    return "Auftrag hat noch Restmenge. Abschluss nicht möglich.";
+  }
+  return "";
+}
+
+async function completeProductionOrderWithChecklist(orderId) {
+  const order = getProductionOrderById(orderId);
+  const blocker = getProductionOrderCompletionBlocker(order);
+  if (blocker) {
+    setProductionStatus(blocker, true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+  if (!confirm("Auftrag wirklich fertig melden?")) {
+    setProductionStatus("Fertigmeldung abgebrochen.");
+    render();
+    return;
+  }
+
+  const now = new Date().toISOString();
+  state.ui = state.ui || {};
+  state.ui.productionOrderCompletingId = order.id;
+  render();
+
+  const payload = {
+    status: "completed",
+    completed_at: now,
+    updated_at: now,
+    updated_by_employee_id: currentEmployeeRecord?.id || null,
+  };
+  const { error } = await supabaseClient
+    .from("production_orders")
+    .update(payload)
+    .eq("id", order.id);
+
+  if (error) {
+    console.error("Fehler beim Fertigmelden des Produktionsauftrags:", error);
+    state.ui.productionOrderCompletingId = "";
+    setProductionStatus(
+      formatProductionSupabaseError(error, "Auftrag konnte nicht fertig gemeldet werden"),
+      true,
+    );
+    render();
+    return;
+  }
+
+  const historyPayload = {
+    ba_number: order.ba_number || "",
+    good_total: getProductionOrderGoodTotal(order.id),
+    scrap_total: getProductionOrderScrapTotal(order.id),
+    clarify_total: getProductionOrderClarifyTotal(order.id),
+    remaining: calculatePreparedRemainingQuantity(order),
+  };
+  const { error: historyError } = await writeProductionOrderHistory(
+    order,
+    "order_completed",
+    historyPayload,
+    0,
+    null,
+  );
+  await refreshProductionOrdersFromSupabase();
+  state.ui.productionOrderCompletingId = "";
+  if (state.ui.productionCounterActiveOrderId === order.id) {
+    state.ui.productionCounterActiveOrderId = "";
+    state.ui.productionCounterSelectedMachineId = "";
+  }
+  if (historyError) {
+    console.error("Fehler beim Schreiben der Auftrags-Historie:", historyError);
+    setProductionStatus("Auftrag fertig gemeldet, Historie konnte nicht geschrieben werden.", true);
+    render();
+    return;
+  }
+
+  setProductionStatus("Auftrag wurde fertig gemeldet.");
+  render();
 }
 
 async function createProductionCount() {
@@ -16046,6 +16512,8 @@ window.adjustProductionStationAmount = adjustProductionStationAmount;
 window.setProductionQaCauseSelection = setProductionQaCauseSelection;
 window.closeProductionQaCauseModal = closeProductionQaCauseModal;
 window.confirmProductionQaCauseModal = confirmProductionQaCauseModal;
+window.toggleProductionOrderChecklistItem = toggleProductionOrderChecklistItem;
+window.completeProductionOrderWithChecklist = completeProductionOrderWithChecklist;
 window.markAbsent = markAbsent;
 window.assignShift = assignShift;
 window.cancelShift = cancelShift;

@@ -94,7 +94,7 @@ const rowsByTable = {
       ba_number: "BA-100",
       article_number: "ART-100",
       ba_quantity: 100,
-      target_quantity: 100,
+      target_quantity: 1,
       pallet_count: 2,
       pieces_per_pallet: 50,
       use_chain_logic: false,
@@ -145,6 +145,28 @@ const rowsByTable = {
     },
   ],
   production_order_employees: [],
+  production_checklist_templates: [
+    {
+      id: "template-counted",
+      item_key: "counted",
+      item_label: "Stückzahl gezählt?",
+      active: true,
+      sort_order: 1,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    },
+    {
+      id: "template-tools",
+      item_key: "tools_stored",
+      item_label: "Werkzeuge eingeräumt?",
+      active: true,
+      sort_order: 2,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    },
+  ],
+  production_order_checklist: [],
+  production_order_history: [],
   production_station_counts: [],
   production_station_events: [],
   production_qa_causes: [
@@ -259,7 +281,7 @@ function installSupabaseMock(rowsByTableArg) {
       return Promise.resolve({ data: created, error: null });
     }
     update(payload) {
-      window.__SUPABASE_WRITE_LOG.push({ table: this.table, action: "update" });
+      window.__SUPABASE_WRITE_LOG.push({ table: this.table, action: "update", payload });
       this.pendingUpdate = payload || {};
       return this;
     }
@@ -414,6 +436,47 @@ test.describe("Humbel app smoke", () => {
     await expect(page.locator("#view")).toContainText("Lavdrim");
     await expect(page.locator("#view")).toContainText("PN 100");
     await expect(page.locator("#view")).toContainText("Spannung 1");
+    await expect(page.locator("#view")).toContainText("Abschluss-Checkliste");
+    await expect(page.locator("#view")).toContainText("Stückzahl gezählt?");
+    await expect(page.locator("#view")).toContainText("Werkzeuge eingeräumt?");
+    await expect
+      .poll(() => page.evaluate(() =>
+        (window.__SUPABASE_WRITE_LOG || []).some(
+          (entry) =>
+            entry.table === "production_order_checklist" &&
+            entry.action === "insert" &&
+            entry.payload?.some?.((item) => item.order_id === "order-one" && item.item_key === "counted"),
+        ),
+      ))
+      .toBeTruthy();
+    await page.getByLabel("Stückzahl gezählt?").check();
+    await expect
+      .poll(() => page.evaluate(() =>
+        (window.__SUPABASE_WRITE_LOG || []).some(
+          (entry) =>
+            entry.table === "production_order_checklist" &&
+            entry.action === "update" &&
+            entry.payload?.checked === true &&
+            !!entry.payload?.checked_at &&
+            entry.payload?.checked_by_employee_id === "employee-admin",
+        ),
+      ))
+      .toBeTruthy();
+    await expect
+      .poll(() => page.evaluate(() =>
+        (window.__SUPABASE_WRITE_LOG || []).some(
+          (entry) =>
+            entry.table === "production_order_history" &&
+            entry.action === "insert" &&
+            entry.payload?.[0]?.history_type === "checklist",
+        ),
+      ))
+      .toBeTruthy();
+    await page.getByRole("button", { name: "Auftrag fertig melden" }).click();
+    await expect(page.locator("#view")).toContainText("Alle Checklistenpunkte müssen erledigt sein.");
+    await page.getByLabel("Werkzeuge eingeräumt?").check();
+    await page.getByRole("button", { name: "Auftrag fertig melden" }).click();
+    await expect(page.locator("#view")).toContainText("Auftrag hat noch Restmenge. Abschluss nicht möglich.");
     const stationOne = page.locator("#view").locator("article").filter({ hasText: "Spannung 1" });
     await expect(stationOne).toContainText("Lavdrim");
     const stationInsertsBeforeSave = await page.evaluate(() =>
@@ -436,7 +499,7 @@ test.describe("Humbel app smoke", () => {
     await expect(stationOne).toContainText(/Gutteile\s+1/);
     await expect(page.locator("#view")).toContainText("Gutteile Auftrag");
     await expect(page.locator("#view")).toContainText("Restmenge vorbereitet");
-    await expect(page.locator("#view")).toContainText("99");
+    await expect(page.locator("#view")).toContainText("0");
     await stationOne.getByRole("button", { name: /Gutteile -1/ }).click();
     await expect(stationOne).toContainText(/Gutteile\s+0/);
     await stationOne.getByRole("button", { name: /Gutteile -1/ }).click();
@@ -497,6 +560,34 @@ test.describe("Humbel app smoke", () => {
     await expect(page.locator("#view")).toContainText("Ursache wird beim +1 erfasst.");
     await page.locator("#view").getByRole("button", { name: /Spannung/ }).filter({ hasText: /hinzuf/ }).click();
     await expect(page.locator("#view")).toContainText("Spannung 2");
+    await stationOne.getByRole("button", { name: /Gutteile \+1/ }).click();
+    await expect(page.locator("#view")).toContainText("Restmenge vorbereitet");
+    await expect(page.locator("#view")).toContainText("0");
+    page.once("dialog", (dialog) => dialog.accept());
+    await page.getByRole("button", { name: "Auftrag fertig melden" }).click();
+    await expect(page.locator("#view")).toContainText("Auftrag wurde fertig gemeldet.");
+    await expect
+      .poll(() => page.evaluate(() =>
+        (window.__SUPABASE_WRITE_LOG || []).some(
+          (entry) =>
+            entry.table === "production_orders" &&
+            entry.action === "update" &&
+            entry.payload?.status === "completed" &&
+            !!entry.payload?.completed_at,
+        ),
+      ))
+      .toBeTruthy();
+    await expect
+      .poll(() => page.evaluate(() =>
+        (window.__SUPABASE_WRITE_LOG || []).some(
+          (entry) =>
+            entry.table === "production_order_history" &&
+            entry.action === "insert" &&
+            entry.payload?.[0]?.history_type === "order_completed",
+        ),
+      ))
+      .toBeTruthy();
+    await expect(page.locator("#view")).not.toContainText("BA-100");
     await expect
       .poll(() => page.evaluate(() => window.__SUPABASE_WRITE_LOG || []))
       .not.toContainEqual(expect.objectContaining({ table: "production_counts" }));
@@ -504,7 +595,6 @@ test.describe("Humbel app smoke", () => {
       (window.__SUPABASE_WRITE_LOG || []).filter((entry) => entry.table === "production_station_counts"),
     );
     expect(stationCountWrites.every((entry) => ["insert", "update"].includes(entry.action))).toBeTruthy();
-    await page.getByRole("button", { name: "Zurück zur Maschinenübersicht" }).click();
     await expectViewHeading(page, "Maschinenübersicht");
     await page.evaluate(() => {
       window.__SUPABASE_MOCK_ERRORS.production_order_stations = {
