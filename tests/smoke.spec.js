@@ -166,9 +166,52 @@ const rowsByTable = {
     updated_at: "2026-01-01T00:00:00Z",
   })),
   production_order_checklist: [],
-  production_order_history: [],
+  production_order_history: [
+    {
+      id: "history-completed",
+      order_id: "order-one",
+      station_id: null,
+      employee_id: "employee-admin",
+      history_type: "order_completed",
+      qty: 0,
+      payload: {
+        ba_number: "BA-100",
+        good_total: 1,
+        scrap_total: 1,
+        clarify_total: 0,
+        remaining: 0,
+      },
+      note: "Historie Test",
+      created_at: "2026-01-01T00:04:00Z",
+    },
+  ],
   production_station_counts: [],
-  production_station_events: [],
+  production_station_events: [
+    {
+      id: "event-good",
+      order_id: "order-one",
+      station_id: "station-one",
+      order_employee_id: "",
+      employee_id: "employee-one",
+      event_type: "good",
+      qty: 1,
+      qa_cause_id: null,
+      note: "Gutteil Test",
+      created_at: "2026-01-01T00:02:00Z",
+    },
+    {
+      id: "event-scrap",
+      order_id: "order-one",
+      station_id: "station-one",
+      order_employee_id: "",
+      employee_id: "employee-admin",
+      event_type: "scrap",
+      qty: 1,
+      qa_cause_id: "qa-cause-human",
+      note: "Ausschuss Test",
+      created_at: "2026-01-01T00:03:00Z",
+    },
+  ],
   production_qa_causes: [
     {
       id: "qa-cause-human",
@@ -417,6 +460,16 @@ test.describe("Humbel app smoke", () => {
       "Einstellungen",
     ]);
 
+    await clickSubtab(page, "Protokoll");
+    await expectViewHeading(page, "Produktionsprotokoll");
+    await expect(page.locator("#view")).toContainText("Gutteil");
+    await expect(page.locator("#view")).toContainText("Ausschuss");
+    await expect(page.locator("#view")).toContainText("Mensch: Einweisung");
+    await expect(page.locator("#view")).toContainText("Auftrag abgeschlossen");
+    await expect(page.locator("#view")).toContainText("Gutteile 1");
+    await page.getByLabel("Auftrag / BA").selectOption("order-two");
+    await expect(page.locator("#view")).toContainText("Noch keine Protokolleinträge vorhanden.");
+
     await clickSubtab(page, "Aufträge / BA");
     await expectViewHeading(page, "Neuen Auftrag / BA anlegen");
     await expectViewHeading(page, "Laufende Aufträge");
@@ -436,7 +489,11 @@ test.describe("Humbel app smoke", () => {
     await expect(page.locator("#view")).toContainText("Lavdrim");
     await expect(page.locator("#view")).toContainText("PN 100");
     await expect(page.locator("#view")).toContainText("Spannung 1");
-    await expect(page.locator("#view")).toContainText("Abschluss-Checkliste");
+    await expect(page.locator("#view")).toContainText("Auftrag abschließen");
+    await expect(page.locator("#view")).not.toContainText("Stückzahl gezählt?");
+    await page.locator("#view").getByRole("button", { name: "Auftrag fertig melden" }).click();
+    await expect(page.getByRole("heading", { name: "Auftrag fertig melden" })).toBeVisible();
+    await expect(page.locator("body")).toContainText("Abschluss-Checkliste");
     await expect(page.locator("#view")).toContainText("Stückzahl gezählt?");
     await expect(page.locator("#view")).toContainText("Auftrag fertig gemeldet?");
     await expect(page.locator("#view")).toContainText("Lagerort eingetragen?");
@@ -447,7 +504,7 @@ test.describe("Humbel app smoke", () => {
     await expect(page.locator("#view")).toContainText("Excel eingetragen?");
     await expect(page.locator("#view")).toContainText("Doku-Fehler notiert?");
     await expect(page.locator("#view")).toContainText("Doku abgelegt?");
-    await expect(page.locator("#view")).not.toContainText("Abschluss-Checkliste wird vorbereitet.");
+    await expect(page.locator("body")).not.toContainText("Abschluss-Checkliste wird vorbereitet.");
     await expect
       .poll(() => page.evaluate(() =>
         (window.__SUPABASE_WRITE_LOG || []).some(
@@ -482,7 +539,7 @@ test.describe("Humbel app smoke", () => {
         ),
       ))
       .toBeTruthy();
-    await expect(page.getByRole("button", { name: "Auftrag fertig melden" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Endgültig fertig melden" })).toBeDisabled();
     await page.evaluate(() => window.completeProductionOrderWithChecklist("order-one"));
     await expect(page.locator("#view")).toContainText("Alle Checklistenpunkte müssen erledigt sein.");
     for (const label of [
@@ -498,9 +555,10 @@ test.describe("Humbel app smoke", () => {
     ]) {
       await page.getByLabel(label).check();
     }
-    await expect(page.getByRole("button", { name: "Auftrag fertig melden" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Endgültig fertig melden" })).toBeDisabled();
     await page.evaluate(() => window.completeProductionOrderWithChecklist("order-one"));
     await expect(page.locator("#view")).toContainText("Auftrag hat noch Restmenge. Abschluss nicht möglich.");
+    await page.getByRole("button", { name: "Abbrechen" }).click();
     const stationOne = page.locator("#view").locator("article").filter({ hasText: "Spannung 1" });
     await expect(stationOne).toContainText("Lavdrim");
     const stationInsertsBeforeSave = await page.evaluate(() =>
@@ -587,9 +645,10 @@ test.describe("Humbel app smoke", () => {
     await stationOne.getByRole("button", { name: /Gutteile \+1/ }).click();
     await expect(page.locator("#view")).toContainText("Restmenge vorbereitet");
     await expect(page.locator("#view")).toContainText("0");
-    await expect(page.getByRole("button", { name: "Auftrag fertig melden" })).toBeEnabled();
+    await page.locator("#view").getByRole("button", { name: "Auftrag fertig melden" }).click();
+    await expect(page.getByRole("button", { name: "Endgültig fertig melden" })).toBeEnabled();
     page.once("dialog", (dialog) => dialog.accept());
-    await page.getByRole("button", { name: "Auftrag fertig melden" }).click();
+    await page.getByRole("button", { name: "Endgültig fertig melden" }).click();
     await expect(page.locator("#view")).toContainText("Auftrag wurde fertig gemeldet.");
     await expect
       .poll(() => page.evaluate(() =>

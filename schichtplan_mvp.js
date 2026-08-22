@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.5.04";
+const APP_VERSION = "0.5.05";
 const INVENTORY_MODE_ENABLED = false;
 const HUMBEL_COLORS = Object.freeze({
   primary: "#0d4682",
@@ -69,6 +69,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.5.05",
+    date: "2026-08-22 09:27",
+    changes: ["Produktionsprotokoll ergänzt und Abschluss-Checkliste in Fertigmeldung verschoben."],
+  },
   {
     version: "0.5.04",
     date: "2026-08-22 09:16",
@@ -1316,6 +1321,48 @@ async function loadProductionStationCountsFromSupabase() {
   return data || [];
 }
 
+async function loadProductionStationEventsFromSupabase() {
+  const { data, error } = await supabaseClient
+    .from("production_station_events")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  state.ui = state.ui || {};
+
+  if (error) {
+    console.error("Fehler beim Laden von production_station_events:", error);
+    state.ui.productionStationEventsError = formatProductionSupabaseError(
+      error,
+      "Produktionsereignisse konnten nicht geladen werden",
+    );
+    return null;
+  }
+
+  state.ui.productionStationEventsError = "";
+  return data || [];
+}
+
+async function loadProductionOrderHistoryFromSupabase() {
+  const { data, error } = await supabaseClient
+    .from("production_order_history")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  state.ui = state.ui || {};
+
+  if (error) {
+    console.error("Fehler beim Laden von production_order_history:", error);
+    state.ui.productionOrderHistoryError = formatProductionSupabaseError(
+      error,
+      "Auftragshistorie konnte nicht geladen werden",
+    );
+    return null;
+  }
+
+  state.ui.productionOrderHistoryError = "";
+  return data || [];
+}
+
 async function loadProductionQaCausesFromSupabase() {
   const { data, error } = await supabaseClient
     .from("production_qa_causes")
@@ -1480,6 +1527,45 @@ function normalizeProductionStationCountFromDb(row) {
 function applyProductionStationCountsToState(rows) {
   if (!Array.isArray(rows)) return;
   state.productionStationCounts = rows.map(normalizeProductionStationCountFromDb);
+}
+
+function normalizeProductionStationEventFromDb(row) {
+  return {
+    id: row.id,
+    order_id: row.order_id || "",
+    station_id: row.station_id || "",
+    order_employee_id: row.order_employee_id || "",
+    employee_id: row.employee_id || "",
+    event_type: row.event_type || "",
+    qty: Number(row.qty || 0),
+    qa_cause_id: row.qa_cause_id || "",
+    note: row.note || "",
+    created_at: row.created_at || null,
+  };
+}
+
+function applyProductionStationEventsToState(rows) {
+  if (!Array.isArray(rows)) return;
+  state.productionStationEvents = rows.map(normalizeProductionStationEventFromDb);
+}
+
+function normalizeProductionOrderHistoryFromDb(row) {
+  return {
+    id: row.id,
+    order_id: row.order_id || "",
+    station_id: row.station_id || "",
+    employee_id: row.employee_id || "",
+    history_type: row.history_type || "",
+    qty: Number(row.qty || 0),
+    payload: row.payload || null,
+    note: row.note || "",
+    created_at: row.created_at || null,
+  };
+}
+
+function applyProductionOrderHistoryToState(rows) {
+  if (!Array.isArray(rows)) return;
+  state.productionOrderHistory = rows.map(normalizeProductionOrderHistoryFromDb);
 }
 
 function normalizeProductionQaCauseFromDb(row) {
@@ -2239,6 +2325,8 @@ async function syncSupabaseSessionToApp() {
   const productionOrderStations = await loadProductionOrderStationsFromSupabase();
   const productionOrderEmployees = await loadProductionOrderEmployeesFromSupabase();
   const productionStationCounts = await loadProductionStationCountsFromSupabase();
+  const productionStationEvents = await loadProductionStationEventsFromSupabase();
+  const productionOrderHistory = await loadProductionOrderHistoryFromSupabase();
   const productionQaCauses = await loadProductionQaCausesFromSupabase();
   const productionChecklistTemplates = await loadProductionChecklistTemplatesFromSupabase();
   const productionOrderChecklist = await loadProductionOrderChecklistFromSupabase();
@@ -2254,6 +2342,8 @@ async function syncSupabaseSessionToApp() {
   applyProductionOrderStationsToState(productionOrderStations);
   applyProductionOrderEmployeesToState(productionOrderEmployees);
   applyProductionStationCountsToState(productionStationCounts);
+  applyProductionStationEventsToState(productionStationEvents);
+  applyProductionOrderHistoryToState(productionOrderHistory);
   applyProductionQaCausesToState(productionQaCauses);
   applyProductionChecklistTemplatesToState(productionChecklistTemplates);
   applyProductionOrderChecklistToState(productionOrderChecklist);
@@ -2299,6 +2389,8 @@ async function syncSupabaseSessionToApp() {
   console.log("Produktionsspannungen nach Login geladen:", productionOrderStations);
   console.log("Produktionsmitarbeiter nach Login geladen:", productionOrderEmployees);
   console.log("Produktions-Gutteilzähler nach Login geladen:", productionStationCounts);
+  console.log("Produktionsereignisse nach Login geladen:", productionStationEvents);
+  console.log("Produktions-Auftragshistorie nach Login geladen:", productionOrderHistory);
   console.log("Produktions-6M-Ursachen nach Login geladen:", productionQaCauses);
   console.log("Produktions-Checklisten-Vorlagen nach Login geladen:", productionChecklistTemplates);
   console.log("Produktions-Auftragschecklisten nach Login geladen:", productionOrderChecklist);
@@ -2344,6 +2436,8 @@ async function bootSupabase() {
   const productionOrderStations = await loadProductionOrderStationsFromSupabase();
   const productionOrderEmployees = await loadProductionOrderEmployeesFromSupabase();
   const productionStationCounts = await loadProductionStationCountsFromSupabase();
+  const productionStationEvents = await loadProductionStationEventsFromSupabase();
+  const productionOrderHistory = await loadProductionOrderHistoryFromSupabase();
   const productionQaCauses = await loadProductionQaCausesFromSupabase();
   const productionChecklistTemplates = await loadProductionChecklistTemplatesFromSupabase();
   const productionOrderChecklist = await loadProductionOrderChecklistFromSupabase();
@@ -2359,6 +2453,8 @@ async function bootSupabase() {
   applyProductionOrderStationsToState(productionOrderStations);
   applyProductionOrderEmployeesToState(productionOrderEmployees);
   applyProductionStationCountsToState(productionStationCounts);
+  applyProductionStationEventsToState(productionStationEvents);
+  applyProductionOrderHistoryToState(productionOrderHistory);
   applyProductionQaCausesToState(productionQaCauses);
   applyProductionChecklistTemplatesToState(productionChecklistTemplates);
   applyProductionOrderChecklistToState(productionOrderChecklist);
@@ -2387,6 +2483,8 @@ async function bootSupabase() {
   console.log("Produktionsspannungen aus Supabase:", productionOrderStations);
   console.log("Produktionsmitarbeiter aus Supabase:", productionOrderEmployees);
   console.log("Produktions-Gutteilzähler aus Supabase:", productionStationCounts);
+  console.log("Produktionsereignisse aus Supabase:", productionStationEvents);
+  console.log("Produktions-Auftragshistorie aus Supabase:", productionOrderHistory);
   console.log("Produktions-6M-Ursachen aus Supabase:", productionQaCauses);
   console.log("Produktions-Checklisten-Vorlagen aus Supabase:", productionChecklistTemplates);
   console.log("Produktions-Auftragschecklisten aus Supabase:", productionOrderChecklist);
@@ -2454,6 +2552,8 @@ function loadState() {
     productionOrderStations: [],
     productionOrderEmployees: [],
     productionStationCounts: [],
+    productionStationEvents: [],
+    productionOrderHistory: [],
     productionQaCauses: [],
     productionChecklistTemplates: [],
     productionOrderChecklist: [],
@@ -2509,6 +2609,8 @@ function loadState() {
       productionStationsError: "",
       productionOrderEmployeesError: "",
       productionStationCountsError: "",
+      productionStationEventsError: "",
+      productionOrderHistoryError: "",
       productionQaCausesError: "",
       productionChecklistTemplatesError: "",
       productionOrderChecklistError: "",
@@ -2520,6 +2622,9 @@ function loadState() {
       productionStationAmountSavingKey: "",
       productionCounterSelectedMachineId: "",
       productionCounterActiveOrderId: "",
+      productionCompletionOrderId: "",
+      productionProtocolSelectedOrderId: "",
+      productionProtocolSort: "desc",
       toolsLoading: false,
       supabaseReady: false,
       toolsInitialLoaded: false,
@@ -2536,6 +2641,8 @@ function loadState() {
     delete parsed.productionOrderStations;
     delete parsed.productionOrderEmployees;
     delete parsed.productionStationCounts;
+    delete parsed.productionStationEvents;
+    delete parsed.productionOrderHistory;
     delete parsed.productionQaCauses;
     delete parsed.productionChecklistTemplates;
     delete parsed.productionOrderChecklist;
@@ -2577,6 +2684,8 @@ function persist() {
   delete snapshot.productionOrderStations;
   delete snapshot.productionOrderEmployees;
   delete snapshot.productionStationCounts;
+  delete snapshot.productionStationEvents;
+  delete snapshot.productionOrderHistory;
   delete snapshot.productionQaCauses;
   delete snapshot.productionChecklistTemplates;
   delete snapshot.productionOrderChecklist;
@@ -5139,6 +5248,8 @@ function getProductionStatusBanner() {
   const stationsError = state.ui?.productionStationsError;
   const orderEmployeesError = state.ui?.productionOrderEmployeesError;
   const stationCountsError = state.ui?.productionStationCountsError;
+  const stationEventsError = state.ui?.productionStationEventsError;
+  const orderHistoryError = state.ui?.productionOrderHistoryError;
   const qaCausesError = state.ui?.productionQaCausesError;
   const checklistTemplatesError = state.ui?.productionChecklistTemplatesError;
   const orderChecklistError = state.ui?.productionOrderChecklistError;
@@ -5152,6 +5263,8 @@ function getProductionStatusBanner() {
   if (stationsError) errors.push(`production_order_stations: ${stationsError}`);
   if (orderEmployeesError) errors.push(`production_order_employees: ${orderEmployeesError}`);
   if (stationCountsError) errors.push(`production_station_counts: ${stationCountsError}`);
+  if (stationEventsError) errors.push(`production_station_events: ${stationEventsError}`);
+  if (orderHistoryError) errors.push(`production_order_history: ${orderHistoryError}`);
   if (qaCausesError) errors.push(`production_qa_causes: ${qaCausesError}`);
   if (checklistTemplatesError) errors.push(`production_checklist_templates: ${checklistTemplatesError}`);
   if (orderChecklistError) errors.push(`production_order_checklist: ${orderChecklistError}`);
@@ -5498,10 +5611,7 @@ function renderProduction() {
     );
   }
   if (subTab === "protocol") {
-    content = renderModulePlaceholder(
-      "Protokoll",
-      "Produktionsprotokolle folgen später.",
-    );
+    content = renderProductionProtocolTab();
   }
   if (subTab === "settings") content = renderProductionSettingsTab();
 
@@ -5515,6 +5625,7 @@ function renderProduction() {
     ${renderProductionDepartmentAdminNotice()}
     ${content}
     ${renderProductionQaCauseModal()}
+    ${renderProductionCompletionDialog()}
   </div>`;
 }
 
@@ -6244,7 +6355,6 @@ function renderProductionMachineOrderPreview(machine, orders) {
   const activeOrderId = state.ui?.productionCounterActiveOrderId || orders[0]?.id || "";
   const activeOrder =
     orders.find((order) => order.id === activeOrderId) || orders[0] || null;
-  if (activeOrder) scheduleProductionOrderChecklistPreparation(activeOrder);
   const baTabs = orders
     .map((order) => {
       const active = activeOrder?.id === order.id;
@@ -6285,7 +6395,7 @@ function renderProductionMachineOrderPreview(machine, orders) {
         ${metrics}
         ${renderProductionOrderEmployeesSection(activeOrder)}
         ${renderProductionOrderStationsSection(activeOrder)}
-        ${renderProductionOrderChecklistSection(activeOrder)}
+        ${renderProductionOrderChecklistSection(activeOrder, false)}
       </div>`
     : `<div class='border rounded-lg bg-slate-50 p-4 text-sm text-slate-600'>Kein aktiver BA ausgewählt.</div>`;
 
@@ -6333,7 +6443,7 @@ function renderProductionOrderStationsSection(order) {
   </section>`;
 }
 
-function renderProductionOrderChecklistSection(order) {
+function renderProductionOrderChecklistSection(order, expanded = false) {
   const templates = state.productionChecklistTemplates || [];
   const checklistItems = getProductionOrderChecklistItems(order.id);
   const canEdit =
@@ -6374,12 +6484,40 @@ function renderProductionOrderChecklistSection(order) {
     : "";
   const completeButton =
     ["running", "paused"].includes(order.status)
-      ? `<button type='button' class='px-3 py-2 rounded bg-emerald-700 text-white text-sm disabled:opacity-50' onclick="completeProductionOrderWithChecklist('${order.id}')" ${canEdit && !completing && !blockers.length ? "" : "disabled"}>${completing ? "Fertigmeldung läuft..." : "Auftrag fertig melden"}</button>`
+      ? expanded
+        ? `<button type='button' class='px-3 py-2 rounded bg-emerald-700 text-white text-sm disabled:opacity-50' onclick="completeProductionOrderWithChecklist('${order.id}')" ${canEdit && !completing && !blockers.length ? "" : "disabled"}>${completing ? "Fertigmeldung läuft..." : "Endgültig fertig melden"}</button>`
+        : `<button type='button' class='px-3 py-2 rounded bg-emerald-700 text-white text-sm' onclick="openProductionCompletionDialog('${order.id}')">Auftrag fertig melden</button>`
       : "";
   const completedNotice =
     ["completed", "cancelled"].includes(order.status)
       ? `<div class='rounded border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600'>Auftrag ist ${escapeHtml(getProductionOrderStatusLabel(order.status).toLowerCase())}; Checkliste ist nur lesbar.</div>`
       : "";
+
+  if (!expanded) {
+    const checklistStatus = !templates.length
+      ? "Keine Checkliste eingerichtet"
+      : checklistComplete
+        ? "Checkliste erledigt"
+        : "Checkliste offen";
+    const canCompleteLabel = blockers.length ? "Abschluss aktuell nicht möglich" : "Abschluss möglich";
+    const protocolButton = `<button type='button' class='px-3 py-2 rounded bg-slate-200 text-slate-800 text-sm' onclick="openProductionProtocolForOrder('${order.id}')">Protokoll anzeigen</button>`;
+    return `<section class='border rounded-lg bg-slate-50 p-4 space-y-3'>
+      <div class='flex items-start justify-between gap-3 flex-wrap'>
+        <div>
+          <h4 class='font-semibold'>Auftrag abschließen</h4>
+          <p class='text-sm text-slate-600 mt-1'>Checkliste wird beim Fertigmelden geöffnet.</p>
+        </div>
+        <div class='flex gap-2 flex-wrap'>${protocolButton}${completeButton}</div>
+      </div>
+      <div class='grid sm:grid-cols-3 gap-2 text-sm'>
+        <div class='rounded border bg-white p-2'><div class='text-xs text-slate-500'>Checkliste</div><div class='font-semibold'>${escapeHtml(checklistStatus)}</div></div>
+        <div class='rounded border bg-white p-2'><div class='text-xs text-slate-500'>Restmenge</div><div class='font-semibold'>${escapeHtml(remaining)}</div></div>
+        <div class='rounded border bg-white p-2'><div class='text-xs text-slate-500'>Status</div><div class='font-semibold'>${escapeHtml(canCompleteLabel)}</div></div>
+      </div>
+      ${blockerHtml}
+      ${completedNotice}
+    </section>`;
+  }
 
   return `<section class='border rounded-lg bg-slate-50 p-4 space-y-4'>
     <div class='flex items-start justify-between gap-3 flex-wrap'>
@@ -6811,6 +6949,150 @@ function renderProductionCountInlineStepper(inputId, value) {
   </div>`;
 }
 
+function getProductionEventTypeLabel(type) {
+  return {
+    good: "Gutteil",
+    good_correction: "Gutteil-Korrektur",
+    scrap: "Ausschuss",
+    scrap_correction: "Ausschuss-Korrektur",
+    clarify: "In Abklärung",
+    clarify_correction: "Abklär-Korrektur",
+    station_created: "Spannung angelegt",
+    station_deleted: "Spannung gelöscht",
+    station_renamed: "Spannung umbenannt",
+    order_created: "Auftrag angelegt",
+    order_completed: "Auftrag abgeschlossen",
+    order_cancelled: "Auftrag abgebrochen",
+    checklist: "Checkliste",
+    time_changed: "Zeit geändert",
+    note: "Notiz",
+  }[type] || type || "Ereignis";
+}
+
+function getProductionProtocolEmployeeName(entry) {
+  if (entry.employee_id) return getEmployeeDisplayNameById(entry.employee_id);
+  if (entry.order_employee_id) {
+    const orderEmployee = getProductionOrderEmployeeById(entry.order_employee_id);
+    if (orderEmployee?.employee_id) return getEmployeeDisplayNameById(orderEmployee.employee_id);
+    return orderEmployee?.employee_name || "-";
+  }
+  return "-";
+}
+
+function getProductionProtocolStationName(stationId) {
+  const station = getProductionOrderStationById(stationId);
+  if (!station) return stationId ? "Spannung" : "-";
+  return `Spannung ${station.station_no}${station.op_number ? ` · OP ${station.op_number}` : ""}`;
+}
+
+function summarizeProductionHistoryPayload(entry) {
+  const payload = entry.payload || {};
+  if (!payload || typeof payload !== "object") return "";
+  if (entry.history_type === "order_completed") {
+    return [
+      payload.ba_number && `BA ${payload.ba_number}`,
+      `Gutteile ${Number(payload.good_total || 0)}`,
+      `Ausschuss ${Number(payload.scrap_total || 0)}`,
+      `Abklärung ${Number(payload.clarify_total || 0)}`,
+      `Restmenge ${Number(payload.remaining || 0)}`,
+    ].filter(Boolean).join(" · ");
+  }
+  if (entry.history_type === "checklist") {
+    return `${payload.item_label || payload.item_key || "Checkliste"}: ${payload.checked ? "erledigt" : "offen"}`;
+  }
+  return Object.entries(payload)
+    .slice(0, 5)
+    .map(([key, value]) => `${key}: ${typeof value === "object" ? JSON.stringify(value) : value}`)
+    .join(" · ");
+}
+
+function getProductionProtocolEntries(orderId) {
+  if (!orderId) return [];
+  const stationEvents = (state.productionStationEvents || [])
+    .filter((event) => event.order_id === orderId)
+    .map((event) => ({ ...event, source: "station_event" }));
+  const orderHistory = (state.productionOrderHistory || [])
+    .filter((entry) => entry.order_id === orderId)
+    .map((entry) => ({ ...entry, source: "order_history", event_type: entry.history_type }));
+  const direction = state.ui?.productionProtocolSort === "asc" ? 1 : -1;
+  return [...stationEvents, ...orderHistory].sort((a, b) => {
+    const aTime = new Date(a.created_at || 0).getTime();
+    const bTime = new Date(b.created_at || 0).getTime();
+    return (aTime - bTime) * direction;
+  });
+}
+
+function renderProductionProtocolTab() {
+  const orders = getVisibleProductionOrders();
+  const selectedOrderId =
+    state.ui?.productionProtocolSelectedOrderId &&
+    orders.some((order) => order.id === state.ui.productionProtocolSelectedOrderId)
+      ? state.ui.productionProtocolSelectedOrderId
+      : orders[0]?.id || "";
+  const order = getProductionOrderById(selectedOrderId);
+  const orderOptions = orders
+    .map((entry) => {
+      const machine = getProductionMachineById(entry.machine_id);
+      const label = `${entry.ba_number || "-"} · ${machine?.name || machine?.machine_code || "Maschine"} · ${getProductionOrderStatusLabel(entry.status)}`;
+      return `<option value='${escapeHtml(entry.id)}' ${entry.id === selectedOrderId ? "selected" : ""}>${escapeHtml(label)}</option>`;
+    })
+    .join("");
+  const entries = getProductionProtocolEntries(selectedOrderId);
+  const rows = entries.length
+    ? `<div class='space-y-3'>${entries.map(renderProductionProtocolEntry).join("")}</div>`
+    : `<div class='rounded border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600'>Noch keine Protokolleinträge vorhanden.</div>`;
+  const sortLabel = state.ui?.productionProtocolSort === "asc" ? "Älteste zuerst" : "Neueste zuerst";
+
+  return `<div class='space-y-4'>
+    <div class='border rounded-lg bg-slate-50 p-4'>
+      <h3 class='text-xl font-bold'>Produktionsprotokoll</h3>
+      <p class='text-sm text-slate-600 mt-1'>Ereignisse und Auftragshistorie je BA.</p>
+    </div>
+    <div class='border rounded-lg bg-white p-4 space-y-3'>
+      <div class='grid md:grid-cols-[minmax(0,1fr),auto] gap-3 items-end'>
+        <label class='block text-sm'>
+          Auftrag / BA
+          <select class='border rounded p-2 w-full mt-1 bg-white' onchange="selectProductionProtocolOrder(this.value)">
+            ${orderOptions || "<option value=''>Keine Aufträge sichtbar</option>"}
+          </select>
+        </label>
+        <button type='button' class='px-3 py-2 rounded bg-slate-200 text-slate-800 text-sm' onclick='toggleProductionProtocolSort()'>${escapeHtml(sortLabel)}</button>
+      </div>
+      ${order ? `<div class='rounded border bg-slate-50 p-3 text-sm text-slate-700'>BA ${escapeHtml(order.ba_number || "-")} · ${escapeHtml(getProductionOrderStatusLabel(order.status))}</div>` : ""}
+      ${rows}
+    </div>
+  </div>`;
+}
+
+function renderProductionProtocolEntry(entry) {
+  const isHistory = entry.source === "order_history";
+  const label = getProductionEventTypeLabel(isHistory ? entry.history_type : entry.event_type);
+  const timestamp = entry.created_at ? new Date(entry.created_at).toLocaleString("de-DE") : "-";
+  const station = entry.station_id ? getProductionProtocolStationName(entry.station_id) : "";
+  const employee = getProductionProtocolEmployeeName(entry);
+  const cause = entry.qa_cause_id ? getProductionQaCauseById(entry.qa_cause_id) : null;
+  const causeText = cause ? `${cause.group_label}: ${cause.reason_label}` : "";
+  const payload = isHistory ? summarizeProductionHistoryPayload(entry) : "";
+  const details = [
+    entry.qty ? `Menge ${entry.qty}` : "",
+    station,
+    employee !== "-" ? `Mitarbeiter ${employee}` : "",
+    causeText,
+    payload,
+    entry.note,
+  ].filter(Boolean);
+  return `<article class='rounded border bg-white p-3 text-sm'>
+    <div class='flex items-start justify-between gap-3 flex-wrap'>
+      <div>
+        <div class='font-semibold'>${escapeHtml(label)}</div>
+        <div class='text-xs text-slate-500 mt-1'>${escapeHtml(timestamp)} · ${isHistory ? "Auftragshistorie" : "Stationsereignis"}</div>
+      </div>
+      ${entry.qty ? `<span class='px-2 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold'>${escapeHtml(entry.qty)}</span>` : ""}
+    </div>
+    ${details.length ? `<div class='mt-2 text-slate-700 space-y-1'>${details.map((detail) => `<div>${escapeHtml(detail)}</div>`).join("")}</div>` : ""}
+  </article>`;
+}
+
 function renderProductionSettingsTab() {
   return `<div class='border rounded-lg p-3 bg-slate-50'>
     <h3 class='font-semibold mb-2'>Einstellungen</h3>
@@ -7029,6 +7311,20 @@ async function refreshProductionStationCountsFromSupabase() {
   applyProductionStationCountsToState(counts);
 }
 
+async function refreshProductionStationEventsFromSupabase() {
+  const events = await loadProductionStationEventsFromSupabase();
+  if (!Array.isArray(events)) return false;
+  applyProductionStationEventsToState(events);
+  return true;
+}
+
+async function refreshProductionOrderHistoryFromSupabase() {
+  const history = await loadProductionOrderHistoryFromSupabase();
+  if (!Array.isArray(history)) return false;
+  applyProductionOrderHistoryToState(history);
+  return true;
+}
+
 async function refreshProductionOrderChecklistFromSupabase() {
   const checklist = await loadProductionOrderChecklistFromSupabase();
   if (!Array.isArray(checklist)) return false;
@@ -7101,6 +7397,26 @@ async function writeProductionOrderHistory(order, historyType, payload = {}, qty
       note,
     },
   ]);
+}
+
+function selectProductionProtocolOrder(orderId) {
+  state.ui = state.ui || {};
+  state.ui.productionProtocolSelectedOrderId = orderId || "";
+  render();
+}
+
+function toggleProductionProtocolSort() {
+  state.ui = state.ui || {};
+  state.ui.productionProtocolSort = state.ui.productionProtocolSort === "asc" ? "desc" : "asc";
+  render();
+}
+
+function openProductionProtocolForOrder(orderId) {
+  state.ui = state.ui || {};
+  state.productionSubTab = "protocol";
+  state.ui.productionProtocolSelectedOrderId = orderId || "";
+  persist();
+  render();
 }
 
 async function writeProductionStationGoodEvent(station, orderEmployee, delta) {
@@ -7335,6 +7651,7 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
     options.note || "",
   );
   await refreshProductionOrderStationsFromSupabase();
+  await refreshProductionStationEventsFromSupabase();
   state.ui.productionStationAmountSavingKey = "";
   if (eventError) {
     console.error("Fehler beim Schreiben des Mengen-Protokolls:", eventError);
@@ -7429,6 +7746,7 @@ async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta,
     delta,
   );
   await refreshProductionStationCountsFromSupabase();
+  await refreshProductionStationEventsFromSupabase();
   state.ui.productionGoodQtySavingKey = "";
   if (eventError) {
     console.error("Fehler beim Schreiben des Gutteil-Protokolls:", eventError);
@@ -8500,6 +8818,7 @@ async function toggleProductionOrderChecklistItem(itemId, checked) {
   );
   await refreshProductionOrderChecklistFromSupabase();
   state.ui.productionChecklistSavingKey = "";
+  if (!historyError) await refreshProductionOrderHistoryFromSupabase();
   if (historyError) {
     console.error("Fehler beim Schreiben der Checklisten-Historie:", historyError);
     setProductionStatus("Checklistenpunkt gespeichert, Historie konnte nicht geschrieben werden.", true);
@@ -8558,12 +8877,52 @@ function scheduleProductionOrderChecklistPreparation(order) {
   }, 0);
 }
 
+async function openProductionCompletionDialog(orderId) {
+  const order = getProductionOrderById(orderId);
+  if (!order || !canEditProductionOrder(order)) {
+    setProductionStatus("Du darfst diesen Auftrag nicht fertig melden.", true);
+    render();
+    return;
+  }
+  state.ui = state.ui || {};
+  state.ui.productionCompletionOrderId = order.id;
+  render();
+  await ensureProductionOrderChecklistForOrder(order.id);
+  render();
+}
+
+function closeProductionCompletionDialog() {
+  state.ui = state.ui || {};
+  state.ui.productionCompletionOrderId = "";
+  render();
+}
+
 async function prepareProductionOrderChecklist(orderId) {
   state.ui = state.ui || {};
   state.ui.productionChecklistAutoAttemptedOrderId = "";
   const ok = await ensureProductionOrderChecklistForOrder(orderId);
   if (ok) setProductionStatus("Abschluss-Checkliste wurde vorbereitet.");
   render();
+}
+
+function renderProductionCompletionDialog() {
+  const orderId = state.ui?.productionCompletionOrderId || "";
+  if (!orderId) return "";
+  const order = getProductionOrderById(orderId);
+  if (!order) return "";
+  const remaining = calculatePreparedRemainingQuantity(order);
+  return `<div class='fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4'>
+    <div class='bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-auto p-4 space-y-4'>
+      <div class='flex items-start justify-between gap-3'>
+        <div>
+          <h3 class='text-lg font-semibold'>Auftrag fertig melden</h3>
+          <p class='text-sm text-slate-500 mt-1'>BA ${escapeHtml(order.ba_number || "-")} · Restmenge ${escapeHtml(remaining)}</p>
+        </div>
+        <button type='button' class='px-3 py-2 rounded bg-slate-200 text-slate-800' onclick='closeProductionCompletionDialog()'>Abbrechen</button>
+      </div>
+      ${renderProductionOrderChecklistSection(order, true)}
+    </div>
+  </div>`;
 }
 
 async function completeProductionOrderWithChecklist(orderId) {
@@ -8627,7 +8986,9 @@ async function completeProductionOrderWithChecklist(orderId) {
     null,
   );
   await refreshProductionOrdersFromSupabase();
+  if (!historyError) await refreshProductionOrderHistoryFromSupabase();
   state.ui.productionOrderCompletingId = "";
+  state.ui.productionCompletionOrderId = "";
   if (state.ui.productionCounterActiveOrderId === order.id) {
     state.ui.productionCounterActiveOrderId = "";
     state.ui.productionCounterSelectedMachineId = "";
@@ -16578,9 +16939,14 @@ window.adjustProductionStationAmount = adjustProductionStationAmount;
 window.setProductionQaCauseSelection = setProductionQaCauseSelection;
 window.closeProductionQaCauseModal = closeProductionQaCauseModal;
 window.confirmProductionQaCauseModal = confirmProductionQaCauseModal;
+window.openProductionCompletionDialog = openProductionCompletionDialog;
+window.closeProductionCompletionDialog = closeProductionCompletionDialog;
 window.toggleProductionOrderChecklistItem = toggleProductionOrderChecklistItem;
 window.prepareProductionOrderChecklist = prepareProductionOrderChecklist;
 window.completeProductionOrderWithChecklist = completeProductionOrderWithChecklist;
+window.selectProductionProtocolOrder = selectProductionProtocolOrder;
+window.toggleProductionProtocolSort = toggleProductionProtocolSort;
+window.openProductionProtocolForOrder = openProductionProtocolForOrder;
 window.markAbsent = markAbsent;
 window.assignShift = assignShift;
 window.cancelShift = cancelShift;
