@@ -346,16 +346,25 @@ test.describe("Humbel app smoke", () => {
     await expect(page.locator("#view")).toContainText("Lavdrim");
     await expect(page.locator("#view")).toContainText("PN 100");
     await expect(page.locator("#view")).toContainText("Spannung 1");
-    await expect(page.locator("#view").locator("article").filter({ hasText: "Spannung 1" })).toContainText("Lavdrim");
-    await expect(page.locator("#view")).toContainText("Gutteile zählen folgt im nächsten Schritt.");
-    await expect(page.locator("#view")).toContainText("Zählung folgt im nächsten Schritt.");
-    await expect(page.locator("#view").getByRole("button", { name: /\+1/ })).toHaveCount(0);
+    const stationOne = page.locator("#view").locator("article").filter({ hasText: "Spannung 1" });
+    await expect(stationOne).toContainText("Lavdrim");
+    await expect(stationOne).toContainText(/Gutteile\s+0/);
+    await stationOne.getByRole("button", { name: "+1" }).click();
+    await expect(stationOne).toContainText(/Gutteile\s+1/);
+    await expect(page.locator("#view")).toContainText("Gutteile Auftrag");
+    await expect(page.locator("#view")).toContainText("Restmenge vorbereitet");
+    await expect(page.locator("#view")).toContainText("99");
+    await stationOne.getByRole("button", { name: "-1" }).click();
+    await expect(stationOne).toContainText(/Gutteile\s+0/);
+    await stationOne.getByRole("button", { name: "-1" }).click();
+    await expect(page.locator("#view")).toContainText("Gutmenge kann nicht unter 0 fallen.");
+    await expect(stationOne).toContainText(/Gutteile\s+0/);
+    await expect(stationOne.getByRole("button", { name: /Ausschuss|Abklärung/ })).toHaveCount(0);
     await page.locator("#view").getByRole("button", { name: /Spannung/ }).filter({ hasText: /hinzuf/ }).click();
     await expect(page.locator("#view")).toContainText("Spannung 2");
-    await expect(page.locator("#view")).toContainText("Spannungen und Mitarbeiterzählung");
     await expect
       .poll(() => page.evaluate(() => window.__SUPABASE_WRITE_LOG || []))
-      .not.toContainEqual(expect.objectContaining({ table: "production_station_counts" }));
+      .not.toContainEqual(expect.objectContaining({ table: "production_counts" }));
     await page.getByRole("button", { name: "Zurück zur Maschinenübersicht" }).click();
     await expectViewHeading(page, "Maschinenübersicht");
 
