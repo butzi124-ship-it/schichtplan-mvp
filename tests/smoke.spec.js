@@ -399,6 +399,8 @@ test.describe("Humbel app smoke", () => {
         "cdn.tailwindcss.com",
         "supabase",
         "production_order_stations Supabase-Fehler",
+        "production_station_events Supabase-Fehler",
+        "Fehler beim Laden von production_station_events",
       ];
       if (!ignored.some((entry) => text.includes(entry))) {
         consoleErrors.push(text);
@@ -612,6 +614,23 @@ test.describe("Humbel app smoke", () => {
       .toBeTruthy();
     await stationOne.getByRole("button", { name: "Ausschuss -1" }).click();
     await expect(stationOne).toContainText(/Ausschuss gesamt\s+0/);
+    await expect(page.locator("#view")).toContainText("Ausschuss-Korrektur wurde gespeichert.");
+    await expect(page.locator("#view")).not.toContainText("Ursache/Protokoll konnte nicht geschrieben werden");
+    await expectViewHeading(page, "Produktionsvorschau");
+    await expect(page.locator("#view").getByRole("button", { name: /BA BA-100/ })).toBeVisible();
+    await expect(stationOne).toContainText("Spannung 1");
+    await expect
+      .poll(() => page.evaluate(() =>
+        (window.__SUPABASE_WRITE_LOG || []).some(
+          (entry) =>
+            entry.table === "production_station_events" &&
+            entry.action === "insert" &&
+            entry.payload?.[0]?.event_type === "scrap_correction" &&
+            entry.payload?.[0]?.qty === -1 &&
+            entry.payload?.[0]?.qa_cause_id === null,
+        ),
+      ))
+      .toBeTruthy();
     await stationOne.getByRole("button", { name: "Ausschuss -1" }).click();
     await expect(page.locator("#view")).toContainText("Ausschuss kann nicht unter 0 fallen.");
     await expect(stationOne).toContainText(/Ausschuss gesamt\s+0/);
@@ -634,9 +653,58 @@ test.describe("Humbel app smoke", () => {
       .toBeTruthy();
     await stationOne.getByRole("button", { name: "In Abklärung -1" }).click();
     await expect(stationOne).toContainText(/In Abklärung gesamt\s+0/);
+    await expect(page.locator("#view")).toContainText("Abklär-Korrektur wurde gespeichert.");
+    await expect(page.locator("#view")).not.toContainText("Ursache/Protokoll konnte nicht geschrieben werden");
+    await expectViewHeading(page, "Produktionsvorschau");
+    await expect
+      .poll(() => page.evaluate(() =>
+        (window.__SUPABASE_WRITE_LOG || []).some(
+          (entry) =>
+            entry.table === "production_station_events" &&
+            entry.action === "insert" &&
+            entry.payload?.[0]?.event_type === "clarify_correction" &&
+            entry.payload?.[0]?.qty === -1 &&
+            entry.payload?.[0]?.qa_cause_id === null,
+        ),
+      ))
+      .toBeTruthy();
     await stationOne.getByRole("button", { name: "In Abklärung -1" }).click();
     await expect(page.locator("#view")).toContainText("Abklärmenge kann nicht unter 0 fallen.");
     await expect(stationOne).toContainText(/In Abklärung gesamt\s+0/);
+    await stationOne.getByRole("button", { name: "Ausschuss +1" }).click();
+    await page.getByRole("button", { name: "Einweisung" }).click();
+    await page.getByRole("button", { name: "Ursache speichern" }).click();
+    await expect(stationOne).toContainText(/Ausschuss gesamt\s+1/);
+    await page.evaluate(() => {
+      window.__SUPABASE_MOCK_ERRORS.production_station_events = {
+        select: {
+          code: "42501",
+          message: "new row violates row-level security policy for table \"production_station_events\"",
+        },
+      };
+    });
+    await stationOne.getByRole("button", { name: "Ausschuss -1" }).click();
+    await expect(stationOne).toContainText(/Ausschuss gesamt\s+0/);
+    await expect(page.locator("#view")).toContainText("Menge gespeichert, Protokoll konnte nicht neu geladen werden.");
+    await expect(page.locator("#view")).not.toContainText("Ursache/Protokoll konnte nicht geschrieben werden");
+    await expectViewHeading(page, "Produktionsvorschau");
+    await expect(stationOne).toContainText("Spannung 1");
+    await stationOne.getByRole("button", { name: "In Abklärung +1" }).click();
+    await page.getByRole("button", { name: "Einrichtung" }).click();
+    await page.getByRole("button", { name: "Ursache speichern" }).click();
+    await expect(stationOne).toContainText(/In Abklärung gesamt\s+1/);
+    await page.evaluate(() => {
+      window.__SUPABASE_MOCK_ERRORS.production_station_events = {
+        insert: {
+          code: "42501",
+          message: "new row violates row-level security policy for table \"production_station_events\"",
+        },
+      };
+    });
+    await stationOne.getByRole("button", { name: "In Abklärung -1" }).click();
+    await expect(stationOne).toContainText(/In Abklärung gesamt\s+0/);
+    await expect(page.locator("#view")).toContainText("Menge gespeichert, Ursache/Protokoll konnte nicht geschrieben werden.");
+    await expectViewHeading(page, "Produktionsvorschau");
     await expect(page.locator("#view")).toContainText("Ausschuss Auftrag");
     await expect(page.locator("#view")).toContainText("In Abklärung Auftrag");
     await expect(page.locator("#view")).toContainText("Ursache wird beim +1 erfasst.");

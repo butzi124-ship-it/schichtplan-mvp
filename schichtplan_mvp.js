@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.5.05";
+const APP_VERSION = "0.5.06";
 const INVENTORY_MODE_ENABLED = false;
 const HUMBEL_COLORS = Object.freeze({
   primary: "#0d4682",
@@ -69,6 +69,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.5.06",
+    date: "2026-08-22 10:41",
+    changes: ["Rückbuchung und UI-Status für Ausschuss und Abklärung stabilisiert."],
+  },
   {
     version: "0.5.05",
     date: "2026-08-22 09:27",
@@ -7435,10 +7440,7 @@ async function writeProductionStationGoodEvent(station, orderEmployee, delta) {
 }
 
 async function writeProductionStationAmountEvent(station, type, delta, qaCauseId = null, note = "") {
-  const eventType =
-    type === "scrap"
-      ? delta > 0 ? "scrap" : "scrap_correction"
-      : delta > 0 ? "clarify" : "clarify_correction";
+  const eventType = getProductionStationAmountEventType(type, delta);
   return supabaseClient.from("production_station_events").insert([
     {
       order_id: station.order_id,
@@ -7451,6 +7453,33 @@ async function writeProductionStationAmountEvent(station, type, delta, qaCauseId
       note: note || null,
     },
   ]);
+}
+
+function getProductionStationAmountEventType(type, delta) {
+  return type === "scrap"
+    ? delta > 0 ? "scrap" : "scrap_correction"
+    : delta > 0 ? "clarify" : "clarify_correction";
+}
+
+function logProductionStationEventSupabaseError(action, error, details = {}) {
+  console.error("production_station_events Supabase-Fehler:", {
+    action,
+    table: "production_station_events",
+    station_id: details.station_id || "",
+    order_id: details.order_id || "",
+    event_type: details.event_type || "",
+    qty: details.qty || 0,
+    current_user_role: currentUser?.role || "",
+    current_employee_role: currentEmployeeRecord?.role || "",
+    error,
+  });
+}
+
+function updateProductionOrderStationInState(stationId, patch) {
+  if (!stationId || !patch) return;
+  state.productionOrderStations = (state.productionOrderStations || []).map((station) =>
+    station.id === stationId ? { ...station, ...patch } : station,
+  );
 }
 
 function getProductionQaCauseById(causeId) {
@@ -7615,6 +7644,8 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
   const savingKey = `${station.id}:${type}`;
   if (state.ui.productionStationAmountSavingKey === savingKey) return;
   state.ui.productionStationAmountSavingKey = savingKey;
+  state.ui.productionActionError = "";
+  state.ui.productionActionMessage = "";
   render();
 
   const payload = {
@@ -7622,6 +7653,11 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
     updated_at: new Date().toISOString(),
   };
   if (delta > 0) payload[lifetimeField] = currentLifetime + 1;
+  const nextStationPatch = {
+    [totalField]: payload[totalField],
+    updated_at: payload.updated_at,
+  };
+  if (delta > 0) nextStationPatch[lifetimeField] = payload[lifetimeField];
 
   const { error } = await supabaseClient
     .from("production_order_stations")
@@ -7643,6 +7679,8 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
     return;
   }
 
+  updateProductionOrderStationInState(station.id, nextStationPatch);
+  const eventType = getProductionStationAmountEventType(type, delta);
   const { error: eventError } = await writeProductionStationAmountEvent(
     station,
     type,
@@ -7650,21 +7688,38 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
     options.qaCauseId || null,
     options.note || "",
   );
-  await refreshProductionOrderStationsFromSupabase();
-  await refreshProductionStationEventsFromSupabase();
-  state.ui.productionStationAmountSavingKey = "";
   if (eventError) {
-    console.error("Fehler beim Schreiben des Mengen-Protokolls:", eventError);
+    logProductionStationEventSupabaseError("insert", eventError, {
+      order_id: station.order_id,
+      station_id: station.id,
+      event_type: eventType,
+      qty: delta,
+    });
+    state.ui.productionStationAmountSavingKey = "";
     setProductionStatus("Menge gespeichert, Ursache/Protokoll konnte nicht geschrieben werden.", true);
     render();
     return;
   }
 
-  setProductionStatus(
+  const stationsRefreshed = await refreshProductionOrderStationsFromSupabase();
+  const eventsRefreshed = await refreshProductionStationEventsFromSupabase();
+  state.ui.productionStationAmountSavingKey = "";
+  if (!stationsRefreshed) {
+    setProductionStatus("Menge gespeichert, Ansicht konnte nicht neu geladen werden.", true);
+    render();
+    return;
+  }
+  if (!eventsRefreshed) {
+    setProductionStatus("Menge gespeichert, Protokoll konnte nicht neu geladen werden.", true);
+    render();
+    return;
+  }
+
+  const successMessage =
     type === "scrap"
       ? delta > 0 ? "Ausschuss wurde gezählt." : "Ausschuss-Korrektur wurde gespeichert."
-      : delta > 0 ? "Abklärmenge wurde gezählt." : "Abklär-Korrektur wurde gespeichert.",
-  );
+      : delta > 0 ? "Abklärmenge wurde gezählt." : "Abklär-Korrektur wurde gespeichert.";
+  setProductionStatus(successMessage);
   render();
 }
 
