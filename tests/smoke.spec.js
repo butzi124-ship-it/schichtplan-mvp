@@ -147,6 +147,30 @@ const rowsByTable = {
   production_order_employees: [],
   production_station_counts: [],
   production_station_events: [],
+  production_qa_causes: [
+    {
+      id: "qa-cause-human",
+      group_id: "human",
+      group_label: "Mensch",
+      reason_id: "training",
+      reason_label: "Einweisung",
+      active: true,
+      sort_order: 1,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    },
+    {
+      id: "qa-cause-machine",
+      group_id: "machine",
+      group_label: "Maschine",
+      reason_id: "setup",
+      reason_label: "Einrichtung",
+      active: true,
+      sort_order: 2,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    },
+  ],
   production_counts: [],
   tool_materials: [],
   tools: [
@@ -219,7 +243,7 @@ function installSupabaseMock(rowsByTableArg) {
     order() { return this; }
     limit() { return this; }
     insert(payload) {
-      window.__SUPABASE_WRITE_LOG.push({ table: this.table, action: "insert" });
+      window.__SUPABASE_WRITE_LOG.push({ table: this.table, action: "insert", payload });
       const mockError = consumeMockError(this.table, "insert");
       if (mockError) return Promise.resolve({ data: null, error: mockError });
       const rows = Array.isArray(payload) ? payload : [payload];
@@ -420,7 +444,27 @@ test.describe("Humbel app smoke", () => {
     await expect(stationOne).toContainText(/Gutteile\s+0/);
     await expect(stationOne).toContainText(/Ausschuss gesamt\s+0/);
     await stationOne.getByRole("button", { name: "Ausschuss +1" }).click();
+    await expect(page.getByRole("heading", { name: "6M-Ursache für Ausschuss" })).toBeVisible();
+    await expect(page.locator("body")).toContainText("Mensch");
+    await page.getByRole("button", { name: "Abbrechen" }).first().click();
+    await expect(stationOne).toContainText(/Ausschuss gesamt\s+0/);
+    await stationOne.getByRole("button", { name: "Ausschuss +1" }).click();
+    await page.getByRole("button", { name: "Einweisung" }).click();
+    await page.getByLabel("Notiz").fill("Testnotiz Ausschuss");
+    await page.getByRole("button", { name: "Ursache speichern" }).click();
     await expect(stationOne).toContainText(/Ausschuss gesamt\s+1/);
+    await expect
+      .poll(() => page.evaluate(() =>
+        (window.__SUPABASE_WRITE_LOG || []).some(
+          (entry) =>
+            entry.table === "production_station_events" &&
+            entry.action === "insert" &&
+            entry.payload?.[0]?.event_type === "scrap" &&
+            entry.payload?.[0]?.qa_cause_id === "qa-cause-human" &&
+            entry.payload?.[0]?.note === "Testnotiz Ausschuss",
+        ),
+      ))
+      .toBeTruthy();
     await stationOne.getByRole("button", { name: "Ausschuss -1" }).click();
     await expect(stationOne).toContainText(/Ausschuss gesamt\s+0/);
     await stationOne.getByRole("button", { name: "Ausschuss -1" }).click();
@@ -428,7 +472,21 @@ test.describe("Humbel app smoke", () => {
     await expect(stationOne).toContainText(/Ausschuss gesamt\s+0/);
     await expect(stationOne).toContainText(/In Abklärung gesamt\s+0/);
     await stationOne.getByRole("button", { name: "In Abklärung +1" }).click();
+    await expect(page.getByRole("heading", { name: "6M-Ursache für In Abklärung" })).toBeVisible();
+    await page.getByRole("button", { name: "Einrichtung" }).click();
+    await page.getByRole("button", { name: "Ursache speichern" }).click();
     await expect(stationOne).toContainText(/In Abklärung gesamt\s+1/);
+    await expect
+      .poll(() => page.evaluate(() =>
+        (window.__SUPABASE_WRITE_LOG || []).some(
+          (entry) =>
+            entry.table === "production_station_events" &&
+            entry.action === "insert" &&
+            entry.payload?.[0]?.event_type === "clarify" &&
+            entry.payload?.[0]?.qa_cause_id === "qa-cause-machine",
+        ),
+      ))
+      .toBeTruthy();
     await stationOne.getByRole("button", { name: "In Abklärung -1" }).click();
     await expect(stationOne).toContainText(/In Abklärung gesamt\s+0/);
     await stationOne.getByRole("button", { name: "In Abklärung -1" }).click();
@@ -436,7 +494,7 @@ test.describe("Humbel app smoke", () => {
     await expect(stationOne).toContainText(/In Abklärung gesamt\s+0/);
     await expect(page.locator("#view")).toContainText("Ausschuss Auftrag");
     await expect(page.locator("#view")).toContainText("In Abklärung Auftrag");
-    await expect(page.locator("#view")).toContainText("Ursachen werden im nächsten Schritt ergänzt.");
+    await expect(page.locator("#view")).toContainText("Ursache wird beim +1 erfasst.");
     await page.locator("#view").getByRole("button", { name: /Spannung/ }).filter({ hasText: /hinzuf/ }).click();
     await expect(page.locator("#view")).toContainText("Spannung 2");
     await expect

@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.5.01";
+const APP_VERSION = "0.5.02";
 const INVENTORY_MODE_ENABLED = false;
 const HUMBEL_COLORS = Object.freeze({
   primary: "#0d4682",
@@ -69,6 +69,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.5.02",
+    date: "2026-08-22 08:42",
+    changes: ["6M-Ursachenerfassung für Ausschuss und Abklärung ergänzt."],
+  },
   {
     version: "0.5.01",
     date: "2026-08-22 08:31",
@@ -1301,6 +1306,30 @@ async function loadProductionStationCountsFromSupabase() {
   return data || [];
 }
 
+async function loadProductionQaCausesFromSupabase() {
+  const { data, error } = await supabaseClient
+    .from("production_qa_causes")
+    .select("*")
+    .eq("active", true)
+    .order("group_label", { ascending: true })
+    .order("sort_order", { ascending: true })
+    .order("reason_label", { ascending: true });
+
+  state.ui = state.ui || {};
+
+  if (error) {
+    console.error("Fehler beim Laden von production_qa_causes:", error);
+    state.ui.productionQaCausesError = formatProductionSupabaseError(
+      error,
+      "6M-Ursachen konnten nicht geladen werden",
+    );
+    return null;
+  }
+
+  state.ui.productionQaCausesError = "";
+  return data || [];
+}
+
 function normalizeProductionOrderFromDb(row) {
   return {
     id: row.id,
@@ -1396,6 +1425,33 @@ function normalizeProductionStationCountFromDb(row) {
 function applyProductionStationCountsToState(rows) {
   if (!Array.isArray(rows)) return;
   state.productionStationCounts = rows.map(normalizeProductionStationCountFromDb);
+}
+
+function normalizeProductionQaCauseFromDb(row) {
+  return {
+    id: row.id,
+    group_id: row.group_id || "",
+    group_label: row.group_label || "Ohne Gruppe",
+    reason_id: row.reason_id || "",
+    reason_label: row.reason_label || "",
+    active: row.active !== false,
+    sort_order: Math.max(0, Math.trunc(Number(row.sort_order || 0))),
+    created_at: row.created_at || null,
+    updated_at: row.updated_at || null,
+  };
+}
+
+function applyProductionQaCausesToState(rows) {
+  if (!Array.isArray(rows)) return;
+  state.productionQaCauses = rows
+    .map(normalizeProductionQaCauseFromDb)
+    .filter((cause) => cause.active && cause.reason_label)
+    .sort((a, b) =>
+      `${a.group_label} ${String(a.sort_order).padStart(6, "0")} ${a.reason_label}`.localeCompare(
+        `${b.group_label} ${String(b.sort_order).padStart(6, "0")} ${b.reason_label}`,
+        "de",
+      ),
+    );
 }
 
 function normalizeProductionCountFromDb(row) {
@@ -2075,6 +2131,7 @@ async function syncSupabaseSessionToApp() {
   const productionOrderStations = await loadProductionOrderStationsFromSupabase();
   const productionOrderEmployees = await loadProductionOrderEmployeesFromSupabase();
   const productionStationCounts = await loadProductionStationCountsFromSupabase();
+  const productionQaCauses = await loadProductionQaCausesFromSupabase();
   const materials = await loadToolMaterialsFromSupabase();
   const planning = await loadPlanningDataFromSupabase();
 
@@ -2087,6 +2144,7 @@ async function syncSupabaseSessionToApp() {
   applyProductionOrderStationsToState(productionOrderStations);
   applyProductionOrderEmployeesToState(productionOrderEmployees);
   applyProductionStationCountsToState(productionStationCounts);
+  applyProductionQaCausesToState(productionQaCauses);
   toolMaterials = materials;
   await loadToolPageData();
   state.ui.supabaseReady = true;
@@ -2129,6 +2187,7 @@ async function syncSupabaseSessionToApp() {
   console.log("Produktionsspannungen nach Login geladen:", productionOrderStations);
   console.log("Produktionsmitarbeiter nach Login geladen:", productionOrderEmployees);
   console.log("Produktions-Gutteilzähler nach Login geladen:", productionStationCounts);
+  console.log("Produktions-6M-Ursachen nach Login geladen:", productionQaCauses);
   console.log("Tool-Materials nach Login geladen:", materials);
   console.log("Tools nach Login geladen:", state.tools);
   console.log("Planungsdaten nach Login geladen:", planning);
@@ -2171,6 +2230,7 @@ async function bootSupabase() {
   const productionOrderStations = await loadProductionOrderStationsFromSupabase();
   const productionOrderEmployees = await loadProductionOrderEmployeesFromSupabase();
   const productionStationCounts = await loadProductionStationCountsFromSupabase();
+  const productionQaCauses = await loadProductionQaCausesFromSupabase();
   const materials = await loadToolMaterialsFromSupabase();
   const planning = await loadPlanningDataFromSupabase();
 
@@ -2183,6 +2243,7 @@ async function bootSupabase() {
   applyProductionOrderStationsToState(productionOrderStations);
   applyProductionOrderEmployeesToState(productionOrderEmployees);
   applyProductionStationCountsToState(productionStationCounts);
+  applyProductionQaCausesToState(productionQaCauses);
   toolMaterials = materials;
 
   if (planning) {
@@ -2208,6 +2269,7 @@ async function bootSupabase() {
   console.log("Produktionsspannungen aus Supabase:", productionOrderStations);
   console.log("Produktionsmitarbeiter aus Supabase:", productionOrderEmployees);
   console.log("Produktions-Gutteilzähler aus Supabase:", productionStationCounts);
+  console.log("Produktions-6M-Ursachen aus Supabase:", productionQaCauses);
   console.log("Tool-Materials aus Supabase:", materials);
   console.log("Planungsdaten aus Supabase:", planning);
 
@@ -2272,6 +2334,7 @@ function loadState() {
     productionOrderStations: [],
     productionOrderEmployees: [],
     productionStationCounts: [],
+    productionQaCauses: [],
     tools: [],
     toolLabelsExtra: [],
     toolManufacturersExtra: [],
@@ -2324,6 +2387,7 @@ function loadState() {
       productionStationsError: "",
       productionOrderEmployeesError: "",
       productionStationCountsError: "",
+      productionQaCausesError: "",
       productionGoodQtySavingKey: "",
       productionStationAmountSavingKey: "",
       productionCounterSelectedMachineId: "",
@@ -2344,6 +2408,7 @@ function loadState() {
     delete parsed.productionOrderStations;
     delete parsed.productionOrderEmployees;
     delete parsed.productionStationCounts;
+    delete parsed.productionQaCauses;
     delete parsed.tools;
     delete parsed.toolJournal;
     return {
@@ -2382,6 +2447,7 @@ function persist() {
   delete snapshot.productionOrderStations;
   delete snapshot.productionOrderEmployees;
   delete snapshot.productionStationCounts;
+  delete snapshot.productionQaCauses;
   delete snapshot.tools;
   delete snapshot.toolJournal;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
@@ -4931,6 +4997,7 @@ function getProductionStatusBanner() {
   const stationsError = state.ui?.productionStationsError;
   const orderEmployeesError = state.ui?.productionOrderEmployeesError;
   const stationCountsError = state.ui?.productionStationCountsError;
+  const qaCausesError = state.ui?.productionQaCausesError;
   const actionError = state.ui?.productionActionError;
   const actionMessage = state.ui?.productionActionMessage;
   const errors = [];
@@ -4941,6 +5008,7 @@ function getProductionStatusBanner() {
   if (stationsError) errors.push(`production_order_stations: ${stationsError}`);
   if (orderEmployeesError) errors.push(`production_order_employees: ${orderEmployeesError}`);
   if (stationCountsError) errors.push(`production_station_counts: ${stationCountsError}`);
+  if (qaCausesError) errors.push(`production_qa_causes: ${qaCausesError}`);
   if (actionError) errors.push(actionError);
 
   const errorBanner = errors.length
@@ -5300,6 +5368,7 @@ function renderProduction() {
     ${getProductionStatusBanner()}
     ${renderProductionDepartmentAdminNotice()}
     ${content}
+    ${renderProductionQaCauseModal()}
   </div>`;
 }
 
@@ -6231,7 +6300,7 @@ function renderProductionStationScrapClarifyControls(station, canEdit) {
   return `<div class='rounded border border-slate-200 bg-slate-50 p-3 space-y-3'>
     <div>
       <div class='text-sm font-semibold'>Ausschuss / In Abklärung</div>
-      <div class='text-xs text-slate-500 mt-1'>Ursachen werden im nächsten Schritt ergänzt.</div>
+      <div class='text-xs text-slate-500 mt-1'>Ursache wird beim +1 erfasst.</div>
     </div>
     <div class='grid sm:grid-cols-2 gap-3'>
       ${renderProductionStationAmountControl(station, "scrap", "Ausschuss", station.scrap_total, canEdit)}
@@ -6709,7 +6778,7 @@ async function writeProductionStationGoodEvent(station, orderEmployee, delta) {
   ]);
 }
 
-async function writeProductionStationAmountEvent(station, type, delta) {
+async function writeProductionStationAmountEvent(station, type, delta, qaCauseId = null, note = "") {
   const eventType =
     type === "scrap"
       ? delta > 0 ? "scrap" : "scrap_correction"
@@ -6722,13 +6791,137 @@ async function writeProductionStationAmountEvent(station, type, delta) {
       employee_id: currentEmployeeRecord?.id || null,
       event_type: eventType,
       qty: delta,
-      qa_cause_id: null,
-      note: null,
+      qa_cause_id: qaCauseId || null,
+      note: note || null,
     },
   ]);
 }
 
-async function adjustProductionStationAmount(stationId, type, delta) {
+function getProductionQaCauseById(causeId) {
+  if (!causeId) return null;
+  return (state.productionQaCauses || []).find((cause) => cause.id === causeId) || null;
+}
+
+function getGroupedProductionQaCauses() {
+  const groups = new Map();
+  (state.productionQaCauses || []).forEach((cause) => {
+    const groupLabel = cause.group_label || "Ohne Gruppe";
+    if (!groups.has(groupLabel)) groups.set(groupLabel, []);
+    groups.get(groupLabel).push(cause);
+  });
+  return Array.from(groups.entries());
+}
+
+function openProductionQaCauseModal(stationId, type) {
+  const station = getProductionOrderStationById(stationId);
+  const order = getProductionOrderById(station?.order_id);
+  if (!station || !["scrap", "clarify"].includes(type) || !canEditProductionOrder(order)) {
+    setProductionStatus("Du darfst diese Menge nicht ändern.", true);
+    render();
+    return;
+  }
+  if (!supabaseReady) {
+    setProductionStatus("Supabase ist nicht erreichbar.", true);
+    render();
+    return;
+  }
+  const causes = state.productionQaCauses || [];
+  if (!causes.length) {
+    setProductionStatus("Keine aktiven 6M-Ursachen geladen. +1 kann nicht ohne Ursache gebucht werden.", true);
+    render();
+    return;
+  }
+  state.ui = state.ui || {};
+  state.ui.productionQaCauseModal = {
+    stationId,
+    type,
+    selectedCauseId: causes[0]?.id || "",
+    note: "",
+  };
+  setProductionStatus("");
+  render();
+}
+
+function closeProductionQaCauseModal(message = "") {
+  state.ui = state.ui || {};
+  state.ui.productionQaCauseModal = null;
+  if (message) setProductionStatus(message);
+  render();
+}
+
+function setProductionQaCauseSelection(causeId) {
+  state.ui = state.ui || {};
+  if (!state.ui.productionQaCauseModal) return;
+  state.ui.productionQaCauseModal.selectedCauseId = causeId || "";
+  render();
+}
+
+function renderProductionQaCauseModal() {
+  const modal = state.ui?.productionQaCauseModal;
+  if (!modal) return "";
+  const station = getProductionOrderStationById(modal.stationId);
+  if (!station) return "";
+  const label = modal.type === "scrap" ? "Ausschuss" : "In Abklärung";
+  const groupedCauses = getGroupedProductionQaCauses();
+  const causeButtons = groupedCauses
+    .map(([groupLabel, causes]) => {
+      const buttons = causes
+        .map((cause) => {
+          const active = modal.selectedCauseId === cause.id;
+          return `<button type='button' class='px-3 py-2 rounded border text-sm text-left ${active ? "bg-slate-900 text-white" : "bg-white text-slate-800"}' onclick="setProductionQaCauseSelection('${cause.id}')">${escapeHtml(cause.reason_label)}</button>`;
+        })
+        .join("");
+      return `<div class='space-y-2'>
+        <div class='text-sm font-semibold'>${escapeHtml(groupLabel)}</div>
+        <div class='grid sm:grid-cols-2 gap-2'>${buttons}</div>
+      </div>`;
+    })
+    .join("");
+  const error = state.ui?.productionQaCauseModalError
+    ? `<div class='rounded border border-rose-200 bg-rose-50 p-2 text-sm text-rose-700'>${escapeHtml(state.ui.productionQaCauseModalError)}</div>`
+    : "";
+  return `<div class='fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4'>
+    <div class='bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-auto p-4 space-y-4'>
+      <div class='flex items-start justify-between gap-3'>
+        <div>
+          <h3 class='text-lg font-semibold'>6M-Ursache für ${escapeHtml(label)}</h3>
+          <p class='text-sm text-slate-500 mt-1'>Spannung ${escapeHtml(station.station_no)} · Ursache wählen und optional Notiz ergänzen.</p>
+        </div>
+        <button type='button' class='px-3 py-2 rounded bg-slate-200 text-slate-800' onclick='closeProductionQaCauseModal("Ursachenerfassung abgebrochen.")'>Abbrechen</button>
+      </div>
+      ${error}
+      <div class='space-y-4'>${causeButtons}</div>
+      <label class='block text-sm'>
+        Notiz
+        <textarea id='productionQaCauseNote' class='border rounded p-2 w-full mt-1 bg-white' rows='3' placeholder='Optional'></textarea>
+      </label>
+      <div class='flex justify-end gap-2'>
+        <button type='button' class='px-3 py-2 rounded bg-slate-200 text-slate-800' onclick='closeProductionQaCauseModal("Ursachenerfassung abgebrochen.")'>Abbrechen</button>
+        <button type='button' class='px-3 py-2 rounded bg-slate-900 text-white' onclick='confirmProductionQaCauseModal()'>Ursache speichern</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function confirmProductionQaCauseModal() {
+  const modal = state.ui?.productionQaCauseModal;
+  if (!modal) return;
+  const cause = getProductionQaCauseById(modal.selectedCauseId);
+  if (!cause) {
+    state.ui.productionQaCauseModalError = "Bitte eine 6M-Ursache auswählen.";
+    render();
+    return;
+  }
+  const note = document.getElementById("productionQaCauseNote")?.value?.trim() || "";
+  state.ui.productionQaCauseModal = null;
+  state.ui.productionQaCauseModalError = "";
+  await adjustProductionStationAmount(modal.stationId, modal.type, 1, {
+    qaCauseId: cause.id,
+    note,
+  });
+}
+
+async function adjustProductionStationAmount(stationId, type, delta, options = {}) {
   const station = getProductionOrderStationById(stationId);
   const order = getProductionOrderById(station?.order_id);
   if (!station || !["scrap", "clarify"].includes(type) || !canEditProductionOrder(order)) {
@@ -6743,6 +6936,10 @@ async function adjustProductionStationAmount(stationId, type, delta) {
   }
 
   delta = delta > 0 ? 1 : -1;
+  if (delta > 0 && !options.qaCauseId) {
+    openProductionQaCauseModal(stationId, type);
+    return;
+  }
   const totalField = type === "scrap" ? "scrap_total" : "clarify_total";
   const lifetimeField = type === "scrap" ? "scrap_lifetime" : "clarify_lifetime";
   const currentTotal = Math.max(0, Number(station[totalField] || 0));
@@ -6794,12 +6991,14 @@ async function adjustProductionStationAmount(stationId, type, delta) {
     station,
     type,
     delta,
+    options.qaCauseId || null,
+    options.note || "",
   );
   await refreshProductionOrderStationsFromSupabase();
   state.ui.productionStationAmountSavingKey = "";
   if (eventError) {
     console.error("Fehler beim Schreiben des Mengen-Protokolls:", eventError);
-    setProductionStatus("Menge gespeichert, Protokolleintrag konnte nicht geschrieben werden.", true);
+    setProductionStatus("Menge gespeichert, Ursache/Protokoll konnte nicht geschrieben werden.", true);
     render();
     return;
   }
@@ -15844,6 +16043,9 @@ window.deactivateProductionOrderEmployee = deactivateProductionOrderEmployee;
 window.reactivateProductionOrderEmployee = reactivateProductionOrderEmployee;
 window.adjustProductionStationGoodQty = adjustProductionStationGoodQty;
 window.adjustProductionStationAmount = adjustProductionStationAmount;
+window.setProductionQaCauseSelection = setProductionQaCauseSelection;
+window.closeProductionQaCauseModal = closeProductionQaCauseModal;
+window.confirmProductionQaCauseModal = confirmProductionQaCauseModal;
 window.markAbsent = markAbsent;
 window.assignShift = assignShift;
 window.cancelShift = cancelShift;
