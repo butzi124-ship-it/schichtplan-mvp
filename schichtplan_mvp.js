@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.5.08";
+const APP_VERSION = "0.5.09";
 const INVENTORY_MODE_ENABLED = false;
 const HUMBEL_COLORS = Object.freeze({
   primary: "#0d4682",
@@ -69,6 +69,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.5.09",
+    date: "2026-08-23 08:40",
+    changes: ["Zielmengenblockade auf Gutteile, Ausschuss und Abklärung erweitert und Scrollposition beim Zählen erhalten."],
+  },
   {
     version: "0.5.08",
     date: "2026-08-23 06:58",
@@ -2896,6 +2901,15 @@ function render() {
   maybeTaskReminder();
   maybeShowShiftStartChecklist();
   maybeShowShiftEndChecklist();
+}
+
+function renderPreservingScroll() {
+  const scrollX = window.scrollX || 0;
+  const scrollY = window.scrollY || 0;
+  render();
+  window.requestAnimationFrame(() => {
+    window.scrollTo(scrollX, scrollY);
+  });
 }
 
 function labelTab(tab) {
@@ -6117,35 +6131,45 @@ function calculatePreparedRemainingQuantity(order) {
     order.use_chain_logic !== false
       ? getProductionOrderCompletedGoodTotal(order.id)
       : getProductionOrderGoodTotal(order.id);
-  return Math.max(0, targetQuantity - finishedGoodQty - getProductionOrderScrapTotal(order.id));
+  return Math.max(
+    0,
+    targetQuantity -
+      finishedGoodQty -
+      getProductionOrderScrapTotal(order.id) -
+      getProductionOrderClarifyTotal(order.id),
+  );
 }
 
-function getProductionGoodLimitInfo(order, station) {
+function getProductionQuantityLimitInfo(order, station) {
   const targetQuantity = Math.max(0, Math.trunc(Number(order?.target_quantity || 0)));
   if (!order || !station || targetQuantity <= 0) {
-    return { blockPlus: false, overTarget: false, targetQuantity, currentRelevantQty: 0 };
+    return { blockPlus: false, overTarget: false, targetQuantity, totalCounted: 0 };
   }
-  const scrapTotal = getProductionOrderScrapTotal(order.id);
-  const currentRelevantQty =
+  const totalCounted =
     order.use_chain_logic !== false
-      ? getProductionStationGoodTotal(station.id)
-      : getProductionOrderGoodTotal(order.id);
-  const combinedQty = currentRelevantQty + scrapTotal;
-  const overTarget = combinedQty > targetQuantity;
-  const reachedTarget = combinedQty >= targetQuantity;
+      ? getProductionStationGoodTotal(station.id) +
+        Number(station.scrap_total || 0) +
+        Number(station.clarify_total || 0)
+      : getProductionOrderGoodTotal(order.id) +
+        getProductionOrderScrapTotal(order.id) +
+        getProductionOrderClarifyTotal(order.id);
+  const overTarget = totalCounted > targetQuantity;
+  const reachedTarget = totalCounted >= targetQuantity;
   return {
     blockPlus: reachedTarget,
     overTarget,
     reachedTarget,
     targetQuantity,
-    currentRelevantQty,
-    scrapTotal,
-    combinedQty,
+    totalCounted,
     message:
       order.use_chain_logic !== false
-        ? "Zielstückzahl für diese Spannung ist erreicht."
-        : "Zielstückzahl ist erreicht. Gutteile können nicht weiter erhöht werden.",
+        ? "Zielstückzahl für diese Spannung ist erreicht. Weitere Mengen können nicht gebucht werden."
+        : "Zielstückzahl ist erreicht. Weitere Mengen können nicht gebucht werden.",
   };
+}
+
+function getProductionGoodLimitInfo(order, station) {
+  return getProductionQuantityLimitInfo(order, station);
 }
 
 function getProductionStationTimeStatusLabel(status) {
@@ -6422,7 +6446,9 @@ function renderProductionMachineOrderPreview(machine, orders) {
       : "";
   const overTargetNotice =
     activeOrder && Number(activeOrder.target_quantity || 0) > 0 &&
-    getProductionOrderGoodTotal(activeOrder.id) + getProductionOrderScrapTotal(activeOrder.id) >
+    getProductionOrderGoodTotal(activeOrder.id) +
+      getProductionOrderScrapTotal(activeOrder.id) +
+      getProductionOrderClarifyTotal(activeOrder.id) >
       Number(activeOrder.target_quantity || 0)
       ? `<div class='rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800'>Istmenge liegt über Zielstückzahl. Bitte per -1 korrigieren.</div>`
       : "";
@@ -6684,8 +6710,15 @@ function renderProductionOrderEmployeePill(entry, canEdit, isActive) {
 
 function renderProductionOrderStationCard(station, canEdit) {
   const readonly = canEdit ? "" : "disabled";
+  const order = getProductionOrderById(station.order_id);
   const orderEmployees = getProductionOrderEmployees(station.order_id, true);
   const stationGoodTotal = getProductionStationGoodTotal(station.id);
+  const limitInfo = getProductionQuantityLimitInfo(order, station);
+  const limitNotice = limitInfo.overTarget
+    ? `<div class='rounded border border-amber-200 bg-amber-50 p-2 text-sm text-amber-800'>Istmenge liegt über Zielstückzahl. Bitte per -1 korrigieren.</div>`
+    : limitInfo.blockPlus
+      ? `<div class='text-sm font-semibold text-amber-700'>Ziel erreicht</div>`
+      : "";
   const stationScrapClarifyControls = renderProductionStationScrapClarifyControls(
     station,
     canEdit,
@@ -6711,6 +6744,7 @@ function renderProductionOrderStationCard(station, canEdit) {
       </div>
       <span class='px-2 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700'>OP ${escapeHtml(station.op_number || "-")}</span>
     </div>
+    ${limitNotice}
     <label class='block text-sm'>
       Name
       <input id='productionStationName-${station.id}' class='border rounded p-2 w-full mt-1 bg-white' value="${escapeHtml(station.name || "")}" ${readonly} />
@@ -6776,15 +6810,18 @@ function renderProductionStationScrapClarifyControls(station, canEdit) {
 }
 
 function renderProductionStationAmountControl(station, type, label, value, canEdit) {
+  const order = getProductionOrderById(station.order_id);
   const savingKey = `${station.id}:${type}`;
   const saving = state.ui?.productionStationAmountSavingKey === savingKey;
-  const disabled = !canEdit || saving ? "disabled" : "";
+  const limitInfo = getProductionQuantityLimitInfo(order, station);
+  const minusDisabled = !canEdit || saving || Number(value || 0) <= 0 ? "disabled" : "";
+  const plusDisabled = !canEdit || saving || limitInfo.blockPlus ? "disabled" : "";
   return `<div class='rounded bg-white border p-3'>
     <div class='text-xs text-slate-500'>${escapeHtml(label)}</div>
     <div class='flex items-center gap-2 mt-2'>
-      <button type='button' aria-label='${escapeHtml(label)} -1' class='px-3 py-2 rounded bg-slate-200 text-slate-900 font-semibold disabled:opacity-50' onclick="adjustProductionStationAmount('${station.id}', '${type}', -1)" ${disabled}>-1</button>
+      <button type='button' aria-label='${escapeHtml(label)} -1' class='px-3 py-2 rounded bg-slate-200 text-slate-900 font-semibold disabled:opacity-50' onclick="adjustProductionStationAmount('${station.id}', '${type}', -1)" ${minusDisabled}>-1</button>
       <div class='min-w-[72px] rounded bg-slate-50 border px-3 py-2 text-center text-lg font-bold'>${escapeHtml(value)}</div>
-      <button type='button' aria-label='${escapeHtml(label)} +1' class='px-3 py-2 rounded ${type === "scrap" ? "bg-rose-700" : "bg-amber-600"} text-white font-semibold disabled:opacity-50' onclick="adjustProductionStationAmount('${station.id}', '${type}', 1)" ${disabled}>+1</button>
+      <button type='button' aria-label='${escapeHtml(label)} +1' class='px-3 py-2 rounded ${type === "scrap" ? "bg-rose-700" : "bg-amber-600"} text-white font-semibold disabled:opacity-50' onclick="adjustProductionStationAmount('${station.id}', '${type}', 1)" ${plusDisabled}>+1</button>
     </div>
   </div>`;
 }
@@ -7596,18 +7633,24 @@ function openProductionQaCauseModal(stationId, type) {
   const order = getProductionOrderById(station?.order_id);
   if (!station || !["scrap", "clarify"].includes(type) || !canEditProductionOrder(order)) {
     setProductionStatus("Du darfst diese Menge nicht ändern.", true);
-    render();
+    renderPreservingScroll();
+    return;
+  }
+  const limitInfo = getProductionQuantityLimitInfo(order, station);
+  if (limitInfo.blockPlus) {
+    setProductionStatus(limitInfo.message, true);
+    renderPreservingScroll();
     return;
   }
   if (!supabaseReady) {
     setProductionStatus("Supabase ist nicht erreichbar.", true);
-    render();
+    renderPreservingScroll();
     return;
   }
   const causes = state.productionQaCauses || [];
   if (!causes.length) {
     setProductionStatus("Keine aktiven 6M-Ursachen geladen. +1 kann nicht ohne Ursache gebucht werden.", true);
-    render();
+    renderPreservingScroll();
     return;
   }
   state.ui = state.ui || {};
@@ -7618,7 +7661,7 @@ function openProductionQaCauseModal(stationId, type) {
     note: "",
   };
   setProductionStatus("");
-  render();
+  renderPreservingScroll();
 }
 
 function closeProductionQaCauseModal(message = "") {
@@ -7688,7 +7731,7 @@ async function confirmProductionQaCauseModal() {
   const cause = getProductionQaCauseById(modal.selectedCauseId);
   if (!cause) {
     state.ui.productionQaCauseModalError = "Bitte eine 6M-Ursache auswählen.";
-    render();
+    renderPreservingScroll();
     return;
   }
   const note = document.getElementById("productionQaCauseNote")?.value?.trim() || "";
@@ -7705,12 +7748,12 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
   const order = getProductionOrderById(station?.order_id);
   if (!station || !["scrap", "clarify"].includes(type) || !canEditProductionOrder(order)) {
     setProductionStatus("Du darfst diese Menge nicht ändern.", true);
-    render();
+    renderPreservingScroll();
     return;
   }
   if (!supabaseReady) {
     setProductionStatus("Supabase ist nicht erreichbar.", true);
-    render();
+    renderPreservingScroll();
     return;
   }
 
@@ -7718,6 +7761,14 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
   if (delta > 0 && !options.qaCauseId) {
     openProductionQaCauseModal(stationId, type);
     return;
+  }
+  if (delta > 0) {
+    const limitInfo = getProductionQuantityLimitInfo(order, station);
+    if (limitInfo.blockPlus) {
+      setProductionStatus(limitInfo.message, true);
+      renderPreservingScroll();
+      return;
+    }
   }
   const totalField = type === "scrap" ? "scrap_total" : "clarify_total";
   const lifetimeField = type === "scrap" ? "scrap_lifetime" : "clarify_lifetime";
@@ -7730,7 +7781,7 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
         : "Abklärmenge kann nicht unter 0 fallen.",
       true,
     );
-    render();
+    renderPreservingScroll();
     return;
   }
 
@@ -7740,7 +7791,7 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
   state.ui.productionStationAmountSavingKey = savingKey;
   state.ui.productionActionError = "";
   state.ui.productionActionMessage = "";
-  render();
+  renderPreservingScroll();
 
   const payload = {
     [totalField]: Math.max(0, currentTotal + delta),
@@ -7769,7 +7820,7 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
       formatProductionSupabaseError(error, "Menge konnte nicht gespeichert werden"),
       true,
     );
-    render();
+    renderPreservingScroll();
     return;
   }
 
@@ -7791,7 +7842,7 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
     });
     state.ui.productionStationAmountSavingKey = "";
     setProductionStatus("Menge gespeichert, Ursache/Protokoll konnte nicht geschrieben werden.", true);
-    render();
+    renderPreservingScroll();
     return;
   }
 
@@ -7800,12 +7851,12 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
   state.ui.productionStationAmountSavingKey = "";
   if (!stationsRefreshed) {
     setProductionStatus("Menge gespeichert, Ansicht konnte nicht neu geladen werden.", true);
-    render();
+    renderPreservingScroll();
     return;
   }
   if (!eventsRefreshed) {
     setProductionStatus("Menge gespeichert, Protokoll konnte nicht neu geladen werden.", true);
-    render();
+    renderPreservingScroll();
     return;
   }
 
@@ -7814,7 +7865,7 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
       ? delta > 0 ? "Ausschuss wurde gezählt." : "Ausschuss-Korrektur wurde gespeichert."
       : delta > 0 ? "Abklärmenge wurde gezählt." : "Abklär-Korrektur wurde gespeichert.";
   setProductionStatus(successMessage);
-  render();
+  renderPreservingScroll();
 }
 
 async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta, retried = false) {
@@ -7823,12 +7874,12 @@ async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta,
   const orderEmployee = getProductionOrderEmployeeById(orderEmployeeId);
   if (!station || !orderEmployee || orderEmployee.active === false || !canEditProductionOrder(order)) {
     setProductionStatus("Du darfst diese Gutteile nicht zählen.", true);
-    render();
+    renderPreservingScroll();
     return;
   }
   if (!supabaseReady) {
     setProductionStatus("Supabase ist nicht erreichbar.", true);
-    render();
+    renderPreservingScroll();
     return;
   }
 
@@ -7842,13 +7893,13 @@ async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta,
     const limitInfo = getProductionGoodLimitInfo(order, station);
     if (limitInfo.blockPlus) {
       setProductionStatus(limitInfo.message, true);
-      render();
+      renderPreservingScroll();
       return;
     }
   }
   if (delta < 0 && currentQty <= 0) {
     setProductionStatus("Gutmenge kann nicht unter 0 fallen.", true);
-    render();
+    renderPreservingScroll();
     return;
   }
 
@@ -7856,7 +7907,7 @@ async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta,
   state.ui.productionGoodQtySavingKey = savingKey;
   state.ui.productionActionError = "";
   state.ui.productionActionMessage = "";
-  render();
+  renderPreservingScroll();
 
   const nextQty = Math.max(0, currentQty + delta);
   let countError = null;
@@ -7910,7 +7961,7 @@ async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta,
       ),
       true,
     );
-    render();
+    renderPreservingScroll();
     return;
   }
 
@@ -7929,7 +7980,7 @@ async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta,
     });
     state.ui.productionGoodQtySavingKey = "";
     setProductionStatus("Gutteil gespeichert, Protokolleintrag konnte nicht geschrieben werden.", true);
-    render();
+    renderPreservingScroll();
     return;
   }
 
@@ -7938,17 +7989,17 @@ async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta,
   state.ui.productionGoodQtySavingKey = "";
   if (!countsRefreshed) {
     setProductionStatus("Gutteil gespeichert, Zähler konnte nicht neu geladen werden.", true);
-    render();
+    renderPreservingScroll();
     return;
   }
   if (!eventsRefreshed) {
     setProductionStatus("Gutteil gespeichert, Protokoll konnte nicht neu geladen werden.", true);
-    render();
+    renderPreservingScroll();
     return;
   }
 
   setProductionStatus(delta > 0 ? "Gutteil wurde gezählt." : "Gutteil-Korrektur wurde gespeichert.");
-  render();
+  renderPreservingScroll();
 }
 
 async function setProductionOrderEmployeeActive(entryId, active) {

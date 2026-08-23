@@ -85,6 +85,20 @@ const rowsByTable = {
       department_id: "department-one",
       active: true,
     },
+    {
+      id: "machine-over",
+      name: "Maschine 52",
+      machine_code: "M52",
+      department_id: "department-one",
+      active: true,
+    },
+    {
+      id: "machine-chain",
+      name: "Maschine 53",
+      machine_code: "M53",
+      department_id: "department-one",
+      active: true,
+    },
   ],
   production_orders: [
     {
@@ -97,7 +111,7 @@ const rowsByTable = {
       target_quantity: 2,
       pallet_count: 2,
       pieces_per_pallet: 50,
-      use_chain_logic: true,
+      use_chain_logic: false,
       status: "running",
       started_at: "2026-01-01T00:00:00Z",
       completed_at: null,
@@ -125,6 +139,44 @@ const rowsByTable = {
       created_at: "2026-01-01T00:00:00Z",
       updated_at: "2026-01-01T00:00:00Z",
     },
+    {
+      id: "order-over",
+      machine_id: "machine-over",
+      department_id: "department-one",
+      ba_number: "BA-300",
+      article_number: "ART-300",
+      ba_quantity: 10,
+      target_quantity: 2,
+      pallet_count: 1,
+      pieces_per_pallet: 10,
+      use_chain_logic: false,
+      status: "running",
+      started_at: "2026-01-01T00:00:00Z",
+      completed_at: null,
+      created_by_employee_id: "employee-admin",
+      updated_by_employee_id: "employee-admin",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    },
+    {
+      id: "order-chain",
+      machine_id: "machine-chain",
+      department_id: "department-one",
+      ba_number: "BA-400",
+      article_number: "ART-400",
+      ba_quantity: 10,
+      target_quantity: 2,
+      pallet_count: 1,
+      pieces_per_pallet: 10,
+      use_chain_logic: true,
+      status: "running",
+      started_at: "2026-01-01T00:00:00Z",
+      completed_at: null,
+      created_by_employee_id: "employee-admin",
+      updated_by_employee_id: "employee-admin",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    },
   ],
   production_order_stations: [
     {
@@ -143,8 +195,75 @@ const rowsByTable = {
       created_at: "2026-01-01T00:00:00Z",
       updated_at: "2026-01-01T00:00:00Z",
     },
+    {
+      id: "station-over",
+      order_id: "order-over",
+      station_no: 1,
+      name: "Spannung 1",
+      lock_name: false,
+      op_number: "10",
+      time_status: "ok",
+      actual_time_minutes: null,
+      scrap_total: 1,
+      clarify_total: 0,
+      scrap_lifetime: 1,
+      clarify_lifetime: 0,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    },
+    {
+      id: "station-chain-one",
+      order_id: "order-chain",
+      station_no: 1,
+      name: "Spannung 1",
+      lock_name: false,
+      op_number: "10",
+      time_status: "ok",
+      actual_time_minutes: null,
+      scrap_total: 0,
+      clarify_total: 0,
+      scrap_lifetime: 0,
+      clarify_lifetime: 0,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    },
+    {
+      id: "station-chain-two",
+      order_id: "order-chain",
+      station_no: 2,
+      name: "Spannung 2",
+      lock_name: false,
+      op_number: "20",
+      time_status: "ok",
+      actual_time_minutes: null,
+      scrap_total: 0,
+      clarify_total: 0,
+      scrap_lifetime: 0,
+      clarify_lifetime: 0,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    },
   ],
-  production_order_employees: [],
+  production_order_employees: [
+    {
+      id: "entry-over",
+      order_id: "order-over",
+      employee_id: "employee-one",
+      role: "worker",
+      active: true,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    },
+    {
+      id: "entry-chain",
+      order_id: "order-chain",
+      employee_id: "employee-one",
+      role: "worker",
+      active: true,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    },
+  ],
   production_checklist_templates: [
     "Stückzahl gezählt?",
     "Auftrag fertig gemeldet?",
@@ -185,7 +304,26 @@ const rowsByTable = {
       created_at: "2026-01-01T00:04:00Z",
     },
   ],
-  production_station_counts: [],
+  production_station_counts: [
+    {
+      id: "count-over",
+      order_id: "order-over",
+      station_id: "station-over",
+      order_employee_id: "entry-over",
+      good_qty: 2,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    },
+    {
+      id: "count-chain-one",
+      order_id: "order-chain",
+      station_id: "station-chain-one",
+      order_employee_id: "entry-chain",
+      good_qty: 2,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    },
+  ],
   production_station_events: [
     {
       id: "event-good",
@@ -417,7 +555,7 @@ test.describe("Humbel app smoke", () => {
     await page.route("**/@supabase/supabase-js@2**", (route) => {
       route.fulfill({ contentType: "application/javascript", body: "" });
     });
-    await page.addInitScript(installSupabaseMock, rowsByTable);
+    await page.addInitScript(installSupabaseMock, JSON.parse(JSON.stringify(rowsByTable)));
   });
 
   test.afterEach(async ({ page }) => {
@@ -580,7 +718,12 @@ test.describe("Humbel app smoke", () => {
     );
     expect(stationInsertsAfterSave).toBe(stationInsertsBeforeSave);
     await expect(stationOne).toContainText(/Gutteile\s+0/);
+    await stationOne.getByRole("button", { name: /Gutteile \+1/ }).scrollIntoViewIfNeeded();
+    const scrollBeforeGoodCount = await page.evaluate(() => window.scrollY);
     await stationOne.getByRole("button", { name: /Gutteile \+1/ }).click();
+    await expect
+      .poll(() => page.evaluate((before) => Math.abs(window.scrollY - before) <= 8, scrollBeforeGoodCount))
+      .toBeTruthy();
     await expect(stationOne).toContainText(/Gutteile\s+1/);
     await expect(page.locator("#view")).toContainText("Gutteil wurde gezählt.");
     await expect(page.locator("#view")).not.toContainText("Protokolleintrag konnte nicht geschrieben werden");
@@ -609,7 +752,6 @@ test.describe("Humbel app smoke", () => {
       .toBeTruthy();
     await expect(page.locator("#view")).toContainText("Gutteile gesamt");
     await expect(page.locator("#view")).toContainText("Fertige Gutteile");
-    await expect(page.locator("#view")).toContainText("Restmenge wird nach letzter Spannung berechnet.");
     await expect(page.locator("#view")).toContainText("Restmenge vorbereitet");
     await stationOne.getByRole("button", { name: /Gutteile \+1/ }).click();
     await expect(stationOne).toContainText(/Gutteile\s+2/);
@@ -629,10 +771,12 @@ test.describe("Humbel app smoke", () => {
       ).length,
     );
     await page.evaluate(() => {
-      const entry = window.__SUPABASE_MOCK_ROWS.production_order_employees[0];
+      const entry = window.__SUPABASE_MOCK_ROWS.production_order_employees.find(
+        (item) => item.order_id === "order-one",
+      );
       return window.adjustProductionStationGoodQty("station-one", entry.id, 1);
     });
-    await expect(page.locator("#view")).toContainText("Zielstückzahl für diese Spannung ist erreicht.");
+    await expect(page.locator("#view")).toContainText("Zielstückzahl ist erreicht.");
     await expect(stationOne).toContainText(/Gutteile\s+2/);
     const goodEventsAfterBlocked = await page.evaluate(() =>
       (window.__SUPABASE_WRITE_LOG || []).filter(
@@ -711,11 +855,20 @@ test.describe("Humbel app smoke", () => {
     await expect(page.locator("body")).toContainText("Mensch");
     await page.getByRole("button", { name: "Abbrechen" }).first().click();
     await expect(stationOne).toContainText(/Ausschuss gesamt\s+0/);
+    await stationOne.getByRole("button", { name: "Ausschuss +1" }).scrollIntoViewIfNeeded();
+    const scrollBeforeScrapCount = await page.evaluate(() => window.scrollY);
     await stationOne.getByRole("button", { name: "Ausschuss +1" }).click();
     await page.getByRole("button", { name: "Einweisung" }).click();
     await page.getByLabel("Notiz").fill("Testnotiz Ausschuss");
     await page.getByRole("button", { name: "Ursache speichern" }).click();
+    await expect
+      .poll(() => page.evaluate((before) => Math.abs(window.scrollY - before) <= 8, scrollBeforeScrapCount))
+      .toBeTruthy();
     await expect(stationOne).toContainText(/Ausschuss gesamt\s+1/);
+    await expect(stationOne).toContainText("Ziel erreicht");
+    await expect(stationOne.getByRole("button", { name: /Gutteile \+1/ })).toBeDisabled();
+    await expect(stationOne.getByRole("button", { name: "Ausschuss +1" })).toBeDisabled();
+    await expect(stationOne.getByRole("button", { name: "In Abklärung +1" })).toBeDisabled();
     await expect
       .poll(() => page.evaluate(() =>
         (window.__SUPABASE_WRITE_LOG || []).some(
@@ -728,6 +881,37 @@ test.describe("Humbel app smoke", () => {
         ),
       ))
       .toBeTruthy();
+    const amountWritesBeforeBlocked = await page.evaluate(() =>
+      (window.__SUPABASE_WRITE_LOG || []).filter(
+        (entry) =>
+          ["production_order_stations", "production_station_events"].includes(entry.table) &&
+          ["update", "insert"].includes(entry.action),
+      ).length,
+    );
+    await page.evaluate(() =>
+      window.adjustProductionStationAmount("station-one", "scrap", 1, {
+        qaCauseId: "qa-cause-human",
+        note: "blocked scrap",
+      }),
+    );
+    await expect(page.locator("#view")).toContainText("Zielstückzahl ist erreicht.");
+    await page.evaluate(() =>
+      window.adjustProductionStationAmount("station-one", "clarify", 1, {
+        qaCauseId: "qa-cause-machine",
+        note: "blocked clarify",
+      }),
+    );
+    await expect(page.locator("#view")).toContainText("Zielstückzahl ist erreicht.");
+    await expect(stationOne).toContainText(/Ausschuss gesamt\s+1/);
+    await expect(stationOne).toContainText(/In Abklärung gesamt\s+0/);
+    const amountWritesAfterBlocked = await page.evaluate(() =>
+      (window.__SUPABASE_WRITE_LOG || []).filter(
+        (entry) =>
+          ["production_order_stations", "production_station_events"].includes(entry.table) &&
+          ["update", "insert"].includes(entry.action),
+      ).length,
+    );
+    expect(amountWritesAfterBlocked).toBe(amountWritesBeforeBlocked);
     await stationOne.getByRole("button", { name: "Ausschuss -1" }).click();
     await expect(stationOne).toContainText(/Ausschuss gesamt\s+0/);
     await expect(page.locator("#view")).toContainText("Ausschuss-Korrektur wurde gespeichert.");
@@ -747,7 +931,7 @@ test.describe("Humbel app smoke", () => {
         ),
       ))
       .toBeTruthy();
-    await stationOne.getByRole("button", { name: "Ausschuss -1" }).click();
+    await page.evaluate(() => window.adjustProductionStationAmount("station-one", "scrap", -1));
     await expect(page.locator("#view")).toContainText("Ausschuss kann nicht unter 0 fallen.");
     await expect(stationOne).toContainText(/Ausschuss gesamt\s+0/);
     await expect(stationOne).toContainText(/In Abklärung gesamt\s+0/);
@@ -784,7 +968,7 @@ test.describe("Humbel app smoke", () => {
         ),
       ))
       .toBeTruthy();
-    await stationOne.getByRole("button", { name: "In Abklärung -1" }).click();
+    await page.evaluate(() => window.adjustProductionStationAmount("station-one", "clarify", -1));
     await expect(page.locator("#view")).toContainText("Abklärmenge kann nicht unter 0 fallen.");
     await expect(stationOne).toContainText(/In Abklärung gesamt\s+0/);
     await stationOne.getByRole("button", { name: "Ausschuss +1" }).click();
@@ -830,8 +1014,7 @@ test.describe("Humbel app smoke", () => {
     await expect(stationTwo).toContainText("Lavdrim");
     await stationTwo.getByRole("button", { name: /Gutteile \+1/ }).click();
     await expect(stationTwo).toContainText(/Gutteile\s+1/);
-    await stationTwo.getByRole("button", { name: /Gutteile \+1/ }).click();
-    await expect(stationTwo).toContainText(/Gutteile\s+2/);
+    await expect(stationTwo.getByRole("button", { name: /Gutteile \+1/ })).toBeDisabled();
     await expect(page.locator("#view")).toContainText("Restmenge vorbereitet");
     await expect(page.locator("#view")).toContainText("0");
     await page.locator("#view").getByRole("button", { name: "Auftrag fertig melden" }).click();
@@ -930,6 +1113,73 @@ test.describe("Humbel app smoke", () => {
 
     await clickMain(page, "Admin / System");
     await expect(page.getByRole("heading", { name: "Admin / System" })).toBeVisible();
+  });
+
+  test("blocks production overcounts and preserves scroll in target quantity flows", async ({ page }) => {
+    await page.goto(appUrl);
+    await page.getByRole("button", { name: "Mido/Admin" }).click();
+    await clickMain(page, "Produktion");
+    await clickSubtab(page, "Stückzahl");
+
+    await page.locator("#view").getByRole("button", { name: /Maschine 52/ }).click();
+    await expectViewHeading(page, "Produktionsvorschau");
+    const overStation = page.locator("#view").locator("article").filter({ hasText: "Spannung 1" });
+    await expect(overStation).toContainText("Istmenge liegt über Zielstückzahl. Bitte per -1 korrigieren.");
+    await expect(overStation.getByRole("button", { name: /Gutteile \+1/ })).toBeDisabled();
+    await expect(overStation.getByRole("button", { name: "Ausschuss +1" })).toBeDisabled();
+    await expect(overStation.getByRole("button", { name: "In Abklärung +1" })).toBeDisabled();
+
+    const blockedWritesBefore = await page.evaluate(() =>
+      (window.__SUPABASE_WRITE_LOG || []).filter(
+        (entry) =>
+          ["production_order_stations", "production_station_counts", "production_station_events"].includes(entry.table) &&
+          ["update", "insert"].includes(entry.action),
+      ).length,
+    );
+    await page.evaluate(() => window.openProductionQaCauseModal("station-over", "scrap"));
+    await expect(page.locator("#view")).toContainText("Zielstückzahl ist erreicht.");
+    await expect(page.getByRole("heading", { name: "6M-Ursache für Ausschuss" })).toHaveCount(0);
+    await page.evaluate(() => window.openProductionQaCauseModal("station-over", "clarify"));
+    await expect(page.locator("#view")).toContainText("Zielstückzahl ist erreicht.");
+    await expect(page.getByRole("heading", { name: "6M-Ursache für In Abklärung" })).toHaveCount(0);
+    const blockedWritesAfter = await page.evaluate(() =>
+      (window.__SUPABASE_WRITE_LOG || []).filter(
+        (entry) =>
+          ["production_order_stations", "production_station_counts", "production_station_events"].includes(entry.table) &&
+          ["update", "insert"].includes(entry.action),
+      ).length,
+    );
+    expect(blockedWritesAfter).toBe(blockedWritesBefore);
+
+    await overStation.getByRole("button", { name: "Ausschuss -1" }).scrollIntoViewIfNeeded();
+    const scrollBeforeScrapCorrection = await page.evaluate(() => window.scrollY);
+    await overStation.getByRole("button", { name: "Ausschuss -1" }).click();
+    await expect
+      .poll(() => page.evaluate((before) => Math.abs(window.scrollY - before) <= 8, scrollBeforeScrapCorrection))
+      .toBeTruthy();
+    await expect(overStation).toContainText(/Ausschuss gesamt\s+0/);
+    await expect(overStation).not.toContainText("Istmenge liegt über Zielstückzahl. Bitte per -1 korrigieren.");
+    await expect(overStation.getByRole("button", { name: /Gutteile \+1/ })).toBeDisabled();
+    await overStation.getByRole("button", { name: /Gutteile -1/ }).click();
+    await expect(overStation).toContainText(/Gutteile\s+1/);
+    await expect(overStation.getByRole("button", { name: /Gutteile \+1/ })).toBeEnabled();
+
+    await page.getByRole("button", { name: "Zurück zur Maschinenübersicht" }).click();
+    await page.locator("#view").getByRole("button", { name: /Maschine 53/ }).click();
+    await expectViewHeading(page, "Produktionsvorschau");
+    const chainStationOne = page.locator("#view").locator("article").filter({ hasText: "Spannung 1" });
+    const chainStationTwo = page.locator("#view").locator("article").filter({ hasText: "Spannung 2" });
+    await expect(chainStationOne).toContainText("Ziel erreicht");
+    await expect(chainStationOne.getByRole("button", { name: /Gutteile \+1/ })).toBeDisabled();
+    await page.evaluate(() =>
+      window.adjustProductionStationAmount("station-chain-one", "clarify", 1, {
+        qaCauseId: "qa-cause-machine",
+      }),
+    );
+    await expect(page.locator("#view")).toContainText("Zielstückzahl für diese Spannung ist erreicht.");
+    await expect(chainStationTwo.getByRole("button", { name: /Gutteile \+1/ })).toBeEnabled();
+    await chainStationTwo.getByRole("button", { name: /Gutteile \+1/ }).click();
+    await expect(chainStationTwo).toContainText(/Gutteile\s+1/);
   });
 });
 
