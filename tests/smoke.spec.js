@@ -94,7 +94,7 @@ const rowsByTable = {
       ba_number: "BA-100",
       article_number: "ART-100",
       ba_quantity: 100,
-      target_quantity: 1,
+      target_quantity: 2,
       pallet_count: 2,
       pieces_per_pallet: 50,
       use_chain_logic: true,
@@ -611,10 +611,49 @@ test.describe("Humbel app smoke", () => {
     await expect(page.locator("#view")).toContainText("Fertige Gutteile");
     await expect(page.locator("#view")).toContainText("Restmenge wird nach letzter Spannung berechnet.");
     await expect(page.locator("#view")).toContainText("Restmenge vorbereitet");
-    await expect(page.locator("#view")).toContainText("0");
+    await stationOne.getByRole("button", { name: /Gutteile \+1/ }).click();
+    await expect(stationOne).toContainText(/Gutteile\s+2/);
+    await expect(stationOne).toContainText("Ziel erreicht");
+    await expect(stationOne.getByRole("button", { name: /Gutteile \+1/ })).toBeDisabled();
+    const goodEventsBeforeBlocked = await page.evaluate(() =>
+      (window.__SUPABASE_WRITE_LOG || []).filter(
+        (entry) =>
+          entry.table === "production_station_events" &&
+          entry.action === "insert" &&
+          entry.payload?.[0]?.event_type === "good",
+      ).length,
+    );
+    const countWritesBeforeBlocked = await page.evaluate(() =>
+      (window.__SUPABASE_WRITE_LOG || []).filter(
+        (entry) => entry.table === "production_station_counts",
+      ).length,
+    );
+    await page.evaluate(() => {
+      const entry = window.__SUPABASE_MOCK_ROWS.production_order_employees[0];
+      return window.adjustProductionStationGoodQty("station-one", entry.id, 1);
+    });
+    await expect(page.locator("#view")).toContainText("Zielstückzahl für diese Spannung ist erreicht.");
+    await expect(stationOne).toContainText(/Gutteile\s+2/);
+    const goodEventsAfterBlocked = await page.evaluate(() =>
+      (window.__SUPABASE_WRITE_LOG || []).filter(
+        (entry) =>
+          entry.table === "production_station_events" &&
+          entry.action === "insert" &&
+          entry.payload?.[0]?.event_type === "good",
+      ).length,
+    );
+    const countWritesAfterBlocked = await page.evaluate(() =>
+      (window.__SUPABASE_WRITE_LOG || []).filter(
+        (entry) => entry.table === "production_station_counts",
+      ).length,
+    );
+    expect(goodEventsAfterBlocked).toBe(goodEventsBeforeBlocked);
+    expect(countWritesAfterBlocked).toBe(countWritesBeforeBlocked);
+    await stationOne.getByRole("button", { name: /Gutteile -1/ }).click();
+    await expect(stationOne).toContainText(/Gutteile\s+1/);
+    await expect(page.locator("#view")).toContainText("Gutteil-Korrektur wurde gespeichert.");
     await stationOne.getByRole("button", { name: /Gutteile -1/ }).click();
     await expect(stationOne).toContainText(/Gutteile\s+0/);
-    await expect(page.locator("#view")).toContainText("Gutteil-Korrektur wurde gespeichert.");
     await expect
       .poll(() => page.evaluate(() =>
         (window.__SUPABASE_WRITE_LOG || []).some(
@@ -790,6 +829,9 @@ test.describe("Humbel app smoke", () => {
     const stationTwo = page.locator("#view").locator("article").filter({ hasText: "Spannung 2" });
     await expect(stationTwo).toContainText("Lavdrim");
     await stationTwo.getByRole("button", { name: /Gutteile \+1/ }).click();
+    await expect(stationTwo).toContainText(/Gutteile\s+1/);
+    await stationTwo.getByRole("button", { name: /Gutteile \+1/ }).click();
+    await expect(stationTwo).toContainText(/Gutteile\s+2/);
     await expect(page.locator("#view")).toContainText("Restmenge vorbereitet");
     await expect(page.locator("#view")).toContainText("0");
     await page.locator("#view").getByRole("button", { name: "Auftrag fertig melden" }).click();

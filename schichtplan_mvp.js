@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.5.07";
+const APP_VERSION = "0.5.08";
 const INVENTORY_MODE_ENABLED = false;
 const HUMBEL_COLORS = Object.freeze({
   primary: "#0d4682",
@@ -69,6 +69,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.5.08",
+    date: "2026-08-23 06:58",
+    changes: ["Gutteilzählung bei erreichter Zielstückzahl blockiert."],
+  },
   {
     version: "0.5.07",
     date: "2026-08-22 10:51",
@@ -6115,6 +6120,34 @@ function calculatePreparedRemainingQuantity(order) {
   return Math.max(0, targetQuantity - finishedGoodQty - getProductionOrderScrapTotal(order.id));
 }
 
+function getProductionGoodLimitInfo(order, station) {
+  const targetQuantity = Math.max(0, Math.trunc(Number(order?.target_quantity || 0)));
+  if (!order || !station || targetQuantity <= 0) {
+    return { blockPlus: false, overTarget: false, targetQuantity, currentRelevantQty: 0 };
+  }
+  const scrapTotal = getProductionOrderScrapTotal(order.id);
+  const currentRelevantQty =
+    order.use_chain_logic !== false
+      ? getProductionStationGoodTotal(station.id)
+      : getProductionOrderGoodTotal(order.id);
+  const combinedQty = currentRelevantQty + scrapTotal;
+  const overTarget = combinedQty > targetQuantity;
+  const reachedTarget = combinedQty >= targetQuantity;
+  return {
+    blockPlus: reachedTarget,
+    overTarget,
+    reachedTarget,
+    targetQuantity,
+    currentRelevantQty,
+    scrapTotal,
+    combinedQty,
+    message:
+      order.use_chain_logic !== false
+        ? "Zielstückzahl für diese Spannung ist erreicht."
+        : "Zielstückzahl ist erreicht. Gutteile können nicht weiter erhöht werden.",
+  };
+}
+
 function getProductionStationTimeStatusLabel(status) {
   return status === "changed" ? "Zeit geändert" : "Zeit ok";
 }
@@ -6387,6 +6420,12 @@ function renderProductionMachineOrderPreview(machine, orders) {
     activeOrder && activeOrder.use_chain_logic !== false
       ? `<div class='rounded border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800'>Restmenge wird nach letzter Spannung berechnet.</div>`
       : "";
+  const overTargetNotice =
+    activeOrder && Number(activeOrder.target_quantity || 0) > 0 &&
+    getProductionOrderGoodTotal(activeOrder.id) + getProductionOrderScrapTotal(activeOrder.id) >
+      Number(activeOrder.target_quantity || 0)
+      ? `<div class='rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800'>Istmenge liegt über Zielstückzahl. Bitte per -1 korrigieren.</div>`
+      : "";
   const metrics = activeOrder
     ? `<div class='grid sm:grid-cols-2 xl:grid-cols-4 gap-3'>
         ${renderProductionPreviewMetric("BA-Stückzahl", activeOrder.ba_quantity)}
@@ -6410,6 +6449,7 @@ function renderProductionMachineOrderPreview(machine, orders) {
         </div>
         ${metrics}
         ${chainHint}
+        ${overTargetNotice}
         ${renderProductionOrderEmployeesSection(activeOrder)}
         ${renderProductionOrderStationsSection(activeOrder)}
         ${renderProductionOrderChecklistSection(activeOrder, false)}
@@ -6750,10 +6790,18 @@ function renderProductionStationAmountControl(station, type, label, value, canEd
 }
 
 function renderProductionStationEmployeeCounter(station, entry, canEdit) {
+  const order = getProductionOrderById(station.order_id);
   const goodQty = getProductionStationGoodQty(station.id, entry.id);
   const savingKey = `${station.id}:${entry.id}`;
   const saving = state.ui?.productionGoodQtySavingKey === savingKey;
-  const disabled = !canEdit || saving ? "disabled" : "";
+  const limitInfo = getProductionGoodLimitInfo(order, station);
+  const minusDisabled = !canEdit || saving ? "disabled" : "";
+  const plusDisabled = !canEdit || saving || limitInfo.blockPlus ? "disabled" : "";
+  const limitNotice = limitInfo.overTarget
+    ? `<div class='mt-2 rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800'>Istmenge liegt über Zielstückzahl. Bitte per -1 korrigieren.</div>`
+    : limitInfo.blockPlus
+      ? `<div class='mt-2 text-xs font-semibold text-amber-700'>Ziel erreicht</div>`
+      : "";
   return `<div class='rounded border border-slate-200 bg-slate-50 p-3 text-sm'>
     <div class='flex items-center justify-between gap-3 flex-wrap'>
       <div>
@@ -6761,14 +6809,15 @@ function renderProductionStationEmployeeCounter(station, entry, canEdit) {
         <div class='text-xs text-slate-500'>${entry.personnel_no ? `PN ${escapeHtml(entry.personnel_no)} · ` : ""}${escapeHtml(getProductionOrderEmployeeRoleLabel(entry.role))}</div>
       </div>
       <div class='flex items-center gap-2'>
-        <button type='button' aria-label='Gutteile -1 ${escapeHtml(entry.employee_name || "Mitarbeiter")}' class='px-3 py-2 rounded bg-slate-200 text-slate-900 font-semibold disabled:opacity-50' onclick="adjustProductionStationGoodQty('${station.id}', '${entry.id}', -1)" ${disabled}>-1</button>
+        <button type='button' aria-label='Gutteile -1 ${escapeHtml(entry.employee_name || "Mitarbeiter")}' class='px-3 py-2 rounded bg-slate-200 text-slate-900 font-semibold disabled:opacity-50' onclick="adjustProductionStationGoodQty('${station.id}', '${entry.id}', -1)" ${minusDisabled}>-1</button>
         <div class='min-w-[72px] rounded bg-white border px-3 py-2 text-center'>
           <div class='text-xs text-slate-500'>Gutteile</div>
           <div class='text-lg font-bold'>${escapeHtml(goodQty)}</div>
         </div>
-        <button type='button' aria-label='Gutteile +1 ${escapeHtml(entry.employee_name || "Mitarbeiter")}' class='px-3 py-2 rounded bg-emerald-700 text-white font-semibold disabled:opacity-50' onclick="adjustProductionStationGoodQty('${station.id}', '${entry.id}', 1)" ${disabled}>+1</button>
+        <button type='button' aria-label='Gutteile +1 ${escapeHtml(entry.employee_name || "Mitarbeiter")}' class='px-3 py-2 rounded bg-emerald-700 text-white font-semibold disabled:opacity-50' onclick="adjustProductionStationGoodQty('${station.id}', '${entry.id}', 1)" ${plusDisabled}>+1</button>
       </div>
     </div>
+    ${limitNotice}
   </div>`;
 }
 
@@ -7789,6 +7838,14 @@ async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta,
 
   const currentCount = getProductionStationCount(station.id, orderEmployee.id);
   const currentQty = currentCount?.good_qty || 0;
+  if (delta > 0) {
+    const limitInfo = getProductionGoodLimitInfo(order, station);
+    if (limitInfo.blockPlus) {
+      setProductionStatus(limitInfo.message, true);
+      render();
+      return;
+    }
+  }
   if (delta < 0 && currentQty <= 0) {
     setProductionStatus("Gutmenge kann nicht unter 0 fallen.", true);
     render();
