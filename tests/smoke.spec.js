@@ -623,7 +623,8 @@ test.describe("Humbel app smoke", () => {
     await page.locator("#view").getByRole("button", { name: /Maschine 50/ }).click();
     await expectViewHeading(page, "Produktionsvorschau");
     await expect(page.locator("#view").getByRole("button", { name: /BA BA-100/ })).toBeVisible();
-    await expect(page.locator("#view")).toContainText("Restmenge vorbereitet");
+    await expect(page.locator("#view")).toContainText("Rest");
+    await expect(page.locator("#view")).toContainText("Gesamt gezählt");
     await expect(page.locator("#view")).toContainText("Mitarbeiter am Auftrag");
     await page.locator("#view").getByLabel("Mitarbeiter hinzufügen").selectOption("employee-one");
     await page.locator("#view").getByRole("button", { name: "Hinzufügen", exact: true }).click();
@@ -707,6 +708,7 @@ test.describe("Humbel app smoke", () => {
         (entry) => entry.table === "production_order_stations" && entry.action === "insert",
       ).length,
     );
+    await stationOne.getByText("Details bearbeiten").click();
     await stationOne.getByLabel("OP-Nummer").fill("20");
     await stationOne.getByRole("button", { name: "Speichern" }).click();
     await expect(stationOne).toContainText("OP 20");
@@ -718,12 +720,14 @@ test.describe("Humbel app smoke", () => {
     );
     expect(stationInsertsAfterSave).toBe(stationInsertsBeforeSave);
     await expect(stationOne).toContainText(/Gutteile\s+0/);
-    await stationOne.getByRole("button", { name: /Gutteile \+1/ }).scrollIntoViewIfNeeded();
-    const scrollBeforeGoodCount = await page.evaluate(() => window.scrollY);
+    await stationOne.scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.scrollBy(0, -80));
+    const stationTopBeforeGoodCount = await stationOne.evaluate((element) => element.getBoundingClientRect().top);
     await stationOne.getByRole("button", { name: /Gutteile \+1/ }).click();
     await expect
-      .poll(() => page.evaluate((before) => Math.abs(window.scrollY - before) <= 8, scrollBeforeGoodCount))
+      .poll(() => stationOne.evaluate((element, before) => Math.abs(element.getBoundingClientRect().top - before) <= 30, stationTopBeforeGoodCount))
       .toBeTruthy();
+    await expect.poll(() => page.evaluate(() => window.scrollY > 20)).toBeTruthy();
     await expect(stationOne).toContainText(/Gutteile\s+1/);
     await expect(page.locator("#view")).toContainText("Gutteil wurde gezählt.");
     await expect(page.locator("#view")).not.toContainText("Protokolleintrag konnte nicht geschrieben werden");
@@ -752,7 +756,8 @@ test.describe("Humbel app smoke", () => {
       .toBeTruthy();
     await expect(page.locator("#view")).toContainText("Gutteile gesamt");
     await expect(page.locator("#view")).toContainText("Fertige Gutteile");
-    await expect(page.locator("#view")).toContainText("Restmenge vorbereitet");
+    await expect(page.locator("#view")).toContainText("Rest");
+    await expect(page.locator("#view")).toContainText("Gesamt gezählt");
     await stationOne.getByRole("button", { name: /Gutteile \+1/ }).click();
     await expect(stationOne).toContainText(/Gutteile\s+2/);
     await expect(stationOne).toContainText("Ziel erreicht");
@@ -776,7 +781,7 @@ test.describe("Humbel app smoke", () => {
       );
       return window.adjustProductionStationGoodQty("station-one", entry.id, 1);
     });
-    await expect(page.locator("#view")).toContainText("Zielstückzahl ist erreicht.");
+    await expect(page.locator("#view")).toContainText("Ziel erreicht - +1 gesperrt");
     await expect(stationOne).toContainText(/Gutteile\s+2/);
     const goodEventsAfterBlocked = await page.evaluate(() =>
       (window.__SUPABASE_WRITE_LOG || []).filter(
@@ -793,10 +798,20 @@ test.describe("Humbel app smoke", () => {
     );
     expect(goodEventsAfterBlocked).toBe(goodEventsBeforeBlocked);
     expect(countWritesAfterBlocked).toBe(countWritesBeforeBlocked);
-    await stationOne.getByRole("button", { name: /Gutteile -1/ }).click();
+    await page.evaluate(() => {
+      const entry = window.__SUPABASE_MOCK_ROWS.production_order_employees.find(
+        (item) => item.order_id === "order-one",
+      );
+      return window.adjustProductionStationGoodQty("station-one", entry.id, -1);
+    });
     await expect(stationOne).toContainText(/Gutteile\s+1/);
     await expect(page.locator("#view")).toContainText("Gutteil-Korrektur wurde gespeichert.");
-    await stationOne.getByRole("button", { name: /Gutteile -1/ }).click();
+    await page.evaluate(() => {
+      const entry = window.__SUPABASE_MOCK_ROWS.production_order_employees.find(
+        (item) => item.order_id === "order-one",
+      );
+      return window.adjustProductionStationGoodQty("station-one", entry.id, -1);
+    });
     await expect(stationOne).toContainText(/Gutteile\s+0/);
     await expect
       .poll(() => page.evaluate(() =>
@@ -809,8 +824,13 @@ test.describe("Humbel app smoke", () => {
         ),
       ))
       .toBeTruthy();
-    await stationOne.getByRole("button", { name: /Gutteile -1/ }).click();
-    await expect(page.locator("#view")).toContainText("Gutmenge kann nicht unter 0 fallen.");
+    await page.evaluate(() => {
+      const entry = window.__SUPABASE_MOCK_ROWS.production_order_employees.find(
+        (item) => item.order_id === "order-one",
+      );
+      return window.adjustProductionStationGoodQty("station-one", entry.id, -1);
+    });
+    await expect(page.locator("#view")).toContainText("Gutmenge ist bereits 0");
     await expect(stationOne).toContainText(/Gutteile\s+0/);
     await page.evaluate(() => {
       window.__SUPABASE_MOCK_ERRORS.production_station_counts = {
@@ -855,14 +875,16 @@ test.describe("Humbel app smoke", () => {
     await expect(page.locator("body")).toContainText("Mensch");
     await page.getByRole("button", { name: "Abbrechen" }).first().click();
     await expect(stationOne).toContainText(/Ausschuss gesamt\s+0/);
-    await stationOne.getByRole("button", { name: "Ausschuss +1" }).scrollIntoViewIfNeeded();
-    const scrollBeforeScrapCount = await page.evaluate(() => window.scrollY);
+    const scrapAnchor = page.locator('[data-scroll-anchor="amount:station-one:scrap"]').first();
+    await scrapAnchor.scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.scrollBy(0, -80));
+    const scrapTopBeforeCount = await scrapAnchor.evaluate((element) => element.getBoundingClientRect().top);
     await stationOne.getByRole("button", { name: "Ausschuss +1" }).click();
     await page.getByRole("button", { name: "Einweisung" }).click();
     await page.getByLabel("Notiz").fill("Testnotiz Ausschuss");
     await page.getByRole("button", { name: "Ursache speichern" }).click();
     await expect
-      .poll(() => page.evaluate((before) => Math.abs(window.scrollY - before) <= 8, scrollBeforeScrapCount))
+      .poll(() => scrapAnchor.evaluate((element, before) => Math.abs(element.getBoundingClientRect().top - before) <= 30, scrapTopBeforeCount))
       .toBeTruthy();
     await expect(stationOne).toContainText(/Ausschuss gesamt\s+1/);
     await expect(stationOne).toContainText("Ziel erreicht");
@@ -894,14 +916,14 @@ test.describe("Humbel app smoke", () => {
         note: "blocked scrap",
       }),
     );
-    await expect(page.locator("#view")).toContainText("Zielstückzahl ist erreicht.");
+    await expect(page.locator("#view")).toContainText("Ziel erreicht - +1 gesperrt");
     await page.evaluate(() =>
       window.adjustProductionStationAmount("station-one", "clarify", 1, {
         qaCauseId: "qa-cause-machine",
         note: "blocked clarify",
       }),
     );
-    await expect(page.locator("#view")).toContainText("Zielstückzahl ist erreicht.");
+    await expect(page.locator("#view")).toContainText("Ziel erreicht - +1 gesperrt");
     await expect(stationOne).toContainText(/Ausschuss gesamt\s+1/);
     await expect(stationOne).toContainText(/In Abklärung gesamt\s+0/);
     const amountWritesAfterBlocked = await page.evaluate(() =>
@@ -932,7 +954,7 @@ test.describe("Humbel app smoke", () => {
       ))
       .toBeTruthy();
     await page.evaluate(() => window.adjustProductionStationAmount("station-one", "scrap", -1));
-    await expect(page.locator("#view")).toContainText("Ausschuss kann nicht unter 0 fallen.");
+    await expect(page.locator("#view")).toContainText("Ausschuss ist bereits 0");
     await expect(stationOne).toContainText(/Ausschuss gesamt\s+0/);
     await expect(stationOne).toContainText(/In Abklärung gesamt\s+0/);
     await stationOne.getByRole("button", { name: "In Abklärung +1" }).click();
@@ -969,7 +991,7 @@ test.describe("Humbel app smoke", () => {
       ))
       .toBeTruthy();
     await page.evaluate(() => window.adjustProductionStationAmount("station-one", "clarify", -1));
-    await expect(page.locator("#view")).toContainText("Abklärmenge kann nicht unter 0 fallen.");
+    await expect(page.locator("#view")).toContainText("Abklärung ist bereits 0");
     await expect(stationOne).toContainText(/In Abklärung gesamt\s+0/);
     await stationOne.getByRole("button", { name: "Ausschuss +1" }).click();
     await page.getByRole("button", { name: "Einweisung" }).click();
@@ -1007,7 +1029,9 @@ test.describe("Humbel app smoke", () => {
     await expectViewHeading(page, "Produktionsvorschau");
     await expect(page.locator("#view")).toContainText("Ausschuss Auftrag");
     await expect(page.locator("#view")).toContainText("In Abklärung Auftrag");
-    await expect(page.locator("#view")).toContainText("Ursache wird beim +1 erfasst.");
+    await expect(stationOne).toContainText("Gutteile");
+    await expect(stationOne).toContainText("Ausschuss");
+    await expect(stationOne).toContainText("In Abklärung");
     await page.locator("#view").getByRole("button", { name: /Spannung/ }).filter({ hasText: /hinzuf/ }).click();
     await expect(page.locator("#view")).toContainText("Spannung 2");
     const stationTwo = page.locator("#view").locator("article").filter({ hasText: "Spannung 2" });
@@ -1015,7 +1039,8 @@ test.describe("Humbel app smoke", () => {
     await stationTwo.getByRole("button", { name: /Gutteile \+1/ }).click();
     await expect(stationTwo).toContainText(/Gutteile\s+1/);
     await expect(stationTwo.getByRole("button", { name: /Gutteile \+1/ })).toBeDisabled();
-    await expect(page.locator("#view")).toContainText("Restmenge vorbereitet");
+    await expect(page.locator("#view")).toContainText("Rest");
+    await expect(page.locator("#view")).toContainText("Gesamt gezählt");
     await expect(page.locator("#view")).toContainText("0");
     await page.locator("#view").getByRole("button", { name: "Auftrag fertig melden" }).click();
     await expect(page.getByRole("button", { name: "Endgültig fertig melden" })).toBeEnabled();
@@ -1124,7 +1149,7 @@ test.describe("Humbel app smoke", () => {
     await page.locator("#view").getByRole("button", { name: /Maschine 52/ }).click();
     await expectViewHeading(page, "Produktionsvorschau");
     const overStation = page.locator("#view").locator("article").filter({ hasText: "Spannung 1" });
-    await expect(overStation).toContainText("Istmenge liegt über Zielstückzahl. Bitte per -1 korrigieren.");
+    await expect(overStation).toContainText("Über Ziel - bitte korrigieren");
     await expect(overStation.getByRole("button", { name: /Gutteile \+1/ })).toBeDisabled();
     await expect(overStation.getByRole("button", { name: "Ausschuss +1" })).toBeDisabled();
     await expect(overStation.getByRole("button", { name: "In Abklärung +1" })).toBeDisabled();
@@ -1137,10 +1162,10 @@ test.describe("Humbel app smoke", () => {
       ).length,
     );
     await page.evaluate(() => window.openProductionQaCauseModal("station-over", "scrap"));
-    await expect(page.locator("#view")).toContainText("Zielstückzahl ist erreicht.");
+    await expect(page.locator("#view")).toContainText("Ziel erreicht - +1 gesperrt");
     await expect(page.getByRole("heading", { name: "6M-Ursache für Ausschuss" })).toHaveCount(0);
     await page.evaluate(() => window.openProductionQaCauseModal("station-over", "clarify"));
-    await expect(page.locator("#view")).toContainText("Zielstückzahl ist erreicht.");
+    await expect(page.locator("#view")).toContainText("Ziel erreicht - +1 gesperrt");
     await expect(page.getByRole("heading", { name: "6M-Ursache für In Abklärung" })).toHaveCount(0);
     const blockedWritesAfter = await page.evaluate(() =>
       (window.__SUPABASE_WRITE_LOG || []).filter(
@@ -1151,14 +1176,15 @@ test.describe("Humbel app smoke", () => {
     );
     expect(blockedWritesAfter).toBe(blockedWritesBefore);
 
-    await overStation.getByRole("button", { name: "Ausschuss -1" }).scrollIntoViewIfNeeded();
-    const scrollBeforeScrapCorrection = await page.evaluate(() => window.scrollY);
+    await overStation.scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.scrollBy(0, -80));
+    const stationTopBeforeScrapCorrection = await overStation.evaluate((element) => element.getBoundingClientRect().top);
     await overStation.getByRole("button", { name: "Ausschuss -1" }).click();
     await expect
-      .poll(() => page.evaluate((before) => Math.abs(window.scrollY - before) <= 8, scrollBeforeScrapCorrection))
+      .poll(() => overStation.evaluate((element, before) => Math.abs(element.getBoundingClientRect().top - before) <= 30, stationTopBeforeScrapCorrection))
       .toBeTruthy();
     await expect(overStation).toContainText(/Ausschuss gesamt\s+0/);
-    await expect(overStation).not.toContainText("Istmenge liegt über Zielstückzahl. Bitte per -1 korrigieren.");
+    await expect(overStation).not.toContainText("Über Ziel - bitte korrigieren");
     await expect(overStation.getByRole("button", { name: /Gutteile \+1/ })).toBeDisabled();
     await overStation.getByRole("button", { name: /Gutteile -1/ }).click();
     await expect(overStation).toContainText(/Gutteile\s+1/);
@@ -1176,7 +1202,7 @@ test.describe("Humbel app smoke", () => {
         qaCauseId: "qa-cause-machine",
       }),
     );
-    await expect(page.locator("#view")).toContainText("Zielstückzahl für diese Spannung ist erreicht.");
+    await expect(page.locator("#view")).toContainText("Ziel erreicht - +1 gesperrt");
     await expect(chainStationTwo.getByRole("button", { name: /Gutteile \+1/ })).toBeEnabled();
     await chainStationTwo.getByRole("button", { name: /Gutteile \+1/ }).click();
     await expect(chainStationTwo).toContainText(/Gutteile\s+1/);

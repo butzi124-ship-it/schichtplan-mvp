@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.5.09";
+const APP_VERSION = "0.5.10";
 const INVENTORY_MODE_ENABLED = false;
 const HUMBEL_COLORS = Object.freeze({
   primary: "#0d4682",
@@ -69,6 +69,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.5.10",
+    date: "2026-10-03 08:05",
+    changes: ["Zähleransicht übersichtlicher gestaltet und Scrollposition beim Zählen stabilisiert."],
+  },
   {
     version: "0.5.09",
     date: "2026-08-23 08:40",
@@ -2903,11 +2908,33 @@ function render() {
   maybeShowShiftEndChecklist();
 }
 
-function renderPreservingScroll() {
+function getScrollAnchorElement(anchorKey = "") {
+  const key = anchorKey || document.activeElement?.dataset?.scrollAnchor || "";
+  if (!key) return null;
+  return Array.from(document.querySelectorAll("[data-scroll-anchor]")).find(
+    (element) => element.dataset.scrollAnchor === key,
+  ) || null;
+}
+
+function renderPreservingScroll(anchorKey = "", anchorTopOverride = null) {
   const scrollX = window.scrollX || 0;
   const scrollY = window.scrollY || 0;
+  const anchor = getScrollAnchorElement(anchorKey);
+  const resolvedAnchorKey = anchor?.dataset?.scrollAnchor || anchorKey || "";
+  const anchorTop =
+    Number.isFinite(anchorTopOverride)
+      ? anchorTopOverride
+      : anchor
+        ? anchor.getBoundingClientRect().top
+        : null;
   render();
   window.requestAnimationFrame(() => {
+    const nextAnchor = getScrollAnchorElement(resolvedAnchorKey);
+    if (nextAnchor && anchorTop !== null) {
+      const nextTop = nextAnchor.getBoundingClientRect().top;
+      window.scrollBy(0, nextTop - anchorTop);
+      return;
+    }
     window.scrollTo(scrollX, scrollY);
   });
 }
@@ -5241,6 +5268,27 @@ function setProductionStatus(message = "", isError = false) {
   state.ui.productionActionError = "";
 }
 
+function setProductionLocalStatus(anchorKey, message = "", isError = false) {
+  if (!anchorKey) return;
+  state.ui = state.ui || {};
+  state.ui.productionLocalStatusByAnchor = state.ui.productionLocalStatusByAnchor || {};
+  if (!message) {
+    delete state.ui.productionLocalStatusByAnchor[anchorKey];
+    return;
+  }
+  state.ui.productionLocalStatusByAnchor[anchorKey] = { message, isError };
+}
+
+function getProductionLocalStatus(anchorKey) {
+  if (!anchorKey) return "";
+  const status = state.ui?.productionLocalStatusByAnchor?.[anchorKey];
+  if (!status?.message) return "";
+  const statusClass = status.isError
+    ? "border-amber-200 bg-amber-50 text-amber-800"
+    : "border-emerald-200 bg-emerald-50 text-emerald-700";
+  return `<div class='mt-2 rounded border ${statusClass} px-2 py-1 text-xs font-medium'>${escapeHtml(status.message)}</div>`;
+}
+
 function formatProductionSupabaseError(
   error,
   fallback,
@@ -6440,36 +6488,33 @@ function renderProductionMachineOrderPreview(machine, orders) {
   const completedGoodTotal = activeOrder ? getProductionOrderCompletedGoodTotal(activeOrder.id) : 0;
   const orderScrapTotal = activeOrder ? getProductionOrderScrapTotal(activeOrder.id) : 0;
   const orderClarifyTotal = activeOrder ? getProductionOrderClarifyTotal(activeOrder.id) : 0;
+  const orderCountedTotal = orderGoodTotal + orderScrapTotal + orderClarifyTotal;
   const chainHint =
     activeOrder && activeOrder.use_chain_logic !== false
-      ? `<div class='rounded border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800'>Restmenge wird nach letzter Spannung berechnet.</div>`
+      ? `<div class='rounded border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-medium text-sky-800'>Restmenge wird nach letzter Spannung berechnet.</div>`
       : "";
   const overTargetNotice =
     activeOrder && Number(activeOrder.target_quantity || 0) > 0 &&
-    getProductionOrderGoodTotal(activeOrder.id) +
-      getProductionOrderScrapTotal(activeOrder.id) +
-      getProductionOrderClarifyTotal(activeOrder.id) >
-      Number(activeOrder.target_quantity || 0)
-      ? `<div class='rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800'>Istmenge liegt über Zielstückzahl. Bitte per -1 korrigieren.</div>`
+    orderCountedTotal > Number(activeOrder.target_quantity || 0)
+      ? `<div class='rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800'>Über Ziel - bitte korrigieren.</div>`
       : "";
   const metrics = activeOrder
-    ? `<div class='grid sm:grid-cols-2 xl:grid-cols-4 gap-3'>
-        ${renderProductionPreviewMetric("BA-Stückzahl", activeOrder.ba_quantity)}
-        ${renderProductionPreviewMetric("Zielstückzahl", activeOrder.target_quantity)}
-        ${renderProductionPreviewMetric("Differenz", diff)}
+    ? `<div class='grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-2'>
+        ${renderProductionPreviewMetric("Ziel", activeOrder.target_quantity)}
         ${renderProductionPreviewMetric("Gutteile gesamt", orderGoodTotal)}
         ${renderProductionPreviewMetric("Fertige Gutteile", completedGoodTotal)}
         ${renderProductionPreviewMetric("Ausschuss Auftrag", orderScrapTotal)}
         ${renderProductionPreviewMetric("In Abklärung Auftrag", orderClarifyTotal)}
-        ${renderProductionPreviewMetric("Restmenge vorbereitet", remaining)}
+        ${renderProductionPreviewMetric("Rest", remaining)}
+        ${renderProductionPreviewMetric("Gesamt gezählt", orderCountedTotal)}
       </div>`
     : "";
   const details = activeOrder
-    ? `<div class='border rounded-lg bg-white p-4 space-y-4'>
+    ? `<div class='border rounded-lg bg-white p-3 space-y-3'>
         <div class='flex items-start justify-between gap-3 flex-wrap'>
           <div>
             <h3 class='text-xl font-bold'>BA ${escapeHtml(activeOrder.ba_number || "-")}</h3>
-            <p class='text-sm text-slate-500 mt-1'>Artikel ${escapeHtml(activeOrder.article_number || "-")}</p>
+            <p class='text-sm text-slate-500 mt-1'>Artikel ${escapeHtml(activeOrder.article_number || "-")} · BA-Stückzahl ${escapeHtml(activeOrder.ba_quantity)} · Differenz ${escapeHtml(diff)}</p>
           </div>
           <span class='px-2 py-1 rounded-full text-xs font-semibold ${activeOrder.status === "running" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}'>${escapeHtml(getProductionOrderStatusLabel(activeOrder.status))}</span>
         </div>
@@ -6713,18 +6758,19 @@ function renderProductionOrderStationCard(station, canEdit) {
   const order = getProductionOrderById(station.order_id);
   const orderEmployees = getProductionOrderEmployees(station.order_id, true);
   const stationGoodTotal = getProductionStationGoodTotal(station.id);
+  const stationTotal = stationGoodTotal + Number(station.scrap_total || 0) + Number(station.clarify_total || 0);
   const limitInfo = getProductionQuantityLimitInfo(order, station);
   const limitNotice = limitInfo.overTarget
-    ? `<div class='rounded border border-amber-200 bg-amber-50 p-2 text-sm text-amber-800'>Istmenge liegt über Zielstückzahl. Bitte per -1 korrigieren.</div>`
+    ? `<span class='px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800'>Über Ziel - bitte korrigieren</span>`
     : limitInfo.blockPlus
-      ? `<div class='text-sm font-semibold text-amber-700'>Ziel erreicht</div>`
-      : "";
+      ? `<span class='px-2 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800'>Ziel erreicht</span>`
+      : `<span class='px-2 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700'>Zählen aktiv</span>`;
   const stationScrapClarifyControls = renderProductionStationScrapClarifyControls(
     station,
     canEdit,
   );
   const employeesList = orderEmployees.length
-    ? `<div class='space-y-2'>${orderEmployees.map((entry) => renderProductionStationEmployeeCounter(station, entry, canEdit)).join("")}</div>`
+    ? `<div class='grid gap-2'>${orderEmployees.map((entry) => renderProductionStationEmployeeCounter(station, entry, canEdit)).join("")}</div>`
     : `<div class='rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800'>Noch kein Mitarbeiter dem Auftrag zugeordnet.</div>`;
   const actualMinutesValue =
     station.actual_time_minutes === null || station.actual_time_minutes === undefined
@@ -6736,76 +6782,74 @@ function renderProductionOrderStationCard(station, canEdit) {
         <button type='button' class='px-3 py-2 rounded bg-rose-700 text-white text-sm' onclick="deleteProductionOrderStation('${station.id}')">Löschen</button>
       </div>`
     : `<span class='text-sm text-slate-500'>Nur lesbar</span>`;
-  return `<article class='border rounded-lg bg-white p-4 space-y-3'>
-    <div class='flex items-start justify-between gap-3'>
+  return `<article class='border rounded-lg bg-white p-3 space-y-3' data-scroll-anchor='station:${escapeHtml(station.id)}'>
+    <div class='flex items-start justify-between gap-3 flex-wrap'>
       <div>
-        <h5 class='font-semibold'>Spannung ${escapeHtml(station.station_no)}</h5>
-        <p class='text-xs text-slate-500'>${escapeHtml(getProductionStationTimeStatusLabel(station.time_status))}</p>
+        <h5 class='font-semibold leading-tight'>Spannung ${escapeHtml(station.station_no)}${station.name ? ` · ${escapeHtml(station.name)}` : ""}</h5>
+        <p class='text-xs text-slate-500 mt-1'>OP ${escapeHtml(station.op_number || "-")} · ${escapeHtml(getProductionStationTimeStatusLabel(station.time_status))}</p>
       </div>
-      <span class='px-2 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700'>OP ${escapeHtml(station.op_number || "-")}</span>
+      ${limitNotice}
     </div>
-    ${limitNotice}
-    <label class='block text-sm'>
-      Name
-      <input id='productionStationName-${station.id}' class='border rounded p-2 w-full mt-1 bg-white' value="${escapeHtml(station.name || "")}" ${readonly} />
-    </label>
-    <div class='grid sm:grid-cols-2 gap-3'>
-      <label class='block text-sm'>
-        OP-Nummer
-        <input id='productionStationOp-${station.id}' class='border rounded p-2 w-full mt-1 bg-white' value="${escapeHtml(station.op_number || "")}" ${readonly} />
-      </label>
-      <label class='block text-sm'>
-        Zeitstatus
-        <select id='productionStationTimeStatus-${station.id}' class='border rounded p-2 w-full mt-1 bg-white' ${readonly}>
-          <option value='ok' ${station.time_status === "ok" ? "selected" : ""}>Zeit ok</option>
-          <option value='changed' ${station.time_status === "changed" ? "selected" : ""}>Zeit geändert</option>
-        </select>
-      </label>
+    <div class='grid grid-cols-2 md:grid-cols-5 gap-2 text-sm'>
+      ${renderProductionStationChip("Gutteile", stationGoodTotal)}
+      ${renderProductionStationChip("Ausschuss gesamt", station.scrap_total)}
+      ${renderProductionStationChip("In Abklärung gesamt", station.clarify_total)}
+      ${renderProductionStationChip("Gesamt", stationTotal)}
+      ${renderProductionStationChip("Ziel", limitInfo.targetQuantity || "-")}
     </div>
-    <label class='block text-sm'>
-      Ist-Zeit Minuten
-      <input id='productionStationActualMinutes-${station.id}' type='number' min='0' step='1' class='border rounded p-2 w-full mt-1 bg-white' value="${escapeHtml(actualMinutesValue)}" ${readonly} />
-    </label>
-    <div class='grid grid-cols-2 gap-2 text-sm'>
-      <div class='rounded border bg-slate-50 p-2'>
-        <div class='text-xs text-slate-500'>Ausschuss gesamt</div>
-        <div class='font-semibold'>${escapeHtml(station.scrap_total)}</div>
-      </div>
-      <div class='rounded border bg-slate-50 p-2'>
-        <div class='text-xs text-slate-500'>In Abklärung gesamt</div>
-        <div class='font-semibold'>${escapeHtml(station.clarify_total)}</div>
-      </div>
-      <div class='rounded border bg-slate-50 p-2'>
-        <div class='text-xs text-slate-500'>Ausschuss Lebenslauf</div>
-        <div class='font-semibold'>${escapeHtml(station.scrap_lifetime)}</div>
-      </div>
-      <div class='rounded border bg-slate-50 p-2'>
-        <div class='text-xs text-slate-500'>In Abklärung Lebenslauf</div>
-        <div class='font-semibold'>${escapeHtml(station.clarify_lifetime)}</div>
-      </div>
-    </div>
-    ${stationScrapClarifyControls}
-    <div class='space-y-2'>
-      <div class='flex items-center justify-between gap-2'>
-        <div class='text-sm font-semibold'>Mitarbeiter</div>
-        <div class='text-xs font-semibold text-slate-600'>Summe Gutteile: ${escapeHtml(stationGoodTotal)}</div>
+    <section class='rounded border border-slate-200 bg-slate-50 p-3 space-y-3'>
+      <div class='flex items-center justify-between gap-2 flex-wrap'>
+        <h6 class='text-sm font-semibold'>Mengen zählen</h6>
+        <span class='text-xs text-slate-500'>+1 bei Ziel gesperrt, -1 bis 0 möglich</span>
       </div>
       ${employeesList}
-    </div>
-    ${actionButtons}
+      ${stationScrapClarifyControls}
+    </section>
+    <details class='rounded border border-slate-200 bg-white'>
+      <summary class='cursor-pointer px-3 py-2 text-sm font-semibold text-slate-700'>Details bearbeiten</summary>
+      <div class='border-t p-3 space-y-3'>
+        <label class='block text-sm'>
+          Name
+          <input id='productionStationName-${station.id}' class='border rounded p-2 w-full mt-1 bg-white' value="${escapeHtml(station.name || "")}" ${readonly} />
+        </label>
+        <div class='grid sm:grid-cols-2 gap-3'>
+          <label class='block text-sm'>
+            OP-Nummer
+            <input id='productionStationOp-${station.id}' class='border rounded p-2 w-full mt-1 bg-white' value="${escapeHtml(station.op_number || "")}" ${readonly} />
+          </label>
+          <label class='block text-sm'>
+            Zeitstatus
+            <select id='productionStationTimeStatus-${station.id}' class='border rounded p-2 w-full mt-1 bg-white' ${readonly}>
+              <option value='ok' ${station.time_status === "ok" ? "selected" : ""}>Zeit ok</option>
+              <option value='changed' ${station.time_status === "changed" ? "selected" : ""}>Zeit geändert</option>
+            </select>
+          </label>
+        </div>
+        <label class='block text-sm'>
+          Ist-Zeit Minuten
+          <input id='productionStationActualMinutes-${station.id}' type='number' min='0' step='1' class='border rounded p-2 w-full mt-1 bg-white' value="${escapeHtml(actualMinutesValue)}" ${readonly} />
+        </label>
+        <div class='grid grid-cols-2 gap-2 text-sm'>
+          ${renderProductionStationChip("Ausschuss Lebenslauf", station.scrap_lifetime)}
+          ${renderProductionStationChip("In Abklärung Lebenslauf", station.clarify_lifetime)}
+        </div>
+        ${actionButtons}
+      </div>
+    </details>
   </article>`;
 }
 
+function renderProductionStationChip(label, value) {
+  return `<div class='rounded border bg-white px-2 py-1'>
+    <div class='text-[11px] text-slate-500 leading-tight'>${escapeHtml(label)}</div>
+    <div class='font-semibold leading-tight'>${escapeHtml(value)}</div>
+  </div>`;
+}
+
 function renderProductionStationScrapClarifyControls(station, canEdit) {
-  return `<div class='rounded border border-slate-200 bg-slate-50 p-3 space-y-3'>
-    <div>
-      <div class='text-sm font-semibold'>Ausschuss / In Abklärung</div>
-      <div class='text-xs text-slate-500 mt-1'>Ursache wird beim +1 erfasst.</div>
-    </div>
-    <div class='grid sm:grid-cols-2 gap-3'>
+  return `<div class='grid sm:grid-cols-2 gap-2'>
       ${renderProductionStationAmountControl(station, "scrap", "Ausschuss", station.scrap_total, canEdit)}
       ${renderProductionStationAmountControl(station, "clarify", "In Abklärung", station.clarify_total, canEdit)}
-    </div>
   </div>`;
 }
 
@@ -6816,13 +6860,20 @@ function renderProductionStationAmountControl(station, type, label, value, canEd
   const limitInfo = getProductionQuantityLimitInfo(order, station);
   const minusDisabled = !canEdit || saving || Number(value || 0) <= 0 ? "disabled" : "";
   const plusDisabled = !canEdit || saving || limitInfo.blockPlus ? "disabled" : "";
-  return `<div class='rounded bg-white border p-3'>
-    <div class='text-xs text-slate-500'>${escapeHtml(label)}</div>
-    <div class='flex items-center gap-2 mt-2'>
-      <button type='button' aria-label='${escapeHtml(label)} -1' class='px-3 py-2 rounded bg-slate-200 text-slate-900 font-semibold disabled:opacity-50' onclick="adjustProductionStationAmount('${station.id}', '${type}', -1)" ${minusDisabled}>-1</button>
-      <div class='min-w-[72px] rounded bg-slate-50 border px-3 py-2 text-center text-lg font-bold'>${escapeHtml(value)}</div>
-      <button type='button' aria-label='${escapeHtml(label)} +1' class='px-3 py-2 rounded ${type === "scrap" ? "bg-rose-700" : "bg-amber-600"} text-white font-semibold disabled:opacity-50' onclick="adjustProductionStationAmount('${station.id}', '${type}', 1)" ${plusDisabled}>+1</button>
+  const anchorKey = `amount:${station.id}:${type}`;
+  return `<div class='rounded bg-white border p-2' data-scroll-anchor='${escapeHtml(anchorKey)}'>
+    <div class='flex items-center justify-between gap-2'>
+      <div>
+        <div class='text-sm font-semibold'>${escapeHtml(label)}</div>
+        <div class='text-[11px] text-slate-500'>+1 mit 6M-Ursache</div>
+      </div>
+      <div class='flex items-center gap-2'>
+        <button type='button' aria-label='${escapeHtml(label)} -1' data-scroll-anchor='${escapeHtml(anchorKey)}' class='min-w-10 px-3 py-2 rounded bg-slate-200 text-slate-900 font-semibold disabled:opacity-50' onclick="adjustProductionStationAmount('${station.id}', '${type}', -1)" ${minusDisabled}>-</button>
+        <div class='min-w-[56px] rounded bg-slate-50 border px-3 py-2 text-center text-lg font-bold'>${escapeHtml(value)}</div>
+        <button type='button' aria-label='${escapeHtml(label)} +1' data-scroll-anchor='${escapeHtml(anchorKey)}' class='min-w-10 px-3 py-2 rounded ${type === "scrap" ? "bg-rose-700" : "bg-amber-600"} text-white font-semibold disabled:opacity-50' onclick="adjustProductionStationAmount('${station.id}', '${type}', 1)" ${plusDisabled}>+</button>
+      </div>
     </div>
+    ${getProductionLocalStatus(anchorKey)}
   </div>`;
 }
 
@@ -6832,36 +6883,32 @@ function renderProductionStationEmployeeCounter(station, entry, canEdit) {
   const savingKey = `${station.id}:${entry.id}`;
   const saving = state.ui?.productionGoodQtySavingKey === savingKey;
   const limitInfo = getProductionGoodLimitInfo(order, station);
-  const minusDisabled = !canEdit || saving ? "disabled" : "";
+  const minusDisabled = !canEdit || saving || Number(goodQty || 0) <= 0 ? "disabled" : "";
   const plusDisabled = !canEdit || saving || limitInfo.blockPlus ? "disabled" : "";
-  const limitNotice = limitInfo.overTarget
-    ? `<div class='mt-2 rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800'>Istmenge liegt über Zielstückzahl. Bitte per -1 korrigieren.</div>`
-    : limitInfo.blockPlus
-      ? `<div class='mt-2 text-xs font-semibold text-amber-700'>Ziel erreicht</div>`
-      : "";
-  return `<div class='rounded border border-slate-200 bg-slate-50 p-3 text-sm'>
-    <div class='flex items-center justify-between gap-3 flex-wrap'>
+  const anchorKey = `good:${station.id}:${entry.id}`;
+  return `<div class='rounded border border-slate-200 bg-white p-2 text-sm' data-scroll-anchor='${escapeHtml(anchorKey)}'>
+    <div class='grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2'>
       <div>
         <div class='font-semibold'>${escapeHtml(entry.employee_name || "Mitarbeiter")}</div>
         <div class='text-xs text-slate-500'>${entry.personnel_no ? `PN ${escapeHtml(entry.personnel_no)} · ` : ""}${escapeHtml(getProductionOrderEmployeeRoleLabel(entry.role))}</div>
       </div>
       <div class='flex items-center gap-2'>
-        <button type='button' aria-label='Gutteile -1 ${escapeHtml(entry.employee_name || "Mitarbeiter")}' class='px-3 py-2 rounded bg-slate-200 text-slate-900 font-semibold disabled:opacity-50' onclick="adjustProductionStationGoodQty('${station.id}', '${entry.id}', -1)" ${minusDisabled}>-1</button>
-        <div class='min-w-[72px] rounded bg-white border px-3 py-2 text-center'>
+        <button type='button' aria-label='Gutteile -1 ${escapeHtml(entry.employee_name || "Mitarbeiter")}' data-scroll-anchor='${escapeHtml(anchorKey)}' class='min-w-10 px-3 py-2 rounded bg-slate-200 text-slate-900 font-semibold disabled:opacity-50' onclick="adjustProductionStationGoodQty('${station.id}', '${entry.id}', -1)" ${minusDisabled}>-</button>
+        <div class='min-w-[64px] rounded bg-slate-50 border px-3 py-2 text-center'>
           <div class='text-xs text-slate-500'>Gutteile</div>
           <div class='text-lg font-bold'>${escapeHtml(goodQty)}</div>
         </div>
-        <button type='button' aria-label='Gutteile +1 ${escapeHtml(entry.employee_name || "Mitarbeiter")}' class='px-3 py-2 rounded bg-emerald-700 text-white font-semibold disabled:opacity-50' onclick="adjustProductionStationGoodQty('${station.id}', '${entry.id}', 1)" ${plusDisabled}>+1</button>
+        <button type='button' aria-label='Gutteile +1 ${escapeHtml(entry.employee_name || "Mitarbeiter")}' data-scroll-anchor='${escapeHtml(anchorKey)}' class='min-w-10 px-3 py-2 rounded bg-emerald-700 text-white font-semibold disabled:opacity-50' onclick="adjustProductionStationGoodQty('${station.id}', '${entry.id}', 1)" ${plusDisabled}>+</button>
       </div>
     </div>
-    ${limitNotice}
+    ${getProductionLocalStatus(anchorKey)}
   </div>`;
 }
 
 function renderProductionPreviewMetric(label, value) {
-  return `<div class='border rounded-lg bg-slate-50 p-3'>
+  return `<div class='border rounded bg-slate-50 px-2 py-2'>
     <div class='text-xs text-slate-500'>${escapeHtml(label)}</div>
-    <div class='text-2xl font-bold mt-1'>${escapeHtml(value)}</div>
+    <div class='text-lg font-bold leading-tight'>${escapeHtml(value)}</div>
   </div>`;
 }
 
@@ -7631,37 +7678,42 @@ function getGroupedProductionQaCauses() {
 function openProductionQaCauseModal(stationId, type) {
   const station = getProductionOrderStationById(stationId);
   const order = getProductionOrderById(station?.order_id);
+  const anchorKey = `amount:${stationId}:${type}`;
+  const anchorTop = getScrollAnchorElement(anchorKey)?.getBoundingClientRect().top ?? null;
   if (!station || !["scrap", "clarify"].includes(type) || !canEditProductionOrder(order)) {
     setProductionStatus("Du darfst diese Menge nicht ändern.", true);
-    renderPreservingScroll();
+    renderPreservingScroll(anchorKey);
     return;
   }
   const limitInfo = getProductionQuantityLimitInfo(order, station);
   if (limitInfo.blockPlus) {
-    setProductionStatus(limitInfo.message, true);
-    renderPreservingScroll();
+    setProductionStatus("");
+    setProductionLocalStatus(anchorKey, "Ziel erreicht - +1 gesperrt", true);
+    renderPreservingScroll(anchorKey);
     return;
   }
   if (!supabaseReady) {
     setProductionStatus("Supabase ist nicht erreichbar.", true);
-    renderPreservingScroll();
+    renderPreservingScroll(anchorKey);
     return;
   }
   const causes = state.productionQaCauses || [];
   if (!causes.length) {
     setProductionStatus("Keine aktiven 6M-Ursachen geladen. +1 kann nicht ohne Ursache gebucht werden.", true);
-    renderPreservingScroll();
+    renderPreservingScroll(anchorKey);
     return;
   }
   state.ui = state.ui || {};
   state.ui.productionQaCauseModal = {
     stationId,
     type,
+    anchorKey,
+    anchorTop,
     selectedCauseId: causes[0]?.id || "",
     note: "",
   };
   setProductionStatus("");
-  renderPreservingScroll();
+  renderPreservingScroll(anchorKey);
 }
 
 function closeProductionQaCauseModal(message = "") {
@@ -7728,10 +7780,11 @@ function renderProductionQaCauseModal() {
 async function confirmProductionQaCauseModal() {
   const modal = state.ui?.productionQaCauseModal;
   if (!modal) return;
+  const anchorKey = modal.anchorKey || `amount:${modal.stationId}:${modal.type}`;
   const cause = getProductionQaCauseById(modal.selectedCauseId);
   if (!cause) {
     state.ui.productionQaCauseModalError = "Bitte eine 6M-Ursache auswählen.";
-    renderPreservingScroll();
+    renderPreservingScroll(anchorKey);
     return;
   }
   const note = document.getElementById("productionQaCauseNote")?.value?.trim() || "";
@@ -7740,20 +7793,25 @@ async function confirmProductionQaCauseModal() {
   await adjustProductionStationAmount(modal.stationId, modal.type, 1, {
     qaCauseId: cause.id,
     note,
+    scrollAnchorTop: modal.anchorTop,
   });
 }
 
 async function adjustProductionStationAmount(stationId, type, delta, options = {}) {
   const station = getProductionOrderStationById(stationId);
   const order = getProductionOrderById(station?.order_id);
+  const anchorKey = `amount:${stationId}:${type}`;
+  const scrollAnchorTop = Number.isFinite(options.scrollAnchorTop)
+    ? options.scrollAnchorTop
+    : null;
   if (!station || !["scrap", "clarify"].includes(type) || !canEditProductionOrder(order)) {
     setProductionStatus("Du darfst diese Menge nicht ändern.", true);
-    renderPreservingScroll();
+    renderPreservingScroll(anchorKey);
     return;
   }
   if (!supabaseReady) {
     setProductionStatus("Supabase ist nicht erreichbar.", true);
-    renderPreservingScroll();
+    renderPreservingScroll(anchorKey);
     return;
   }
 
@@ -7765,8 +7823,9 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
   if (delta > 0) {
     const limitInfo = getProductionQuantityLimitInfo(order, station);
     if (limitInfo.blockPlus) {
-      setProductionStatus(limitInfo.message, true);
-      renderPreservingScroll();
+      setProductionStatus("");
+      setProductionLocalStatus(anchorKey, "Ziel erreicht - +1 gesperrt", true);
+      renderPreservingScroll(anchorKey, scrollAnchorTop);
       return;
     }
   }
@@ -7775,13 +7834,9 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
   const currentTotal = Math.max(0, Number(station[totalField] || 0));
   const currentLifetime = Math.max(0, Number(station[lifetimeField] || 0));
   if (delta < 0 && currentTotal <= 0) {
-    setProductionStatus(
-      type === "scrap"
-        ? "Ausschuss kann nicht unter 0 fallen."
-        : "Abklärmenge kann nicht unter 0 fallen.",
-      true,
-    );
-    renderPreservingScroll();
+    setProductionStatus("");
+    setProductionLocalStatus(anchorKey, type === "scrap" ? "Ausschuss ist bereits 0" : "Abklärung ist bereits 0", true);
+    renderPreservingScroll(anchorKey);
     return;
   }
 
@@ -7791,7 +7846,8 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
   state.ui.productionStationAmountSavingKey = savingKey;
   state.ui.productionActionError = "";
   state.ui.productionActionMessage = "";
-  renderPreservingScroll();
+  setProductionLocalStatus(anchorKey, "");
+  renderPreservingScroll(anchorKey, scrollAnchorTop);
 
   const payload = {
     [totalField]: Math.max(0, currentTotal + delta),
@@ -7820,7 +7876,7 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
       formatProductionSupabaseError(error, "Menge konnte nicht gespeichert werden"),
       true,
     );
-    renderPreservingScroll();
+    renderPreservingScroll(anchorKey, scrollAnchorTop);
     return;
   }
 
@@ -7842,7 +7898,7 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
     });
     state.ui.productionStationAmountSavingKey = "";
     setProductionStatus("Menge gespeichert, Ursache/Protokoll konnte nicht geschrieben werden.", true);
-    renderPreservingScroll();
+    renderPreservingScroll(anchorKey, scrollAnchorTop);
     return;
   }
 
@@ -7851,12 +7907,12 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
   state.ui.productionStationAmountSavingKey = "";
   if (!stationsRefreshed) {
     setProductionStatus("Menge gespeichert, Ansicht konnte nicht neu geladen werden.", true);
-    renderPreservingScroll();
+    renderPreservingScroll(anchorKey, scrollAnchorTop);
     return;
   }
   if (!eventsRefreshed) {
     setProductionStatus("Menge gespeichert, Protokoll konnte nicht neu geladen werden.", true);
-    renderPreservingScroll();
+    renderPreservingScroll(anchorKey, scrollAnchorTop);
     return;
   }
 
@@ -7864,22 +7920,24 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
     type === "scrap"
       ? delta > 0 ? "Ausschuss wurde gezählt." : "Ausschuss-Korrektur wurde gespeichert."
       : delta > 0 ? "Abklärmenge wurde gezählt." : "Abklär-Korrektur wurde gespeichert.";
-  setProductionStatus(successMessage);
-  renderPreservingScroll();
+  setProductionStatus("");
+  setProductionLocalStatus(anchorKey, successMessage);
+  renderPreservingScroll(anchorKey, scrollAnchorTop);
 }
 
 async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta, retried = false) {
   const station = getProductionOrderStationById(stationId);
   const order = getProductionOrderById(station?.order_id);
   const orderEmployee = getProductionOrderEmployeeById(orderEmployeeId);
+  const anchorKey = `good:${stationId}:${orderEmployeeId}`;
   if (!station || !orderEmployee || orderEmployee.active === false || !canEditProductionOrder(order)) {
     setProductionStatus("Du darfst diese Gutteile nicht zählen.", true);
-    renderPreservingScroll();
+    renderPreservingScroll(anchorKey);
     return;
   }
   if (!supabaseReady) {
     setProductionStatus("Supabase ist nicht erreichbar.", true);
-    renderPreservingScroll();
+    renderPreservingScroll(anchorKey);
     return;
   }
 
@@ -7892,14 +7950,16 @@ async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta,
   if (delta > 0) {
     const limitInfo = getProductionGoodLimitInfo(order, station);
     if (limitInfo.blockPlus) {
-      setProductionStatus(limitInfo.message, true);
-      renderPreservingScroll();
+      setProductionStatus("");
+      setProductionLocalStatus(anchorKey, "Ziel erreicht - +1 gesperrt", true);
+      renderPreservingScroll(anchorKey);
       return;
     }
   }
   if (delta < 0 && currentQty <= 0) {
-    setProductionStatus("Gutmenge kann nicht unter 0 fallen.", true);
-    renderPreservingScroll();
+    setProductionStatus("");
+    setProductionLocalStatus(anchorKey, "Gutmenge ist bereits 0", true);
+    renderPreservingScroll(anchorKey);
     return;
   }
 
@@ -7907,7 +7967,8 @@ async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta,
   state.ui.productionGoodQtySavingKey = savingKey;
   state.ui.productionActionError = "";
   state.ui.productionActionMessage = "";
-  renderPreservingScroll();
+  setProductionLocalStatus(anchorKey, "");
+  renderPreservingScroll(anchorKey);
 
   const nextQty = Math.max(0, currentQty + delta);
   let countError = null;
@@ -7961,7 +8022,7 @@ async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta,
       ),
       true,
     );
-    renderPreservingScroll();
+    renderPreservingScroll(anchorKey);
     return;
   }
 
@@ -7980,7 +8041,7 @@ async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta,
     });
     state.ui.productionGoodQtySavingKey = "";
     setProductionStatus("Gutteil gespeichert, Protokolleintrag konnte nicht geschrieben werden.", true);
-    renderPreservingScroll();
+    renderPreservingScroll(anchorKey);
     return;
   }
 
@@ -7989,17 +8050,18 @@ async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta,
   state.ui.productionGoodQtySavingKey = "";
   if (!countsRefreshed) {
     setProductionStatus("Gutteil gespeichert, Zähler konnte nicht neu geladen werden.", true);
-    renderPreservingScroll();
+    renderPreservingScroll(anchorKey);
     return;
   }
   if (!eventsRefreshed) {
     setProductionStatus("Gutteil gespeichert, Protokoll konnte nicht neu geladen werden.", true);
-    renderPreservingScroll();
+    renderPreservingScroll(anchorKey);
     return;
   }
 
-  setProductionStatus(delta > 0 ? "Gutteil wurde gezählt." : "Gutteil-Korrektur wurde gespeichert.");
-  renderPreservingScroll();
+  setProductionStatus("");
+  setProductionLocalStatus(anchorKey, delta > 0 ? "Gutteil wurde gezählt." : "Gutteil-Korrektur wurde gespeichert.");
+  renderPreservingScroll(anchorKey);
 }
 
 async function setProductionOrderEmployeeActive(entryId, active) {
