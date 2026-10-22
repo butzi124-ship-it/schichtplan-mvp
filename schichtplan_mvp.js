@@ -56,7 +56,9 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.5.12";
+const APP_VERSION = "0.5.13";
+const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
+let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
 const HUMBEL_COLORS = Object.freeze({
   primary: "#0d4682",
@@ -69,6 +71,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.5.13",
+    date: "2026-10-22 14:21",
+    changes: ["Produktionsansicht für mobile und touchoptimierte Stückzahlerfassung ergänzt; vollständige Übersicht bleibt erhalten."],
+  },
   {
     version: "0.5.12",
     date: "2026-10-22 07:56",
@@ -1001,6 +1008,127 @@ function injectHumbelDesignStyles() {
       text-decoration: underline;
       text-underline-offset: 3px;
       text-align: left;
+    }
+
+    .production-view-toggle {
+      display: inline-flex;
+      max-width: 100%;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 6px;
+      background: #e8f0f7;
+    }
+    .production-view-toggle button {
+      min-height: 44px;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-weight: 600;
+      color: var(--humbel-blue-dark);
+    }
+    .production-view-toggle button[aria-pressed="true"] {
+      background: var(--humbel-blue);
+      color: white;
+    }
+    .production-touch-view { min-width: 0; }
+    .production-touch-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 0;
+    }
+    .production-touch-heading h3 { font-size: 18px; font-weight: 700; }
+    .production-touch-heading button,
+    .production-touch-employees button,
+    .production-touch-employees select { min-height: 44px; }
+    .production-touch-view .production-order-tabs > button > span:first-child { font-size: 20px; }
+    .production-touch-employees {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--humbel-border);
+    }
+    .production-touch-employees summary {
+      min-height: 44px;
+      padding: 10px 12px;
+      border: 1px solid var(--humbel-border);
+      border-radius: 4px;
+      cursor: pointer;
+      color: var(--humbel-blue);
+      font-weight: 600;
+    }
+    .production-touch-employees details[open] { flex: 1 1 100%; }
+    .production-touch-employees label { min-width: 0; }
+    .production-touch-station { padding: 12px 0; }
+    .production-touch-station > header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 32px;
+      margin-bottom: 8px;
+    }
+    .production-touch-station > header h4 { font-size: 16px; font-weight: 700; }
+    .production-touch-view div[data-scroll-anchor^="good:"],
+    .production-touch-view div[data-scroll-anchor^="amount:"] {
+      border: 0;
+      border-radius: 0;
+      border-bottom: 1px solid var(--humbel-border);
+      padding: 12px 0;
+      min-width: 0;
+    }
+    .production-touch-view div[data-scroll-anchor] button[aria-label*="1"] {
+      width: 60px;
+      height: 60px;
+      min-width: 60px;
+      padding: 0;
+      font-size: 28px;
+      touch-action: manipulation;
+    }
+    .production-touch-view [data-counter-value] {
+      min-width: 80px;
+      min-height: 60px;
+      padding: 4px 8px;
+      font-size: 30px;
+      font-weight: 700;
+      line-height: 1.2;
+      border: 0;
+      border-radius: 4px;
+    }
+    .production-touch-view [data-counter-value] .text-lg { font-size: 30px; }
+    .production-touch-view div[data-scroll-anchor^="good:"] > div:first-child > div:last-child,
+    .production-touch-view div[data-scroll-anchor^="amount:"] > div:first-child > div:last-child {
+      gap: 12px;
+    }
+    .production-touch-view div[data-scroll-anchor^="good:"] > div:first-child > div:first-child {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    .production-touch-view div[data-scroll-anchor^="amount:"] > div:first-child {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+    }
+    .production-touch-view div[data-scroll-anchor^="good:"] [data-counter-value] { color: #0f6f5e; }
+    .production-touch-view div[data-scroll-anchor$=":scrap"] [data-counter-value] { color: #b42318; }
+    .production-touch-view div[data-scroll-anchor$=":clarify"] [data-counter-value] { color: #9a4d00; }
+    .production-touch-complete {
+      display: block;
+      width: 100%;
+      min-height: 52px;
+      padding: 12px;
+      border-radius: 4px;
+      background: var(--humbel-blue);
+      color: white;
+      font-weight: 700;
+    }
+    @media (max-width: 700px) {
+      .production-touch-view div[data-scroll-anchor^="good:"] > div:first-child {
+        grid-template-columns: minmax(0, 1fr);
+      }
     }
 
     .production-counter-announcement {
@@ -2838,6 +2966,7 @@ function ensureVersionFooter() {
     document.body.appendChild(footer);
   }
 
+  footer.hidden = currentTab === "produktion" && state.productionSubTab === "counts" && getProductionCounterView() === "production";
   footer.innerHTML = `<button class="px-3 py-1 rounded-full bg-white/95 border border-slate-200 shadow text-xs text-slate-600 hover:bg-slate-50" onclick="openVersionLog()">Versionslog · v${APP_VERSION}</button>`;
 }
 
@@ -5777,6 +5906,7 @@ function renderProduction() {
   const subTab = PRODUCTION_SUBTABS.some((tab) => tab.id === state.productionSubTab)
     ? state.productionSubTab
     : "departments";
+  const compactCounts = subTab === "counts" && getProductionCounterView() === "production";
   const subTabButtons = PRODUCTION_SUBTABS.map((tab) => {
     const active = subTab === tab.id;
     return `<button class='px-3 py-2 rounded border ${active ? "humbel-subtab-active" : "humbel-subtab"}' onclick="setProductionSubTab('${tab.id}')">${tab.label}</button>`;
@@ -5805,11 +5935,14 @@ function renderProduction() {
   if (subTab === "settings") content = renderProductionSettingsTab();
 
   return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
-    <div>
+    ${compactCounts ? `<div class='flex items-center justify-between gap-3'>
+      <h2 class='text-lg font-semibold'>Produktion</h2>
+      <details><summary class='cursor-pointer py-2 text-sm font-semibold'>Bereiche</summary><div class='flex gap-2 flex-wrap mt-2'>${subTabButtons}</div></details>
+    </div>` : `<div>
       <h2 class='text-lg font-semibold'>Produktion</h2>
       <p class='text-sm text-slate-500 mt-1'>Grundstruktur für Abteilungen und spätere Maschinenverwaltung.</p>
     </div>
-    <div class='flex gap-2 flex-wrap'>${subTabButtons}</div>
+    <div class='flex gap-2 flex-wrap'>${subTabButtons}</div>`}
     ${getProductionStatusBanner()}
     ${renderProductionDepartmentAdminNotice()}
     ${content}
@@ -6593,6 +6726,68 @@ function renderProductionCounterOrderSummary(order) {
   </div>`;
 }
 
+function getProductionCounterView() {
+  if (!productionCounterViewPreference) {
+    try {
+      const stored = localStorage.getItem(PRODUCTION_COUNTER_VIEW_KEY);
+      if (["production", "overview"].includes(stored)) productionCounterViewPreference = stored;
+    } catch { /* Counting remains available when browser storage is disabled. */ }
+  }
+  return productionCounterViewPreference ||
+    (window.matchMedia("(max-width: 1024px), (pointer: coarse)").matches ? "production" : "overview");
+}
+
+function setProductionCounterView(view) {
+  if (!canAccessProduction() || !["production", "overview"].includes(view)) return;
+  productionCounterViewPreference = view;
+  try { localStorage.setItem(PRODUCTION_COUNTER_VIEW_KEY, view); } catch { /* Session preference still applies. */ }
+  renderPreservingScroll("production-view-toggle");
+}
+
+function renderProductionCounterViewToggle() {
+  const view = getProductionCounterView();
+  return `<div class='production-view-toggle' role='group' aria-label='Zähleransicht' data-scroll-anchor='production-view-toggle'>
+    <button type='button' aria-pressed='${view === "production"}' onclick="setProductionCounterView('production')">Produktionsansicht</button>
+    <button type='button' aria-pressed='${view === "overview"}' onclick="setProductionCounterView('overview')">Übersicht</button>
+  </div>`;
+}
+
+function selectProductionCounterStation(orderId, stationId) {
+  if (!canAccessProduction() || state.ui?.productionCounterActiveOrderId !== orderId ||
+      !getVisibleProductionOrders().some((order) => order.id === orderId) ||
+      !getProductionOrderStations(orderId).some((station) => station.id === stationId)) return;
+  state.ui.productionCounterStationByOrderId = state.ui.productionCounterStationByOrderId || {};
+  state.ui.productionCounterStationByOrderId[orderId] = stationId;
+  renderPreservingScroll("production-station-tabs");
+}
+
+function renderProductionTouchPreview(machine, order, baTabs) {
+  const stations = order ? getProductionOrderStations(order.id) : [];
+  const selectedId = state.ui?.productionCounterStationByOrderId?.[order?.id];
+  const station = stations.find((entry) => entry.id === selectedId) || stations[0];
+  const stationTabs = stations.map((entry) => `<button type='button' role='tab'
+    aria-selected='${entry.id === station?.id}' aria-controls='productionSelectedStation'
+    data-station-id='${escapeHtml(entry.id)}' class='px-3 py-2 rounded border ${entry.id === station?.id ? "humbel-subtab-active" : "humbel-subtab"}'
+    onclick="selectProductionCounterStation('${order.id}', '${entry.id}')">Spannung ${escapeHtml(entry.station_no)}</button>`).join("");
+  return `<div class='production-touch-view' data-production-machine-id='${escapeHtml(machine.id)}'>
+    ${renderProductionCounterViewToggle()}
+    <div class='production-touch-heading'>
+      <h3>${escapeHtml(machine.name || machine.machine_code || "Maschine")}</h3>
+      <button type='button' class='px-3 py-2 rounded border text-sm' onclick='resetProductionCounterSelection()'>Maschine wechseln</button>
+    </div>
+    <div role='tablist' aria-label='Aktive Aufträge' class='production-order-tabs' data-scroll-anchor='production-order-tabs'>${baTabs}</div>
+    <div role='tabpanel' id='productionActiveOrderPanel' data-order-id='${escapeHtml(order?.id || "")}'>
+      ${order ? `${renderProductionOrderEmployeesSection(order, true)}
+        <div role='tablist' aria-label='Spannungsauswahl' class='production-order-tabs' data-scroll-anchor='production-station-tabs'>${stationTabs}</div>
+        <div role='tabpanel' id='productionSelectedStation' data-station-id='${escapeHtml(station?.id || "")}'>
+          ${station ? renderProductionOrderStationCard(station, canEditProductionOrder(order), true) : "<p class='py-3 text-sm'>Noch keine Spannung geladen.</p>"}
+        </div>
+        <button type='button' class='production-touch-complete' onclick="openProductionCompletionDialog('${order.id}')" ${canEditProductionOrder(order) ? "" : "disabled"}>Auftrag abschließen</button>`
+        : "<p class='py-3 text-sm'>Keine laufenden oder pausierten Aufträge auf dieser Maschine. Auftrag unter Aufträge / BA anlegen.</p>"}
+    </div>
+  </div>`;
+}
+
 function renderProductionMachineOrderPreview(machine, orders) {
   const departmentDisplay = getProductionOrderDepartmentDisplay(
     machine.id,
@@ -6612,6 +6807,9 @@ function renderProductionMachineOrderPreview(machine, orders) {
       </button>`;
     })
     .join("");
+  if (getProductionCounterView() === "production") {
+    return renderProductionTouchPreview(machine, activeOrder, baTabs);
+  }
   const diff = activeOrder
     ? Number(activeOrder.target_quantity || 0) - Number(activeOrder.ba_quantity || 0)
     : 0;
@@ -6662,6 +6860,7 @@ function renderProductionMachineOrderPreview(machine, orders) {
     : `<div class='border rounded-lg bg-slate-50 p-4 text-sm text-slate-600'>Keine laufenden oder pausierten Aufträge auf dieser Maschine. Auftrag unter Aufträge / BA anlegen.</div>`;
 
   return `<div class='space-y-4 min-w-0' data-production-machine-id='${escapeHtml(machine.id)}'>
+    ${renderProductionCounterViewToggle()}
     <button type='button' class='px-3 py-2 rounded bg-slate-200 text-slate-800' onclick='resetProductionCounterSelection()'>Zurück zur Maschinenübersicht</button>
     <div class='border rounded-lg p-4 bg-slate-50'>
       <div class='flex items-start justify-between gap-3 flex-wrap'>
@@ -6822,7 +7021,7 @@ function renderProductionOrderChecklistItem(item, canEdit) {
   </label>`;
 }
 
-function renderProductionOrderEmployeesSection(order) {
+function renderProductionOrderEmployeesSection(order, compact = false) {
   const canEdit = canEditProductionOrder(order);
   const activeEmployees = getProductionOrderEmployees(order.id, true);
   const inactiveEmployees = getProductionOrderEmployees(order.id, false)
@@ -6860,6 +7059,18 @@ function renderProductionOrderEmployeesSection(order) {
       ? `<div class='text-xs text-slate-500'>Keine weiteren aktiven Mitarbeiter verfügbar.</div>`
       : "";
 
+  if (compact) {
+    return `<section class='production-touch-employees' aria-label='Mitarbeiter am Auftrag'>
+      <div class='min-w-0'>
+        <h4 class='text-sm font-semibold'>Mitarbeiter</h4>
+        <div class='text-sm text-slate-600' style='overflow-wrap:anywhere'>${activeEmployees.length
+          ? activeEmployees.map((entry) => escapeHtml(entry.employee_name || "Mitarbeiter")).join(" · ")
+          : "Noch keine Mitarbeiter zugeordnet."}</div>
+      </div>
+      ${canEdit ? `<details><summary>Mitarbeiter hinzufügen</summary><div class='pt-3 space-y-2'>${addControl}${noEmployeesNotice}</div></details>` : ""}
+    </section>`;
+  }
+
   return `<section class='border rounded-lg bg-slate-50 p-4 space-y-4'>
     <div>
       <h4 class='font-semibold'>Mitarbeiter am Auftrag</h4>
@@ -6887,7 +7098,7 @@ function renderProductionOrderEmployeePill(entry, canEdit, isActive) {
   </div>`;
 }
 
-function renderProductionOrderStationCard(station, canEdit) {
+function renderProductionOrderStationCard(station, canEdit, compact = false) {
   const readonly = canEdit ? "" : "disabled";
   const order = getProductionOrderById(station.order_id);
   const orderEmployees = getProductionOrderEmployees(station.order_id, true);
@@ -6906,6 +7117,13 @@ function renderProductionOrderStationCard(station, canEdit) {
   const employeesList = orderEmployees.length
     ? `<div class='grid gap-2'>${orderEmployees.map((entry) => renderProductionStationEmployeeCounter(station, entry, canEdit)).join("")}</div>`
     : `<div class='rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800'>Noch kein Mitarbeiter dem Auftrag zugeordnet.</div>`;
+  if (compact) {
+    return `<article class='production-touch-station' data-scroll-anchor='station:${escapeHtml(station.id)}'>
+      <header><h4>Gutteile</h4>${limitNotice}</header>
+      ${employeesList}
+      ${stationScrapClarifyControls}
+    </article>`;
+  }
   const actualMinutesValue =
     station.actual_time_minutes === null || station.actual_time_minutes === undefined
       ? ""
@@ -7852,9 +8070,10 @@ function openProductionQaCauseModal(stationId, type) {
 
 function closeProductionQaCauseModal(message = "") {
   state.ui = state.ui || {};
+  const modal = state.ui.productionQaCauseModal;
   state.ui.productionQaCauseModal = null;
-  if (message) setProductionStatus(message);
-  render();
+  if (message) setProductionStatus(getProductionCounterView() === "production" ? "" : message);
+  renderPreservingScroll(modal?.anchorKey || "", modal?.anchorTop ?? null);
 }
 
 function setProductionQaCauseSelection(causeId) {
