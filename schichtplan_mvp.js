@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.5.10";
+const APP_VERSION = "0.5.11";
 const INVENTORY_MODE_ENABLED = false;
 const HUMBEL_COLORS = Object.freeze({
   primary: "#0d4682",
@@ -69,6 +69,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.5.11",
+    date: "2026-10-22 06:41",
+    changes: ["Produktionszähler mit farbiger Speicherbestätigung und erweiterten automatisierten UI-Tests."],
+  },
   {
     version: "0.5.10",
     date: "2026-10-03 08:05",
@@ -958,6 +963,32 @@ function injectHumbelDesignStyles() {
     .text-emerald-700,
     .text-emerald-800 {
       color: #0f6f5e !important;
+    }
+
+    [data-counter-value] {
+      background-color: #f7fafc;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .production-counter-announcement {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 640px) {
+      div[data-scroll-anchor^="amount:"] > div:first-child {
+        flex-wrap: wrap;
+      }
+      div[data-scroll-anchor^="good:"] > div:first-child {
+        grid-template-columns: minmax(0, 1fr);
+      }
     }
   `;
   document.head.appendChild(style);
@@ -2916,26 +2947,41 @@ function getScrollAnchorElement(anchorKey = "") {
   ) || null;
 }
 
+let pendingScrollRestore = null;
+
 function renderPreservingScroll(anchorKey = "", anchorTopOverride = null) {
   const scrollX = window.scrollX || 0;
   const scrollY = window.scrollY || 0;
   const anchor = getScrollAnchorElement(anchorKey);
   const resolvedAnchorKey = anchor?.dataset?.scrollAnchor || anchorKey || "";
+  const pending = pendingScrollRestore?.anchorKey === resolvedAnchorKey ? pendingScrollRestore : null;
   const anchorTop =
     Number.isFinite(anchorTopOverride)
       ? anchorTopOverride
+      : pending
+        ? pending.anchorTop
       : anchor
         ? anchor.getBoundingClientRect().top
         : null;
+  // Several async renders can finish before one frame; retain the first stable position.
+  const restore = {
+    anchorKey: resolvedAnchorKey, anchorTop,
+    scrollX: pending?.scrollX ?? scrollX, scrollY: pending?.scrollY ?? scrollY,
+    tab: currentTab,
+  };
+  pendingScrollRestore = restore;
   render();
   window.requestAnimationFrame(() => {
+    if (pendingScrollRestore !== restore) return;
+    pendingScrollRestore = null;
+    if (currentTab !== restore.tab) return;
     const nextAnchor = getScrollAnchorElement(resolvedAnchorKey);
     if (nextAnchor && anchorTop !== null) {
       const nextTop = nextAnchor.getBoundingClientRect().top;
       window.scrollBy(0, nextTop - anchorTop);
       return;
     }
-    window.scrollTo(scrollX, scrollY);
+    window.scrollTo(restore.scrollX, restore.scrollY);
   });
 }
 
@@ -5257,8 +5303,9 @@ function renderPlanningPersonal() {
   </div>`;
 }
 
-function setProductionStatus(message = "", isError = false) {
+function setProductionStatus(message = "", isError = false, anchorKey = "") {
   state.ui = state.ui || {};
+  state.ui.productionActionErrorAnchorKey = isError ? anchorKey : "";
   if (isError) {
     state.ui.productionActionError = message;
     state.ui.productionActionMessage = "";
@@ -5282,11 +5329,40 @@ function setProductionLocalStatus(anchorKey, message = "", isError = false) {
 function getProductionLocalStatus(anchorKey) {
   if (!anchorKey) return "";
   const status = state.ui?.productionLocalStatusByAnchor?.[anchorKey];
-  if (!status?.message) return "";
-  const statusClass = status.isError
-    ? "border-amber-200 bg-amber-50 text-amber-800"
-    : "border-emerald-200 bg-emerald-50 text-emerald-700";
-  return `<div class='mt-2 rounded border ${statusClass} px-2 py-1 text-xs font-medium'>${escapeHtml(status.message)}</div>`;
+  if (!status?.message || !status.isError) return "";
+  return `<div class='mt-2 rounded border border-amber-200 bg-amber-50 text-amber-800 px-2 py-1 text-xs font-medium'>${escapeHtml(status.message)}</div>`;
+}
+
+function showProductionCounterFeedback(anchorKey, type, message) {
+  let announcement = document.getElementById("productionCounterAnnouncement");
+  if (!announcement) {
+    announcement = document.createElement("div");
+    announcement.id = "productionCounterAnnouncement";
+    announcement.className = "production-counter-announcement";
+    announcement.setAttribute("role", "status");
+    announcement.setAttribute("aria-live", "polite");
+    announcement.setAttribute("aria-atomic", "true");
+    document.body.appendChild(announcement);
+  }
+  announcement.textContent = "";
+  // Rendering replaces the counters; find the new number field after scroll restoration.
+  window.requestAnimationFrame(() => {
+    announcement.textContent = message;
+    const field = getScrollAnchorElement(anchorKey)?.querySelector("[data-counter-value]");
+    if (!field) return;
+    field.getAnimations().forEach((animation) => animation.cancel());
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const color = { good: "#bbf7d0", scrap: "#fecaca", clarify: "#fed7aa" }[type];
+    if (!color) return;
+    field.animate(
+      [
+        { backgroundColor: color, boxShadow: `0 0 0 2px ${color}` },
+        { backgroundColor: color, boxShadow: `0 0 0 2px ${color}`, offset: 0.35 },
+        { backgroundColor: "#f7fafc", boxShadow: "0 0 0 0 transparent" },
+      ],
+      { duration: 600, easing: "ease-out" },
+    );
+  });
 }
 
 function formatProductionSupabaseError(
@@ -5347,8 +5423,9 @@ function getProductionStatusBanner() {
   if (orderChecklistError) errors.push(`production_order_checklist: ${orderChecklistError}`);
   if (actionError) errors.push(actionError);
 
+  const counterError = actionError && state.ui?.productionActionErrorAnchorKey;
   const errorBanner = errors.length
-    ? `<div class='rounded border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700'>${errors.map(escapeHtml).join(" | ")}</div>`
+    ? `<div role='alert' class='${counterError ? "fixed bottom-4 left-4 right-4 z-50 shadow-lg " : ""}rounded border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700'>${errors.map(escapeHtml).join(" | ")}</div>`
     : "";
   const messageBanner = actionMessage
     ? `<div class='rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700'>${escapeHtml(actionMessage)}</div>`
@@ -6792,8 +6869,8 @@ function renderProductionOrderStationCard(station, canEdit) {
     </div>
     <div class='grid grid-cols-2 md:grid-cols-5 gap-2 text-sm'>
       ${renderProductionStationChip("Gutteile", stationGoodTotal)}
-      ${renderProductionStationChip("Ausschuss gesamt", station.scrap_total)}
-      ${renderProductionStationChip("In Abklärung gesamt", station.clarify_total)}
+      ${renderProductionStationChip("Ausschuss", station.scrap_total)}
+      ${renderProductionStationChip("In Abklärung", station.clarify_total)}
       ${renderProductionStationChip("Gesamt", stationTotal)}
       ${renderProductionStationChip("Ziel", limitInfo.targetQuantity || "-")}
     </div>
@@ -6869,7 +6946,7 @@ function renderProductionStationAmountControl(station, type, label, value, canEd
       </div>
       <div class='flex items-center gap-2'>
         <button type='button' aria-label='${escapeHtml(label)} -1' data-scroll-anchor='${escapeHtml(anchorKey)}' class='min-w-10 px-3 py-2 rounded bg-slate-200 text-slate-900 font-semibold disabled:opacity-50' onclick="adjustProductionStationAmount('${station.id}', '${type}', -1)" ${minusDisabled}>-</button>
-        <div class='min-w-[56px] rounded bg-slate-50 border px-3 py-2 text-center text-lg font-bold'>${escapeHtml(value)}</div>
+        <div data-counter-value class='min-w-[56px] rounded border px-3 py-2 text-center text-lg font-bold'>${escapeHtml(value)}</div>
         <button type='button' aria-label='${escapeHtml(label)} +1' data-scroll-anchor='${escapeHtml(anchorKey)}' class='min-w-10 px-3 py-2 rounded ${type === "scrap" ? "bg-rose-700" : "bg-amber-600"} text-white font-semibold disabled:opacity-50' onclick="adjustProductionStationAmount('${station.id}', '${type}', 1)" ${plusDisabled}>+</button>
       </div>
     </div>
@@ -6894,7 +6971,7 @@ function renderProductionStationEmployeeCounter(station, entry, canEdit) {
       </div>
       <div class='flex items-center gap-2'>
         <button type='button' aria-label='Gutteile -1 ${escapeHtml(entry.employee_name || "Mitarbeiter")}' data-scroll-anchor='${escapeHtml(anchorKey)}' class='min-w-10 px-3 py-2 rounded bg-slate-200 text-slate-900 font-semibold disabled:opacity-50' onclick="adjustProductionStationGoodQty('${station.id}', '${entry.id}', -1)" ${minusDisabled}>-</button>
-        <div class='min-w-[64px] rounded bg-slate-50 border px-3 py-2 text-center'>
+        <div data-counter-value class='min-w-[64px] rounded border px-3 py-2 text-center'>
           <div class='text-xs text-slate-500'>Gutteile</div>
           <div class='text-lg font-bold'>${escapeHtml(goodQty)}</div>
         </div>
@@ -7875,6 +7952,7 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
     setProductionStatus(
       formatProductionSupabaseError(error, "Menge konnte nicht gespeichert werden"),
       true,
+      anchorKey,
     );
     renderPreservingScroll(anchorKey, scrollAnchorTop);
     return;
@@ -7897,7 +7975,7 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
       qty: delta,
     });
     state.ui.productionStationAmountSavingKey = "";
-    setProductionStatus("Menge gespeichert, Ursache/Protokoll konnte nicht geschrieben werden.", true);
+    setProductionStatus("Menge gespeichert, Ursache/Protokoll konnte nicht geschrieben werden.", true, anchorKey);
     renderPreservingScroll(anchorKey, scrollAnchorTop);
     return;
   }
@@ -7906,12 +7984,12 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
   const eventsRefreshed = await refreshProductionStationEventsFromSupabase();
   state.ui.productionStationAmountSavingKey = "";
   if (!stationsRefreshed) {
-    setProductionStatus("Menge gespeichert, Ansicht konnte nicht neu geladen werden.", true);
+    setProductionStatus("Menge gespeichert, Ansicht konnte nicht neu geladen werden.", true, anchorKey);
     renderPreservingScroll(anchorKey, scrollAnchorTop);
     return;
   }
   if (!eventsRefreshed) {
-    setProductionStatus("Menge gespeichert, Protokoll konnte nicht neu geladen werden.", true);
+    setProductionStatus("Menge gespeichert, Protokoll konnte nicht neu geladen werden.", true, anchorKey);
     renderPreservingScroll(anchorKey, scrollAnchorTop);
     return;
   }
@@ -7921,8 +7999,8 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
       ? delta > 0 ? "Ausschuss wurde gezählt." : "Ausschuss-Korrektur wurde gespeichert."
       : delta > 0 ? "Abklärmenge wurde gezählt." : "Abklär-Korrektur wurde gespeichert.";
   setProductionStatus("");
-  setProductionLocalStatus(anchorKey, successMessage);
   renderPreservingScroll(anchorKey, scrollAnchorTop);
+  showProductionCounterFeedback(anchorKey, type, successMessage);
 }
 
 async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta, retried = false) {
@@ -8021,6 +8099,7 @@ async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta,
         "Gutteilmenge konnte nicht gespeichert werden: Zähler existiert bereits.",
       ),
       true,
+      anchorKey,
     );
     renderPreservingScroll(anchorKey);
     return;
@@ -8040,7 +8119,7 @@ async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta,
       qty: delta,
     });
     state.ui.productionGoodQtySavingKey = "";
-    setProductionStatus("Gutteil gespeichert, Protokolleintrag konnte nicht geschrieben werden.", true);
+    setProductionStatus("Gutteil gespeichert, Protokolleintrag konnte nicht geschrieben werden.", true, anchorKey);
     renderPreservingScroll(anchorKey);
     return;
   }
@@ -8049,19 +8128,19 @@ async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta,
   const eventsRefreshed = await refreshProductionStationEventsFromSupabase();
   state.ui.productionGoodQtySavingKey = "";
   if (!countsRefreshed) {
-    setProductionStatus("Gutteil gespeichert, Zähler konnte nicht neu geladen werden.", true);
+    setProductionStatus("Gutteil gespeichert, Zähler konnte nicht neu geladen werden.", true, anchorKey);
     renderPreservingScroll(anchorKey);
     return;
   }
   if (!eventsRefreshed) {
-    setProductionStatus("Gutteil gespeichert, Protokoll konnte nicht neu geladen werden.", true);
+    setProductionStatus("Gutteil gespeichert, Protokoll konnte nicht neu geladen werden.", true, anchorKey);
     renderPreservingScroll(anchorKey);
     return;
   }
 
   setProductionStatus("");
-  setProductionLocalStatus(anchorKey, delta > 0 ? "Gutteil wurde gezählt." : "Gutteil-Korrektur wurde gespeichert.");
   renderPreservingScroll(anchorKey);
+  showProductionCounterFeedback(anchorKey, "good", delta > 0 ? "Gutteil wurde gezählt." : "Gutteil-Korrektur wurde gespeichert.");
 }
 
 async function setProductionOrderEmployeeActive(entryId, active) {

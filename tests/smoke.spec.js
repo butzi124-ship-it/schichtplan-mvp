@@ -1,5 +1,6 @@
 const { test, expect } = require("@playwright/test");
 const path = require("path");
+const fs = require("fs");
 const { pathToFileURL } = require("url");
 
 const appUrl = pathToFileURL(
@@ -500,6 +501,12 @@ function installSupabaseMock(rowsByTableArg) {
     }
 
     then(resolve, reject) {
+      const hold = window.__SUPABASE_MOCK_HOLD;
+      if (hold?.table === this.table && this.pendingUpdate) {
+        return new Promise((release) => {
+          hold.release = () => release(this.result());
+        }).then(resolve, reject);
+      }
       return Promise.resolve(this.result()).then(resolve, reject);
     }
   }
@@ -526,7 +533,8 @@ function installSupabaseMock(rowsByTableArg) {
 }
 
 test.describe("Humbel app smoke", () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    const feedbackTest = testInfo.titlePath.includes("Production counter feedback");
     const consoleErrors = [];
     page.on("console", (message) => {
       if (message.type() !== "error") return;
@@ -538,6 +546,7 @@ test.describe("Humbel app smoke", () => {
         "supabase",
         "production_order_stations Supabase-Fehler",
         "production_station_events Supabase-Fehler",
+        "production_station_counts Supabase-Fehler",
         "Fehler beim Laden von production_station_events",
         "Fehler beim Laden von production_station_counts",
       ];
@@ -550,12 +559,35 @@ test.describe("Humbel app smoke", () => {
     });
     page.consoleErrors = consoleErrors;
     await page.route("**/cdn.tailwindcss.com**", (route) => {
-      route.fulfill({ contentType: "application/javascript", body: "" });
+      // Generated from the actual app classes with Tailwind 3.4.17; no CDN needed in CI.
+      const css = feedbackTest
+        ? fs.readFileSync(path.join(__dirname, "fixtures", "app-tailwind.css"), "utf8")
+        : "";
+      route.fulfill({ contentType: "application/javascript", body: css
+        ? `const sheet = document.createElement('style'); sheet.textContent = ${JSON.stringify(css)}; document.head.appendChild(sheet);`
+        : "" });
     });
     await page.route("**/@supabase/supabase-js@2**", (route) => {
       route.fulfill({ contentType: "application/javascript", body: "" });
     });
-    await page.addInitScript(installSupabaseMock, JSON.parse(JSON.stringify(rowsByTable)));
+    await page.route("**/*.supabase.co/**", (route) => route.abort());
+    const rows = JSON.parse(JSON.stringify(rowsByTable));
+    if (feedbackTest) {
+      rows.production_orders.find((row) => row.id === "order-one").target_quantity = 50;
+      Object.assign(rows.production_order_stations[0], { scrap_total: 2, clarify_total: 2 });
+      rows.production_order_employees.push({
+        id: "counter-worker", order_id: "order-one", employee_id: "employee-one", active: true, role: "worker",
+      });
+      rows.production_station_counts.push({
+        id: "counter-count", order_id: "order-one", station_id: "station-one",
+        order_employee_id: "counter-worker", good_qty: 2,
+      });
+      rows.production_order_checklist = rows.production_checklist_templates.map((item) => ({
+        id: `counter-${item.id}`, order_id: "order-one", item_key: item.item_key,
+        item_label: item.item_label, sort_order: item.sort_order, checked: false,
+      }));
+    }
+    await page.addInitScript(installSupabaseMock, rows);
   });
 
   test.afterEach(async ({ page }) => {
@@ -729,7 +761,7 @@ test.describe("Humbel app smoke", () => {
       .toBeTruthy();
     await expect.poll(() => page.evaluate(() => window.scrollY > 20)).toBeTruthy();
     await expect(stationOne).toContainText(/Gutteile\s+1/);
-    await expect(page.locator("#view")).toContainText("Gutteil wurde gezählt.");
+    await expect(page.locator("#productionCounterAnnouncement")).toHaveText("Gutteil wurde gezählt.");
     await expect(page.locator("#view")).not.toContainText("Protokolleintrag konnte nicht geschrieben werden");
     await expectViewHeading(page, "Produktionsvorschau");
     await expect(page.locator("#view").getByRole("button", { name: /BA BA-100/ })).toBeVisible();
@@ -805,7 +837,7 @@ test.describe("Humbel app smoke", () => {
       return window.adjustProductionStationGoodQty("station-one", entry.id, -1);
     });
     await expect(stationOne).toContainText(/Gutteile\s+1/);
-    await expect(page.locator("#view")).toContainText("Gutteil-Korrektur wurde gespeichert.");
+    await expect(page.locator("#productionCounterAnnouncement")).toHaveText("Gutteil-Korrektur wurde gespeichert.");
     await page.evaluate(() => {
       const entry = window.__SUPABASE_MOCK_ROWS.production_order_employees.find(
         (item) => item.order_id === "order-one",
@@ -869,12 +901,12 @@ test.describe("Humbel app smoke", () => {
     await expect(stationOne).toContainText(/Gutteile\s+1/);
     await expect(page.locator("#view")).toContainText("Gutteil gespeichert, Protokolleintrag konnte nicht geschrieben werden.");
     await expectViewHeading(page, "Produktionsvorschau");
-    await expect(stationOne).toContainText(/Ausschuss gesamt\s+0/);
+    await expect(stationOne).toContainText(/Ausschuss\s+0/);
     await stationOne.getByRole("button", { name: "Ausschuss +1" }).click();
     await expect(page.getByRole("heading", { name: "6M-Ursache für Ausschuss" })).toBeVisible();
     await expect(page.locator("body")).toContainText("Mensch");
     await page.getByRole("button", { name: "Abbrechen" }).first().click();
-    await expect(stationOne).toContainText(/Ausschuss gesamt\s+0/);
+    await expect(stationOne).toContainText(/Ausschuss\s+0/);
     const scrapAnchor = page.locator('[data-scroll-anchor="amount:station-one:scrap"]').first();
     await scrapAnchor.scrollIntoViewIfNeeded();
     await page.evaluate(() => window.scrollBy(0, -80));
@@ -886,7 +918,7 @@ test.describe("Humbel app smoke", () => {
     await expect
       .poll(() => scrapAnchor.evaluate((element, before) => Math.abs(element.getBoundingClientRect().top - before) <= 30, scrapTopBeforeCount))
       .toBeTruthy();
-    await expect(stationOne).toContainText(/Ausschuss gesamt\s+1/);
+    await expect(stationOne).toContainText(/Ausschuss\s+1/);
     await expect(stationOne).toContainText("Ziel erreicht");
     await expect(stationOne.getByRole("button", { name: /Gutteile \+1/ })).toBeDisabled();
     await expect(stationOne.getByRole("button", { name: "Ausschuss +1" })).toBeDisabled();
@@ -924,8 +956,8 @@ test.describe("Humbel app smoke", () => {
       }),
     );
     await expect(page.locator("#view")).toContainText("Ziel erreicht - +1 gesperrt");
-    await expect(stationOne).toContainText(/Ausschuss gesamt\s+1/);
-    await expect(stationOne).toContainText(/In Abklärung gesamt\s+0/);
+    await expect(stationOne).toContainText(/Ausschuss\s+1/);
+    await expect(stationOne).toContainText(/In Abklärung\s+0/);
     const amountWritesAfterBlocked = await page.evaluate(() =>
       (window.__SUPABASE_WRITE_LOG || []).filter(
         (entry) =>
@@ -935,8 +967,8 @@ test.describe("Humbel app smoke", () => {
     );
     expect(amountWritesAfterBlocked).toBe(amountWritesBeforeBlocked);
     await stationOne.getByRole("button", { name: "Ausschuss -1" }).click();
-    await expect(stationOne).toContainText(/Ausschuss gesamt\s+0/);
-    await expect(page.locator("#view")).toContainText("Ausschuss-Korrektur wurde gespeichert.");
+    await expect(stationOne).toContainText(/Ausschuss\s+0/);
+    await expect(page.locator("#productionCounterAnnouncement")).toHaveText("Ausschuss-Korrektur wurde gespeichert.");
     await expect(page.locator("#view")).not.toContainText("Ursache/Protokoll konnte nicht geschrieben werden");
     await expectViewHeading(page, "Produktionsvorschau");
     await expect(page.locator("#view").getByRole("button", { name: /BA BA-100/ })).toBeVisible();
@@ -955,13 +987,13 @@ test.describe("Humbel app smoke", () => {
       .toBeTruthy();
     await page.evaluate(() => window.adjustProductionStationAmount("station-one", "scrap", -1));
     await expect(page.locator("#view")).toContainText("Ausschuss ist bereits 0");
-    await expect(stationOne).toContainText(/Ausschuss gesamt\s+0/);
-    await expect(stationOne).toContainText(/In Abklärung gesamt\s+0/);
+    await expect(stationOne).toContainText(/Ausschuss\s+0/);
+    await expect(stationOne).toContainText(/In Abklärung\s+0/);
     await stationOne.getByRole("button", { name: "In Abklärung +1" }).click();
     await expect(page.getByRole("heading", { name: "6M-Ursache für In Abklärung" })).toBeVisible();
     await page.getByRole("button", { name: "Einrichtung" }).click();
     await page.getByRole("button", { name: "Ursache speichern" }).click();
-    await expect(stationOne).toContainText(/In Abklärung gesamt\s+1/);
+    await expect(stationOne).toContainText(/In Abklärung\s+1/);
     await expect
       .poll(() => page.evaluate(() =>
         (window.__SUPABASE_WRITE_LOG || []).some(
@@ -974,8 +1006,8 @@ test.describe("Humbel app smoke", () => {
       ))
       .toBeTruthy();
     await stationOne.getByRole("button", { name: "In Abklärung -1" }).click();
-    await expect(stationOne).toContainText(/In Abklärung gesamt\s+0/);
-    await expect(page.locator("#view")).toContainText("Abklär-Korrektur wurde gespeichert.");
+    await expect(stationOne).toContainText(/In Abklärung\s+0/);
+    await expect(page.locator("#productionCounterAnnouncement")).toHaveText("Abklär-Korrektur wurde gespeichert.");
     await expect(page.locator("#view")).not.toContainText("Ursache/Protokoll konnte nicht geschrieben werden");
     await expectViewHeading(page, "Produktionsvorschau");
     await expect
@@ -992,11 +1024,11 @@ test.describe("Humbel app smoke", () => {
       .toBeTruthy();
     await page.evaluate(() => window.adjustProductionStationAmount("station-one", "clarify", -1));
     await expect(page.locator("#view")).toContainText("Abklärung ist bereits 0");
-    await expect(stationOne).toContainText(/In Abklärung gesamt\s+0/);
+    await expect(stationOne).toContainText(/In Abklärung\s+0/);
     await stationOne.getByRole("button", { name: "Ausschuss +1" }).click();
     await page.getByRole("button", { name: "Einweisung" }).click();
     await page.getByRole("button", { name: "Ursache speichern" }).click();
-    await expect(stationOne).toContainText(/Ausschuss gesamt\s+1/);
+    await expect(stationOne).toContainText(/Ausschuss\s+1/);
     await page.evaluate(() => {
       window.__SUPABASE_MOCK_ERRORS.production_station_events = {
         select: {
@@ -1006,7 +1038,7 @@ test.describe("Humbel app smoke", () => {
       };
     });
     await stationOne.getByRole("button", { name: "Ausschuss -1" }).click();
-    await expect(stationOne).toContainText(/Ausschuss gesamt\s+0/);
+    await expect(stationOne).toContainText(/Ausschuss\s+0/);
     await expect(page.locator("#view")).toContainText("Menge gespeichert, Protokoll konnte nicht neu geladen werden.");
     await expect(page.locator("#view")).not.toContainText("Ursache/Protokoll konnte nicht geschrieben werden");
     await expectViewHeading(page, "Produktionsvorschau");
@@ -1014,7 +1046,7 @@ test.describe("Humbel app smoke", () => {
     await stationOne.getByRole("button", { name: "In Abklärung +1" }).click();
     await page.getByRole("button", { name: "Einrichtung" }).click();
     await page.getByRole("button", { name: "Ursache speichern" }).click();
-    await expect(stationOne).toContainText(/In Abklärung gesamt\s+1/);
+    await expect(stationOne).toContainText(/In Abklärung\s+1/);
     await page.evaluate(() => {
       window.__SUPABASE_MOCK_ERRORS.production_station_events = {
         insert: {
@@ -1024,7 +1056,7 @@ test.describe("Humbel app smoke", () => {
       };
     });
     await stationOne.getByRole("button", { name: "In Abklärung -1" }).click();
-    await expect(stationOne).toContainText(/In Abklärung gesamt\s+0/);
+    await expect(stationOne).toContainText(/In Abklärung\s+0/);
     await expect(page.locator("#view")).toContainText("Menge gespeichert, Ursache/Protokoll konnte nicht geschrieben werden.");
     await expectViewHeading(page, "Produktionsvorschau");
     await expect(page.locator("#view")).toContainText("Ausschuss Auftrag");
@@ -1183,7 +1215,7 @@ test.describe("Humbel app smoke", () => {
     await expect
       .poll(() => overStation.evaluate((element, before) => Math.abs(element.getBoundingClientRect().top - before) <= 30, stationTopBeforeScrapCorrection))
       .toBeTruthy();
-    await expect(overStation).toContainText(/Ausschuss gesamt\s+0/);
+    await expect(overStation).toContainText(/Ausschuss\s+0/);
     await expect(overStation).not.toContainText("Über Ziel - bitte korrigieren");
     await expect(overStation.getByRole("button", { name: /Gutteile \+1/ })).toBeDisabled();
     await overStation.getByRole("button", { name: /Gutteile -1/ }).click();
@@ -1207,7 +1239,233 @@ test.describe("Humbel app smoke", () => {
     await chainStationTwo.getByRole("button", { name: /Gutteile \+1/ }).click();
     await expect(chainStationTwo).toContainText(/Gutteile\s+1/);
   });
+
+  test.describe("Production counter feedback", () => {
+    test.beforeEach(async ({ page }, testInfo) => {
+      page.counterTouch = !!testInfo.project.use.isMobile;
+      await page.addInitScript(() => {
+        window.__counterAnimations = [];
+        const animate = Element.prototype.animate;
+        Element.prototype.animate = function (frames, options) {
+          const animation = animate.call(this, frames, options);
+          if (this.matches("[data-counter-value]")) {
+            // Keep the real WAAPI effect inspectable; each test resumes and awaits its finish.
+            animation.pause();
+            animation.currentTime = 0;
+            window.__counterAnimations.push(animation);
+          }
+          return animation;
+        };
+      });
+      await page.goto(appUrl);
+      await page.getByRole("button", { name: "Mido/Admin" }).click();
+      await clickMain(page, "Produktion");
+      await clickSubtab(page, "Stückzahl");
+      await page.getByRole("button", { name: /Maschine 50/ }).click();
+      await expectViewHeading(page, "Produktionsvorschau");
+    });
+
+    test.afterEach(async ({ page }) => {
+      const writes = await page.evaluate(() => window.__SUPABASE_WRITE_LOG);
+      expect(writes.some((entry) => entry.table === "production_counts")).toBe(false);
+      expect(writes.filter((entry) => ![
+        "production_station_counts", "production_station_events", "production_order_stations",
+      ].includes(entry.table))).toEqual([]);
+    });
+
+    for (const [type, color] of [
+      ["good", "rgb(187, 247, 208)"], ["scrap", "rgb(254, 202, 202)"], ["clarify", "rgb(254, 215, 170)"],
+    ]) {
+      for (const delta of [1, -1]) {
+        test(`${type} ${delta > 0 ? "+1" : "-1"} confirms with color and stable layout`, async ({ page }, testInfo) => {
+          const area = counterArea(page, type);
+          const station = page.locator('article[data-scroll-anchor="station:station-one"]');
+          await area.scrollIntoViewIfNeeded();
+          if (page.counterTouch) {
+            await area.getByRole("button", { name: delta > 0 ? /\+1/ : /-1/ }).tap({ trial: true });
+          }
+          const before = await area.boundingBox();
+          const stationHeight = (await station.boundingBox()).height;
+          const scrollBefore = await page.evaluate(() => window.scrollY);
+          await bookCounter(page, type, delta);
+          await expect(area.locator("[data-counter-value]")).toContainText(String(2 + delta));
+          await expect.poll(() => page.evaluate(() => window.__counterAnimations.length)).toBe(1);
+          const effect = await page.evaluate(() => {
+            const animation = window.__counterAnimations[0];
+            return {
+              color: getComputedStyle(animation.effect.target).backgroundColor,
+              duration: animation.effect.getTiming().duration,
+              count: animation.effect.target.getAnimations().length,
+            };
+          });
+          expect(effect).toEqual({ color, duration: 600, count: 1 });
+          const after = await area.boundingBox();
+          expect(Math.abs(after.height - before.height)).toBeLessThanOrEqual(1);
+          expect(Math.abs((await station.boundingBox()).height - stationHeight)).toBeLessThanOrEqual(1);
+          expect(Math.abs(after.y - before.y)).toBeLessThanOrEqual(30);
+          if (scrollBefore > 100) expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(50);
+          expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+          await expect(area).not.toContainText(/wurde gezählt|Korrektur wurde gespeichert/);
+          await expect(page.locator("#productionCounterAnnouncement")).toHaveText(/gezählt|gespeichert/);
+          expect((await page.locator("#productionCounterAnnouncement").boundingBox()).height).toBe(1);
+          if (type === "good" && delta === 1) {
+            await testInfo.attach("counter-feedback", { body: await page.screenshot(), contentType: "image/png" });
+          }
+          await page.evaluate(async () => {
+            const animation = window.__counterAnimations[0];
+            animation.play();
+            await animation.finished;
+          });
+          expect(await area.locator("[data-counter-value]").evaluate((el) => el.getAnimations().length)).toBe(0);
+        });
+      }
+
+      test(`${type} failed database write never flashes success`, async ({ page }) => {
+        const table = type === "good" ? "production_station_counts" : "production_order_stations";
+        await page.evaluate((table) => {
+          window.__SUPABASE_MOCK_ERRORS[table] = { update: { code: "42501", message: "Buchung durch RLS abgelehnt" } };
+        }, table);
+        const area = counterArea(page, type);
+        const height = (await area.boundingBox()).height;
+        await bookCounter(page, type, 1);
+        await expect(page.getByRole("alert")).toContainText("Buchung durch RLS abgelehnt");
+        await expect(area.locator("[data-counter-value]")).toContainText("2");
+        expect((await area.boundingBox()).height).toBe(height);
+        expect(await page.evaluate(() => window.__counterAnimations.length)).toBe(0);
+        expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG.filter((entry) =>
+          entry.table === "production_station_events").length)).toBe(0);
+      });
+
+      test(`${type} rapid duplicate calls produce one booking and one event`, async ({ page }) => {
+        const table = type === "good" ? "production_station_counts" : "production_order_stations";
+        await page.evaluate(({ type, table }) => {
+          window.__SUPABASE_MOCK_HOLD = { table };
+          const book = () => type === "good"
+            ? window.adjustProductionStationGoodQty("station-one", "counter-worker", 1)
+            : window.adjustProductionStationAmount("station-one", type, 1, { qaCauseId: "qa-cause-human" });
+          window.__pendingCounter = book();
+          void book();
+          void book();
+        }, { type, table });
+        await expect.poll(() => page.evaluate(() => !!window.__SUPABASE_MOCK_HOLD.release)).toBe(true);
+        await expect(counterArea(page, type).getByRole("button", { name: /\+1/ })).toBeDisabled();
+        await expect.poll(() => page.evaluate(() => window.__counterAnimations.length)).toBe(0);
+        await page.evaluate(async () => {
+          window.__SUPABASE_MOCK_HOLD.release();
+          delete window.__SUPABASE_MOCK_HOLD;
+          await window.__pendingCounter;
+        });
+        await expect(counterArea(page, type).locator("[data-counter-value]")).toContainText("3");
+        const writes = await page.evaluate(() => window.__SUPABASE_WRITE_LOG);
+        expect(writes.filter((entry) => entry.table === table && entry.action === "update")).toHaveLength(1);
+        expect(writes.filter((entry) => entry.table === "production_station_events")).toHaveLength(1);
+      });
+    }
+
+    test("target block prevents every mutation and keeps correction available", async ({ page }) => {
+      await page.evaluate(async () => {
+        window.__SUPABASE_MOCK_ROWS.production_orders.find((row) => row.id === "order-one").target_quantity = 6;
+        await refreshProductionOrdersFromSupabase();
+        renderPreservingScroll("station:station-one");
+      });
+      const station = page.locator('article[data-scroll-anchor="station:station-one"]');
+      await expect(station).toContainText("Ziel erreicht");
+      const before = await page.evaluate(() => window.__SUPABASE_WRITE_LOG.length);
+      await page.evaluate(async () => {
+        await adjustProductionStationGoodQty("station-one", "counter-worker", 1);
+        for (const type of ["scrap", "clarify"]) {
+          openProductionQaCauseModal("station-one", type);
+          await adjustProductionStationAmount("station-one", type, 1, { qaCauseId: "qa-cause-human" });
+        }
+      });
+      expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG.length)).toBe(before);
+      expect(await page.evaluate(() => window.__counterAnimations.length)).toBe(0);
+      await expect(page.getByRole("heading", { name: /6M-Ursache für/ })).toHaveCount(0);
+      for (const type of ["good", "scrap", "clarify"]) {
+        await expect(counterArea(page, type).getByRole("button", { name: /\+1/ })).toBeDisabled();
+        await expect(counterArea(page, type).getByRole("button", { name: /-1/ })).toBeEnabled();
+      }
+    });
+
+    test("five station metrics keep their values and shortened labels", async ({ page }) => {
+      const chips = page.locator('article[data-scroll-anchor="station:station-one"] > div').nth(1).locator(":scope > div");
+      await expect(chips).toHaveCount(5);
+      const expected = [["Gutteile", "2"], ["Ausschuss", "2"], ["In Abklärung", "2"], ["Gesamt", "6"], ["Ziel", "50"]];
+      for (let i = 0; i < expected.length; i++) {
+        await expect(chips.nth(i).locator("div").nth(0)).toHaveText(expected[i][0]);
+        await expect(chips.nth(i).locator("div").nth(1)).toHaveText(expected[i][1]);
+      }
+      await expect(page.locator('article[data-scroll-anchor="station:station-one"]')).not.toContainText(/Ausschuss gesamt|In Abklärung gesamt/);
+    });
+
+    test("target reached while 6M dialog is open blocks saving without feedback or writes", async ({ page }) => {
+      await pressCounterButton(page, counterArea(page, "scrap").getByRole("button", { name: "Ausschuss +1" }));
+      await expect(page.getByRole("heading", { name: "6M-Ursache für Ausschuss" })).toBeVisible();
+      await page.evaluate(async () => {
+        window.__SUPABASE_MOCK_ROWS.production_orders.find((row) => row.id === "order-one").target_quantity = 6;
+        await refreshProductionOrdersFromSupabase();
+      });
+      const before = await page.evaluate(() => window.__SUPABASE_WRITE_LOG.length);
+      await pressCounterButton(page, page.getByRole("button", { name: "Ursache speichern" }));
+      await expect(page.getByRole("heading", { name: "6M-Ursache für Ausschuss" })).toHaveCount(0);
+      await expect(counterArea(page, "scrap")).toContainText("Ziel erreicht - +1 gesperrt");
+      expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG.length)).toBe(before);
+      expect(await page.evaluate(() => window.__counterAnimations.length)).toBe(0);
+    });
+
+    test("failed event write keeps the technical error and avoids a success animation", async ({ page }) => {
+      await page.evaluate(() => {
+        window.__SUPABASE_MOCK_ERRORS.production_station_events = {
+          insert: { code: "42501", message: "Protokoll durch RLS abgelehnt" },
+        };
+      });
+      await bookCounter(page, "good", 1);
+      await expect(page.getByRole("alert")).toContainText("Gutteil gespeichert, Protokolleintrag konnte nicht geschrieben werden.");
+      await expect(counterArea(page, "good").locator("[data-counter-value]")).toContainText("3");
+      expect(await page.evaluate(() => window.__counterAnimations.length)).toBe(0);
+    });
+
+    test("reduced motion announces success without animation", async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await bookCounter(page, "good", 1);
+      await expect(counterArea(page, "good").locator("[data-counter-value]")).toContainText("3");
+      await expect(page.locator("#productionCounterAnnouncement")).toHaveText("Gutteil wurde gezählt.");
+      expect(await page.evaluate(() => window.__counterAnimations.length)).toBe(0);
+    });
+
+    test("consecutive successful bookings restart the effect after full render", async ({ page }) => {
+      await bookCounter(page, "good", 1);
+      await expect.poll(() => page.evaluate(() => window.__counterAnimations.length)).toBe(1);
+      await bookCounter(page, "good", 1);
+      await expect.poll(() => page.evaluate(() => window.__counterAnimations.length)).toBe(2);
+      await expect(counterArea(page, "good").locator("[data-counter-value]")).toContainText("4");
+      expect(await counterArea(page, "good").locator("[data-counter-value]").evaluate((el) => el.getAnimations().length)).toBe(1);
+    });
+  });
 });
+
+async function pressCounterButton(page, button) {
+  if (page.counterTouch) await button.tap();
+  else await button.click();
+}
+
+function counterArea(page, type) {
+  const key = type === "good" ? "good:station-one:counter-worker" : `amount:station-one:${type}`;
+  return page.locator(`div[data-scroll-anchor="${key}"]`).first();
+}
+
+async function bookCounter(page, type, delta) {
+  const label = { good: "Gutteile", scrap: "Ausschuss", clarify: "In Abklärung" }[type];
+  await pressCounterButton(page, counterArea(page, type).getByRole("button", {
+    name: new RegExp(`^${label} ${delta > 0 ? "\\+1" : "-1"}`),
+  }));
+  if (type !== "good" && delta > 0) {
+    await expect(page.getByRole("heading", { name: `6M-Ursache für ${label}` })).toBeVisible();
+    await pressCounterButton(page, page.getByRole("button", { name: "Einweisung" }));
+    await pressCounterButton(page, page.getByRole("button", { name: "Ursache speichern" }));
+    await expect(page.getByRole("heading", { name: `6M-Ursache für ${label}` })).toHaveCount(0);
+  }
+}
 
 async function clickMain(page, name) {
   await page.locator("#tabs").getByRole("button", { name }).click();

@@ -38,3 +38,10 @@ jobs:
           name: playwright-report
           path: playwright-report/
           if-no-files-found: ignore
+      - name: Upload failure screenshots and traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failures
+          path: test-results/
+          if-no-files-found: ignore
