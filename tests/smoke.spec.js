@@ -535,6 +535,7 @@ function installSupabaseMock(rowsByTableArg) {
 test.describe("Humbel app smoke", () => {
   test.beforeEach(async ({ page }, testInfo) => {
     const feedbackTest = testInfo.titlePath.includes("Production counter feedback");
+    const navigationTest = testInfo.titlePath.includes("Production order navigation");
     const consoleErrors = [];
     page.on("console", (message) => {
       if (message.type() !== "error") return;
@@ -551,6 +552,7 @@ test.describe("Humbel app smoke", () => {
         "Fehler beim Laden von production_station_counts",
       ];
       if (!ignored.some((entry) => text.includes(entry))) {
+        if (navigationTest && testInfo.title.includes("load error") && text.includes("Fehler beim Laden von production_orders")) return;
         consoleErrors.push(text);
       }
     });
@@ -560,7 +562,7 @@ test.describe("Humbel app smoke", () => {
     page.consoleErrors = consoleErrors;
     await page.route("**/cdn.tailwindcss.com**", (route) => {
       // Generated from the actual app classes with Tailwind 3.4.17; no CDN needed in CI.
-      const css = feedbackTest
+      const css = feedbackTest || navigationTest
         ? fs.readFileSync(path.join(__dirname, "fixtures", "app-tailwind.css"), "utf8")
         : "";
       route.fulfill({ contentType: "application/javascript", body: css
@@ -572,7 +574,7 @@ test.describe("Humbel app smoke", () => {
     });
     await page.route("**/*.supabase.co/**", (route) => route.abort());
     const rows = JSON.parse(JSON.stringify(rowsByTable));
-    if (feedbackTest) {
+    if (feedbackTest || navigationTest) {
       rows.production_orders.find((row) => row.id === "order-one").target_quantity = 50;
       Object.assign(rows.production_order_stations[0], { scrap_total: 2, clarify_total: 2 });
       rows.production_order_employees.push({
@@ -587,6 +589,7 @@ test.describe("Humbel app smoke", () => {
         item_label: item.item_label, sort_order: item.sort_order, checked: false,
       }));
     }
+    if (navigationTest) prepareProductionNavigationRows(rows);
     await page.addInitScript(installSupabaseMock, rows);
   });
 
@@ -654,7 +657,7 @@ test.describe("Humbel app smoke", () => {
     await expect(page.locator("#view")).toContainText("BA-100");
     await page.locator("#view").getByRole("button", { name: /Maschine 50/ }).click();
     await expectViewHeading(page, "Produktionsvorschau");
-    await expect(page.locator("#view").getByRole("button", { name: /BA BA-100/ })).toBeVisible();
+    await expect(page.locator("#view").getByRole("tab", { name: /BA BA-100/ })).toBeVisible();
     await expect(page.locator("#view")).toContainText("Rest");
     await expect(page.locator("#view")).toContainText("Gesamt gezählt");
     await expect(page.locator("#view")).toContainText("Mitarbeiter am Auftrag");
@@ -764,7 +767,7 @@ test.describe("Humbel app smoke", () => {
     await expect(page.locator("#productionCounterAnnouncement")).toHaveText("Gutteil wurde gezählt.");
     await expect(page.locator("#view")).not.toContainText("Protokolleintrag konnte nicht geschrieben werden");
     await expectViewHeading(page, "Produktionsvorschau");
-    await expect(page.locator("#view").getByRole("button", { name: /BA BA-100/ })).toBeVisible();
+    await expect(page.locator("#view").getByRole("tab", { name: /BA BA-100/ })).toBeVisible();
     await expect(stationOne).toContainText("Lavdrim");
     await expect
       .poll(() => page.evaluate(() =>
@@ -971,7 +974,7 @@ test.describe("Humbel app smoke", () => {
     await expect(page.locator("#productionCounterAnnouncement")).toHaveText("Ausschuss-Korrektur wurde gespeichert.");
     await expect(page.locator("#view")).not.toContainText("Ursache/Protokoll konnte nicht geschrieben werden");
     await expectViewHeading(page, "Produktionsvorschau");
-    await expect(page.locator("#view").getByRole("button", { name: /BA BA-100/ })).toBeVisible();
+    await expect(page.locator("#view").getByRole("tab", { name: /BA BA-100/ })).toBeVisible();
     await expect(stationOne).toContainText("Spannung 1");
     await expect
       .poll(() => page.evaluate(() =>
@@ -1108,6 +1111,9 @@ test.describe("Humbel app smoke", () => {
       (window.__SUPABASE_WRITE_LOG || []).filter((entry) => entry.table === "production_station_counts"),
     );
     expect(stationCountWrites.every((entry) => ["insert", "update"].includes(entry.action))).toBeTruthy();
+    await expectViewHeading(page, "Produktionsvorschau");
+    await expect(page.locator("#view")).toContainText("Keine laufenden oder pausierten Aufträge auf dieser Maschine.");
+    await page.getByRole("button", { name: "Zurück zur Maschinenübersicht" }).click();
     await expectViewHeading(page, "Maschinenübersicht");
     await page.evaluate(() => {
       window.__SUPABASE_MOCK_ERRORS.production_order_stations = {
@@ -1238,6 +1244,246 @@ test.describe("Humbel app smoke", () => {
     await expect(chainStationTwo.getByRole("button", { name: /Gutteile \+1/ })).toBeEnabled();
     await chainStationTwo.getByRole("button", { name: /Gutteile \+1/ }).click();
     await expect(chainStationTwo).toContainText(/Gutteile\s+1/);
+  });
+
+  test.describe("Production order navigation", () => {
+    test.beforeEach(async ({ page }, testInfo) => {
+      page.counterTouch = !!(testInfo.project.use.hasTouch || testInfo.project.use.isMobile);
+      await page.goto(appUrl);
+      await page.getByRole("button", { name: "Mido/Admin" }).click();
+      await clickMain(page, "Produktion");
+      await clickSubtab(page, "Aufträge / BA");
+    });
+
+    test.afterEach(async ({ page }) => {
+      const writes = await page.evaluate(() => window.__SUPABASE_WRITE_LOG);
+      expect(writes.some((entry) => ["production_counts", "production_station_counts", "production_station_events"].includes(entry.table))).toBe(false);
+    });
+
+    for (const [id, name] of [["nav-second", "BA BA-nav-second öffnen"], ["nav-third", "Artikel 4345433 öffnen"]]) {
+      test(`direct list link ${name} opens the exact order`, async ({ page }) => {
+        await pressCounterButton(page, page.locator(`tr[data-production-order-id="${id}"]`).getByRole("button", { name, exact: true }));
+        await expect(page.getByRole("button", { name: "Stückzahl", exact: true })).toHaveClass(/humbel-subtab-active/);
+        await expectViewHeading(page, "Produktionsvorschau");
+        await expect(page.getByRole("tabpanel")).toHaveAttribute("data-order-id", id);
+        await expect(page.locator('[data-production-machine-id="machine-one"]')).toBeVisible();
+        await expect(page.getByRole("tab", { selected: true })).toHaveAttribute("data-order-id", id);
+        await expect(page.getByRole("tablist", { name: "Aktive Aufträge" }).getByRole("tab")).toHaveCount(3);
+        expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);
+      });
+    }
+
+    test("article tabs isolate counts employees stations checklist and protocol without mutations", async ({ page }) => {
+      await page.evaluate(() => selectProductionCounterOrder("nav-second", true));
+      await page.evaluate(() => { window.__navigationSentinel = "same-document"; });
+      const before = await page.evaluate(() => JSON.stringify(window.__SUPABASE_MOCK_ROWS));
+      const tabs = page.getByRole("tablist", { name: "Aktive Aufträge" });
+      for (const id of ["order-one", "nav-third", "nav-second"]) {
+        await pressCounterButton(page, tabs.locator(`[data-order-id="${id}"]`));
+        expect(await page.evaluate(() => window.__navigationSentinel)).toBe("same-document");
+        const expected = await page.evaluate((id) => ({
+          ba: window.__SUPABASE_MOCK_ROWS.production_orders.find((order) => order.id === id).ba_number,
+          qty: window.__SUPABASE_MOCK_ROWS.production_station_counts.find((count) => count.order_id === id).good_qty,
+        }), id);
+        const panel = page.getByRole("tabpanel");
+        await expect(panel).toHaveAttribute("data-order-id", id);
+        await expect(panel).toContainText(`Team ${expected.ba}`);
+        await expect(panel).toContainText(`Spannung ${expected.ba}`);
+        await expect(panel.locator('div[data-scroll-anchor^="good:"] [data-counter-value]')).toContainText(String(expected.qty));
+        await page.evaluate(() => render());
+        await expect(page.getByRole("tab", { selected: true })).toHaveAttribute("data-order-id", id);
+        await pressCounterButton(page, panel.getByRole("button", { name: "Auftrag fertig melden", exact: true }));
+        await expect(page.getByRole("heading", { name: "Auftrag fertig melden" })).toBeVisible();
+        await expect(page.getByRole("checkbox", { name: `${expected.ba} Checkliste 1 erledigt`, exact: true })).toBeChecked();
+        await page.getByRole("button", { name: "Abbrechen", exact: true }).click();
+        await pressCounterButton(page, panel.getByRole("button", { name: "Protokoll anzeigen" }));
+        await expect(page.getByRole("combobox", { name: /^Auftrag \/ BA/ })).toHaveValue(id);
+        await expect(page.locator("#view")).toContainText(`Protokoll ${expected.ba}`);
+        await page.evaluate((id) => selectProductionCounterOrder(id, true), id);
+      }
+      expect(await page.evaluate(() => JSON.stringify(window.__SUPABASE_MOCK_ROWS))).toBe(before);
+      expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);
+      await expect(tabs).not.toContainText("BA-200");
+    });
+
+    test("identical articles remain distinct and a missing article falls back to BA", async ({ page }) => {
+      await page.evaluate(() => selectProductionCounterOrder("order-one", true));
+      const tabs = page.getByRole("tablist");
+      await expect(tabs.locator('[data-order-id="order-one"]')).toHaveText(/4345433\s+BA BA-100/);
+      await expect(tabs.locator('[data-order-id="nav-third"]')).toHaveText(/4345433\s+BA BA-nav-third/);
+      await page.evaluate(async () => {
+        window.__SUPABASE_MOCK_ROWS.production_orders.find((row) => row.id === "nav-second").article_number = "";
+        await refreshProductionOrdersFromSupabase();
+        render();
+      });
+      await expect(tabs.locator('[data-order-id="nav-second"] > span').first()).toHaveText("BA-nav-second");
+      await expect(tabs).not.toContainText("BA-nav-closed");
+      await expect(tabs).not.toContainText("BA-nav-cancelled");
+      expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);
+    });
+
+    test("required first initialization runs once and machine reselect preserves the chosen BA", async ({ page }) => {
+      await page.evaluate(async () => {
+        window.__SUPABASE_MOCK_ROWS.production_orders.push({
+          ...window.__SUPABASE_MOCK_ROWS.production_orders[0], id: "nav-fresh", ba_number: "BA-FRESH", article_number: "FRESH",
+        });
+        await refreshProductionOrdersFromSupabase();
+        await selectProductionCounterOrder("nav-fresh", true);
+        await selectProductionCounterMachine("machine-one");
+      });
+      await expect(page.getByRole("tabpanel")).toHaveAttribute("data-order-id", "nav-fresh");
+      await page.evaluate(async () => {
+        await selectProductionCounterOrder("order-one");
+        await selectProductionCounterOrder("nav-fresh");
+      });
+      const writes = await page.evaluate(() => window.__SUPABASE_WRITE_LOG);
+      expect(writes.filter((entry) => entry.table === "production_order_stations" && entry.action === "insert")).toHaveLength(1);
+      expect(writes.filter((entry) => entry.table === "production_order_checklist" && entry.action === "insert")).toHaveLength(1);
+      expect(writes).toHaveLength(2);
+    });
+
+    for (const status of ["completed", "cancelled"]) {
+      test(`${status} order leaves active tabs and keeps machine open`, async ({ page }) => {
+        await page.evaluate(async () => {
+          window.__SUPABASE_MOCK_ROWS.production_orders.find((row) => row.id === "nav-second").target_quantity = 0;
+          await refreshProductionOrdersFromSupabase();
+          await selectProductionCounterOrder("nav-second", true);
+        });
+        if (status === "completed") {
+          page.once("dialog", (dialog) => dialog.accept());
+          await page.evaluate(() => completeProductionOrderWithChecklist("nav-second"));
+        } else await page.evaluate(() => updateProductionOrderStatus("nav-second", "cancelled"));
+        await expect(page.locator('[data-production-machine-id="machine-one"]')).toBeVisible();
+        await expect(page.getByRole("tablist").getByRole("tab")).toHaveCount(2);
+        await expect(page.getByRole("tablist").locator('[data-order-id="nav-second"]')).toHaveCount(0);
+        await expect(page.getByRole("tabpanel")).toHaveAttribute("data-order-id", "order-one");
+        await page.evaluate(() => selectProductionCounterOrder("nav-second", true));
+        await expect(page.getByRole("tabpanel")).toHaveAttribute("data-order-id", "order-one");
+      });
+    }
+
+    test("last inactive order shows empty machine view and terminal orders cannot open", async ({ page }) => {
+      await expect(page.locator('tr[data-production-order-id="nav-closed"]').getByRole("button")).toHaveCount(0);
+      await expect(page.locator('tr[data-production-order-id="nav-cancelled"]').getByRole("button")).toHaveCount(0);
+      await page.evaluate(async () => {
+        await selectProductionCounterOrder("order-one", true);
+        for (const id of ["order-one", "nav-second", "nav-third"]) await updateProductionOrderStatus(id, "cancelled");
+      });
+      await expect(page.locator('[data-production-machine-id="machine-one"]')).toBeVisible();
+      await expect(page.getByRole("tabpanel")).toContainText("Keine laufenden oder pausierten Aufträge");
+      await expect(page.getByRole("tablist").getByRole("tab")).toHaveCount(0);
+    });
+
+    test("fallback to a fresh active BA initializes its station and checklist", async ({ page }) => {
+      await page.evaluate(async () => {
+        const rows = window.__SUPABASE_MOCK_ROWS;
+        for (const row of rows.production_orders) {
+          if (row.machine_id === "machine-one" && row.id !== "nav-second") row.status = "completed";
+        }
+        rows.production_orders.push({ ...rows.production_orders.find((row) => row.id === "nav-second"),
+          id: "nav-fallback", ba_number: "BA-FALLBACK", article_number: "FALLBACK" });
+        await refreshProductionOrdersFromSupabase();
+        await selectProductionCounterOrder("nav-second", true);
+        await updateProductionOrderStatus("nav-second", "cancelled");
+      });
+      await expect(page.getByRole("tabpanel")).toHaveAttribute("data-order-id", "nav-fallback");
+      await expect(page.getByRole("tabpanel").locator("article")).toHaveCount(1);
+      expect(await page.evaluate(() => window.__SUPABASE_MOCK_ROWS.production_order_checklist
+        .filter((item) => item.order_id === "nav-fallback").length)).toBe(10);
+      const writes = await page.evaluate(() => window.__SUPABASE_WRITE_LOG);
+      expect(writes.filter((entry) => entry.table === "production_order_stations" && entry.action === "insert")).toHaveLength(1);
+    });
+
+    test("department admin opens only own machines and orders without global rights", async ({ page }) => {
+      await page.evaluate(() => {
+        currentUser = { name: "Leitung", role: "department_admin" };
+        currentEmployeeRecord = state.employeesList.find((row) => row.id === "leader-test");
+        render();
+      });
+      await expect(page.locator('tr[data-production-order-id="order-two"]')).toHaveCount(0);
+      await page.evaluate(() => selectProductionCounterOrder("nav-third", true));
+      await expect(page.getByRole("tabpanel")).toHaveAttribute("data-order-id", "nav-third");
+      await page.evaluate(async () => {
+        await selectProductionCounterOrder("order-two", true);
+        await selectProductionCounterMachine("machine-two");
+      });
+      await expect(page.getByRole("tabpanel")).toHaveAttribute("data-order-id", "nav-third");
+      expect(await page.evaluate(() => canManageProduction())).toBe(false);
+      await expect(page.locator("#tabs").getByRole("button", { name: /Personalverwaltung|Admin \/ System/ })).toHaveCount(0);
+      expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);
+    });
+
+    for (const role of ["employee", "tool_scanner"]) {
+      test(`${role} cannot see or invoke production order navigation`, async ({ page }) => {
+        const before = await page.evaluate(() => [state.ui.productionCounterSelectedMachineId, state.ui.productionCounterActiveOrderId]);
+        await page.evaluate(async (role) => {
+          currentUser = { name: role, role };
+          currentEmployeeRecord = null;
+          currentTab = "dashboard";
+          render();
+          await selectProductionCounterOrder("nav-second", true);
+          await selectProductionCounterMachine("machine-one");
+        }, role);
+        await expect(page.locator("#tabs").getByRole("button", { name: "Produktion", exact: true })).toHaveCount(0);
+        await expect(page.getByRole("tablist", { name: "Aktive Aufträge" })).toHaveCount(0);
+        expect(await page.evaluate(() => [state.ui.productionCounterSelectedMachineId, state.ui.productionCounterActiveOrderId])).toEqual(before);
+        expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);
+      });
+    }
+
+    test("touch tabs scroll internally without page overflow or vertical jumps", async ({ page }, testInfo) => {
+      await page.evaluate(async () => {
+        const rows = window.__SUPABASE_MOCK_ROWS;
+        for (let i = 0; i < 10; i++) {
+          const id = `many-${i}`;
+          rows.production_orders.push({ ...rows.production_orders[0], id, ba_number: `BA-${id}`,
+            article_number: `LANGER-ARTIKEL-4345433-${i}` });
+          rows.production_order_stations.push({ ...rows.production_order_stations[0], id: `station-${id}`, order_id: id });
+          rows.production_order_checklist.push(...rows.production_order_checklist.filter((item) => item.order_id === "order-one")
+            .map((item) => ({ ...item, id: `${id}-${item.id}`, order_id: id })));
+        }
+        await refreshProductionOrdersFromSupabase();
+        await refreshProductionOrderStationsFromSupabase();
+        await refreshProductionOrderChecklistFromSupabase();
+        await selectProductionCounterOrder("order-one", true);
+      });
+      const strip = page.getByRole("tablist", { name: "Aktive Aufträge" });
+      const target = strip.locator('[data-order-id="many-9"]');
+      if (page.counterTouch) await target.tap({ trial: true });
+      else await target.click({ trial: true });
+      const before = await strip.boundingBox();
+      const yBefore = await page.evaluate(() => window.scrollY);
+      const tabBox = await target.boundingBox();
+      expect(tabBox.width).toBeGreaterThanOrEqual(44);
+      expect(tabBox.height).toBeGreaterThanOrEqual(44);
+      expect(await strip.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+      await pressCounterButton(page, target);
+      await expect(page.getByRole("tabpanel")).toHaveAttribute("data-order-id", "many-9");
+      await expect.poll(async () => Math.abs((await strip.boundingBox()).y - before.y)).toBeLessThanOrEqual(30);
+      expect(Math.abs(await page.evaluate(() => window.scrollY) - yBefore)).toBeLessThanOrEqual(30);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      expect(await strip.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
+      await testInfo.attach("article-tabs", { body: await page.screenshot(), contentType: "image/png" });
+      expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);
+    });
+
+    test("load error retains selected order quantities and all existing production data", async ({ page }) => {
+      await page.evaluate(() => selectProductionCounterOrder("nav-second", true));
+      const before = await page.evaluate(() => JSON.stringify({
+        orders: state.productionOrders, counts: state.productionStationCounts, stations: state.productionOrderStations,
+      }));
+      await page.evaluate(async () => {
+        window.__SUPABASE_MOCK_ERRORS.production_orders = { select: { code: "42501", message: "Aufträge nicht lesbar" } };
+        await refreshProductionOrdersFromSupabase();
+        renderPreservingScroll("production-order-tabs");
+      });
+      await expect(page.getByRole("alert")).toContainText("Aufträge nicht lesbar");
+      await expect(page.getByRole("tabpanel")).toHaveAttribute("data-order-id", "nav-second");
+      expect(await page.evaluate(() => JSON.stringify({
+        orders: state.productionOrders, counts: state.productionStationCounts, stations: state.productionOrderStations,
+      }))).toBe(before);
+      expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);
+    });
   });
 
   test.describe("Production counter feedback", () => {
@@ -1388,6 +1634,8 @@ test.describe("Humbel app smoke", () => {
     });
 
     test("five station metrics keep their values and shortened labels", async ({ page }) => {
+      await expect(page.getByRole("tablist").getByRole("tab")).toHaveCount(1);
+      await expect(page.getByRole("tab", { selected: true })).toHaveText(/ART-100\s+BA BA-100/);
       const chips = page.locator('article[data-scroll-anchor="station:station-one"] > div').nth(1).locator(":scope > div");
       await expect(chips).toHaveCount(5);
       const expected = [["Gutteile", "2"], ["Ausschuss", "2"], ["In Abklärung", "2"], ["Gesamt", "6"], ["Ziel", "50"]];
@@ -1447,6 +1695,47 @@ test.describe("Humbel app smoke", () => {
 async function pressCounterButton(page, button) {
   if (page.counterTouch) await button.tap();
   else await button.click();
+}
+
+function prepareProductionNavigationRows(rows) {
+  const first = rows.production_orders.find((order) => order.id === "order-one");
+  first.article_number = "4345433";
+  rows.departments.push({ id: "department-private", name: "Fremde Abteilung", code: "PRIV", active: true });
+  rows.production_machines.find((machine) => machine.id === "machine-two").department_id = "department-private";
+  rows.production_orders.find((order) => order.id === "order-two").department_id = "department-private";
+  rows.employees.push({ id: "leader-test", display_name: "Leitung", role: "department_admin", is_active: true, auth_user_id: "leader-auth" });
+  rows.departments[0].leader_employee_id = "leader-test";
+  for (const [id, article, status] of [
+    ["nav-second", "4712001", "running"], ["nav-third", "4345433", "paused"],
+    ["nav-closed", "ART-CLOSED", "completed"], ["nav-cancelled", "ART-CANCELLED", "cancelled"],
+  ]) {
+    rows.production_orders.push({ ...first, id, ba_number: `BA-${id}`, article_number: article, status });
+  }
+  const activeOrders = rows.production_orders.filter((order) => ["running", "paused"].includes(order.status));
+  for (const [index, order] of activeOrders.entries()) {
+    let station = rows.production_order_stations.find((entry) => entry.order_id === order.id);
+    if (!station) {
+      station = { ...rows.production_order_stations[0], id: `station-${order.id}`, order_id: order.id };
+      rows.production_order_stations.push(station);
+    }
+    station.name = `Spannung ${order.ba_number}`;
+    const existingEmployee = rows.production_order_employees.find((entry) => entry.order_id === order.id);
+    const employee = existingEmployee || {
+      id: `worker-${order.id}`, order_id: order.id, employee_id: "employee-one", role: "worker", active: true,
+    };
+    employee.employee_name = `Team ${order.ba_number}`;
+    if (!existingEmployee) rows.production_order_employees.push(employee);
+    rows.production_station_counts = rows.production_station_counts.filter((count) => count.order_id !== order.id);
+    rows.production_station_counts.push({ id: `count-${order.id}`, order_id: order.id,
+      station_id: station.id, order_employee_id: employee.id, good_qty: index + 2 });
+    rows.production_order_checklist = rows.production_order_checklist.filter((item) => item.order_id !== order.id);
+    rows.production_order_checklist.push(...rows.production_checklist_templates.map((item) => ({
+      id: `${order.id}-${item.id}`, order_id: order.id, item_key: item.item_key,
+      item_label: `${order.ba_number} Checkliste ${item.sort_order}`, sort_order: item.sort_order, checked: true,
+    })));
+    rows.production_station_events.push({ id: `event-${order.id}`, order_id: order.id, station_id: station.id,
+      employee_id: "employee-one", event_type: "good", qty: 1, note: `Protokoll ${order.ba_number}` });
+  }
 }
 
 function counterArea(page, type) {

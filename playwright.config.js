@@ -19,8 +19,13 @@ module.exports = defineConfig({
     },
     {
       name: "mobile-chromium",
-      grep: /Production counter feedback/,
+      grep: /Production counter feedback|Production order navigation/,
       use: { ...devices["Pixel 5"], viewport: { width: 390, height: 844 } },
+    },
+    {
+      name: "tablet-chromium",
+      grep: /Production order navigation/,
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1024, height: 768 }, hasTouch: true },
     },
   ],
 });

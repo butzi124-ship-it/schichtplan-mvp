@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.5.11";
+const APP_VERSION = "0.5.12";
 const INVENTORY_MODE_ENABLED = false;
 const HUMBEL_COLORS = Object.freeze({
   primary: "#0d4682",
@@ -69,6 +69,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.5.12",
+    date: "2026-10-22 07:56",
+    changes: ["Direkte Auftragsnavigation und artikelbasierte Tabs für mehrere aktive BA je Maschine ergänzt."],
+  },
   {
     version: "0.5.11",
     date: "2026-10-22 06:41",
@@ -968,6 +973,34 @@ function injectHumbelDesignStyles() {
     [data-counter-value] {
       background-color: #f7fafc;
       font-variant-numeric: tabular-nums;
+    }
+
+    .production-order-tabs {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      min-width: 0;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      padding: 2px 0 8px;
+    }
+
+    .production-order-tabs > button {
+      flex: 0 0 auto;
+      min-width: 88px;
+      min-height: 52px;
+      max-width: min(260px, 80vw);
+      overflow-wrap: anywhere;
+      text-align: left;
+    }
+
+    .production-order-link {
+      min-width: 44px;
+      min-height: 44px;
+      color: var(--humbel-blue);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-align: left;
     }
 
     .production-counter-announcement {
@@ -2967,6 +3000,7 @@ function renderPreservingScroll(anchorKey = "", anchorTopOverride = null) {
   const restore = {
     anchorKey: resolvedAnchorKey, anchorTop,
     scrollX: pending?.scrollX ?? scrollX, scrollY: pending?.scrollY ?? scrollY,
+    scrollLeft: pending?.scrollLeft ?? anchor?.scrollLeft ?? 0,
     tab: currentTab,
   };
   pendingScrollRestore = restore;
@@ -2976,6 +3010,7 @@ function renderPreservingScroll(anchorKey = "", anchorTopOverride = null) {
     pendingScrollRestore = null;
     if (currentTab !== restore.tab) return;
     const nextAnchor = getScrollAnchorElement(resolvedAnchorKey);
+    if (nextAnchor) nextAnchor.scrollLeft = restore.scrollLeft;
     if (nextAnchor && anchorTop !== null) {
       const nextTop = nextAnchor.getBoundingClientRect().top;
       window.scrollBy(0, nextTop - anchorTop);
@@ -6053,6 +6088,12 @@ function renderProductionOrderRow(order, allowActions) {
     order.department_id,
   );
   const canEdit = allowActions && canEditProductionOrder(order);
+  const canOpen = allowActions && canAccessProduction() &&
+    ["running", "paused"].includes(order.status) &&
+    getActiveProductionOrderMachines().some((entry) => entry.id === order.machine_id);
+  const orderLink = (value, label) => canOpen
+    ? `<button type='button' class='production-order-link' aria-label='${escapeHtml(label)}' onclick="selectProductionCounterOrder('${order.id}', true)">${escapeHtml(value || "-")}</button>`
+    : escapeHtml(value || "-");
   const statusClass =
     order.status === "running"
       ? "bg-emerald-100 text-emerald-800"
@@ -6073,12 +6114,12 @@ function renderProductionOrderRow(order, allowActions) {
       </div>`
     : "-";
 
-  return `<tr class='border-b align-top ${order.status === "paused" ? "bg-amber-50" : ""}'>
+  return `<tr data-production-order-id='${escapeHtml(order.id)}' class='border-b align-top ${order.status === "paused" ? "bg-amber-50" : ""}'>
     <td class='p-2 whitespace-nowrap'><span class='px-2 py-1 rounded-full text-xs font-semibold ${statusClass}'>${escapeHtml(getProductionOrderStatusLabel(order.status))}</span></td>
     <td class='p-2'>${escapeHtml(machineDisplay)}</td>
     <td class='p-2'>${escapeHtml(departmentDisplay)}</td>
-    <td class='p-2 font-semibold'>${escapeHtml(order.ba_number || "-")}</td>
-    <td class='p-2'>${escapeHtml(order.article_number || "-")}</td>
+    <td class='p-2 font-semibold'>${orderLink(order.ba_number, `BA ${order.ba_number || "-"} öffnen`)}</td>
+    <td class='p-2'>${orderLink(order.article_number, `Artikel ${order.article_number || "-"} öffnen`)}</td>
     <td class='p-2'>${escapeHtml(order.ba_quantity)}</td>
     <td class='p-2'>${escapeHtml(order.target_quantity)}</td>
     <td class='p-2'>${escapeHtml(order.pallet_count)}</td>
@@ -6386,30 +6427,34 @@ async function ensureProductionOrderStationsForOrder(orderId) {
 }
 
 async function selectProductionCounterMachine(machineId) {
+  if (!canAccessProduction() || !getActiveProductionOrderMachines().some((machine) => machine.id === machineId)) return;
   state.ui = state.ui || {};
-  state.ui.productionCounterSelectedMachineId = machineId || "";
   const activeOrders = getActiveProductionOrdersForMachine(machineId);
-  state.ui.productionCounterActiveOrderId = activeOrders[0]?.id || "";
+  const selectedOrder = activeOrders.find((order) => order.id === state.ui.productionCounterActiveOrderId) || activeOrders[0];
+  if (selectedOrder) {
+    await selectProductionCounterOrder(selectedOrder.id);
+    return;
+  }
+  state.ui.productionCounterSelectedMachineId = machineId;
+  state.ui.productionCounterActiveOrderId = "";
   persist();
   render();
-  if (state.ui.productionCounterActiveOrderId) {
-    await ensureProductionOrderStationsForOrder(state.ui.productionCounterActiveOrderId);
-    await ensureProductionOrderChecklistForOrder(state.ui.productionCounterActiveOrderId);
-    render();
-  }
 }
 
-async function selectProductionCounterOrder(orderId) {
+async function selectProductionCounterOrder(orderId, openCounts = false) {
+  if (!canAccessProduction()) return;
   state.ui = state.ui || {};
-  const order = getProductionOrderById(orderId);
-  if (!order || !["running", "paused"].includes(order.status)) return;
+  const order = getVisibleProductionOrders().find((entry) => entry.id === orderId);
+  if (!order || !["running", "paused"].includes(order.status) ||
+      !getActiveProductionOrderMachines().some((machine) => machine.id === order.machine_id)) return;
   state.ui.productionCounterSelectedMachineId = order.machine_id || "";
   state.ui.productionCounterActiveOrderId = order.id || "";
   persist();
-  render();
+  if (openCounts) setProductionSubTab("counts");
+  else renderPreservingScroll("production-order-tabs");
   await ensureProductionOrderStationsForOrder(order.id);
   await ensureProductionOrderChecklistForOrder(order.id);
-  render();
+  renderPreservingScroll("production-order-tabs");
 }
 
 function resetProductionCounterSelection() {
@@ -6418,6 +6463,15 @@ function resetProductionCounterSelection() {
   state.ui.productionCounterActiveOrderId = "";
   persist();
   render();
+}
+
+async function ensureActiveProductionCounterSelection() {
+  const machineId = state.ui?.productionCounterSelectedMachineId;
+  if (!canAccessProduction() || currentTab !== "produktion" || state.productionSubTab !== "counts" || !machineId) return;
+  const orders = getActiveProductionOrdersForMachine(machineId);
+  if (orders.some((order) => order.id === state.ui.productionCounterActiveOrderId)) return;
+  if (orders.length) await selectProductionCounterOrder(orders[0].id);
+  else state.ui.productionCounterActiveOrderId = "";
 }
 
 function renderProductionCountsTab() {
@@ -6436,7 +6490,7 @@ function renderProductionCountsTab() {
   const selectedOrders = selectedMachine
     ? getActiveProductionOrdersForMachine(selectedMachine.id)
     : [];
-  if (selectedMachine && selectedOrders.length) {
+  if (selectedMachine) {
     return renderProductionMachineOrderPreview(selectedMachine, selectedOrders);
   }
   const firstMachineWithOrders = machines.find(
@@ -6547,11 +6601,14 @@ function renderProductionMachineOrderPreview(machine, orders) {
   const activeOrderId = state.ui?.productionCounterActiveOrderId || orders[0]?.id || "";
   const activeOrder =
     orders.find((order) => order.id === activeOrderId) || orders[0] || null;
+  state.ui = state.ui || {};
+  state.ui.productionCounterActiveOrderId = activeOrder?.id || "";
   const baTabs = orders
     .map((order) => {
       const active = activeOrder?.id === order.id;
-      return `<button type='button' class='px-3 py-2 rounded border ${active ? "humbel-subtab-active" : "humbel-subtab"}' onclick="selectProductionCounterOrder('${order.id}')">
-        BA ${escapeHtml(order.ba_number || "-")}
+      return `<button type='button' role='tab' aria-selected='${active}' aria-controls='productionActiveOrderPanel' data-order-id='${escapeHtml(order.id)}' class='px-3 py-2 rounded border ${active ? "humbel-subtab-active" : "humbel-subtab"}' onclick="selectProductionCounterOrder('${order.id}')">
+        <span class='block font-semibold'>${escapeHtml(order.article_number || order.ba_number || "-")}</span>
+        <span class='block text-xs mt-1'>BA ${escapeHtml(order.ba_number || "-")}</span>
       </button>`;
     })
     .join("");
@@ -6602,9 +6659,9 @@ function renderProductionMachineOrderPreview(machine, orders) {
         ${renderProductionOrderStationsSection(activeOrder)}
         ${renderProductionOrderChecklistSection(activeOrder, false)}
       </div>`
-    : `<div class='border rounded-lg bg-slate-50 p-4 text-sm text-slate-600'>Kein aktiver BA ausgewählt.</div>`;
+    : `<div class='border rounded-lg bg-slate-50 p-4 text-sm text-slate-600'>Keine laufenden oder pausierten Aufträge auf dieser Maschine. Auftrag unter Aufträge / BA anlegen.</div>`;
 
-  return `<div class='space-y-4'>
+  return `<div class='space-y-4 min-w-0' data-production-machine-id='${escapeHtml(machine.id)}'>
     <button type='button' class='px-3 py-2 rounded bg-slate-200 text-slate-800' onclick='resetProductionCounterSelection()'>Zurück zur Maschinenübersicht</button>
     <div class='border rounded-lg p-4 bg-slate-50'>
       <div class='flex items-start justify-between gap-3 flex-wrap'>
@@ -6616,13 +6673,13 @@ function renderProductionMachineOrderPreview(machine, orders) {
         <span class='px-2 py-1 rounded-full text-xs font-semibold ${getProductionMachineDashboardStatusClass(getProductionMachineDashboardStatus(machine))}'>${getProductionMachineDashboardStatusLabel(getProductionMachineDashboardStatus(machine))}</span>
       </div>
     </div>
-    <div class='bg-white border rounded-lg p-4 space-y-4'>
+    <div class='bg-white border rounded-lg p-4 space-y-4 min-w-0'>
       <div>
         <h3 class='font-semibold'>Aktive BA</h3>
         <p class='text-sm text-slate-500 mt-1'>Nur laufende und pausierte Aufträge dieser Maschine.</p>
       </div>
-      <div class='flex gap-2 flex-wrap'>${baTabs}</div>
-      ${details}
+      <div role='tablist' aria-label='Aktive Aufträge' class='production-order-tabs' data-scroll-anchor='production-order-tabs'>${baTabs}</div>
+      <div role='tabpanel' id='productionActiveOrderPanel' data-order-id='${escapeHtml(activeOrder?.id || "")}'>${details}</div>
     </div>
   </div>`;
 }
@@ -9124,6 +9181,7 @@ async function updateProductionOrderStatus(id, status) {
 
   await refreshProductionOrdersFromSupabase();
   setProductionStatus("Auftragsstatus wurde gespeichert.");
+  await ensureActiveProductionCounterSelection();
   render();
 }
 
@@ -9373,18 +9431,16 @@ async function completeProductionOrderWithChecklist(orderId) {
   if (!historyError) await refreshProductionOrderHistoryFromSupabase();
   state.ui.productionOrderCompletingId = "";
   state.ui.productionCompletionOrderId = "";
-  if (state.ui.productionCounterActiveOrderId === order.id) {
-    state.ui.productionCounterActiveOrderId = "";
-    state.ui.productionCounterSelectedMachineId = "";
-  }
   if (historyError) {
     console.error("Fehler beim Schreiben der Auftrags-Historie:", historyError);
     setProductionStatus("Auftrag fertig gemeldet, Historie konnte nicht geschrieben werden.", true);
+    await ensureActiveProductionCounterSelection();
     render();
     return;
   }
 
   setProductionStatus("Auftrag wurde fertig gemeldet.");
+  await ensureActiveProductionCounterSelection();
   render();
 }
 
