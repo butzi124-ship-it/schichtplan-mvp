@@ -1726,12 +1726,53 @@ test.describe("Humbel app smoke", () => {
     });
 
     test("complete order opens mandatory checklist and cannot bypass unmet conditions", async ({ page }) => {
-      await pressCounterButton(page, page.getByRole("button", { name: "Auftrag abschließen", exact: true }));
+      await openProductionCompletionByPointer(page);
       await expect(page.getByRole("heading", { name: "Auftrag fertig melden", exact: true })).toBeVisible();
       await expect(page.getByRole("checkbox")).toHaveCount(10);
       await expect(page.getByRole("button", { name: "Endgültig fertig melden" })).toBeDisabled();
       await page.evaluate(() => completeProductionOrderWithChecklist("order-one"));
       await expect(page.getByRole("alert")).toContainText("Auftrag hat noch Restmenge.");
+      expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);
+    });
+
+    test("completion touch surface remains clear after scrolling with larger header typography", async ({ page }, testInfo) => {
+      // Linux font metrics exposed the overflow in CI; enlarged type reproduces it on Windows too.
+      await page.locator("h1").evaluate(el => { el.style.fontSize = "28px"; });
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      expect(await page.evaluate(() => scrollY)).toBeGreaterThan(0);
+      await openProductionCompletionByPointer(page);
+      await expect(page.getByRole("heading", { name: "Auftrag fertig melden", exact: true })).toBeVisible();
+      await expect(page.getByRole("checkbox")).toHaveCount(10);
+      await expect(page.getByRole("button", { name: "Endgültig fertig melden" })).toBeDisabled();
+      expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);
+      await pressCounterButton(page, page.getByRole("button", { name: "Abbrechen", exact: true }));
+      await expect(page.getByRole("heading", { name: "Auftrag fertig melden", exact: true })).toHaveCount(0);
+      await testInfo.attach("completion-touch-surface", { body: await page.screenshot(), contentType: "image/png" });
+      // The existing controls must still work after opening and cancelling completion.
+      for (const type of ["good", "scrap", "clarify"]) await bookCounter(page, type, 1);
+      await pressCounterButton(page, page.getByRole("tablist", { name: "Spannungsauswahl" }).getByRole("tab", { name: "Spannung 4", exact: true }));
+      await expect(page.locator("#productionSelectedStation")).toHaveAttribute("data-station-id", "touch-station-4");
+      await pressCounterButton(page, page.getByRole("tablist", { name: "Aktive Aufträge" }).locator('[data-order-id="nav-second"]'));
+      await expect(page.locator("#productionActiveOrderPanel")).toHaveAttribute("data-order-id", "nav-second");
+    });
+
+    test("completion checklist blocks finishing even when no remaining quantity is open", async ({ page }) => {
+      await page.evaluate(async () => {
+        window.__SUPABASE_MOCK_ROWS.production_orders.find(row => row.id === "order-one").target_quantity = 1;
+        window.__SUPABASE_MOCK_ROWS.production_order_checklist.filter(item => item.order_id === "order-one").forEach(item => { item.checked = false; });
+        await refreshProductionOrdersFromSupabase();
+        await refreshProductionOrderChecklistFromSupabase();
+        renderPreservingScroll();
+      });
+      expect(await page.evaluate(() => calculatePreparedRemainingQuantity(getProductionOrderById("order-one")))).toBe(0);
+      await openProductionCompletionByPointer(page);
+      await expect(page.getByRole("checkbox")).toHaveCount(10);
+      await expect(page.getByRole("checkbox", { checked: false })).toHaveCount(10);
+      await expect(page.getByRole("button", { name: "Endgültig fertig melden" })).toBeDisabled();
+      await page.evaluate(() => completeProductionOrderWithChecklist("order-one"));
+      await expect(page.getByRole("alert")).toContainText("Alle Checklistenpunkte müssen erledigt sein.");
+      expect(await page.evaluate(() => getProductionOrderById("order-one").status)).toBe("running");
       expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);
     });
 
@@ -1979,6 +2020,44 @@ test.describe("Humbel app smoke", () => {
     });
   });
 });
+
+async function openProductionCompletionByPointer(page) {
+  const button = page.getByRole("button", { name: "Auftrag abschließen", exact: true });
+  await button.scrollIntoViewIfNeeded();
+  const geometry = await button.evaluate(el => {
+    const rect = el.getBoundingClientRect();
+    const station = document.getElementById("productionSelectedStation").getBoundingClientRect();
+    const hits = [];
+    for (const x of [0.1, 0.5, 0.9]) {
+      for (const y of [0.1, 0.5, 0.9]) {
+        const hit = document.elementFromPoint(rect.left + rect.width * x, rect.top + rect.height * y);
+        hits.push(hit === el || el.contains(hit));
+      }
+    }
+    return { hits, stationBottom: station.bottom, button: rect.toJSON(), layoutWidth: innerWidth,
+      scrollWidth: document.documentElement.scrollWidth, visualWidth: visualViewport.width };
+  });
+  const width = page.viewportSize().width;
+  expect(geometry.layoutWidth).toBe(width);
+  expect(geometry.scrollWidth).toBeLessThanOrEqual(width);
+  expect(geometry.visualWidth).toBeCloseTo(width, 0);
+  expect(geometry.stationBottom).toBeLessThanOrEqual(geometry.button.top);
+  expect(geometry.button.left).toBeGreaterThanOrEqual(0);
+  expect(geometry.button.right).toBeLessThanOrEqual(width);
+  expect(geometry.button.height).toBeGreaterThanOrEqual(52);
+  expect(geometry.hits).toEqual(Array(9).fill(true));
+  await page.evaluate(() => {
+    window.__completionPointer = null;
+    document.addEventListener("pointerdown", event => {
+      window.__completionPointer = { trusted: event.isTrusted, type: event.pointerType,
+        completionButton: !!event.target.closest(".production-touch-complete") };
+    }, { capture: true, once: true });
+  });
+  await pressCounterButton(page, button);
+  expect(await page.evaluate(() => window.__completionPointer)).toEqual({
+    trusted: true, type: page.counterTouch ? "touch" : "mouse", completionButton: true,
+  });
+}
 
 async function pressCounterButton(page, button) {
   if (page.counterTouch) await button.tap();

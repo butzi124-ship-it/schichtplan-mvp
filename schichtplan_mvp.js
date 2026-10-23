@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.5.13";
+const APP_VERSION = "0.5.14";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -71,6 +71,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.5.14",
+    date: "2026-10-23 06:35",
+    changes: ["Touch-Überlagerung beim Produktionsabschluss korrigiert."],
+  },
   {
     version: "0.5.13",
     date: "2026-10-22 14:21",
@@ -1126,6 +1131,16 @@ function injectHumbelDesignStyles() {
       font-weight: 700;
     }
     @media (max-width: 700px) {
+      /* Header overflow expands Chromium's mobile layout viewport and offsets touch hit testing. */
+      body > .max-w-7xl > header > .flex {
+        flex-wrap: wrap;
+        min-width: 0;
+        max-width: 100%;
+      }
+      body > .max-w-7xl > header > .flex > div {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
       .production-touch-view div[data-scroll-anchor^="good:"] > div:first-child {
         grid-template-columns: minmax(0, 1fr);
       }
