@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.5.15";
+const APP_VERSION = "0.5.16";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -71,6 +71,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.5.16",
+    date: "2026-10-23 07:37",
+    changes: ["Endgültigen Ausschuss bei mehrstufigen Aufträgen in der Restmenge berücksichtigt."],
+  },
   {
     version: "0.5.15",
     date: "2026-10-23 07:11",
@@ -6452,9 +6457,9 @@ function calculatePreparedRemainingQuantity(order) {
   if (!order) return 0;
   const targetQuantity = Math.max(0, Math.trunc(Number(order.target_quantity || 0)));
   const finishedGoodQty = getProductionOrderCompletedGoodTotal(order.id);
-  const singleStationLosses = usesProductionChainLogic(order) ? 0
-    : getProductionOrderScrapTotal(order.id) + getProductionOrderClarifyTotal(order.id);
-  return Math.max(0, targetQuantity - finishedGoodQty - singleStationLosses);
+  const finalScrapQty = getProductionOrderScrapTotal(order.id);
+  const singleStationClarifyQty = usesProductionChainLogic(order) ? 0 : getProductionOrderClarifyTotal(order.id);
+  return Math.max(0, targetQuantity - finishedGoodQty - finalScrapQty - singleStationClarifyQty);
 }
 
 function getProductionQuantityLimitInfo(order, station) {

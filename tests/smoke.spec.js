@@ -1515,9 +1515,11 @@ test.describe("Humbel app smoke", () => {
       await page.locator("#view").getByRole("button", { name: /Maschine 50/ }).click();
     });
 
-    test.afterEach(async ({ page }) => {
+    test.afterEach(async ({ page }, testInfo) => {
       const writes = await page.evaluate(() => window.__SUPABASE_WRITE_LOG);
-      expect(writes.every(entry => ["production_station_counts", "production_station_events", "production_order_stations"].includes(entry.table))).toBe(true);
+      const allowedTables = ["production_station_counts", "production_station_events", "production_order_stations"];
+      if (testInfo.title.includes("scrap completion writes correct totals")) allowedTables.push("production_orders", "production_order_history");
+      expect(writes.every(entry => allowedTables.includes(entry.table))).toBe(true);
       expect(await page.evaluate(() => window.__SUPABASE_MOCK_ROWS.production_orders[0].use_chain_logic)).toBe(false);
       expect(await page.evaluate(() => Object.values(localStorage).join(" "))).not.toMatch(/"(?:good_qty|scrap_total|clarify_total|productionStationCounts)"\s*:/);
     });
@@ -1604,7 +1606,7 @@ test.describe("Humbel app smoke", () => {
           await expect(page.getByRole("heading", { name: `6M-Ursache für ${label}` })).toBeVisible();
           await pressCounterButton(page, page.getByRole("button", { name: "Einweisung", exact: true }));
           await pressCounterButton(page, page.getByRole("button", { name: "Ursache speichern", exact: true }));
-          expect(await productionProgress(page)).toEqual({ finished: 1, remaining: 4 });
+          expect(await productionProgress(page)).toEqual({ finished: 1, remaining: 3 });
           expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG.at(-1).table)).toBe("production_station_events");
         }
         const second = await selectSequentialStation(page, 2, view);
@@ -1659,6 +1661,142 @@ test.describe("Humbel app smoke", () => {
         expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);
         await countSequentialGood(page, 2, -1, view);
         expect(await productionProgress(page)).toEqual({ finished: 2, remaining: 1 });
+      });
+    }
+
+    for (const view of ["overview", "production"]) {
+      for (const scenario of [
+        { label: "A", good: [5, 4], scrap: [0, 1], finished: 4, totalScrap: 1, remaining: 0 },
+        { label: "B", good: [4, 4], scrap: [1, 0], finished: 4, totalScrap: 1, remaining: 0 },
+        { label: "C", good: [4, 3], scrap: [1, 1], finished: 3, totalScrap: 2, remaining: 0 },
+        { label: "D", good: [5, 0], scrap: [0, 0], finished: 0, totalScrap: 0, remaining: 5 },
+        { label: "E", good: [3, 0], scrap: [2, 0], finished: 0, totalScrap: 2, remaining: 3 },
+      ]) {
+        test(`${view}: scrap example ${scenario.label} uses final good parts and current scrap across steps`, async ({ page }) => {
+          await seedSequentialScenario(page, { ...scenario, checked: true }, view);
+          const before = await page.evaluate(() => JSON.stringify(window.__SUPABASE_MOCK_ROWS));
+          expect(await productionProgress(page)).toEqual({ finished: scenario.finished, remaining: scenario.remaining });
+          expect(await page.evaluate(() => getProductionOrderScrapTotal("order-one"))).toBe(scenario.totalScrap);
+          if (view === "production") {
+            await expect(page.locator('[aria-label="Auftragsfortschritt"]')).toContainText(`Fertige Gutteile: ${scenario.finished}`);
+            await expect(page.locator('[aria-label="Auftragsfortschritt"]')).toContainText(`Rest: ${scenario.remaining}`);
+          } else {
+            await expect(page.getByText("Rest", { exact: true }).locator("..")).toHaveText(`Rest ${scenario.remaining}`);
+            await expect(page.getByText("Fertige Gutteile", { exact: true }).locator("..")).toHaveText(`Fertige Gutteile ${scenario.finished}`);
+          }
+          await openSequentialCompletion(page, view);
+          await expect(page.getByRole("heading", { name: "Auftrag fertig melden", exact: true }).locator("..")).toContainText(`Restmenge ${scenario.remaining}`);
+          await expect(page.getByRole("checkbox")).toHaveCount(10);
+          const finish = page.getByRole("button", { name: "Endgültig fertig melden", exact: true });
+          if (scenario.remaining === 0) await expect(finish).toBeEnabled();
+          else {
+            await expect(finish).toBeDisabled();
+            await page.evaluate(() => completeProductionOrderWithChecklist("order-one"));
+            await expect(page.getByRole("alert")).toContainText("Auftrag hat noch Restmenge.");
+          }
+          expect(await page.evaluate(() => JSON.stringify(window.__SUPABASE_MOCK_ROWS))).toBe(before);
+          expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);
+          expect(await page.evaluate(() => getProductionOrderById("order-one").status)).toBe("running");
+        });
+      }
+
+      test(`${view}: scrap in three and four steps is counted once without consuming finished goods twice`, async ({ page }) => {
+        for (const scenario of [
+          { good: [4, 3, 3], scrap: [1, 1, 0], finished: 3, totalScrap: 2 },
+          { good: [4, 3, 2, 2], scrap: [1, 1, 1, 0], finished: 2, totalScrap: 3 },
+        ]) {
+          await seedSequentialScenario(page, { ...scenario, checked: true }, view);
+          expect(await productionProgress(page)).toEqual({ finished: scenario.finished, remaining: 0 });
+          expect(await page.evaluate(() => getProductionOrderScrapTotal("order-one"))).toBe(scenario.totalScrap);
+          expect(await page.evaluate(() => getProductionOrderSequenceBlocker(getProductionOrderById("order-one")))).toBe("");
+          for (let n = 1; n <= scenario.good.length; n++) {
+            const station = await selectSequentialStation(page, n, view);
+            await expect(station.getByRole("button", { name: /Gutteile \+1/ }).first()).toBeDisabled();
+          }
+        }
+        expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);
+      });
+
+      test(`${view}: scrap correction increases remaining quantity while lifetime and zero limits stay unchanged`, async ({ page }) => {
+        await seedSequentialScenario(page, { good: [5, 4], scrap: [0, 1], checked: true }, view);
+        await page.evaluate(async () => {
+          window.__SUPABASE_MOCK_ROWS.production_order_stations.filter(row => row.order_id === "order-one").forEach(row => { row.scrap_lifetime = 999; });
+          await refreshProductionOrderStationsFromSupabase();
+          renderPreservingScroll();
+        });
+        expect(await productionProgress(page)).toEqual({ finished: 4, remaining: 0 });
+        const second = await selectSequentialStation(page, 2, view);
+        await pressCounterButton(page, second.getByRole("button", { name: "Ausschuss -1", exact: true }));
+        expect(await productionProgress(page)).toEqual({ finished: 4, remaining: 1 });
+        expect(await page.evaluate(() => getProductionOrderStationById("seq-two").scrap_lifetime)).toBe(999);
+        await expect(second.getByRole("button", { name: "Ausschuss -1", exact: true })).toBeDisabled();
+        const before = await page.evaluate(() => window.__SUPABASE_WRITE_LOG.length);
+        await page.evaluate(() => adjustProductionStationAmount("seq-two", "scrap", -1));
+        expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG.length)).toBe(before);
+        expect(await page.evaluate(() => getProductionOrderStationById("seq-two").scrap_total)).toBe(0);
+        expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG.find(row => row.table === "production_station_events").payload[0])).toMatchObject({ event_type: "scrap_correction", qty: -1 });
+        await openSequentialCompletion(page, view);
+        await expect(page.getByRole("button", { name: "Endgültig fertig melden", exact: true })).toBeDisabled();
+      });
+
+      test(`${view}: scrap does not bypass clarification checklist sequence status or role guards`, async ({ page }) => {
+        await seedSequentialScenario(page, { good: [5, 4], clarify: [0, 1], checked: true }, view);
+        expect(await productionProgress(page)).toEqual({ finished: 4, remaining: 1 });
+        await page.evaluate(() => completeProductionOrderWithChecklist("order-one"));
+        await expect(page.getByRole("alert")).toContainText("Auftrag hat noch Restmenge.");
+        expect(await page.evaluate(() => getProductionOrderStationById("seq-two").clarify_total)).toBe(1);
+        await seedSequentialScenario(page, { good: [5, 4], scrap: [0, 1] }, view);
+        expect(await productionProgress(page)).toEqual({ finished: 4, remaining: 0 });
+        await openSequentialCompletion(page, view);
+        await expect(page.getByRole("button", { name: "Endgültig fertig melden", exact: true })).toBeDisabled();
+        await page.evaluate(() => completeProductionOrderWithChecklist("order-one"));
+        await expect(page.getByRole("alert")).toContainText("Alle Checklistenpunkte müssen erledigt sein.");
+        await page.evaluate(() => closeProductionCompletionDialog());
+        await seedSequentialScenario(page, { good: [3, 4], scrap: [0, 1], checked: true }, view);
+        expect(await productionProgress(page)).toEqual({ finished: 4, remaining: 0 });
+        await page.evaluate(() => completeProductionOrderWithChecklist("order-one"));
+        await expect(page.getByRole("alert")).toContainText("Mengenfolge der Spannungen ist inkonsistent");
+        await seedSequentialScenario(page, { good: [5, 4], scrap: [0, 1], checked: true }, view);
+        const blockers = await page.evaluate(() => {
+          const order = getProductionOrderById("order-one");
+          order.status = "paused";
+          const paused = getProductionOrderCompletionBlocker(order);
+          order.status = "completed";
+          const completed = getProductionOrderCompletionBlocker(order);
+          order.status = "running";
+          const user = currentUser;
+          const roleBlockers = ["employee", "tool_scanner"].map(role => {
+            currentUser = { name: role, role };
+            return getProductionOrderCompletionBlocker(order);
+          });
+          currentUser = user;
+          return { paused, completed, roleBlockers };
+        });
+        expect(blockers).toEqual({ paused: "", completed: "Dieser Auftrag kann nicht fertig gemeldet werden.",
+          roleBlockers: Array(2).fill("Du darfst diesen Auftrag nicht fertig melden.") });
+        expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);
+      });
+
+      test(`${view}: scrap completion writes correct totals only after explicit confirmation`, async ({ page }) => {
+        await seedSequentialScenario(page, { good: [5, 4], scrap: [0, 1], checked: true }, view);
+        await openSequentialCompletion(page, view);
+        const finish = page.getByRole("button", { name: "Endgültig fertig melden", exact: true });
+        await expect(finish).toBeEnabled();
+        expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);
+        page.once("dialog", dialog => dialog.dismiss());
+        await pressCounterButton(page, finish);
+        expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);
+        expect(await page.evaluate(() => getProductionOrderById("order-one").status)).toBe("running");
+        page.once("dialog", dialog => dialog.accept());
+        await pressCounterButton(page, finish);
+        await expect(page.locator("#view")).toContainText("Auftrag wurde fertig gemeldet.");
+        const writes = await page.evaluate(() => window.__SUPABASE_WRITE_LOG);
+        expect(writes.map(row => row.table)).toEqual(["production_orders", "production_order_history"]);
+        expect(writes[0].payload).toMatchObject({ status: "completed", completed_at: expect.any(String) });
+        expect(writes[1].payload[0]).toMatchObject({ order_id: "order-one", history_type: "order_completed",
+          payload: { good_total: 4, scrap_total: 1, clarify_total: 0, remaining: 0 } });
+        await page.evaluate(() => openProductionProtocolForOrder("order-one"));
+        await expect(page.locator("#view")).toContainText("Gutteile 4 · Ausschuss 1 · Abklärung 0 · Restmenge 0");
       });
     }
 
@@ -2235,6 +2373,12 @@ test.describe("Humbel app smoke", () => {
     });
   });
 });
+
+async function openSequentialCompletion(page, view) {
+  if (view === "production") await openProductionCompletionByPointer(page);
+  else await pressCounterButton(page, page.getByRole("button", { name: "Auftrag fertig melden", exact: true }));
+  await expect(page.getByRole("heading", { name: "Auftrag fertig melden", exact: true })).toBeVisible();
+}
 
 async function seedSequentialScenario(page, scenario, view) {
   await page.evaluate(async ({ scenario, view }) => {
