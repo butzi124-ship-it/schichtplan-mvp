@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.5.14";
+const APP_VERSION = "0.5.15";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -71,6 +71,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.5.15",
+    date: "2026-10-23 07:11",
+    changes: ["Mehrspannungszählung und Fertigteilberechnung korrigiert; Spannungsdetails und Zeitstatus vereinheitlicht."],
+  },
   {
     version: "0.5.14",
     date: "2026-10-23 06:35",
@@ -6272,7 +6277,7 @@ function renderProductionOrderRow(order, allowActions) {
     <td class='p-2'>${escapeHtml(order.target_quantity)}</td>
     <td class='p-2'>${escapeHtml(order.pallet_count)}</td>
     <td class='p-2'>${escapeHtml(order.pieces_per_pallet)}</td>
-    <td class='p-2'>${order.use_chain_logic ? "Ja" : "Nein"}</td>
+    <td class='p-2'>${usesProductionChainLogic(order) ? "Ja" : "Nein"}</td>
     <td class='p-2'>${escapeHtml(order.started_at ? new Date(order.started_at).toLocaleString() : "-")}</td>
     <td class='p-2 whitespace-nowrap'>${actionButtons}</td>
   </tr>`;
@@ -6390,6 +6395,11 @@ function getProductionOrderCompletedGoodTotal(orderId) {
   return getProductionStationGoodTotal(lastStation.id);
 }
 
+function usesProductionChainLogic(order) {
+  // Multiple stations are sequential, independent of the stored legacy opt-in flag.
+  return !!order && getProductionOrderStations(order.id).length > 1;
+}
+
 function getProductionOrderChecklistItems(orderId) {
   if (!orderId) return [];
   return (state.productionOrderChecklist || [])
@@ -6441,45 +6451,60 @@ function getProductionEmployeeDisplayName(employee) {
 function calculatePreparedRemainingQuantity(order) {
   if (!order) return 0;
   const targetQuantity = Math.max(0, Math.trunc(Number(order.target_quantity || 0)));
-  const finishedGoodQty =
-    order.use_chain_logic !== false
-      ? getProductionOrderCompletedGoodTotal(order.id)
-      : getProductionOrderGoodTotal(order.id);
-  return Math.max(
-    0,
-    targetQuantity -
-      finishedGoodQty -
-      getProductionOrderScrapTotal(order.id) -
-      getProductionOrderClarifyTotal(order.id),
-  );
+  const finishedGoodQty = getProductionOrderCompletedGoodTotal(order.id);
+  const singleStationLosses = usesProductionChainLogic(order) ? 0
+    : getProductionOrderScrapTotal(order.id) + getProductionOrderClarifyTotal(order.id);
+  return Math.max(0, targetQuantity - finishedGoodQty - singleStationLosses);
 }
 
 function getProductionQuantityLimitInfo(order, station) {
   const targetQuantity = Math.max(0, Math.trunc(Number(order?.target_quantity || 0)));
-  if (!order || !station || targetQuantity <= 0) {
+  if (!order || !station || station.order_id !== order.id) {
     return { blockPlus: false, overTarget: false, targetQuantity, totalCounted: 0 };
   }
-  const totalCounted =
-    order.use_chain_logic !== false
-      ? getProductionStationGoodTotal(station.id) +
-        Number(station.scrap_total || 0) +
-        Number(station.clarify_total || 0)
-      : getProductionOrderGoodTotal(order.id) +
-        getProductionOrderScrapTotal(order.id) +
-        getProductionOrderClarifyTotal(order.id);
-  const overTarget = totalCounted > targetQuantity;
-  const reachedTarget = totalCounted >= targetQuantity;
+  const sequential = usesProductionChainLogic(order);
+  const stations = getProductionOrderStations(order.id);
+  const previousStation = sequential ? stations[stations.findIndex(entry => entry.id === station.id) - 1] : null;
+  const previousGoodQty = previousStation ? getProductionStationGoodTotal(previousStation.id) : null;
+  const limitQuantity = previousStation
+    ? Math.min(targetQuantity > 0 ? targetQuantity : previousGoodQty, previousGoodQty)
+    : targetQuantity;
+  const hasLimit = targetQuantity > 0 || !!previousStation;
+  const totalCounted = getProductionStationGoodTotal(station.id) +
+    Number(station.scrap_total || 0) + Number(station.clarify_total || 0);
+  const overTarget = hasLimit && totalCounted > limitQuantity;
+  const reachedTarget = hasLimit && totalCounted >= limitQuantity;
   return {
     blockPlus: reachedTarget,
     overTarget,
     reachedTarget,
     targetQuantity,
     totalCounted,
-    message:
-      order.use_chain_logic !== false
-        ? "Zielstückzahl für diese Spannung ist erreicht. Weitere Mengen können nicht gebucht werden."
-        : "Zielstückzahl ist erreicht. Weitere Mengen können nicht gebucht werden.",
+    sequential,
+    limitQuantity,
+    previousStation,
+    remainingAllowed: hasLimit ? Math.max(0, limitQuantity - totalCounted) : null,
+    message: previousStation && (targetQuantity <= 0 || limitQuantity < targetQuantity)
+      ? `Vorgängermenge aus Spannung ${previousStation.station_no} erreicht - +1 gesperrt`
+      : "Ziel erreicht - +1 gesperrt",
   };
+}
+
+function getProductionGoodCorrectionBlocker(station) {
+  const stations = getProductionOrderStations(station.order_id);
+  const nextStation = stations[stations.findIndex(entry => entry.id === station.id) + 1];
+  if (!nextStation) return "";
+  const nextCounted = getProductionQuantityLimitInfo(getProductionOrderById(station.order_id), nextStation).totalCounted;
+  return nextCounted > getProductionStationGoodTotal(station.id) - 1
+    ? `Korrektur gesperrt: Spannung ${nextStation.station_no} hat diese Gutteile bereits weiterbearbeitet. Zuerst dort korrigieren.`
+    : "";
+}
+
+function getProductionOrderSequenceBlocker(order) {
+  return usesProductionChainLogic(order) && getProductionOrderStations(order.id)
+    .some(station => getProductionQuantityLimitInfo(order, station).overTarget)
+    ? "Mengenfolge der Spannungen ist inkonsistent. Bitte vor dem Abschluss prüfen und korrigieren."
+    : "";
 }
 
 function getProductionGoodLimitInfo(order, station) {
@@ -6487,7 +6512,7 @@ function getProductionGoodLimitInfo(order, station) {
 }
 
 function getProductionStationTimeStatusLabel(status) {
-  return status === "changed" ? "Zeit geändert" : "Zeit ok";
+  return status === "changed" ? "Zeit geändert" : "Zeit OK";
 }
 
 function logProductionStationSupabaseError(action, error, details = {}) {
@@ -6793,6 +6818,10 @@ function renderProductionTouchPreview(machine, order, baTabs) {
     <div role='tablist' aria-label='Aktive Aufträge' class='production-order-tabs' data-scroll-anchor='production-order-tabs'>${baTabs}</div>
     <div role='tabpanel' id='productionActiveOrderPanel' data-order-id='${escapeHtml(order?.id || "")}'>
       ${order ? `${renderProductionOrderEmployeesSection(order, true)}
+        <div class='flex flex-wrap gap-3 py-2 text-sm' aria-label='Auftragsfortschritt'>
+          <strong style='color:var(--humbel-blue)'>Fertige Gutteile: ${escapeHtml(getProductionOrderCompletedGoodTotal(order.id))}</strong>
+          <span>Rest: ${escapeHtml(calculatePreparedRemainingQuantity(order))}</span>
+        </div>
         <div role='tablist' aria-label='Spannungsauswahl' class='production-order-tabs' data-scroll-anchor='production-station-tabs'>${stationTabs}</div>
         <div role='tabpanel' id='productionSelectedStation' data-station-id='${escapeHtml(station?.id || "")}'>
           ${station ? renderProductionOrderStationCard(station, canEditProductionOrder(order), true) : "<p class='py-3 text-sm'>Noch keine Spannung geladen.</p>"}
@@ -6837,23 +6866,22 @@ function renderProductionMachineOrderPreview(machine, orders) {
   const orderClarifyTotal = activeOrder ? getProductionOrderClarifyTotal(activeOrder.id) : 0;
   const orderCountedTotal = orderGoodTotal + orderScrapTotal + orderClarifyTotal;
   const chainHint =
-    activeOrder && activeOrder.use_chain_logic !== false
+    usesProductionChainLogic(activeOrder)
       ? `<div class='rounded border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-medium text-sky-800'>Restmenge wird nach letzter Spannung berechnet.</div>`
       : "";
   const overTargetNotice =
-    activeOrder && Number(activeOrder.target_quantity || 0) > 0 &&
-    orderCountedTotal > Number(activeOrder.target_quantity || 0)
-      ? `<div class='rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800'>Über Ziel - bitte korrigieren.</div>`
+    activeOrder && getProductionOrderStations(activeOrder.id).some(station => getProductionQuantityLimitInfo(activeOrder, station).overTarget)
+      ? `<div class='rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800'>${usesProductionChainLogic(activeOrder) ? "Mengenfolge prüfen - bitte korrigieren." : "Über Ziel - bitte korrigieren."}</div>`
       : "";
   const metrics = activeOrder
     ? `<div class='grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-2'>
         ${renderProductionPreviewMetric("Ziel", activeOrder.target_quantity)}
-        ${renderProductionPreviewMetric("Gutteile gesamt", orderGoodTotal)}
-        ${renderProductionPreviewMetric("Fertige Gutteile", completedGoodTotal)}
+        ${renderProductionPreviewMetric(usesProductionChainLogic(activeOrder) ? "Bearbeitungsbuchungen" : "Gutteile gesamt", orderGoodTotal)}
+        ${renderProductionPreviewMetric("Fertige Gutteile", completedGoodTotal, true)}
         ${renderProductionPreviewMetric("Ausschuss Auftrag", orderScrapTotal)}
         ${renderProductionPreviewMetric("In Abklärung Auftrag", orderClarifyTotal)}
         ${renderProductionPreviewMetric("Rest", remaining)}
-        ${renderProductionPreviewMetric("Gesamt gezählt", orderCountedTotal)}
+        ${renderProductionPreviewMetric(usesProductionChainLogic(activeOrder) ? "Buchungen gesamt" : "Gesamt gezählt", orderCountedTotal)}
       </div>`
     : "";
   const details = activeOrder
@@ -6952,6 +6980,8 @@ function renderProductionOrderChecklistSection(order, expanded = false) {
     blockers.push("Alle Checklistenpunkte müssen erledigt sein.");
   }
   if (!stations.length) blockers.push("Mindestens eine Spannung muss vorhanden sein.");
+  const sequenceBlocker = getProductionOrderSequenceBlocker(order);
+  if (sequenceBlocker) blockers.push(sequenceBlocker);
   if (Number(order.target_quantity || 0) > 0 && remaining > 0) {
     blockers.push("Auftrag hat noch Restmenge. Abschluss nicht möglich.");
   }
@@ -7120,7 +7150,18 @@ function renderProductionOrderStationCard(station, canEdit, compact = false) {
   const stationGoodTotal = getProductionStationGoodTotal(station.id);
   const stationTotal = stationGoodTotal + Number(station.scrap_total || 0) + Number(station.clarify_total || 0);
   const limitInfo = getProductionQuantityLimitInfo(order, station);
-  const limitNotice = limitInfo.overTarget
+  const stepProgress = limitInfo.targetQuantity > 0 ? `${limitInfo.totalCounted} / ${limitInfo.targetQuantity} · ` : "";
+  let stepLabel = "Zählen aktiv";
+  if (limitInfo.overTarget) stepLabel = "Mengenfolge prüfen - bitte korrigieren";
+  else if (limitInfo.blockPlus) {
+    stepLabel = limitInfo.targetQuantity > 0 && limitInfo.totalCounted >= limitInfo.targetQuantity
+      ? "Bearbeitungsschritt erreicht" : "Vorgängermenge erreicht";
+  } else if (limitInfo.remainingAllowed !== null) {
+    stepLabel = `Noch ${limitInfo.remainingAllowed} Gutmeldungen möglich`;
+  }
+  const limitNotice = limitInfo.sequential
+    ? `<span class='px-2 py-1 rounded-full text-xs font-semibold ${limitInfo.blockPlus ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-700"}'>${escapeHtml(stepProgress + stepLabel)}</span>`
+    : limitInfo.overTarget
     ? `<span class='px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800'>Über Ziel - bitte korrigieren</span>`
     : limitInfo.blockPlus
       ? `<span class='px-2 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800'>Ziel erreicht</span>`
@@ -7187,7 +7228,7 @@ function renderProductionOrderStationCard(station, canEdit, compact = false) {
           <label class='block text-sm'>
             Zeitstatus
             <select id='productionStationTimeStatus-${station.id}' class='border rounded p-2 w-full mt-1 bg-white' ${readonly}>
-              <option value='ok' ${station.time_status === "ok" ? "selected" : ""}>Zeit ok</option>
+              <option value='ok' ${station.time_status !== "changed" ? "selected" : ""}>Zeit OK</option>
               <option value='changed' ${station.time_status === "changed" ? "selected" : ""}>Zeit geändert</option>
             </select>
           </label>
@@ -7197,8 +7238,8 @@ function renderProductionOrderStationCard(station, canEdit, compact = false) {
           <input id='productionStationActualMinutes-${station.id}' type='number' min='0' step='1' class='border rounded p-2 w-full mt-1 bg-white' value="${escapeHtml(actualMinutesValue)}" ${readonly} />
         </label>
         <div class='grid grid-cols-2 gap-2 text-sm'>
-          ${renderProductionStationChip("Ausschuss Lebenslauf", station.scrap_lifetime)}
-          ${renderProductionStationChip("In Abklärung Lebenslauf", station.clarify_lifetime)}
+          ${renderProductionStationChip("Ausschuss bisher erfasst", station.scrap_lifetime)}
+          ${renderProductionStationChip("Abklärung bisher erfasst", station.clarify_lifetime)}
         </div>
         ${actionButtons}
       </div>
@@ -7229,7 +7270,7 @@ function renderProductionStationAmountControl(station, type, label, value, canEd
   const plusDisabled = !canEdit || saving || limitInfo.blockPlus ? "disabled" : "";
   const anchorKey = `amount:${station.id}:${type}`;
   return `<div class='rounded bg-white border p-2' data-scroll-anchor='${escapeHtml(anchorKey)}'>
-    <div class='flex items-center justify-between gap-2'>
+    <div class='flex flex-wrap items-center justify-between gap-2'>
       <div>
         <div class='text-sm font-semibold'>${escapeHtml(label)}</div>
         <div class='text-[11px] text-slate-500'>+1 mit 6M-Ursache</div>
@@ -7250,7 +7291,8 @@ function renderProductionStationEmployeeCounter(station, entry, canEdit) {
   const savingKey = `${station.id}:${entry.id}`;
   const saving = state.ui?.productionGoodQtySavingKey === savingKey;
   const limitInfo = getProductionGoodLimitInfo(order, station);
-  const minusDisabled = !canEdit || saving || Number(goodQty || 0) <= 0 ? "disabled" : "";
+  const correctionBlocker = getProductionGoodCorrectionBlocker(station);
+  const minusDisabled = !canEdit || saving || Number(goodQty || 0) <= 0 || correctionBlocker ? "disabled" : "";
   const plusDisabled = !canEdit || saving || limitInfo.blockPlus ? "disabled" : "";
   const anchorKey = `good:${station.id}:${entry.id}`;
   return `<div class='rounded border border-slate-200 bg-white p-2 text-sm' data-scroll-anchor='${escapeHtml(anchorKey)}'>
@@ -7260,7 +7302,7 @@ function renderProductionStationEmployeeCounter(station, entry, canEdit) {
         <div class='text-xs text-slate-500'>${entry.personnel_no ? `PN ${escapeHtml(entry.personnel_no)} · ` : ""}${escapeHtml(getProductionOrderEmployeeRoleLabel(entry.role))}</div>
       </div>
       <div class='flex items-center gap-2'>
-        <button type='button' aria-label='Gutteile -1 ${escapeHtml(entry.employee_name || "Mitarbeiter")}' data-scroll-anchor='${escapeHtml(anchorKey)}' class='min-w-10 px-3 py-2 rounded bg-slate-200 text-slate-900 font-semibold disabled:opacity-50' onclick="adjustProductionStationGoodQty('${station.id}', '${entry.id}', -1)" ${minusDisabled}>-</button>
+        <button type='button' title='${escapeHtml(correctionBlocker)}' aria-label='Gutteile -1 ${escapeHtml(entry.employee_name || "Mitarbeiter")}' data-scroll-anchor='${escapeHtml(anchorKey)}' class='min-w-10 px-3 py-2 rounded bg-slate-200 text-slate-900 font-semibold disabled:opacity-50' onclick="adjustProductionStationGoodQty('${station.id}', '${entry.id}', -1)" ${minusDisabled}>-</button>
         <div data-counter-value class='min-w-[64px] rounded border px-3 py-2 text-center'>
           <div class='text-xs text-slate-500'>Gutteile</div>
           <div class='text-lg font-bold'>${escapeHtml(goodQty)}</div>
@@ -7272,8 +7314,8 @@ function renderProductionStationEmployeeCounter(station, entry, canEdit) {
   </div>`;
 }
 
-function renderProductionPreviewMetric(label, value) {
-  return `<div class='border rounded bg-slate-50 px-2 py-2'>
+function renderProductionPreviewMetric(label, value, highlight = false) {
+  return `<div class='border rounded bg-slate-50 px-2 py-2' ${highlight ? "style='border-left:4px solid var(--humbel-accent) !important'" : ""}>
     <div class='text-xs text-slate-500'>${escapeHtml(label)}</div>
     <div class='text-lg font-bold leading-tight'>${escapeHtml(value)}</div>
   </div>`;
@@ -8055,7 +8097,7 @@ function openProductionQaCauseModal(stationId, type) {
   const limitInfo = getProductionQuantityLimitInfo(order, station);
   if (limitInfo.blockPlus) {
     setProductionStatus("");
-    setProductionLocalStatus(anchorKey, "Ziel erreicht - +1 gesperrt", true);
+    setProductionLocalStatus(anchorKey, limitInfo.message, true);
     renderPreservingScroll(anchorKey);
     return;
   }
@@ -8192,7 +8234,7 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
     const limitInfo = getProductionQuantityLimitInfo(order, station);
     if (limitInfo.blockPlus) {
       setProductionStatus("");
-      setProductionLocalStatus(anchorKey, "Ziel erreicht - +1 gesperrt", true);
+      setProductionLocalStatus(anchorKey, limitInfo.message, true);
       renderPreservingScroll(anchorKey, scrollAnchorTop);
       return;
     }
@@ -8299,7 +8341,7 @@ async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta,
   const order = getProductionOrderById(station?.order_id);
   const orderEmployee = getProductionOrderEmployeeById(orderEmployeeId);
   const anchorKey = `good:${stationId}:${orderEmployeeId}`;
-  if (!station || !orderEmployee || orderEmployee.active === false || !canEditProductionOrder(order)) {
+  if (!station || !orderEmployee || orderEmployee.order_id !== station.order_id || orderEmployee.active === false || !canEditProductionOrder(order)) {
     setProductionStatus("Du darfst diese Gutteile nicht zählen.", true);
     renderPreservingScroll(anchorKey);
     return;
@@ -8320,7 +8362,7 @@ async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta,
     const limitInfo = getProductionGoodLimitInfo(order, station);
     if (limitInfo.blockPlus) {
       setProductionStatus("");
-      setProductionLocalStatus(anchorKey, "Ziel erreicht - +1 gesperrt", true);
+      setProductionLocalStatus(anchorKey, limitInfo.message, true);
       renderPreservingScroll(anchorKey);
       return;
     }
@@ -8328,6 +8370,14 @@ async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta,
   if (delta < 0 && currentQty <= 0) {
     setProductionStatus("");
     setProductionLocalStatus(anchorKey, "Gutmenge ist bereits 0", true);
+    renderPreservingScroll(anchorKey);
+    return;
+  }
+
+  const correctionBlocker = delta < 0 ? getProductionGoodCorrectionBlocker(station) : "";
+  if (correctionBlocker) {
+    setProductionStatus("");
+    setProductionLocalStatus(anchorKey, correctionBlocker, true);
     renderPreservingScroll(anchorKey);
     return;
   }
@@ -9525,6 +9575,8 @@ function getProductionOrderCompletionBlocker(order) {
   if (!getProductionOrderStations(order.id).length) {
     return "Mindestens eine Spannung muss vorhanden sein.";
   }
+  const sequenceBlocker = getProductionOrderSequenceBlocker(order);
+  if (sequenceBlocker) return sequenceBlocker;
   if (Number(order.target_quantity || 0) > 0 && calculatePreparedRemainingQuantity(order) > 0) {
     return "Auftrag hat noch Restmenge. Abschluss nicht möglich.";
   }
@@ -9649,7 +9701,7 @@ async function completeProductionOrderWithChecklist(orderId) {
 
   const historyPayload = {
     ba_number: order.ba_number || "",
-    good_total: getProductionOrderGoodTotal(order.id),
+    good_total: getProductionOrderCompletedGoodTotal(order.id),
     scrap_total: getProductionOrderScrapTotal(order.id),
     clarify_total: getProductionOrderClarifyTotal(order.id),
     remaining: calculatePreparedRemainingQuantity(order),

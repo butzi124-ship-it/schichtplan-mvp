@@ -537,6 +537,7 @@ test.describe("Humbel app smoke", () => {
     const feedbackTest = testInfo.titlePath.includes("Production counter feedback");
     const navigationTest = testInfo.titlePath.includes("Production order navigation");
     const touchViewTest = testInfo.titlePath.includes("Production touch view");
+    const sequentialTest = testInfo.titlePath.includes("Sequential production stations");
     const consoleErrors = [];
     page.on("console", (message) => {
       if (message.type() !== "error") return;
@@ -563,7 +564,7 @@ test.describe("Humbel app smoke", () => {
     page.consoleErrors = consoleErrors;
     await page.route("**/cdn.tailwindcss.com**", (route) => {
       // Generated from the actual app classes with Tailwind 3.4.17; no CDN needed in CI.
-      const css = feedbackTest || navigationTest || touchViewTest
+      const css = feedbackTest || navigationTest || touchViewTest || sequentialTest
         ? fs.readFileSync(path.join(__dirname, "fixtures", "app-tailwind.css"), "utf8")
         : "";
       route.fulfill({ contentType: "application/javascript", body: css
@@ -575,7 +576,7 @@ test.describe("Humbel app smoke", () => {
     });
     await page.route("**/*.supabase.co/**", (route) => route.abort());
     const rows = JSON.parse(JSON.stringify(rowsByTable));
-    if (feedbackTest || navigationTest || touchViewTest) {
+    if (feedbackTest || navigationTest || touchViewTest || sequentialTest) {
       rows.production_orders.find((row) => row.id === "order-one").target_quantity = 50;
       Object.assign(rows.production_order_stations[0], { scrap_total: 2, clarify_total: 2 });
       rows.production_order_employees.push({
@@ -592,6 +593,14 @@ test.describe("Humbel app smoke", () => {
     }
     if (navigationTest || touchViewTest) prepareProductionNavigationRows(rows);
     if (touchViewTest) prepareProductionTouchRows(rows);
+    if (sequentialTest) {
+      rows.production_orders[0].target_quantity = 5;
+      Object.assign(rows.production_order_stations[0], { scrap_total: 0, clarify_total: 0, time_status: "changed", actual_time_minutes: 12 });
+      rows.production_station_counts.find(row => row.id === "counter-count").good_qty = 0;
+      rows.production_order_stations.push({ ...rows.production_order_stations[0], id: "seq-two", station_no: 2,
+        name: "Spannung 2", time_status: "ok", actual_time_minutes: null });
+      rows.production_order_employees.push({ id: "seq-worker", order_id: "order-one", employee_id: "employee-admin", employee_name: "Zweiter Mitarbeiter", active: true, role: "worker" });
+    }
     if (!touchViewTest) {
       // The original 80 regression tests exercise the explicitly chosen full overview.
       await page.addInitScript(() => localStorage.setItem("humbel.productionCounterView", "overview"));
@@ -1080,8 +1089,12 @@ test.describe("Humbel app smoke", () => {
     await stationTwo.getByRole("button", { name: /Gutteile \+1/ }).click();
     await expect(stationTwo).toContainText(/Gutteile\s+1/);
     await expect(stationTwo.getByRole("button", { name: /Gutteile \+1/ })).toBeDisabled();
+    // Two steps require two finished parts at the final step, not one good booking per step.
+    await stationOne.getByRole("button", { name: /Gutteile \+1/ }).click();
+    await stationTwo.getByRole("button", { name: /Gutteile \+1/ }).click();
+    await expect(stationTwo).toContainText(/Gutteile\s+2/);
     await expect(page.locator("#view")).toContainText("Rest");
-    await expect(page.locator("#view")).toContainText("Gesamt gezählt");
+    await expect(page.locator("#view")).toContainText("Buchungen gesamt");
     await expect(page.locator("#view")).toContainText("0");
     await page.locator("#view").getByRole("button", { name: "Auftrag fertig melden" }).click();
     await expect(page.getByRole("button", { name: "Endgültig fertig melden" })).toBeEnabled();
@@ -1239,7 +1252,7 @@ test.describe("Humbel app smoke", () => {
     await expectViewHeading(page, "Produktionsvorschau");
     const chainStationOne = page.locator("#view").locator("article").filter({ hasText: "Spannung 1" });
     const chainStationTwo = page.locator("#view").locator("article").filter({ hasText: "Spannung 2" });
-    await expect(chainStationOne).toContainText("Ziel erreicht");
+    await expect(chainStationOne).toContainText("Bearbeitungsschritt erreicht");
     await expect(chainStationOne.getByRole("button", { name: /Gutteile \+1/ })).toBeDisabled();
     await page.evaluate(() =>
       window.adjustProductionStationAmount("station-chain-one", "clarify", 1, {
@@ -1492,6 +1505,208 @@ test.describe("Humbel app smoke", () => {
     });
   });
 
+  test.describe("Sequential production stations", () => {
+    test.beforeEach(async ({ page }, testInfo) => {
+      page.counterTouch = !!(testInfo.project.use.hasTouch || testInfo.project.use.isMobile);
+      await page.goto(appUrl);
+      await page.getByRole("button", { name: "Mido/Admin" }).click();
+      await clickMain(page, "Produktion");
+      await clickSubtab(page, "Stückzahl");
+      await page.locator("#view").getByRole("button", { name: /Maschine 50/ }).click();
+    });
+
+    test.afterEach(async ({ page }) => {
+      const writes = await page.evaluate(() => window.__SUPABASE_WRITE_LOG);
+      expect(writes.every(entry => ["production_station_counts", "production_station_events", "production_order_stations"].includes(entry.table))).toBe(true);
+      expect(await page.evaluate(() => window.__SUPABASE_MOCK_ROWS.production_orders[0].use_chain_logic)).toBe(false);
+      expect(await page.evaluate(() => Object.values(localStorage).join(" "))).not.toMatch(/"(?:good_qty|scrap_total|clarify_total|productionStationCounts)"\s*:/);
+    });
+
+    for (const view of ["overview", "production"]) {
+      test(`${view}: single station keeps its target and loss accounting`, async ({ page }) => {
+        await seedSequentialScenario(page, { good: [3], scrap: [1], clarify: [1] }, view);
+        const station = await selectSequentialStation(page, 1, view);
+        await expect(station.getByRole("button", { name: /Gutteile \+1/ }).first()).toBeDisabled();
+        expect(await productionProgress(page)).toEqual({ finished: 3, remaining: 0 });
+        await pressCounterButton(page, station.getByRole("button", { name: /Gutteile -1/ }).first());
+        expect(await productionProgress(page)).toEqual({ finished: 2, remaining: 1 });
+        await expect(station.getByRole("button", { name: /Gutteile \+1/ }).first()).toBeEnabled();
+      });
+
+      test(`${view}: two legacy steps count 5 plus 5 as 5 finished parts and survive view changes`, async ({ page }) => {
+        await seedSequentialScenario(page, { good: [0, 0], checked: true }, view);
+        await countSequentialGood(page, 1, 5, view);
+        expect(await productionProgress(page)).toEqual({ finished: 0, remaining: 5 });
+        await expect(await selectSequentialStation(page, 1, view)).toContainText("5 / 5 · Bearbeitungsschritt erreicht");
+        const second = await selectSequentialStation(page, 2, view);
+        await expect(second).toContainText("0 / 5 · Noch 5 Gutmeldungen möglich");
+        await page.evaluate(() => completeProductionOrderWithChecklist("order-one"));
+        await expect(page.getByRole("alert")).toContainText("Auftrag hat noch Restmenge.");
+        expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG.filter(entry => entry.table === "production_orders"))).toEqual([]);
+        for (let n = 1; n <= 5; n++) {
+          await countSequentialGood(page, 2, 1, view);
+          expect(await productionProgress(page)).toEqual({ finished: n, remaining: 5 - n });
+        }
+        await expect(second.getByRole("button", { name: /Gutteile \+1/ }).first()).toBeDisabled();
+        const before = await page.evaluate(() => window.__SUPABASE_WRITE_LOG.length);
+        await page.evaluate(() => adjustProductionStationGoodQty("seq-two", "counter-worker", 1));
+        expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG.length)).toBe(before);
+        expect(await page.evaluate(() => getProductionOrderGoodTotal("order-one"))).toBe(10);
+        expect(await page.evaluate(() => getProductionOrderCompletionBlocker(getProductionOrderById("order-one"))))
+          .toBe("");
+        await page.getByRole("group", { name: "Zähleransicht" }).getByRole("button", { name: "Übersicht", exact: true }).click();
+        await expect(page.locator("#productionActiveOrderPanel")).toContainText("Bearbeitungsbuchungen");
+        await expect(page.locator("#productionActiveOrderPanel")).toContainText("Fertige Gutteile");
+        await expect(page.locator("#productionActiveOrderPanel")).not.toContainText("Über Ziel");
+        await page.evaluate(async () => {
+          window.__SUPABASE_MOCK_ROWS.production_order_checklist.filter(row => row.order_id === "order-one").forEach(row => { row.checked = true; });
+          await refreshProductionOrderChecklistFromSupabase();
+          await openProductionCompletionDialog("order-one");
+        });
+        await expect(page.getByRole("button", { name: "Endgültig fertig melden" })).toBeEnabled();
+        expect(await page.evaluate(() => getProductionOrderById("order-one").status)).toBe("running");
+      });
+
+      test(`${view}: three steps use only final good parts and the immediate predecessor`, async ({ page }) => {
+        await seedSequentialScenario(page, { good: [5, 5, 0] }, view);
+        expect(await productionProgress(page)).toEqual({ finished: 0, remaining: 5 });
+        await countSequentialGood(page, 3, 5, view);
+        expect(await productionProgress(page)).toEqual({ finished: 5, remaining: 0 });
+        await seedSequentialScenario(page, { good: [5, 2, 2] }, view);
+        const third = await selectSequentialStation(page, 3, view);
+        await expect(third.getByRole("button", { name: /Gutteile \+1/ }).first()).toBeDisabled();
+        const before = await page.evaluate(() => window.__SUPABASE_WRITE_LOG.length);
+        await page.evaluate(() => adjustProductionStationGoodQty("seq-3", "counter-worker", 1));
+        expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG.length)).toBe(before);
+      });
+
+      test(`${view}: staff totals share predecessor capacity without mixing orders`, async ({ page }) => {
+        await seedSequentialScenario(page, { good: [3, 2] }, view);
+        const second = await selectSequentialStation(page, 2, view);
+        const secondWorker = second.locator('div[data-scroll-anchor="good:seq-two:seq-worker"]');
+        await pressCounterButton(page, secondWorker.getByRole("button", { name: /Gutteile \+1/ }));
+        expect(await productionProgress(page)).toEqual({ finished: 3, remaining: 2 });
+        for (const button of await second.getByRole("button", { name: /Gutteile \+1/ }).all()) await expect(button).toBeDisabled();
+        const before = await page.evaluate(() => JSON.stringify(window.__SUPABASE_MOCK_ROWS));
+        await page.evaluate(async () => {
+          await adjustProductionStationGoodQty("seq-two", "counter-worker", 1);
+          await adjustProductionStationGoodQty("seq-two", "entry-chain", 1);
+        });
+        expect(await page.evaluate(() => JSON.stringify(window.__SUPABASE_MOCK_ROWS))).toBe(before);
+        expect(await page.evaluate(() => getProductionStationGoodTotal("station-chain-one"))).toBe(2);
+      });
+
+      test(`${view}: scrap and clarification consume capacity but never create finished goods`, async ({ page }) => {
+        await seedSequentialScenario(page, { good: [3, 1] }, view);
+        for (const [type, label] of [["scrap", "Ausschuss"], ["clarify", "In Abklärung"]]) {
+          const second = await selectSequentialStation(page, 2, view);
+          await pressCounterButton(page, second.getByRole("button", { name: `${label} +1`, exact: true }));
+          await expect(page.getByRole("heading", { name: `6M-Ursache für ${label}` })).toBeVisible();
+          await pressCounterButton(page, page.getByRole("button", { name: "Einweisung", exact: true }));
+          await pressCounterButton(page, page.getByRole("button", { name: "Ursache speichern", exact: true }));
+          expect(await productionProgress(page)).toEqual({ finished: 1, remaining: 4 });
+          expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG.at(-1).table)).toBe("production_station_events");
+        }
+        const second = await selectSequentialStation(page, 2, view);
+        for (const label of [/Gutteile \+1/, "Ausschuss +1", "In Abklärung +1"]) {
+          await expect(second.getByRole("button", { name: label, exact: typeof label === "string" }).first()).toBeDisabled();
+        }
+        await pressCounterButton(page, second.getByRole("button", { name: "Ausschuss -1", exact: true }));
+        await countSequentialGood(page, 2, 1, view);
+        expect(await productionProgress(page)).toEqual({ finished: 2, remaining: 3 });
+        expect(await page.evaluate(() => getProductionOrderStationById("seq-two").scrap_lifetime)).toBe(1);
+      });
+
+      test(`${view}: predecessor is rechecked when the 6M dialog saves`, async ({ page }) => {
+        await seedSequentialScenario(page, { good: [3, 2] }, view);
+        const second = await selectSequentialStation(page, 2, view);
+        await pressCounterButton(page, second.getByRole("button", { name: "Ausschuss +1", exact: true }));
+        await page.evaluate(async () => {
+          window.__SUPABASE_MOCK_ROWS.production_station_counts.find(row => row.station_id === "station-one").good_qty = 2;
+          await refreshProductionStationCountsFromSupabase();
+        });
+        await pressCounterButton(page, page.getByRole("button", { name: "Ursache speichern", exact: true }));
+        expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);
+        await expect(second).toContainText("Vorgängermenge");
+      });
+
+      test(`${view}: corrections must run downstream first and cannot make negative counts`, async ({ page }) => {
+        await seedSequentialScenario(page, { good: [3, 3] }, view);
+        const first = await selectSequentialStation(page, 1, view);
+        await expect(first.getByRole("button", { name: /Gutteile -1/ }).first()).toBeDisabled();
+        await page.evaluate(() => adjustProductionStationGoodQty("station-one", "counter-worker", -1));
+        expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);
+        await countSequentialGood(page, 2, -1, view);
+        await countSequentialGood(page, 1, -1, view);
+        expect(await page.evaluate(() => getProductionStationGoodTotal("station-one"))).toBe(2);
+        await seedSequentialScenario(page, { good: [1, 0] }, view);
+        await countSequentialGood(page, 1, -1, view);
+        const before = await page.evaluate(() => window.__SUPABASE_WRITE_LOG.length);
+        await page.evaluate(() => adjustProductionStationGoodQty("station-one", "counter-worker", -1));
+        expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG.length)).toBe(before);
+        expect(await productionProgress(page)).toEqual({ finished: 0, remaining: 5 });
+        await seedSequentialScenario(page, { good: [3, 2], scrap: [0, 1] }, view);
+        await page.evaluate(() => adjustProductionStationGoodQty("station-one", "counter-worker", -1));
+        expect(await page.evaluate(() => getProductionStationGoodTotal("station-one"))).toBe(3);
+      });
+
+      test(`${view}: inconsistent stored quantities are not repaired silently or completed`, async ({ page }) => {
+        await seedSequentialScenario(page, { good: [2, 3], target: 3, checked: true }, view);
+        const before = await page.evaluate(() => JSON.stringify(window.__SUPABASE_MOCK_ROWS));
+        await page.evaluate(() => completeProductionOrderWithChecklist("order-one"));
+        await expect(page.getByRole("alert")).toContainText("Mengenfolge der Spannungen ist inkonsistent");
+        expect(await page.evaluate(() => JSON.stringify(window.__SUPABASE_MOCK_ROWS))).toBe(before);
+        expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);
+        await countSequentialGood(page, 2, -1, view);
+        expect(await productionProgress(page)).toEqual({ finished: 2, remaining: 1 });
+      });
+    }
+
+    test("station details retain changed time and lifetime semantics while new stations default to OK", async ({ page }) => {
+      const first = await selectSequentialStation(page, 1, "overview");
+      await expect(first).toContainText("Zeit geändert");
+      await first.getByText("Details bearbeiten", { exact: true }).click();
+      await expect(first.getByLabel("Zeitstatus")).toHaveValue("changed");
+      await expect(first.getByLabel("Ist-Zeit Minuten")).toHaveValue("12");
+      await expect(first).toContainText("Ausschuss bisher erfasst");
+      await expect(first).toContainText("Abklärung bisher erfasst");
+      await expect(first).not.toContainText("Lebenslauf");
+      await first.getByLabel("OP-Nummer").fill("30");
+      await pressCounterButton(page, first.getByRole("button", { name: "Speichern", exact: true }));
+      expect(await page.evaluate(() => window.__SUPABASE_MOCK_ROWS.production_order_stations[0])).toMatchObject({ time_status: "changed", actual_time_minutes: 12, scrap_lifetime: 0, clarify_lifetime: 0 });
+      await page.evaluate(() => createProductionOrderStation("order-one"));
+      const third = await selectSequentialStation(page, 3, "overview");
+      await expect(third).toContainText("Zeit OK");
+      await third.getByText("Details bearbeiten", { exact: true }).click();
+      await expect(third.getByLabel("Zeitstatus")).toHaveValue("ok");
+      await page.evaluate(async () => { await ensureProductionOrderStationsForOrder("order-two"); });
+      expect(await page.evaluate(() => window.__SUPABASE_MOCK_ROWS.production_order_stations.find(row => row.order_id === "order-two"))).toMatchObject({ time_status: "ok", actual_time_minutes: null });
+      await page.evaluate(() => {
+        const station = state.productionOrderStations.find(row => row.id === "seq-two");
+        station.time_status = null;
+        render();
+      });
+      const second = await selectSequentialStation(page, 2, "overview");
+      await expect(second).toContainText("Zeit OK");
+      await second.getByText("Details bearbeiten", { exact: true }).click();
+      await expect(second.getByLabel("Zeitstatus")).toHaveValue("ok");
+    });
+
+    test("reload keeps legacy flags and stored times without automatic writes", async ({ page }) => {
+      const before = await page.evaluate(() => JSON.stringify(window.__SUPABASE_MOCK_ROWS));
+      await page.reload();
+      await page.getByRole("button", { name: "Mido/Admin" }).click();
+      await clickMain(page, "Produktion");
+      await clickSubtab(page, "Stückzahl");
+      await page.getByRole("button", { name: "Zurück zur Maschinenübersicht", exact: true }).click();
+      await page.locator("#view").getByRole("button", { name: /Maschine 50/ }).click();
+      expect(await page.evaluate(() => JSON.stringify(window.__SUPABASE_MOCK_ROWS))).toBe(before);
+      expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);
+      expect(await page.evaluate(() => usesProductionChainLogic(getProductionOrderById("order-one")))).toBe(true);
+      expect(await page.evaluate(() => getProductionOrderStationById("station-one"))).toMatchObject({ time_status: "changed", actual_time_minutes: 12 });
+    });
+  });
+
   test.describe("Production touch view", () => {
     test.beforeEach(async ({ page }, testInfo) => {
       page.counterTouch = !!(testInfo.project.use.hasTouch || testInfo.project.use.isMobile);
@@ -1546,7 +1761,7 @@ test.describe("Humbel app smoke", () => {
       await expectViewHeading(page, "Produktionsvorschau");
       await expect(page.locator("#versionFooter")).toBeVisible();
       await expect(panel.locator("article")).toHaveCount(4);
-      await expect(panel).toContainText("Gutteile gesamt");
+      await expect(panel).toContainText("Bearbeitungsbuchungen");
       await expect(panel).toContainText("Mitarbeiter am Auftrag");
       await expect(panel).toContainText("Checkliste");
       await expect(panel.getByRole("button", { name: "Protokoll anzeigen" })).toBeVisible();
@@ -1565,7 +1780,7 @@ test.describe("Humbel app smoke", () => {
         await pressCounterButton(page, stationTabs.getByRole("tab", { name: `Spannung ${n}`, exact: true }));
         const id = n === 1 ? "station-one" : `touch-station-${n}`;
         await expect(page.locator("#productionSelectedStation")).toHaveAttribute("data-station-id", id);
-        await expect(page.locator(`div[data-scroll-anchor="good:${id}:counter-worker"] [data-counter-value]`)).toContainText(String(n === 1 ? 2 : n + 2));
+        await expect(page.locator(`div[data-scroll-anchor="good:${id}:counter-worker"] [data-counter-value]`)).toContainText(String(n === 1 ? 2 : 5 - n));
         await expect(page.locator(".production-touch-view article")).toHaveCount(1);
       }
       await page.evaluate(() => selectProductionCounterStation("order-one", "station-nav-second"));
@@ -1649,11 +1864,11 @@ test.describe("Humbel app smoke", () => {
 
     test("target limit blocks all positive amounts while correction remains available", async ({ page }) => {
       await page.evaluate(async () => {
-        window.__SUPABASE_MOCK_ROWS.production_orders[0].target_quantity = 33;
+        window.__SUPABASE_MOCK_ROWS.production_orders[0].target_quantity = 9;
         await refreshProductionOrdersFromSupabase();
         renderPreservingScroll("station:station-one");
       });
-      await expect(page.locator(".production-touch-station")).toContainText("Ziel erreicht");
+      await expect(page.locator(".production-touch-station")).toContainText("Bearbeitungsschritt erreicht");
       for (const type of ["good", "scrap", "clarify"]) {
         await expect(counterArea(page, type).getByRole("button", { name: /\+1/ })).toBeDisabled();
       }
@@ -1670,7 +1885,7 @@ test.describe("Humbel app smoke", () => {
     test("target is rechecked when the 6M dialog is saved", async ({ page }) => {
       await pressCounterButton(page, counterArea(page, "scrap").getByRole("button", { name: "Ausschuss +1" }));
       await page.evaluate(async () => {
-        window.__SUPABASE_MOCK_ROWS.production_orders[0].target_quantity = 33;
+        window.__SUPABASE_MOCK_ROWS.production_orders[0].target_quantity = 9;
         await refreshProductionOrdersFromSupabase();
       });
       await page.getByRole("button", { name: "Ursache speichern" }).click();
@@ -2021,6 +2236,49 @@ test.describe("Humbel app smoke", () => {
   });
 });
 
+async function seedSequentialScenario(page, scenario, view) {
+  await page.evaluate(async ({ scenario, view }) => {
+    const rows = window.__SUPABASE_MOCK_ROWS;
+    rows.production_orders[0].target_quantity = scenario.target || 5;
+    rows.production_order_stations = rows.production_order_stations.filter(row => row.order_id !== "order-one");
+    rows.production_station_counts = rows.production_station_counts.filter(row => row.order_id !== "order-one");
+    scenario.good.forEach((qty, index) => {
+      const id = index === 0 ? "station-one" : index === 1 ? "seq-two" : `seq-${index + 1}`;
+      rows.production_order_stations.push({ ...rows.production_order_stations[0], id, order_id: "order-one", station_no: index + 1,
+        name: `Spannung ${index + 1}`, scrap_total: scenario.scrap?.[index] || 0, clarify_total: scenario.clarify?.[index] || 0,
+        scrap_lifetime: scenario.scrap?.[index] || 0, clarify_lifetime: scenario.clarify?.[index] || 0 });
+      rows.production_station_counts.push({ id: `seq-count-${index}`, station_id: id, order_id: "order-one", order_employee_id: "counter-worker", good_qty: qty });
+    });
+    rows.production_order_checklist.filter(row => row.order_id === "order-one").forEach(row => { row.checked = !!scenario.checked; });
+    await refreshProductionOrdersFromSupabase();
+    await refreshProductionOrderStationsFromSupabase();
+    await refreshProductionStationCountsFromSupabase();
+    await refreshProductionOrderChecklistFromSupabase();
+    setProductionCounterView(view);
+  }, { scenario, view });
+}
+
+async function productionProgress(page) {
+  return page.evaluate(() => ({ finished: getProductionOrderCompletedGoodTotal("order-one"),
+    remaining: calculatePreparedRemainingQuantity(getProductionOrderById("order-one")) }));
+}
+
+async function selectSequentialStation(page, number, view) {
+  if (view === "production") {
+    await pressCounterButton(page, page.getByRole("tablist", { name: "Spannungsauswahl" }).getByRole("tab", { name: `Spannung ${number}`, exact: true }));
+    return page.locator(".production-touch-station");
+  }
+  const id = await page.evaluate(number => getProductionOrderStations("order-one").find(station => station.station_no === number)?.id, number);
+  return page.locator(`#view article[data-scroll-anchor="station:${id}"]`);
+}
+
+async function countSequentialGood(page, number, amount, view) {
+  const station = await selectSequentialStation(page, number, view);
+  for (let n = 0; n < Math.abs(amount); n++) {
+    await pressCounterButton(page, station.getByRole("button", { name: amount > 0 ? /Gutteile \+1/ : /Gutteile -1/ }).first());
+  }
+}
+
 async function openProductionCompletionByPointer(page) {
   const button = page.getByRole("button", { name: "Auftrag abschließen", exact: true });
   await button.scrollIntoViewIfNeeded();
@@ -2090,9 +2348,9 @@ function prepareProductionTouchRows(rows) {
   for (let n = 2; n <= 4; n++) {
     const id = `touch-station-${n}`;
     rows.production_order_stations.push({ ...rows.production_order_stations[0], id, station_no: n,
-      name: `Aufspannung ${n}`, scrap_total: n, clarify_total: 0 });
+      name: `Aufspannung ${n}`, scrap_total: 0, clarify_total: 0 });
     rows.production_station_counts.push({ id: `touch-count-${n}`, station_id: id, order_id: "order-one",
-      order_employee_id: "counter-worker", good_qty: n + 2 });
+      order_employee_id: "counter-worker", good_qty: 5 - n });
   }
   rows.production_station_counts.push({ id: "touch-second-count", station_id: "station-one", order_id: "order-one",
     order_employee_id: "touch-worker", good_qty: 3 });
