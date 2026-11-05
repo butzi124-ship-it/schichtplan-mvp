@@ -39,6 +39,8 @@ Initial references are generated once by Initial Visual Baselines on the develop
 
 Initial reference review: run 41977286948 at f026821cfec911955e7786fbed68ff6c2964fa78 produced 33 images and then passed 33 strict comparisons (11 per viewport, zero failed/skipped/flaky). All three scene overview sheets and the mobile tool/checklist originals were inspected. Existing internally scrollable tabs/tables and vertically scrollable dialogs remain intentional; no global horizontal overflow was accepted. Earlier failing images were discarded. The initializer is now manual-dispatch-only and refuses to overwrite the committed images; provenance records the generating commit, run and every PNG hash.
 
+A later independent CI comparison exposed a fixture scroll race in the 6M scene: the dialog itself matched, but automatic button scrolling left the dimmed background at different offsets (desktop trace scrollTop 253 instead of the reference's bottom-aligned background). That scene now waits for the existing pending render-scroll restoration, explicitly starts at the page bottom and verifies that precondition before the genuine click/tap. No PNG, screenshot tolerance, target or functional assertion was changed. The existing functional scroll-preservation scenarios remain unchanged.
+
 ## Official Playwright agents
 
 Generated using `npx playwright init-agents --loop=codex` with the installed 1.62.1 CLI (no version upgrade needed). Playwright is now exactly pinned. Planner, generator and healer live under .codex/agents. The parent .codex/config.toml configures the MCP server because current Codex agents inherit parent MCP settings. No model override or API key was added.

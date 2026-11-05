@@ -121,6 +121,10 @@ test.describe("Humbel app smoke", () => {
             if (scene === "good-counter") target = counterArea(page, "good");
             if (scene === "scrap-clarification") target = page.locator(".production-touch-station");
             if (scene === "6m-dialog") {
+              // Fix the starting scroll position; auto-scroll otherwise depends on the previous render frame.
+              await expect.poll(() => page.evaluate(() => pendingScrollRestore === null)).toBe(true);
+              await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
+              await expect.poll(() => page.evaluate(() => Math.abs(window.scrollY - (document.documentElement.scrollHeight - innerHeight)))).toBeLessThan(1);
               await pressCounterButton(page, counterArea(page, "scrap").getByRole("button", { name: "Ausschuss +1", exact: true }));
               await expect(page.getByRole("heading", { name: "6M-Ursache für Ausschuss", exact: true })).toBeVisible();
               target = page.locator(".fixed.inset-0.z-50").last();

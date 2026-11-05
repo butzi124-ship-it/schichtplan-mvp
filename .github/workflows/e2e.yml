@@ -71,9 +71,13 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run test:visual
+      - name: Repeat strict visual comparison to detect unstable fixtures
+        run: npm run test:visual
+        env:
+          QA_ARTIFACT_DIR: artifacts/visual-repeat
       - name: Summarize actual visual results
         if: always()
-        run: cat artifacts/visual/summary.md >> "$GITHUB_STEP_SUMMARY"
+        run: cat artifacts/visual/summary.md artifacts/visual-repeat/summary.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -82,6 +86,7 @@ jobs:
             visual-report/
             test-results/visual/
             artifacts/visual/
+            artifacts/visual-repeat/
           retention-days: 14
   quality-gate:
     name: Quality Gate

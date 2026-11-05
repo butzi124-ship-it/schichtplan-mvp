@@ -1,7 +1,7 @@
 {
   "appBusinessSha256": "a6de03aa3ce6a007a720604eaefb9a837783c4379a49fe44329271f3cb9367e1",
   "tests": {
-    "tests/smoke.spec.js": "2e9cdd48bfa6b5eea58bff52989b933a8586ec69b06f5ac0c3535cb25921c52b",
+    "tests/smoke.spec.js": "0d9f52e9fca533aed977f86d827b0ac1cb95b800261b5b1bb0dee250a1d007a0",
     "tests/helpers/supabase-mock.js": "26964fab6825325700abba975887d8e1ccbe7b29741fa9c5750a90257970a5eb",
     "tests/helpers/mock-page.js": "28392b12d2daf8c354bb47a4931ea6ebcb5cc1273b336d8a79109cb0633af3a8",
     "tests/seed.spec.ts": "6e836bc14768e8428db56d1a861192d16c789b7f7bd8106f2b1db1e3951d41fe",
