@@ -3,9 +3,10 @@
   "version": "0.4.91",
   "private": true,
   "scripts": {
-    "check:syntax": "node --check schichtplan_mvp.js",
+    "check:syntax": "node --check schichtplan_mvp.js && node --check tests/smoke.spec.js && node --check playwright.config.js && node --check scripts/ci-report.js",
     "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e:headed": "playwright test --headed",
+    "test:ci": "node --test scripts/ci-report.test.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.54.2"

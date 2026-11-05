@@ -5,13 +5,24 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   e2e:
+    name: e2e
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -25,11 +36,26 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Syntax check
-        run: npm run check:syntax
+      - name: Syntax and whitespace checks
+        run: |
+          node --check schichtplan_mvp.js
+          node --check tests/smoke.spec.js
+          npm run check:syntax
+          git show --format= --check HEAD
+
+      - name: CI report regression tests
+        run: npm run test:ci
 
       - name: E2E smoke tests
         run: npm run test:e2e
+
+      - name: Write CI report
+        if: always()
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          export TESTED_SHA="$(git rev-parse HEAD)"
+          node scripts/ci-report.js
 
       - name: Upload Playwright report
         if: always()
@@ -38,10 +64,13 @@ jobs:
           name: playwright-report
           path: playwright-report/
           if-no-files-found: ignore
-      - name: Upload failure screenshots and traces
-        if: failure()
+          retention-days: 14
+
+      - name: Upload machine-readable results, summary and failure traces
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-failures
+          name: test-results
           path: test-results/
           if-no-files-found: ignore
+          retention-days: 14

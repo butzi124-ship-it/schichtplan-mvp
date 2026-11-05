@@ -1,13 +1,14 @@
 const { defineConfig, devices } = require("@playwright/test");
 
 module.exports = defineConfig({
+  forbidOnly: !!process.env.CI,
   testDir: "./tests",
   timeout: 30 * 1000,
   retries: process.env.CI ? 1 : 0,
   expect: {
     timeout: 5000,
   },
-  reporter: [["html", { outputFolder: "playwright-report", open: "never" }], ["list"]],
+  reporter: [["html", { outputFolder: "playwright-report", open: "never" }], ["list"], ["json", { outputFile: "test-results/results.json" }]],
   use: {
     trace: "retain-on-failure",
     screenshot: "only-on-failure",

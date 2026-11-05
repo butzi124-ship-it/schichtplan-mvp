@@ -1,0 +1,21 @@
+name: Entwicklungsaufgabe
+description: Klar abgegrenzte Aufgabe für die Humbel App
+title: "[Aufgabe] "
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Problem und gewünschtes Verhalten
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Überprüfbare Abnahmekriterien
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Umfang, Risiken und Einschränkungen
+      description: Keine Produktionsdaten oder Zugangsdaten eintragen.
