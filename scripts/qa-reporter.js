@@ -39,6 +39,7 @@ class QaReporter {
 module.exports = QaReporter;
 
 function diagnose(error) {
+  if (/HOME.*owned|Firefox is unable to launch/i.test(error)) return "Firefox container startup failed before any app assertion: verify HOME ownership matches the container user. Do not skip Firefox or weaken app tests.";
   if (/intercepts pointer|pointer events/i.test(error)) return "Hit target obstructed: compare elementFromPoint, bounds, overflow and layout/visual viewport before changing selectors. Fix layout, never force the click.";
   if (/toHaveScreenshot|snapshot|pixel/i.test(error)) return "Visual mismatch or missing reference: inspect expected/actual/diff in the pinned environment. Do not refresh references to hide a regression.";
   if (/timeout/i.test(error)) return "Locator or precondition timed out: inspect the earliest trace step and console/network evidence. Preserve the assertion and expected behavior.";

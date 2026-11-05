@@ -16,6 +16,8 @@ The first Linux image run detected tool-filter controls overflowing their grid t
 
 Initial generation validates that only the expected 33 missing-reference soft failures occurred, then performs a second strict comparison. Any additional failure aborts generation. Normal CI never runs this initializer.
 
+The first multi-browser Linux run exposed a container startup issue, not an app assertion failure: GitHub mounts /github/home as pwuser while this job runs as root, so Firefox rejected HOME ownership before opening any page. The functional container now explicitly uses HOME=/root, following the browser launch diagnostic. Firefox remains enabled with all 71 assertions/scenarios unchanged.
+
 ## Commands
 
 ```sh
