@@ -5,9 +5,18 @@
   "scripts": {
     "check:syntax": "node --check schichtplan_mvp.js",
     "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e:headed": "playwright test --headed",
+    "test:chromium": "playwright test --project=chromium --project=mobile-chromium --project=tablet-chromium",
+    "test:cross-browser": "playwright test --project=firefox --project=webkit",
+    "test:visual": "node scripts/run-visual.js",
+    "test:agents": "playwright test -c playwright.agents.config.js",
+    "test:qa": "node --test tests/qa/*.test.js",
+    "test:db:preflight": "node scripts/db-preflight.js",
+    "qa:check": "node scripts/qa-check.js",
+    "qa:agent-server": "node scripts/check-agent-server.js"
   },
   "devDependencies": {
-    "@playwright/test": "^1.54.2"
+    "@playwright/test": "1.62.1",
+    "yaml": "2.9.1"
   }
 }
