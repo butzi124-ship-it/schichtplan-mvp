@@ -10,5 +10,7 @@
     ".codex/agents/playwright_test_generator.toml": "3889f429ea9baa99a4136d692686d94f06dcd5513025b758f672f8fb870000b7",
     ".codex/agents/playwright_test_healer.toml": "46a6330c2970d0d40582924ad384e77a9e14b9bb60bd5e12c6b9c2b49b339f9f",
     ".codex/config.toml": "8c91972f392226685f869ff23f39e9dc47c75dff2158d33b6e576c615471a581"
-  }
+  },
+  "reviewedPresentationPatch": "\n    #toolSearch,\n    #toolFilterLabel,\n    #toolFilterT,\n    #toolFilterD,\n    #toolFilterHolder,\n    #toolFilterImageStatus {\n      min-width: 0;\n      width: 100%;\n      max-width: 100%;\n    }\n",
+  "reviewReason": "Initial Linux visual tests exposed tool-filter controls overflowing their grid tracks on phone/tablet. Only six control widths are constrained; no app logic or business assertion changed."
 }

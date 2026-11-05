@@ -870,6 +870,17 @@ function injectHumbelDesignStyles() {
       background: #ffffff !important;
     }
 
+    #toolSearch,
+    #toolFilterLabel,
+    #toolFilterT,
+    #toolFilterD,
+    #toolFilterHolder,
+    #toolFilterImageStatus {
+      min-width: 0;
+      width: 100%;
+      max-width: 100%;
+    }
+
     input:focus,
     select:focus,
     textarea:focus {

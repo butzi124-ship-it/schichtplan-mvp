@@ -5,7 +5,12 @@ const YAML = require("yaml");
 const { listTests } = require("./list-tests");
 const { hash, appBusiness, sourceViolations } = require("./qa-policy");
 const protectedFiles = require("../tests/qa/protected-files.json");
-assert.equal(hash(appBusiness(fs.readFileSync("schichtplan_mvp.js", "utf8"))), protectedFiles.appBusinessSha256, "App business logic changed in a QA-only release");
+let app = fs.readFileSync("schichtplan_mvp.js", "utf8").replace(/\r\n/g, "\n");
+if (protectedFiles.reviewedPresentationPatch) {
+  assert(app.includes(protectedFiles.reviewedPresentationPatch), "Reviewed CSS patch must remain exact");
+  app = app.replace(protectedFiles.reviewedPresentationPatch, "");
+}
+assert.equal(hash(appBusiness(app)), protectedFiles.appBusinessSha256, "App business logic changed in a QA-only release");
 for (const [file, expected] of Object.entries(protectedFiles.tests)) {
   assert.equal(hash(fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n")), expected, `${file}: protected regression source changed; explicit human review required`);
   assert.deepEqual(sourceViolations(fs.readFileSync(file, "utf8")), [], `${file}: forbidden skip/force/failure annotation`);

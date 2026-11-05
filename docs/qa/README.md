@@ -10,6 +10,12 @@
 - HTML report, named failures, diagnostic hypotheses, actual/expected/diff images, traces, SHA and per-project counts are uploaded even on failure. A hypothesis is not a verified root cause. The healer must inspect evidence, propose a fix and re-run all regressions.
 - Skipped, focused, expected-failure and flaky tests cannot silently produce green. Normal visual checks use updateSnapshots=none. Hashes protect app business code, test source and approved images against quiet weakening; intentional future changes require explicit review and a corresponding manifest update.
 
+### Reviewed presentation fix
+
+The first Linux image run detected tool-filter controls overflowing their grid tracks (399px at 390px and 1090px at 1024px). Six existing filter IDs now have min-width:0 and width/max-width:100%. No filtering, booking, production or role logic changed. The exact CSS-only patch is recorded separately in protected-files.json; removing only that approved literal reproduces the original 0.5.16 business-code hash. No assertion was removed or relaxed, and the defective images were not approved.
+
+Initial generation validates that only the expected 33 missing-reference soft failures occurred, then performs a second strict comparison. Any additional failure aborts generation. Normal CI never runs this initializer.
+
 ## Commands
 
 ```sh
@@ -69,6 +75,6 @@ The new gate fails if any functional, integrity or visual job is failed/cancelle
 
 ## Limits
 
-This substantially reduces routine regression work; it cannot guarantee zero manual validation. Live DB/RLS, real multi-device concurrency, external CDN failures, physical camera/scanner hardware, print devices and actual mobile Safari remain outside demonstrated coverage. Existing historical rows are not modified. App logic is unchanged except APP_VERSION and VERSION_LOG.
+This substantially reduces routine regression work; it cannot guarantee zero manual validation. Live DB/RLS, real multi-device concurrency, external CDN failures, physical camera/scanner hardware, print devices and actual mobile Safari remain outside demonstrated coverage. Existing historical rows are not modified. App business logic is unchanged; version/log and the reviewed filter-width CSS are the only app edits.
 
 Sources: https://playwright.dev/docs/test-agents ; https://playwright.dev/docs/test-snapshots ; https://playwright.dev/docs/docker ; https://learn.chatgpt.com/docs/agent-configuration/subagents ; https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages
