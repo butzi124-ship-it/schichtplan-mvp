@@ -1,8 +1,5 @@
 name: Initial Visual Baselines
 on:
-  push:
-    branches: [codex/qa-0.5.17]
-    paths: [.github/workflows/visual-baselines.yml]
   workflow_dispatch:
 permissions:
   contents: read

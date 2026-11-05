@@ -37,6 +37,8 @@ npm run test:db:preflight
 
 Initial references are generated once by Initial Visual Baselines on the development branch, uploaded as an artifact, inspected and committed with provenance. The job refuses existing references. It never commits or approves its own output. Later visual changes require an explicit design-change request, image review and a dedicated reviewed update; the healer may not rebaseline.
 
+Initial reference review: run 41977286948 at f026821cfec911955e7786fbed68ff6c2964fa78 produced 33 images and then passed 33 strict comparisons (11 per viewport, zero failed/skipped/flaky). All three scene overview sheets and the mobile tool/checklist originals were inspected. Existing internally scrollable tabs/tables and vertically scrollable dialogs remain intentional; no global horizontal overflow was accepted. Earlier failing images were discarded. The initializer is now manual-dispatch-only and refuses to overwrite the committed images; provenance records the generating commit, run and every PNG hash.
+
 ## Official Playwright agents
 
 Generated using `npx playwright init-agents --loop=codex` with the installed 1.62.1 CLI (no version upgrade needed). Playwright is now exactly pinned. Planner, generator and healer live under .codex/agents. The parent .codex/config.toml configures the MCP server because current Codex agents inherit parent MCP settings. No model override or API key was added.
