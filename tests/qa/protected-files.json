@@ -12,5 +12,15 @@
     ".codex/config.toml": "8c91972f392226685f869ff23f39e9dc47c75dff2158d33b6e576c615471a581"
   },
   "reviewedPresentationPatch": "\n    #toolSearch,\n    #toolFilterLabel,\n    #toolFilterT,\n    #toolFilterD,\n    #toolFilterHolder,\n    #toolFilterImageStatus {\n      min-width: 0;\n      width: 100%;\n      max-width: 100%;\n    }\n",
-  "reviewReason": "Initial Linux visual tests exposed tool-filter controls overflowing their grid tracks on phone/tablet. Only six control widths are constrained; no app logic or business assertion changed."
+  "reviewedPresentationReplacements": [
+    {
+      "before": "body > .max-w-7xl > header > .flex {",
+      "after": "body > :is(.max-w-7xl, .max-w-none) > header > .flex {"
+    },
+    {
+      "before": "body > .max-w-7xl > header > .flex > div {",
+      "after": "body > :is(.max-w-7xl, .max-w-none) > header > .flex > div {"
+    }
+  ],
+  "reviewReason": "Initial Linux visual tests exposed intrinsic tool-filter widths and a mobile header rule no longer matching when tools/storage switch the wrapper to max-w-none. Only six control widths and the two existing header selectors change; no app logic or business assertion changed."
 }

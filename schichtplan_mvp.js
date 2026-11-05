@@ -1158,12 +1158,12 @@ function injectHumbelDesignStyles() {
     }
     @media (max-width: 700px) {
       /* Header overflow expands Chromium's mobile layout viewport and offsets touch hit testing. */
-      body > .max-w-7xl > header > .flex {
+      body > :is(.max-w-7xl, .max-w-none) > header > .flex {
         flex-wrap: wrap;
         min-width: 0;
         max-width: 100%;
       }
-      body > .max-w-7xl > header > .flex > div {
+      body > :is(.max-w-7xl, .max-w-none) > header > .flex > div {
         min-width: 0;
         overflow-wrap: anywhere;
       }

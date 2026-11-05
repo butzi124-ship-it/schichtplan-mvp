@@ -10,6 +10,10 @@ if (protectedFiles.reviewedPresentationPatch) {
   assert(app.includes(protectedFiles.reviewedPresentationPatch), "Reviewed CSS patch must remain exact");
   app = app.replace(protectedFiles.reviewedPresentationPatch, "");
 }
+for (const replacement of protectedFiles.reviewedPresentationReplacements || []) {
+  assert.equal(app.split(replacement.after).length - 1, 1, "Reviewed CSS replacement must remain exact and unique");
+  app = app.replace(replacement.after, replacement.before);
+}
 assert.equal(hash(appBusiness(app)), protectedFiles.appBusinessSha256, "App business logic changed in a QA-only release");
 for (const [file, expected] of Object.entries(protectedFiles.tests)) {
   assert.equal(hash(fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n")), expected, `${file}: protected regression source changed; explicit human review required`);
