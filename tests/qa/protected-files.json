@@ -9,7 +9,16 @@
     ".codex/agents/playwright_test_planner.toml": "fb8fb651728df353847debdda3d46afbb45b86a31390f8234ef2f5d7798dc748",
     ".codex/agents/playwright_test_generator.toml": "3889f429ea9baa99a4136d692686d94f06dcd5513025b758f672f8fb870000b7",
     ".codex/agents/playwright_test_healer.toml": "46a6330c2970d0d40582924ad384e77a9e14b9bb60bd5e12c6b9c2b49b339f9f",
-    ".codex/config.toml": "8c91972f392226685f869ff23f39e9dc47c75dff2158d33b6e576c615471a581"
+    ".codex/config.toml": "8c91972f392226685f869ff23f39e9dc47c75dff2158d33b6e576c615471a581",
+    "js/article-master.js": "ee6b6fcb98fd44501beab076b0624939af8e16de1eddf4899c7a8e119eea989a",
+    "tests/qa/article-integration-patches.json": "d236acb26bdfe537171b9e1274120af0f2fbc4122e56977eb91470135702ea45",
+    "tests/articles.spec.js": "6e3d7574cac0b4dd569ede14c0c3fb3295c9c66aba2dc30f8e6628fd0cade15f",
+    "tests/helpers/article-db.js": "f132d7df34c369e8a5cb1dc27eb13f206c1fabc82a4dd483ae39dbdd231134e6",
+    "tests/articles/database.test.js": "49c296da971117d6c881f168e46204868072b571d14d70b1ceaa21ba64042afc",
+    "tests/fixtures/article-reference.json": "c2fcfa95b974465ecd0db2321000b4bfea47c0e9ee0d521c6de3e005a435705c",
+    "schichtplan_mvp.html": "248b11c3487077f4b599540e26e13299087858d00d808ec99f29b8b7418e9a6a",
+    "supabase/migrations/20261106023103_article_master_phase1.sql": "f771e994df6161ed97dd163514dc2449697770bb2c4771a580e03928580460c4",
+    "tests/qa/legacy-navigation-patch.json": "422d6644fb3258e4dcc37482eaaee60b8670bb566a5abfe873d44fe338e1f109"
   },
   "reviewedPresentationPatch": "\n    #toolSearch,\n    #toolFilterLabel,\n    #toolFilterT,\n    #toolFilterD,\n    #toolFilterHolder,\n    #toolFilterImageStatus {\n      min-width: 0;\n      width: 100%;\n      max-width: 100%;\n    }\n",
   "reviewedPresentationReplacements": [

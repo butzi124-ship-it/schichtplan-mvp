@@ -1373,7 +1373,10 @@ test.describe("Humbel app smoke", () => {
       await page.getByRole("button", { name: "Mido/Admin" }).click();
       await clickMain(page, "Produktion");
       await clickSubtab(page, "Stückzahl");
-      await page.getByRole("button", { name: "Zurück zur Maschinenübersicht", exact: true }).click();
+      // After reload the counter may already show the machine overview.
+      // Establish the same read-only starting point without requiring a stale back button.
+      await page.evaluate(() => resetProductionCounterSelection());
+      await expectViewHeading(page, "Maschinenübersicht");
       await page.locator("#view").getByRole("button", { name: /Maschine 50/ }).click();
       expect(await page.evaluate(() => JSON.stringify(window.__SUPABASE_MOCK_ROWS))).toBe(before);
       expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);

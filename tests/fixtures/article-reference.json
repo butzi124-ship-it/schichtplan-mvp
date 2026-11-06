@@ -1,0 +1,5 @@
+{
+  "article_number": "32505",
+  "data": {"designation": "Spannflansch", "customer": "ITEM A (Switzerland) Ltd.", "material": "90MnCrV8"},
+  "provenance": {"source": "Begleitkarte 05.11.2026, Seite 7/10", "verified_fields": ["article_number", "designation", "customer", "material"], "complete_operation_plan": false}
+}
