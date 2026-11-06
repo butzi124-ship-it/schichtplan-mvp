@@ -63,7 +63,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.6.1";
+const APP_VERSION = "0.6.2";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -78,6 +78,16 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.6.2",
+    date: "2026-11-06 04:28",
+    changes: ["CI-Git-Prüfung auf das Checkout-Workspace beschränkt freigegeben; Besitzprüfung bleibt für andere Verzeichnisse aktiv.", "Fehlende Browser-Ergebnisse werden ausdrücklich als nicht ausgeführt dokumentiert; beide Pflicht-Gates bleiben fail-closed."],
+  },
+  {
+    version: "0.5.19",
+    date: "2026-11-06 04:28",
+    changes: ["CI-Git-Prüfung auf das Checkout-Workspace beschränkt freigegeben; Besitzprüfung bleibt für andere Verzeichnisse aktiv.", "Fehlende Browser-Ergebnisse werden ausdrücklich als nicht ausgeführt dokumentiert; beide Pflicht-Gates bleiben fail-closed."],
+  },
   {
     version: "0.6.1",
     date: "2026-11-06 04:22",

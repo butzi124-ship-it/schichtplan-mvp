@@ -30,3 +30,12 @@ test('actual required e2e script fails closed; deployment needs separate manual 
  assert.equal(workflow.on.workflow_dispatch.inputs.deploy_approved.type,'boolean');
  assert.deepEqual(workflow.permissions,{contents:'read'});
 });
+
+test('Git ownership exception is scoped to the checked-out workspace and SHA capture propagates errors',()=>{
+ const steps=workflow.jobs.functional.steps;
+ const syntax=steps.find(s=>s.name==='Syntax and whitespace checks').run;
+ const report=steps.find(s=>s.name==='Preserve version and commit report').run;
+ assert(syntax.includes('git -c safe.directory="$GITHUB_WORKSPACE" show --format= --check HEAD'));
+ assert(report.includes('TESTED_SHA="$(git -c safe.directory="$GITHUB_WORKSPACE" rev-parse HEAD)"\nexport TESTED_SHA'));
+ assert(!syntax.includes('--global'));assert(!report.includes('--global'));
+});
