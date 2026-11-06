@@ -1,0 +1,18 @@
+{
+  "issue": 8,
+  "reason": "Explicit gated operations hooks; exact reversal before all existing issue #7 and legacy checks. No existing permissions or counters changed.",
+  "patches": [
+    {
+      "before": "// Article data stays in the module closure, never in persisted state/localStorage.",
+      "after": "// Operations stay in a separate in-memory module; no legacy station/counter conversion.\nconst operations = window.HumbelOperations.create({\n  client: supabaseClient, actor: () => currentSupabaseUser?.id || null,\n  role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },\n  canCreate: () => canAccessProduction() && articleMaster.hasAccess(),\n  machines: () => getActiveProductionOrderMachines(),\n  refreshOrders: () => refreshProductionOrdersFromSupabase(),\n});\noperations.bind(document);\n// Article data stays in the module closure, never in persisted state/localStorage."
+    },
+    {
+      "before": "  client: supabaseClient, actor: () => currentSupabaseUser?.id || null,\n  role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },\n});\narticleMaster.bind(document);",
+      "after": "  client: supabaseClient, actor: () => currentSupabaseUser?.id || null,\n  role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },\n  operations,\n});\narticleMaster.bind(document);"
+    },
+    {
+      "before": "  return `<div class='space-y-4'>\n    ${createForm}\n    ${renderProductionOrderTable",
+      "after": "  return `<div class='space-y-4'>\n    ${operations.orderPanel()}\n    ${createForm}\n    ${renderProductionOrderTable"
+    }
+  ]
+}

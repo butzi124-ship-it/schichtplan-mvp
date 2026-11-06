@@ -5,10 +5,20 @@ const supabaseClient = createClient(
   window.SUPABASE_PUBLISHABLE_KEY,
 );
 
+// Operations stay in a separate in-memory module; no legacy station/counter conversion.
+const operations = window.HumbelOperations.create({
+  client: supabaseClient, actor: () => currentSupabaseUser?.id || null,
+  role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },
+  canCreate: () => canAccessProduction() && articleMaster.hasAccess(),
+  machines: () => getActiveProductionOrderMachines(),
+  refreshOrders: () => refreshProductionOrdersFromSupabase(),
+});
+operations.bind(document);
 // Article data stays in the module closure, never in persisted state/localStorage.
 const articleMaster = window.HumbelArticleMaster.create({
   client: supabaseClient, actor: () => currentSupabaseUser?.id || null,
   role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },
+  operations,
 });
 articleMaster.bind(document);
 
@@ -63,7 +73,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.6.3";
+const APP_VERSION = "0.7.0";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -78,6 +88,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.7.0",
+    date: "2026-11-06 08:29",
+    changes: ["Operationspläne mit Tr/Te, freigegebenen Revisionen und unveränderlichen BA-Snapshots vorbereitet (Aufgabe #8).", "Dreistellige BA.OP-Barcodes und atomare BA-Erzeugung isoliert prüfbar; beide Feature-Flags bleiben bis zur gesonderten Freigabe deaktiviert."],
+  },
   {
     version: "0.6.3",
     date: "2026-11-06 05:36",
@@ -6274,6 +6289,7 @@ function renderProductionOrdersTab() {
   );
 
   return `<div class='space-y-4'>
+    ${operations.orderPanel()}
     ${createForm}
     ${renderProductionOrderTable("Laufende Aufträge", runningOrders, true)}
     ${renderProductionOrderTable("Abgeschlossene / abgebrochene Aufträge", closedOrders, false)}

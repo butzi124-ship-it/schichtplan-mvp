@@ -20,10 +20,11 @@
     }
     return result;
   }
-  function create({ client, actor, role, redraw, enabled = () => root.HUMBEL_ARTICLE_MASTER_ENABLED === true }) {
+  function create({ client, actor, role, redraw, operations = null, enabled = () => root.HUMBEL_ARTICLE_MASTER_ENABLED === true }) {
     let user = null, generation = 0, loaded = false, loading = false, busy = false;
     let caps = { scopes: [], assignments: [] }, rows = [], selected = null, form = null, error = '', notice = '', query = '';
     function reset() {
+      operations?.reset();
       generation++; user = null; loaded = loading = busy = false;
       caps = { scopes: [], assignments: [] }; rows = []; selected = form = null; error = notice = query = '';
     }
@@ -34,7 +35,7 @@
       return access() && caps.assignments.some(a => a.department_id === department && a.article_number.trim().toUpperCase() === number.trim().toUpperCase() && Date.parse(a.expires_at) > Date.now());
     }
     async function rpc(name, params) {
-      const result = await client.rpc(name, params);
+      const result = await client.rpc(name === 'article_master_command' && operations ? operations.articleCommandName() : name, params);
       if (result.error) {
         if (result.error.code === '23505') throw Error('Diese Artikelnummer oder eine offene Revision ist bereits vorhanden.');
         if (result.error.code === '40001') throw Error('Der Stand wurde inzwischen geändert. Bitte neu laden; Eingaben bleiben erhalten.');
@@ -140,7 +141,7 @@
         <form id="article-search"><label>Artikelnummer suchen<input name="query" maxlength="80" value="${html(query)}"></label><button ${busy?'disabled':''}>Suchen / Neu laden</button></form>
         ${button('new','Neuer Artikel')}<p>Bis zu 200 Revisionen. Suche nach Artikelnummer eingrenzen. Änderungen an freigegebenen Inhalten erfolgen ausschließlich als neue Revision.</p>
         <ul aria-label="Artikelrevisionen">${rows.map(r => `<li><button data-article-id="${html(r.id)}">${html(r.article_number)} · ${html(r.data.designation)} · Revision ${r.revision} · ${statusLabel[r.status]}</button></li>`).join('') || '<li>Keine Artikel geladen.</li>'}</ul>
-        ${editor}</section>`;
+        ${editor}${operations && !form ? operations.renderArticle(row) : ''}</section>`;
     }
     function bind(document) {
       document.addEventListener('input', event => { if (event.target.closest('#article-editor')) collect(event.target.closest('form')); });

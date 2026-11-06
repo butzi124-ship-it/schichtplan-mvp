@@ -1,0 +1,4 @@
+{
+  "provenance": {"source":"Humbel Begleitkarte 05.11.2026, Seite 7/10", "complete_operation_plan":false, "unknown_times":true},
+  "operations":[{"number":100,"predecessor":null,"activity":"Hartdrehen Stiftloch","description":"","machine_group":"52","machine_id":null,"tr":{"value":null,"unit":null},"te":{"value":null,"unit":null},"technical_notes":"","inspection_notes":"","programs":"","fixtures":"","tools":"","drawings":"","equipment":""}]
+}
