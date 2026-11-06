@@ -63,7 +63,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.6.2";
+const APP_VERSION = "0.6.3";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -78,6 +78,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.6.3",
+    date: "2026-11-06 05:36",
+    changes: ["Artikelstamm mit dem erfolgreich geprüften main-Merge von PR #2 synchronisiert; Funktionen, Sicherheitsregeln und Tests unverändert erhalten.", "Integrationsdokumentation aktualisiert; Artikelstamm bleibt deaktiviert, produktive Migration und Deployment bleiben gesondert freigabepflichtig."],
+  },
   {
     version: "0.6.2",
     date: "2026-11-06 04:28",
