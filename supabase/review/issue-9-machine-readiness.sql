@@ -92,7 +92,7 @@ begin
  end if;
  if e.row_version is distinct from p_expected_version then raise exception 'Stale execution' using errcode='40001'; end if;
  if b.status not in('running','paused') or e.work_status in('completed','cancelled') then raise exception 'Terminal order or OP' using errcode='22023'; end if;
- if p_reason is null or length(trim(p_reason)) not between 1 and 4000 then raise exception 'Evidence/reason required' using errcode='22023'; end if;
+ if p_reason is null or length(p_reason)>4000 or length(trim(p_reason))<1 then raise exception 'Evidence/reason required' using errcode='22023'; end if;
  if b.status<>'running' and p_action in('handover','start','resume','complete') then raise exception 'Order is not running' using errcode='22023'; end if;
  old_state:=to_jsonb(e);
  if p_action='assign' then

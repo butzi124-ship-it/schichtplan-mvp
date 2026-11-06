@@ -78,7 +78,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.8.1";
+const APP_VERSION = "0.8.2";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -93,6 +93,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.8.2",
+    date: "2026-11-06 10:10",
+    changes: ["Nachweise und Begründungen auch bei direkten Maschinen-RPC-Aufrufen auf insgesamt 4000 Zeichen begrenzt; überlange Eingaben werden ohne Zustandsänderung abgelehnt."],
+  },
   {
     version: "0.8.1",
     date: "2026-11-06 10:03",
