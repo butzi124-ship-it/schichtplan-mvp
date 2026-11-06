@@ -36,10 +36,10 @@ for (const test of legacy) assert(actual.has(`${test.project}:${test.title}`), `
 const workflow = YAML.parse(fs.readFileSync(".github/workflows/e2e.yml", "utf8"));
 assert.deepEqual(workflow.jobs["quality-gate"].needs, ["functional", "integrity", "visual"]);
 assert.equal(workflow.jobs["quality-gate"].if, "always()");
-assert.equal(workflow.jobs.deploy.needs, "quality-gate");
+assert.equal(workflow.jobs.deploy.needs, "e2e");
 assert.equal(workflow.jobs.e2e.needs, "quality-gate");
 assert.equal(workflow.jobs.e2e.if, "always()");
-assert.equal(workflow.jobs.deploy.if, "github.event_name == 'push' && github.ref == 'refs/heads/main'");
+assert.equal(workflow.jobs.deploy.if, "github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.deploy_approved == true");
 assert.equal(workflow.jobs.visual.container, "mcr.microsoft.com/playwright:v1.62.1-noble");
 assert(!fs.readFileSync(".github/workflows/e2e.yml", "utf8").includes("--update-snapshots"), "Normal CI must never update snapshots");
 const initializer = YAML.parse(fs.readFileSync(".github/workflows/visual-baselines.yml", "utf8"));
