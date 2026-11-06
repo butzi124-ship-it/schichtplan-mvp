@@ -64,20 +64,15 @@ Required before enabling real DB tests:
 
 `test:db:preflight` fails closed with exit 2 and a missing-prerequisites report; it accepts only loopback URLs and never makes a network request or performs writes. Hosted databases are refused, including production. Several catalog tables have RLS disabled (planner_* and tool_materials); exposure depends on grants and other controls and has not been audited here. No policy was changed.
 
-## Release gate: repository settings still require an administrator
+## Release gate and separate deployment approval
 
-The GitHub integration could read an empty ruleset list, but branch-protection inspection returned HTTP 403 Resource not accessible by integration. No administrative mutation tool is available. Therefore branch protection is NOT claimed to be active.
+Current main protection was read on 06.11.2026: active `main-reviewed-e2e` ruleset 26664844, strict up-to-date PRs and required GitHub Actions check **e2e**, no bypass. Do not replace the required context with Quality Gate. Functional/Integrity/Visual must all succeed; Quality Gate then feeds the fail-closed required e2e job. Unit tests execute the actual gate scripts against failed, cancelled, skipped and missing dependencies.
 
-Before merging this PR, an administrator must perform these exact steps:
+All Issue #1 development/safety rules, templates, JSON/commit/version report and report tests are preserved alongside this QA suite. The merged main reload precondition and the separately asserted, fixed visual build metadata are exact reversible fixture patches: all legacy business assertions, identities and 33 PNG references remain unchanged.
 
-1. Repository Settings -> Rules -> Rulesets -> New branch ruleset (or import docs/qa/main-ruleset.json).
-2. Name Main QA; Enforcement Active; target refs/heads/main; no bypass actors (including administrators).
-3. Require a pull request, require resolution of conversations, block force pushes and deletions. Approvals can remain 0 for a single-maintainer repository; this does not waive required tests.
-4. Require status check **Quality Gate**, require branches up to date before merging. Select the check from the QA and Release workflow after its first run. Save and verify a failing PR cannot merge. Do NOT use the old E2E Smoke Tests check name.
-5. Settings -> Pages -> Build and deployment -> Source **GitHub Actions**, replacing legacy Deploy from a branch. Otherwise the existing legacy Pages workflow may deploy main independently of the new gate.
-6. Merge only after Quality Gate passes on the PR's current SHA. Main then re-runs tests and Deploy Tested Main waits for the same gate. Deployment records the exact SHA in qa-commit.txt. PRs/development branches never deploy via this workflow.
+Deployment no longer follows a main push automatically. It requires e2e success, a main workflow_dispatch, and deploy_approved=true (default false), only after explicit owner authorization. No workflow is dispatched and no deployment is performed by this integration task.
 
-The new gate fails if any functional, integrity or visual job is failed/cancelled/skipped. Draft PR + no direct main push protects this change now, but is not a substitute for repository-wide rules. No automatic merge was enabled.
+Before an actual merge, an administrator must verify the Pages source. A legacy branch-based Pages build can bypass this workflow; it must be disabled or switched to GitHub Actions before claiming controlled publication. The connector does not prove current Pages settings. No settings were mutated here. See docs/DEVELOPMENT.md for the exact integration sequence and limits.
 
 ## Limits
 

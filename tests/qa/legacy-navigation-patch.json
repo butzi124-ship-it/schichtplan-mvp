@@ -1,0 +1,6 @@
+{
+  "reason": "Carry the already merged #3/main reload navigation correction into the QA dependency. Unconditional back button is absent when reload already shows the machine overview. All business assertions and 251 identities remain unchanged.",
+  "file": "tests/smoke.spec.js",
+  "before": "      await page.getByRole(\"button\", { name: \"Zur\u00fcck zur Maschinen\u00fcbersicht\", exact: true }).click();",
+  "after": "      // After reload the counter may already show the machine overview.\n      // Establish the same read-only starting point without requiring a stale back button.\n      await page.evaluate(() => resetProductionCounterSelection());\n      await expectViewHeading(page, \"Maschinen\u00fcbersicht\");"
+}

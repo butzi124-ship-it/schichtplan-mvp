@@ -140,6 +140,13 @@ test.describe("Humbel app smoke", () => {
             }
           }
         }
+        // Build metadata changes each release; assert it before fixing only this metadata for pixel comparisons.
+        const versionButton = page.locator("#versionFooter button");
+        if (await versionButton.count()) {
+          const actualVersion = await page.evaluate(() => APP_VERSION);
+          await expect(versionButton).toHaveText(`Versionslog · v${actualVersion}`);
+          await versionButton.evaluate(button => { button.textContent = "Versionslog · v0.5.17"; });
+        }
         await page.evaluate(() => document.fonts.ready);
         if (target === page) await expect(page).toHaveScreenshot(`${scene}.png`, { fullPage: true });
         else await expect(target).toHaveScreenshot(`${scene}.png`);
@@ -1373,7 +1380,10 @@ test.describe("Humbel app smoke", () => {
       await page.getByRole("button", { name: "Mido/Admin" }).click();
       await clickMain(page, "Produktion");
       await clickSubtab(page, "Stückzahl");
-      await page.getByRole("button", { name: "Zurück zur Maschinenübersicht", exact: true }).click();
+      // After reload the counter may already show the machine overview.
+      // Establish the same read-only starting point without requiring a stale back button.
+      await page.evaluate(() => resetProductionCounterSelection());
+      await expectViewHeading(page, "Maschinenübersicht");
       await page.locator("#view").getByRole("button", { name: /Maschine 50/ }).click();
       expect(await page.evaluate(() => JSON.stringify(window.__SUPABASE_MOCK_ROWS))).toBe(before);
       expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);

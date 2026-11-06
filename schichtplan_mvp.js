@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.5.17";
+const APP_VERSION = "0.5.18";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -72,9 +72,14 @@ const HUMBEL_COLORS = Object.freeze({
 });
 const VERSION_LOG = [
   {
+    version: "0.5.18",
+    date: "2026-11-06 04:19",
+    changes: ["QA-PR #2 mit aktuellem main synchronisiert; Entwicklungs- und Sicherheitsregeln sowie Pflichtcheck e2e erhalten.", "Erweiterte Browser-, Bild- und Berichtstests vereinheitlicht; Deployment erfordert gesonderte manuelle Freigabe."],
+  },
+  {
     version: "0.5.17",
-    date: "2026-11-05 06:40",
-    changes: ["Automatisierte Browser-, Sicht- und Freigabeprüfungen erweitert; sichere Testagenten vorbereitet."],
+    date: "2026-11-05 06:41",
+    changes: ["Entwicklungsablauf mit Issue/PR, erweiterten CI-Prüfungen, stabilem Reload-Test und automatischem Prüfbericht vorbereitet; Freigabeschutz separat zu aktivieren."],
   },
   {
     version: "0.5.16",

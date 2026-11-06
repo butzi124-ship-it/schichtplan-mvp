@@ -3,6 +3,12 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      deploy_approved:
+        description: "Explicit deployment approval; only after owner authorization"
+        type: boolean
+        required: false
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -19,14 +25,28 @@ jobs:
       HOME: /root
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npm run check:syntax
+      - name: Syntax and whitespace checks
+        run: |
+          node --check schichtplan_mvp.js
+          node --check tests/smoke.spec.js
+          npm run check:syntax
+          git show --format= --check HEAD
       - run: npm run test:agents
       - run: npm run test:e2e
+      - name: Preserve version and commit report
+        if: always()
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          export TESTED_SHA="$(git rev-parse HEAD)"
+          node scripts/ci-report.js
       - name: Summarize actual results
         if: always()
         run: cat artifacts/functional/summary.md >> "$GITHUB_STEP_SUMMARY"
@@ -38,17 +58,22 @@ jobs:
             playwright-report/
             test-results/functional/
             artifacts/functional/
+            test-results/results.json
+            test-results/ci-summary.md
           retention-days: 14
   integrity:
     name: QA Integrity
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci --ignore-scripts
+      - run: npm run test:ci
       - run: npm run test:qa
       - run: npm run qa:check
       - name: Record real database coverage honestly
@@ -65,6 +90,8 @@ jobs:
       QA_ARTIFACT_DIR: artifacts/visual
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -105,10 +132,20 @@ jobs:
           test "$FUNCTIONAL" = success
           test "$INTEGRITY" = success
           test "$VISUAL" = success
+  e2e:
+    name: e2e
+    if: always()
+    needs: quality-gate
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Preserve required check and fail closed
+        env:
+          GATE: ${{ needs.quality-gate.result }}
+        run: test "$GATE" = success
   deploy:
     name: Deploy Tested Main
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: quality-gate
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.deploy_approved == true
+    needs: e2e
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -119,6 +156,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22

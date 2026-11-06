@@ -11,7 +11,7 @@ module.exports = defineConfig({
   expect: {
     timeout: 5000,
   },
-  reporter: [["html", { outputFolder: process.env.QA_REPORT_DIR || "playwright-report", open: "never" }], ["list"], ["./scripts/qa-reporter.js"]],
+  reporter: [["html", { outputFolder: process.env.QA_REPORT_DIR || "playwright-report", open: "never" }], ["list"], ["./scripts/qa-reporter.js"], ["json", { outputFile: "test-results/results.json" }]],
   outputDir: process.env.QA_OUTPUT_DIR || "test-results/functional",
   use: {
     trace: "retain-on-failure",
