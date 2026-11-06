@@ -9,7 +9,7 @@
  function may(row,action){if(terminal(row)||!row.initialized)return false;if(action==='assign'||action==='cancel')return row.can_plan&&!(action==='assign'&&row.work_status==='running');if(!row.machine_active&&action!=='pause'||row.order_status!=='running'&&action!=='pause')return false;if(action==='handover')return row.can_confirm&&row.predecessor_released&&row.received_quantity===0&&['planned','paused'].includes(row.work_status);if(!row.can_work)return false;return action==='start'?row.work_status==='ready'&&row.received_quantity===row.quantity:action==='resume'?row.work_status==='paused'&&row.received_quantity===row.quantity:['pause','complete'].includes(action)&&row.work_status==='running';}
  function deadline(row,today){return row.due_date<today?'Endtermin überschritten; Abschlussprognose fehlt':'Endtermin hinterlegt; Abschlussprognose fehlt (#10)';}
  const date=v=>v?new Intl.DateTimeFormat('de-DE',{dateStyle:'medium',timeStyle:'short',timeZone:'Europe/Berlin'}).format(new Date(v)):'Nicht hinterlegt';
- function create({client,actor,role,redraw}){
+ function create({client,actor,role,redraw,forecast=null}){
   let user=null,generation=0,loaded=false,loading=false,allowed=false,rows=[],machines=[],today='',busy=false,error='',notice='',filter='';
   const forms=new Map(),requests=new Map();
   const enabled=()=>root.HUMBEL_MACHINE_READINESS_ENABLED===true&&root.HUMBEL_OPERATIONS_ENABLED===true&&root.HUMBEL_ARTICLE_MASTER_ENABLED===true;
@@ -17,7 +17,7 @@
   function valid(){return enabled()&&user&&user===actor()&&role()!=='tool_scanner';}
   function hasAccess(){return !!(valid()&&allowed);}
   async function rpc(name,params={}){const r=await client.rpc(name,params);if(r.error){throw Error(r.error.code==='42501'?'Keine gültige Maschinenberechtigung.':r.error.code==='40001'?'Stand geändert. Neu laden; Eingaben bleiben erhalten.':r.error.code==='22023'?'Aktion nicht zulässig: vollständige physische Übergabe, Vorgängerfreigabe, Status und Begründung prüfen.':'Maschinenstatus nicht verfügbar. Eingaben bleiben erhalten; bei unklarer Antwort vor erneutem Bestätigen neu laden.');}return r.data;}
-  async function load(ticket){const r=await rpc('machine_readiness_view');if(ticket!==generation||!valid())return;allowed=r.can_view;rows=r.rows||[];machines=r.machines||[];today=r.evaluated_on||'';}
+  async function load(ticket){if(forecast)await forecast.refresh();const r=await rpc('machine_readiness_view');if(ticket!==generation||!valid())return;allowed=r.can_view;rows=r.rows||[];machines=r.machines||[];today=r.evaluated_on||'';}
   async function ensureSession(){if(!enabled()||!actor()||role()==='tool_scanner'){if(user)reset();return;}if(user!==actor()){reset();user=actor();}if(loaded||loading)return;loading=true;const t=generation;try{await load(t);}catch(e){if(t===generation)error=e.message;}finally{if(t===generation){loaded=true;loading=false;redraw();}}}
   function values(id){if(!forms.has(id))forms.set(id,{quantity:'',reason:'',machine:'',start:''});return forms.get(id);}
   function render(){
@@ -29,13 +29,13 @@
     <label for="readiness-machine-filter">Maschine filtern</label><select id="readiness-machine-filter"><option value="">Alle zugeordneten Maschinen</option>${groups.map(([id,name])=>`<option value="${escape(id)}" ${filter===id?'selected':''}>${escape(name)}</option>`).join('')}</select>
     ${shown.map(card).join('')||'<p>Keine berechtigten BA-Operationen vorhanden.</p>'}</section>`;
   }
-  function card(r){const d=material(r.material_status),f=values(r.operation_id),closed=terminal(r);const forecast=r.forecast_source?`Quelle: ${escape(r.forecast_source)} · erwartet am ${escape(r.expected_on)} · gültig bis ${escape(date(r.forecast_valid_until))} · ${escape(r.forecast_evidence)}`:'Keine belastbaren Prognosedaten vorhanden. Kein Ankunftstermin geschätzt.';
+  function card(r){const d=material(r.material_status),f=values(r.operation_id),closed=terminal(r);const forecastEvidence=r.forecast_source?`Quelle: ${escape(r.forecast_source)} · erwartet am ${escape(r.expected_on)} · gültig bis ${escape(date(r.forecast_valid_until))} · ${escape(r.forecast_evidence)}`:'Keine belastbaren Prognosedaten vorhanden. Kein Ankunftstermin geschätzt.';
    return `<article class="readiness-card ${closed?'closed':''}" data-operation-id="${r.operation_id}" aria-label="BA ${escape(r.ba_number)} OP ${String(r.op_number).padStart(3,'0')}"><h4>${escape(r.machine_name)} · BA ${escape(r.ba_number)} · OP ${String(r.op_number).padStart(3,'0')}</h4>
     <p>Artikel ${escape(r.article_number)} · ${escape(r.designation)} · Kunde ${escape(r.customer)}</p><p>Arbeitsgang: ${escape(r.activity)} · Auftragsmenge: ${r.quantity} Stück</p>
-    <section aria-label="Materialbereitschaft" data-material="${r.material_status}"><span class="material-light ${d.css}" aria-hidden="true"></span><strong>${d.symbol} ${d.label}</strong><p>Physisch übergeben: ${r.received_quantity} / ${r.quantity} · Bestätigte Gutmenge: ${r.good_quantity}</p><p>${forecast}</p></section>
+    <section aria-label="Materialbereitschaft" data-material="${r.material_status}"><span class="material-light ${d.css}" aria-hidden="true"></span><strong>${d.symbol} ${d.label}</strong><p>Physisch übergeben: ${r.received_quantity} / ${r.quantity} · Bestätigte Gutmenge: ${r.good_quantity}</p><p>${forecastEvidence}</p></section>
     <p class="work-state">Arbeitsstatus: ${works[r.work_status]||escape(r.work_status)} · BA-Status: ${escape(r.order_status)}${closed?' · Gesperrt für weitere Bearbeitung':''}${r.machine_active===false?' · Maschine nicht verfügbar':''}</p>
     ${!r.predecessor_released?'<p>Vorgänger noch nicht vollständig freigegeben. Keine Teilmengenfreigabe.</p>':''}
-    <section class="deadline" aria-label="Terminstatus"><strong>▦ Terminstatus</strong><p>Geplanter Start: ${escape(date(r.planned_start))} · Endtermin: ${escape(r.due_date)}</p><p>${escape(deadline(r,today))}</p></section>
+    ${forecast?.enabled()?forecast.render(r):`<section class="deadline" aria-label="Terminstatus"><strong>▦ Terminstatus</strong><p>Geplanter Start: ${escape(date(r.planned_start))} · Endtermin: ${escape(r.due_date)}</p><p>${escape(deadline(r,today))}</p></section>`}
     ${!r.initialized&&r.can_plan?`<button type="button" data-readiness="initialize" data-order="${r.order_id}" ${busy?'disabled':''}>OP-Planung dieses BA initialisieren</button>`:''}
     <form data-readiness-form="${r.operation_id}"><label for="ready-qty-${r.operation_id}">Bestätigte Gutmenge (Freigabeprotokoll)</label><input id="ready-qty-${r.operation_id}" name="quantity" type="number" min="1" max="${r.quantity}" step="1" value="${escape(f.quantity)}"><p>Keine Buchung in Mitarbeiter- oder Stationszähler.</p>
     <label for="ready-reason-${r.operation_id}">Übergabenachweis / Begründung</label><textarea id="ready-reason-${r.operation_id}" name="reason" maxlength="4000">${escape(f.reason)}</textarea>

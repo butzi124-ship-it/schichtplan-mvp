@@ -5,7 +5,14 @@ const supabaseClient = createClient(
   window.SUPABASE_PUBLISHABLE_KEY,
 );
 
+const productionForecast = window.HumbelForecastUI.create({
+  client: supabaseClient, actor: () => currentSupabaseUser?.id || null,
+  role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },
+  changed: () => machineReadiness.refresh(),
+});
+productionForecast.bind(document);
 const machineReadiness = window.HumbelMachineReadiness.create({
+  forecast: productionForecast,
   client: supabaseClient, actor: () => currentSupabaseUser?.id || null,
   role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },
 });
@@ -78,7 +85,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.8.3";
+const APP_VERSION = "0.9.0";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -93,6 +100,14 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    "version": "0.9.0",
+    "date": "2026-11-06 11:36",
+    "changes": [
+      "Deterministische OP-/BA-Terminprognose aus expliziten Tr/Te-, Ist-, Maschinen-, Schicht- und anonymisierten Personalkapazitätsdaten; getrennte Terminampel mit konfiguriertem Puffer und fehlenden/veralteten Daten.",
+      "Vertrauenswürdiger Berechnungsdienst, Review-SQL, Audit und idempotente Ist-Rückmeldung; Vorankündigung ohne physische Übergabe. Sämtliche neuen Funktionen bleiben deaktiviert; keine produktive Datenbankänderung."
+    ]
+  },
   {
     version: "0.8.3",
     date: "2026-11-06 10:15",
@@ -2601,6 +2616,7 @@ async function logoutSupabase() {
   state.ui = state.ui || {};
   state.ui.supabaseReady = false;
   state.ui.toolsInitialLoaded = false;
+  productionForecast.reset();
   machineReadiness.reset();
   articleMaster.reset();
   currentSupabaseUser = null;
