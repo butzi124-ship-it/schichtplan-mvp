@@ -2,18 +2,13 @@
 const fs=require('node:fs');const crypto=require('node:crypto');
 const inventory=JSON.parse(fs.readFileSync('docs/qa/schema-inventory.json','utf8'));
 const quote=x=>'"'+String(x).replaceAll('"','""')+'"';
-const helpers=`
--- TEST SUBSTITUTES: original public function bodies/ACLs were not captured.
-create function public.set_updated_at() returns trigger language plpgsql as $$begin new.updated_at=now();return new;end$$;
-create function public.is_admin() returns boolean language sql stable security definer set search_path='' as $$select exists(select 1 from public.employees where auth_user_id=auth.uid() and is_active and role='admin')$$;
-create function public.current_app_employee_role() returns text language sql stable security definer set search_path='' as $$select role from public.employees where auth_user_id=auth.uid() and is_active order by id limit 1$$;
-create function public.can_access_production_department(dept uuid) returns boolean language sql stable security definer set search_path='' as $$select exists(select 1 from public.employees e where e.auth_user_id=auth.uid() and e.is_active and e.role<>'tool_scanner' and(e.role='admin' or e.department_id=dept))$$;
-`;
+const {functions: verifiedFunctions,standaloneIndexes}=require('./source-catalog');
 function sql(){const out=['begin;set local search_path=public,pg_catalog;'];
  for(const t of inventory.tables){const cols=inventory.columns.filter(c=>c.table===t.name);out.push(`create table public.${quote(t.name)}(${cols.map(c=>`${quote(c.name)} ${c.type}${c.default?' default '+c.default:''}${c.nullable==='NO'?' not null':''}`).join(',')});`);}
  for(const c of inventory.constraints.filter(c=>!c.definition.startsWith('FOREIGN KEY')))out.push(`alter table public.${quote(c.table)} add constraint ${quote(c.name)} ${c.definition};`);
  for(const c of inventory.constraints.filter(c=>c.definition.startsWith('FOREIGN KEY')))out.push(`alter table public.${quote(c.table)} add constraint ${quote(c.name)} ${c.definition};`);
- out.push(helpers);
+ for(const i of standaloneIndexes)out.push(i.definition+';');
+ for(const fn of verifiedFunctions){out.push(fn.definition+';');out.push('revoke execute on function public.'+fn.name+'('+fn.arguments+') from public;');out.push('grant execute on function public.'+fn.name+'('+fn.arguments+') to anon,authenticated,service_role;');}
  for(const p of inventory.policies)out.push(`create policy ${quote(p.policyname)} on public.${quote(p.tablename)} as ${p.permissive} for ${p.cmd} to ${p.roles.map(r=>r==='public'?'public':quote(r)).join(',')}${p.qual?' using ('+p.qual+')':''}${p.with_check?' with check ('+p.with_check+')':''};`);
  for(const t of inventory.tables){if(t.rls_enabled)out.push(`alter table public.${quote(t.name)} enable row level security;`);if(t.rls_forced)out.push(`alter table public.${quote(t.name)} force row level security;`);}
  for(const t of inventory.triggers)out.push(t.definition+';');
@@ -34,7 +29,13 @@ async function verify(db){
  for(const p of inventory.policies){const r=policies.find(r=>r.tablename===p.tablename&&r.policyname===p.policyname);for(const k of['cmd','permissive','qual','with_check'])if(r?.[k]!==p[k])throw Error('Policy mismatch '+p.policyname+' '+k);if(JSON.stringify(r.roles)!==JSON.stringify(p.roles))throw Error('Policy role mismatch');}
  const triggers=(await db.query("select t.tgname,c.relname,pg_get_triggerdef(t.oid,false)definition from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and not t.tgisinternal")).rows;if(triggers.length!==11)throw Error('11-trigger count mismatch');
  for(const t of inventory.triggers)if(!triggers.some(r=>r.tgname===t.name&&r.relname===t.table&&r.definition===t.definition))throw Error('Trigger mismatch');
+ const idx=(await db.query("select ci.relname as name,pg_get_indexdef(i.indexrelid) definition from pg_index i join pg_class t on t.oid=i.indrelid join pg_class ci on ci.oid=i.indexrelid join pg_namespace n on n.oid=t.relnamespace where n.nspname='public'")).rows;
+ if(idx.length!==76)throw Error('76-index live schema count mismatch: '+idx.length);
+ for(const reference of standaloneIndexes){const found=idx.find(i=>i.name===reference.name);if(!found||found.definition!==reference.definition)throw Error('Live standalone index mismatch '+reference.name);}
+ const fn=(await db.query("select p.proname name,pg_get_functiondef(p.oid) definition,p.prosecdef is_definer,coalesce(p.proconfig::text,'') settings from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public'")).rows;
+ if(fn.length!==6)throw Error('6-original-function count mismatch');
+ for(const original of verifiedFunctions){const got=fn.find(x=>x.name===original.name);if(!got||got.is_definer!==original.security_definer||got.settings!==original.settings||got.definition.replaceAll('\\r\\n','\\n').trim()!==original.definition.replaceAll('\\r\\n','\\n').trim())throw Error('Original function metadata/definition mismatch '+original.name);}
  const flags=(await db.query("select c.relname,c.relrowsecurity,c.relforcerowsecurity from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public'and c.relkind='r'")).rows;for(const t of inventory.tables){const r=flags.find(r=>r.relname===t.name);if(!r||r.relrowsecurity!==t.rls_enabled||r.relforcerowsecurity!==t.rls_forced)throw Error('RLS metadata mismatch '+t.name);}
- return{status:'STRUCTURAL_CATALOG_MIRROR_VERIFIED',authoritativeRestore:false,tables:31,columns:308,constraints:134,policies:127,triggers:11,inventory_sha256:crypto.createHash('sha256').update(fs.readFileSync('docs/qa/schema-inventory.json')).digest('hex'),missing:['Original 5 SECURITY DEFINER bodies/signatures/ACLs (3 inferred helpers substituted)','Original set_updated_at body substituted','Complete table/sequence/default ACLs and standalone indexes','Authoritative schema-only dump and newer catalog evidence']};
+ return{status:'STRUCTURAL_CATALOG_MIRROR_VERIFIED',authoritativeRestore:false,tables:31,columns:308,constraints:134,policies:127,triggers:11,inventory_sha256:crypto.createHash('sha256').update(fs.readFileSync('docs/qa/schema-inventory.json')).digest('hex'),missing:['Original function ownership/grants/default ACLs are not restored exactly','Complete table and sequence/default ACLs remain assumptions','Authoritative schema-only dump/restore, Realtime and load tests remain outstanding']};
 }
 module.exports={sql,verify,inventory};

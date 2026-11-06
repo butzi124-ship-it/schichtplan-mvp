@@ -8,6 +8,14 @@ async function main(){const db=await connect();try{
  let expected=31;for(const [i,file]of files.entries()){const content=fs.readFileSync(file,'utf8');await db.query(content);expected+=[7,3,5,11][i];const n=Number((await db.query("select count(*) n from pg_tables where schemaname='public'")).rows[0].n);assert.equal(n,expected);results.migrations.push({file,sha256:crypto.createHash('sha256').update(content).digest('hex'),status:'applied_to_structural_mirror',publicTables:n});}
  assert.equal(expected,57);await db.query("notify pgrst,'reload schema'");await new Promise(r=>setTimeout(r,1200));
  const s=await seed(db);const {people:p}=s;
+ await check('Original department authorization: admin allowed; ordinary same-department user denied',async()=>{
+  const yes=await sqlAs(p.manager,c=>c.query('select public.can_access_production_department($1) allowed',[s.dept]));
+  const no=await sqlAs(p.worker,c=>c.query('select public.can_access_production_department($1) allowed',[s.dept]));
+  const foreign=await sqlAs(p.outsider,c=>c.query('select public.can_access_production_department($1) allowed',[s.dept]));
+  assert.equal(yes.rows[0].allowed,true,'Authenticated admin must be authorized');
+  assert.equal(no.rows[0].allowed,false,'Normal staff cannot acquire department-admin access by membership alone');
+  assert.equal(foreign.rows[0].allowed,false,'Foreign-department user must not be authorized');
+ });
  await check('GoTrue real JWT: authenticated user and tampered signature rejected',async()=>{const c=config(),user=await fetch(c.auth+'/user',{headers:{authorization:'Bearer '+p.worker.token}});assert.equal(user.status,200);const bad=await http({token:p.worker.token.slice(0,-8)+'INVALIDX'},'/departments');assert.equal(bad.status,401);});
  await check('57 real public tables; 26 new tables RLS enabled and raw anon/auth access denied',async()=>{const rows=(await db.query("select c.relname,c.relrowsecurity from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r'")).rows;const legacy=require('./catalog-baseline').inventory.tables.map(t=>t.name);const fresh=rows.filter(r=>!legacy.includes(r.relname));assert.equal(fresh.length,26);for(const row of fresh){assert.equal(row.relrowsecurity,true);for(const u of[null,p.worker]){const r=await http(u,'/'+row.relname+'?limit=1');assert.ok([401,403].includes(r.status),'New raw table must deny: '+row.relname);}}});
  await check('Cross-department and spoofed user_metadata cannot read or mutate article/operations',async()=>{assert.deepEqual(await rpc(p.outsider,'article_master_list',{p_query:''}),[]);await deny(rpc(p.outsider,'order_from_article',{p_revision_id:s.revision.id,p_ba_number:'812152',p_quantity:2,p_due_date:s.due,p_machine_id:s.machines[0]}));await deny(rpc(p.scanner,'production_forecast_input',{p_department_id:s.dept,p_request_id:crypto.randomUUID()}));});
