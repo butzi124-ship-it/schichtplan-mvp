@@ -1,0 +1,12 @@
+{
+  "patches": [
+    {
+      "before": "const machineReadiness = window.HumbelMachineReadiness.create({",
+      "after": "const productionForecast = window.HumbelForecastUI.create({\n  client: supabaseClient, actor: () => currentSupabaseUser?.id || null,\n  role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },\n  changed: () => machineReadiness.refresh(),\n});\nproductionForecast.bind(document);\nconst machineReadiness = window.HumbelMachineReadiness.create({\n  forecast: productionForecast,"
+    },
+    {
+      "before": "  machineReadiness.reset();",
+      "after": "  productionForecast.reset();\n  machineReadiness.reset();"
+    }
+  ]
+}

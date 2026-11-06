@@ -3,7 +3,7 @@
   "version": "0.4.91",
   "private": true,
   "scripts": {
-    "check:syntax": "node --check schichtplan_mvp.js && node --check tests/smoke.spec.js && node --check playwright.config.js && node --check js/article-master.js && node --check tests/articles.spec.js && node --check scripts/ci-report.js && node --check js/operations.js && node --check tests/operations.spec.js && node --check tests/helpers/operations-db.js && node --check js/machine-readiness.js && node --check tests/readiness.spec.js && node --check tests/helpers/readiness-db.js",
+    "check:syntax": "node --check schichtplan_mvp.js && node --check tests/smoke.spec.js && node --check playwright.config.js && node --check js/article-master.js && node --check tests/articles.spec.js && node --check scripts/ci-report.js && node --check js/operations.js && node --check tests/operations.spec.js && node --check tests/helpers/operations-db.js && node --check js/machine-readiness.js && node --check tests/readiness.spec.js && node --check tests/helpers/readiness-db.js && node --check js/production-forecast.js && node --check js/forecast-service.js && node --check js/forecast-ui.js && node --check tests/forecast.spec.js && node --check tests/helpers/forecast-db.js && node scripts/check-forecast-syntax.js",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:chromium": "playwright test --project=chromium --project=mobile-chromium --project=tablet-chromium",
@@ -18,10 +18,12 @@
     "test:articles": "playwright test --grep \"Article master\"",
     "test:article-db": "node --test tests/articles/*.test.js",
     "test:operations": "node --test tests/operations/*.test.js",
-    "test:readiness": "node --test tests/readiness/*.test.js"
+    "test:readiness": "node --test tests/readiness/*.test.js",
+    "test:forecast": "node --test tests/forecast/*.test.js"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.15",
+    "@js-temporal/polyfill": "0.5.1",
     "@playwright/test": "1.62.1",
     "@zxing/library": "0.21.3",
     "jsbarcode": "3.12.3",
