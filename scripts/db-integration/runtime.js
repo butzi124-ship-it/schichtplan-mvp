@@ -14,7 +14,7 @@ async function start(){
  const digests={};for(const [key,image]of Object.entries(images)){docker(['pull',image]);digests[key]=JSON.parse(docker(['image','inspect','--format','{{json .RepoDigests}}',image]));}
  fs.mkdirSync('artifacts/db-integration',{recursive:true});fs.writeFileSync('artifacts/db-integration/images.json',JSON.stringify(digests,null,2));
  docker(['network','create','--internal','humbel-isolated']);
- docker(['run','-d','--name','humbel-db','--network','humbel-isolated','--network-alias','humbel-db','-p','127.0.0.1:55432:5432','--env','POSTGRES_PASSWORD','--env','POSTGRES_DB','--env','PGPASSWORD','--env','PGDATABASE',images.postgres,'postgres','-c','listen_addresses=*'],{POSTGRES_PASSWORD:config.password,POSTGRES_DB:config.database,PGPASSWORD:config.password,PGDATABASE:config.database});
+ docker(['run','-d','--name','humbel-db','--network','humbel-isolated','--network-alias','humbel-db','-p','127.0.0.1:55432:5432','--env','POSTGRES_PASSWORD','--env','POSTGRES_DB','--env','PGPASSWORD','--env','PGDATABASE','--env','PGPORT','--env','POSTGRES_PORT',images.postgres,'postgres','-c','config_file=/etc/postgresql/postgresql.conf','-c','listen_addresses=*'],{POSTGRES_PASSWORD:config.password,POSTGRES_DB:config.database,PGPASSWORD:config.password,PGDATABASE:config.database,PGPORT:'5432',POSTGRES_PORT:'5432'});
  await waitFor(async()=>{const db=new Client(config);try{await db.connect();return true;}finally{await db.end();}},'postgres');
  const db=new Client(config);await db.connect();try{
  await db.query(`alter database humbel_isolated_test set "humbel.isolated_sentinel"='${config.sentinel}'`);
@@ -38,5 +38,5 @@ async function start(){
  fs.writeFileSync('artifacts/db-integration/isolation.json',JSON.stringify({internalNetwork:true,loopbackOnly:true,ephemeralDatabase:config.database,images:digests,productionAccess:false},null,2));
  console.log('Isolated PostgreSQL + GoTrue + PostgREST + Edge containers started; no hosted targets or secrets used.');
 }
-if(require.main===module)(async()=>{if(process.argv[2]==='stop')stop();else await start();})().catch(e=>{console.error('Isolated runtime failed; no production fallback: '+String(e.message).split('\n')[0]);for(const n of names)try{console.error(n+' state: '+docker(['inspect','--format','{{.State.Status}} {{.State.ExitCode}}',n]));}catch{}process.exitCode=1;});
+if(require.main===module)(async()=>{if(process.argv[2]==='stop')stop();else await start();})().catch(e=>{console.error('Isolated runtime failed; no production fallback: '+String(e.message).split('\n')[0]);for(const n of names)try{console.error(n+' state: '+docker(['inspect','--format','{{.State.Status}} {{.State.ExitCode}}',n]));if(n==='humbel-db'){try{console.error(docker(['exec',n,'pg_isready','-h','127.0.0.1','-p','5432']));}catch{console.error('Container-local pg_isready failed');}let log=docker(['logs','--tail','18',n]);if(fs.existsSync(file))for(const v of Object.values(JSON.parse(fs.readFileSync(file))))if(typeof v==='string'&&v.length>32)log=log.split(v).join('[redacted]');console.error(log);}}catch{}process.exitCode=1;});
 module.exports={file,start,stop};

@@ -85,7 +85,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.9.2";
+const APP_VERSION = "0.9.3";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -100,6 +100,13 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    "version": "0.9.3",
+    "date": "2026-11-06 18:44",
+    "changes": [
+      "Isolierten PostgreSQL-Container mit dem offiziell dokumentierten Konfigurationspfad und explizitem PGPORT gestartet; interne Bereitschaftsdiagnose ergänzt. Vorheriger nativer Lauf scheiterte mit ECONNREFUSED und zählt nicht als Migrationstest."
+    ]
+  },
   {
     "version": "0.9.2",
     "date": "2026-11-06 18:38",
