@@ -1,0 +1,34 @@
+{
+  "issue": 9,
+  "reason": "Gated machine-readiness hooks only; reversal precedes all issue #8/#7/legacy source checks. No old role predicate, scanner or counter changed.",
+  "patches": [
+    {
+      "before": "// Operations stay in a separate in-memory module; no legacy station/counter conversion.",
+      "after": "const machineReadiness = window.HumbelMachineReadiness.create({\n  client: supabaseClient, actor: () => currentSupabaseUser?.id || null,\n  role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },\n});\nmachineReadiness.bind(document);\n// Operations stay in a separate in-memory module; no legacy station/counter conversion."
+    },
+    {
+      "before": "  articleMaster.reset();\n  currentSupabaseUser = null;",
+      "after": "  machineReadiness.reset();\n  articleMaster.reset();\n  currentSupabaseUser = null;"
+    },
+    {
+      "before": "function render() {\n  void articleMaster.ensureSession();",
+      "after": "function render() {\n  void machineReadiness.ensureSession();\n  void articleMaster.ensureSession();"
+    },
+    {
+      "before": "  if (articleMaster.hasAccess() && !tabs.includes(\"produktion\")) tabs.push(\"produktion\");",
+      "after": "  if (articleMaster.hasAccess() && !tabs.includes(\"produktion\")) tabs.push(\"produktion\");\n  if (machineReadiness.hasAccess() && !tabs.includes(\"produktion\")) tabs.push(\"produktion\");"
+    },
+    {
+      "before": "function setProductionSubTab(subTab) {",
+      "after": "function setProductionSubTab(subTab) {\n  if (subTab === \"readiness\") {\n    if (!machineReadiness.hasAccess()) return;\n    state.productionSubTab = subTab;\n    render();\n    void machineReadiness.refresh();\n    return;\n  }"
+    },
+    {
+      "before": "function renderProduction() {",
+      "after": "function renderProduction() {\n  if (machineReadiness.hasAccess() && (state.productionSubTab === \"readiness\" || (!canAccessProduction() && state.productionSubTab !== \"articles\"))) {\n    return `<div class='bg-white rounded-xl shadow p-4'><h2>Produktion</h2>\n      <button onclick=\"setProductionSubTab('readiness')\">OP-Maschinenübersicht</button>\n      ${articleMaster.hasAccess() ? `<button onclick=\"setProductionSubTab('articles')\">Artikelstamm</button>` : \"\"}\n      ${canAccessProduction() ? `<button onclick=\"setProductionSubTab('departments')\">Abteilungen</button>` : \"\"}\n      ${machineReadiness.render()}</div>`;\n  }"
+    },
+    {
+      "before": "  const subTabButtons = visibleProductionTabs.map((tab) => {",
+      "after": "  const readinessTabs = machineReadiness.hasAccess() ? [...visibleProductionTabs, { id: \"readiness\", label: \"OP-Maschinenübersicht\" }] : visibleProductionTabs;\n  const subTabButtons = readinessTabs.map((tab) => {"
+    }
+  ]
+}
