@@ -163,7 +163,7 @@ begin
  for e in select x.* from public.production_operation_execution x join public.production_order_operations o on o.id=x.operation_id where o.order_id=new.id order by o.position for update of x loop
   if auth.uid() is null then raise exception 'Audit actor required for tracked BA status' using errcode='42501';end if;
   old_state:=to_jsonb(e);
-  if new.status='cancelled' then e.work_status:='cancelled';elsif new.status in('paused','completed') and e.work_status='running' then e.work_status:='paused';end if;
+  if new.status='cancelled' and e.work_status<>'completed' then e.work_status:='cancelled';elsif new.status in('paused','completed') and e.work_status='running' then e.work_status:='paused';end if;
   e.row_version:=e.row_version+1;e.updated_at:=now();
   update public.production_operation_execution set work_status=e.work_status,row_version=e.row_version,updated_at=e.updated_at where operation_id=e.operation_id;
   perform article_master_private.readiness_event(e.operation_id,gen_random_uuid(),'ba_status',jsonb_build_object('before',old.status,'after',new.status),old_state,to_jsonb(e));

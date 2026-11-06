@@ -12,7 +12,7 @@
     ".codex/config.toml": "8c91972f392226685f869ff23f39e9dc47c75dff2158d33b6e576c615471a581",
     "js/article-master.js": "db5e1bfcd4130dd8ee19bb9402455069f1af50b73c573aa0f965a1d20af742b7",
     "tests/qa/article-integration-patches.json": "d236acb26bdfe537171b9e1274120af0f2fbc4122e56977eb91470135702ea45",
-    "tests/articles.spec.js": "adc68b56f1125d91573bf7f7c72c9cb234bf7578262cc2f494da009bad0d0267",
+    "tests/articles.spec.js": "8be57e12b11ca0b90c58c7107d7b165d9f48aa0c905ab8a625fc712652363945",
     "tests/helpers/article-db.js": "f132d7df34c369e8a5cb1dc27eb13f206c1fabc82a4dd483ae39dbdd231134e6",
     "tests/articles/database.test.js": "49c296da971117d6c881f168e46204868072b571d14d70b1ceaa21ba64042afc",
     "tests/fixtures/article-reference.json": "c2fcfa95b974465ecd0db2321000b4bfea47c0e9ee0d521c6de3e005a435705c",
@@ -34,9 +34,9 @@
     "tests/qa/readiness-integration-patches.json": "929a20f3007fe4f419395e0e2689ed913e26c2bdadb8989d5830f6e3f0364f9c",
     "tests/helpers/readiness-db.js": "471904f3c566378621d447d3abf26373ec78135b511770480ef34b1908dd485c",
     "tests/readiness.spec.js": "1d860a03f2c8c44c597cec84cc37213d7ac3633f2939da8c0fa8ce1635b7a792",
-    "tests/readiness/database.test.js": "779e9db5211b18f380e80e8f33d9c628f8395e5ba5a9627503685d1c813c213a",
+    "tests/readiness/database.test.js": "318da8aa226dca3bc878b6e8c12bf902dde3969c977a2822367268b5bb39a9c7",
     "tests/readiness/unit.test.js": "db5b9c9be92d25d9b68e6b86805df39e257aa1d92a9393903d7ee465d9ea8edc",
-    "supabase/review/issue-9-machine-readiness.sql": "a37616b77d935b9bbb9bbf70b9b0b0ed629a15dab588dc48f1de260d1756b296"
+    "supabase/review/issue-9-machine-readiness.sql": "45a78ad46a61fbbf8dad2ca42509a248b62d01db26be13393a63d4c6497bc8b1"
   },
   "reviewedPresentationPatch": "\n    #toolSearch,\n    #toolFilterLabel,\n    #toolFilterT,\n    #toolFilterD,\n    #toolFilterHolder,\n    #toolFilterImageStatus {\n      min-width: 0;\n      width: 100%;\n      max-width: 100%;\n    }\n",
   "reviewedPresentationReplacements": [

@@ -78,7 +78,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.8.2";
+const APP_VERSION = "0.8.3";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -93,6 +93,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.8.3",
+    date: "2026-11-06 10:15",
+    changes: ["Bereits abgeschlossene OPs behalten beim späteren BA-Abbruch ihren historischen Abschluss; nur verbleibende OPs werden abgebrochen. BA-Sperre und Audit bleiben vollständig erhalten."],
+  },
   {
     version: "0.8.2",
     date: "2026-11-06 10:10",
