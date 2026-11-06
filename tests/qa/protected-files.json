@@ -12,7 +12,7 @@
     ".codex/config.toml": "8c91972f392226685f869ff23f39e9dc47c75dff2158d33b6e576c615471a581",
     "js/article-master.js": "db5e1bfcd4130dd8ee19bb9402455069f1af50b73c573aa0f965a1d20af742b7",
     "tests/qa/article-integration-patches.json": "d236acb26bdfe537171b9e1274120af0f2fbc4122e56977eb91470135702ea45",
-    "tests/articles.spec.js": "4fa1e5f391558861a717d664ff34a32415c0c28b9dfa183697eb16d5cb81a75e",
+    "tests/articles.spec.js": "e3a30fb63dcdfddda2e30be49398d1a0362843806df03dd255f2c4037203d07a",
     "tests/helpers/article-db.js": "f132d7df34c369e8a5cb1dc27eb13f206c1fabc82a4dd483ae39dbdd231134e6",
     "tests/articles/database.test.js": "49c296da971117d6c881f168e46204868072b571d14d70b1ceaa21ba64042afc",
     "tests/fixtures/article-reference.json": "c2fcfa95b974465ecd0db2321000b4bfea47c0e9ee0d521c6de3e005a435705c",
