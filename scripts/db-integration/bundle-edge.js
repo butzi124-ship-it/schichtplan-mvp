@@ -1,0 +1,3 @@
+const path=require('node:path');const fs=require('node:fs');const esbuild=require('esbuild');
+async function bundle(directory){for(const name of['production-forecast','production-forecast-worker']){const dest=path.join(directory,name);fs.mkdirSync(dest,{recursive:true});await esbuild.build({entryPoints:[`supabase/functions/${name}/index.ts`],bundle:true,format:'esm',platform:'browser',target:'es2022',outfile:path.join(dest,'index.ts'),plugins:[{name:'pinned-temporal',setup(build){build.onResolve({filter:/^npm:@js-temporal\/polyfill@0\.5\.1$/},()=>({path:require.resolve('@js-temporal/polyfill')}));}}],logLevel:'silent'});}}
+module.exports={bundle};

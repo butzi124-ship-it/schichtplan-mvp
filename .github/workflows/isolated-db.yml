@@ -1,0 +1,41 @@
+name: Isolated Database Acceptance
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: isolated-db-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  isolated-supabase:
+    name: Isolated Supabase integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run test:db:guard
+      - name: Start only ephemeral internal containers
+        run: node scripts/db-integration/runtime.js start
+      - name: Real SQL, JWT, RLS, Edge and independent-connection tests
+        run: docker exec humbel-gateway node scripts/db-integration/run.js
+      - name: Record actual coverage and blockers
+        if: always()
+        run: node scripts/db-integration/summary.js
+      - name: Destroy isolated containers, volumes, network and ephemeral credentials
+        if: always()
+        run: node scripts/db-integration/runtime.js stop
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: isolated-db-${{ github.sha }}
+          path: artifacts/db-integration/
+          retention-days: 14

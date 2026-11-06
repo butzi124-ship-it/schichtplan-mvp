@@ -85,7 +85,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.9.0";
+const APP_VERSION = "0.9.13";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -100,6 +100,97 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    "version": "0.9.13",
+    "date": "2026-11-06 20:16",
+    "changes": [
+      "Isolierten Datenbank-Schemakatalog um sechs ausschließlich lesend verifizierte Originalfunktionen und 25 eigenständige Indizes ergänzt. Eine zu weit gehende simulierte Abteilungsberechtigung durch die originale restriktive Regel ersetzt; reale negative Rollenprüfung hinzugefügt. Keine Produktionsdaten oder DB-Änderungen."
+    ]
+  },
+  {
+    "version": "0.9.12",
+    "date": "2026-11-06 19:46",
+    "changes": [
+      "Browser-Regression für Versionsfooter an tatsächliche APP_VERSION und führenden VERSION_LOG-Eintrag gekoppelt; Anzeige und Log müssen exakt übereinstimmen. Nicht mehr an zufällige historische Entwicklungsnummer gebunden. Geschützter Test-SHA bewusst aktualisiert, keine Testfälle deaktiviert."
+    ]
+  },
+  {
+    "version": "0.9.11",
+    "date": "2026-11-06 19:29",
+    "changes": [
+      "Nach erfolgreichem echten 13/13-Supabase-Integrationstest den geprüften SHA-256-Schutzwert der geänderten Forecast-SQL-Datei explizit im QA-Integritätsschutz nachgezogen. Schutzprüfung und echte Parallel-/RLS-Tests bleiben vollständig aktiv; keine produktive DB-Änderung."
+    ]
+  },
+  {
+    "version": "0.9.10",
+    "date": "2026-11-06 19:26",
+    "changes": [
+      "Prognose-Quelländerungstrigger in isoliertem Review-SQL auf AFTER STATEMENT korrigiert, um die nachgewiesene zyklische Sperrreihenfolge bei parallelem BA-Statuswechsel und Arbeitsbeginn aufzulösen. Echter Konkurrenztest bleibt unverändert Pflicht; keine produktive Migration."
+    ]
+  },
+  {
+    "version": "0.9.9",
+    "date": "2026-11-06 19:20",
+    "changes": [
+      "Native Prüfergebnisse mit vollständigen Assertion-Ursachen protokolliert, bestätigte REST-Rückgaben bei Testbereinigung angefordert und verfügbare Basiskapazität zwischen Krankheits-/Urlaubsszenarien explizit erneut geprüft. Keine Tests abgeschwächt."
+    ]
+  },
+  {
+    "version": "0.9.8",
+    "date": "2026-11-06 19:16",
+    "changes": [
+      "Katalog-Policyrollen typisiert als text[] verglichen und native Sperrreihenfolge zwischen Arbeitsbeginn und BA-Statusänderung nach Prognoseaktivierung geprüft. Testbereinigungen verwenden echte berechtigte Auth-Anfragen statt fehlender Audit-Akteure."
+    ]
+  },
+  {
+    "version": "0.9.7",
+    "date": "2026-11-06 19:07",
+    "changes": [
+      "Schema-Vollständigkeitsprüfung mit festem Katalog-search_path und vollständigem Trigger-/RLS-Metadatenvergleich reproduzierbar gemacht; Auth-Namenssichtbarkeit darf keine scheinbaren Fremdschlüsselabweichungen erzeugen."
+    ]
+  },
+  {
+    "version": "0.9.6",
+    "date": "2026-11-06 19:02",
+    "changes": [
+      "Native Auth-Hilfsfunktionen vollständig dem Supabase-Image und den echten GoTrue-Migrationen überlassen; Eigentümerkonflikt beim Auth-Start beseitigt und reale Auth-Funktionsherkunft geprüft. Keine produktive Auth-Änderung."
+    ]
+  },
+  {
+    "version": "0.9.5",
+    "date": "2026-11-06 19:00",
+    "changes": [
+      "Begrenzte Verbindungs-, Query- und HTTP-Zeitlimits sowie eindeutige Startphasen für die isolierten Datenbanktests ergänzt; hängende Vorprüfungen bleiben Fehler statt unbestätigter Testnachweise."
+    ]
+  },
+  {
+    "version": "0.9.4",
+    "date": "2026-11-06 18:50",
+    "changes": [
+      "Native Testclients vollständig in das interne Docker-Netz verlegt: keine veröffentlichten Ports, nur feste containerinterne Loopback-Proxies und unabhängige Datenbankverbindungen. Isolation wird am tatsächlichen Containerzustand geprüft; keine produktive Verbindung."
+    ]
+  },
+  {
+    "version": "0.9.3",
+    "date": "2026-11-06 18:44",
+    "changes": [
+      "Isolierten PostgreSQL-Container mit dem offiziell dokumentierten Konfigurationspfad und explizitem PGPORT gestartet; interne Bereitschaftsdiagnose ergänzt. Vorheriger nativer Lauf scheiterte mit ECONNREFUSED und zählt nicht als Migrationstest."
+    ]
+  },
+  {
+    "version": "0.9.2",
+    "date": "2026-11-06 18:38",
+    "changes": [
+      "Isolierten PostgreSQL-Start auf den dokumentierten Supabase-Image-Administrator und die erwarteten PG-Umgebungsvariablen abgestimmt; Startfehler nach Datenbankphase klassifiziert. Keine produktive Verbindung oder Schemaänderung."
+    ]
+  },
+  {
+    "version": "0.9.1",
+    "date": "2026-11-06 18:32",
+    "changes": [
+      "Isolierte Datenbank-Abnahmeinfrastruktur für PostgreSQL, echte Auth-JWTs, PostgREST, Edge Runtime und Paralleltests ergänzt. Schema-Katalogspiegel und fehlende Originaldefinitionen werden ausdrücklich unterschieden; keine Produktivverbindung oder Feature-Aktivierung."
+    ]
+  },
   {
     "version": "0.9.0",
     "date": "2026-11-06 11:36",

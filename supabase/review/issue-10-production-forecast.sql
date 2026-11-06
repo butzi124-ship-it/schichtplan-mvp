@@ -183,7 +183,8 @@ do $$declare tab text;fn record;begin
  end loop;
  -- Source bindings use the existing catalog names. No existing RLS policy is changed.
  foreach tab in array array['production_forecast_settings','production_forecast_machines','production_forecast_shifts','production_forecast_staff','production_forecast_rules','production_forecast_actuals','production_forecast_blocks','planner_assignments','planner_availability','planner_absences','planner_vacations','planner_sick_leaves','planner_absence_replacements','planner_shift_cancellations','planner_swaps','planner_special_days','shift_definitions','employees','production_machines','production_orders','production_order_stations','production_station_counts','production_operation_execution'] loop
-  execute format('create trigger forecast_source_dirty before insert or update or delete on public.%I for each statement execute function article_master_private.forecast_dirty()',tab);
+  -- AFTER STATEMENT: acquire advisory queue lock only after the modified rows are locked. BEFORE STATEMENT inverted the lock order against machine_readiness_command() and caused SQLSTATE 40P01 under concurrent BA updates.
+  execute format('create trigger forecast_source_dirty after insert or update or delete on public.%I for each statement execute function article_master_private.forecast_dirty()',tab);
  end loop;
  for fn in select p.oid::regprocedure signature from pg_proc p join pg_namespace n on n.oid=p.pronamespace where (n.nspname='article_master_private' and p.proname like 'forecast_%') or(n.nspname='public' and p.proname like 'production_forecast_%') loop
   execute format('revoke all on function %s from public,anon,authenticated',fn.signature);
