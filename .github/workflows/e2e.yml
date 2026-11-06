@@ -81,6 +81,7 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run test:article-db
       - run: npm run test:operations
+      - run: npm run test:readiness
       - run: npm run test:ci
       - run: npm run test:qa
       - run: npm run qa:check

@@ -5,6 +5,11 @@ const supabaseClient = createClient(
   window.SUPABASE_PUBLISHABLE_KEY,
 );
 
+const machineReadiness = window.HumbelMachineReadiness.create({
+  client: supabaseClient, actor: () => currentSupabaseUser?.id || null,
+  role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },
+});
+machineReadiness.bind(document);
 // Operations stay in a separate in-memory module; no legacy station/counter conversion.
 const operations = window.HumbelOperations.create({
   client: supabaseClient, actor: () => currentSupabaseUser?.id || null,
@@ -73,7 +78,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.7.0";
+const APP_VERSION = "0.8.0";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -88,6 +93,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.8.0",
+    date: "2026-11-06 09:58",
+    changes: ["OP-Maschinenübersicht mit getrennten Material- und Terminanzeigen, expliziter vollständiger Übergabe und protokollierten Arbeitsstatus vorbereitet (#9).", "Prognose erzeugt keine Freigabe; Teilmengen bleiben deaktiviert. Neue Funktionen und SQL-Entwurf bleiben gesondert freigabepflichtig und standardmäßig aus."],
+  },
   {
     version: "0.7.0",
     date: "2026-11-06 08:29",
@@ -2576,6 +2586,7 @@ async function logoutSupabase() {
   state.ui = state.ui || {};
   state.ui.supabaseReady = false;
   state.ui.toolsInitialLoaded = false;
+  machineReadiness.reset();
   articleMaster.reset();
   currentSupabaseUser = null;
   currentEmployeeRecord = null;
@@ -3125,6 +3136,7 @@ function logout() {
 }
 
 function render() {
+  void machineReadiness.ensureSession();
   void articleMaster.ensureSession();
   if (!currentUser) return;
   cleanupOrderArchive();
@@ -3145,6 +3157,7 @@ function render() {
   if (currentUser.role === "department_admin") tabs.push("produktion");
   if (currentUser.role === "employee") tabs.push("werkzeugverwaltung");
   if (articleMaster.hasAccess() && !tabs.includes("produktion")) tabs.push("produktion");
+  if (machineReadiness.hasAccess() && !tabs.includes("produktion")) tabs.push("produktion");
 
   const tabsEl = document.getElementById("tabs");
   tabsEl.className = "humbel-main-nav flex gap-2 flex-wrap";
@@ -3299,6 +3312,13 @@ function setPersonnelManagementSubTab(subTab) {
 }
 
 function setProductionSubTab(subTab) {
+  if (subTab === "readiness") {
+    if (!machineReadiness.hasAccess()) return;
+    state.productionSubTab = subTab;
+    render();
+    void machineReadiness.refresh();
+    return;
+  }
   if (subTab === "articles") {
     if (!articleMaster.hasAccess()) return;
     state.productionSubTab = subTab;
@@ -5999,6 +6019,13 @@ function getDepartmentLeaderHint(employee) {
 }
 
 function renderProduction() {
+  if (machineReadiness.hasAccess() && (state.productionSubTab === "readiness" || (!canAccessProduction() && state.productionSubTab !== "articles"))) {
+    return `<div class='bg-white rounded-xl shadow p-4'><h2>Produktion</h2>
+      <button onclick="setProductionSubTab('readiness')">OP-Maschinenübersicht</button>
+      ${articleMaster.hasAccess() ? `<button onclick="setProductionSubTab('articles')">Artikelstamm</button>` : ""}
+      ${canAccessProduction() ? `<button onclick="setProductionSubTab('departments')">Abteilungen</button>` : ""}
+      ${machineReadiness.render()}</div>`;
+  }
   if (articleMaster.hasAccess() && (!canAccessProduction() || state.productionSubTab === "articles")) {
     return `<div class='bg-white rounded-xl shadow p-4'><h2>Produktion</h2>
       <button class='px-3 py-2 rounded border humbel-subtab-active' onclick="setProductionSubTab('articles')">Artikelstamm</button>
@@ -6017,7 +6044,8 @@ function renderProduction() {
     : "departments";
   const compactCounts = subTab === "counts" && getProductionCounterView() === "production";
   const visibleProductionTabs = articleMaster.hasAccess() ? [...PRODUCTION_SUBTABS, { id: "articles", label: "Artikelstamm" }] : PRODUCTION_SUBTABS;
-  const subTabButtons = visibleProductionTabs.map((tab) => {
+  const readinessTabs = machineReadiness.hasAccess() ? [...visibleProductionTabs, { id: "readiness", label: "OP-Maschinenübersicht" }] : visibleProductionTabs;
+  const subTabButtons = readinessTabs.map((tab) => {
     const active = subTab === tab.id;
     return `<button class='px-3 py-2 rounded border ${active ? "humbel-subtab-active" : "humbel-subtab"}' onclick="setProductionSubTab('${tab.id}')">${tab.label}</button>`;
   }).join("");
