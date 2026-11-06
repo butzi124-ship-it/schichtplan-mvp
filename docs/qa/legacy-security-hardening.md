@@ -22,3 +22,7 @@ Die Datei `supabase/review/legacy-security-hardening-isolated.sql` ist **durch D
 4. Erst danach ein produktionsfähiges, separat genehmigtes Migrationsskript mit Backup, Rollback, Wartungsfenster und schrittweiser Aktivierung vorbereiten.
 
 **Kein Merge, Deploy, Produktions-RLS-Eingriff oder Datenmigration ohne ausdrückliche Freigabe.**
+
+## Präzisierter Prüfstand (20:17 Europe/Berlin)
+
+Die unterlagerte Testinfrastruktur #15 verwendet nun sechs tatsächlich per lesender Katalogabfrage verifizierte Originalfunktionen und 25 eigenständige Indexdefinitionen. Die ältere permissive Testsubstitution für Abteilungszugriff ist nicht mehr vorhanden; die finale Sicherheitsmatrix muss dennoch fachlich abgestimmt und mit einem vollständigen autoritativen Restore geprüft werden.

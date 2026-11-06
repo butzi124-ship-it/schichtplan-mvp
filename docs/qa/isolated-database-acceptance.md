@@ -37,3 +37,7 @@ The baseline deliberately reproduces findings A/B using real anonymous and user 
 ## Final results
 
 Exact tested commits, workflow URLs, real successes/failures and remaining blockers are recorded in the Draft PR. The workflow summary distinguishes mirror completeness, migration execution, security findings and production readiness. All 251 original test identities, assertions and 33 visual references remain protected. No policy/advisor issue is silently treated as resolved because browser mocks passed.
+
+## Metadata-fidelity improvement (2026-11-06, 20:16 Europe/Berlin)
+
+A read-only query of **PostgreSQL system catalogs only**, not user/manufacturing rows, identified the original six `public` function definitions and 25 standalone indexes. Their definitions are reproduced as reviewed code in `scripts/db-integration/source-catalog.js` and verified after bootstrap along with the resulting index count (76). The former `can_access_production_department` mock granted access to any non-scanner employee in a department, whereas the actual live function restricts authorization to admins or **department admins that are registered as the active department leader**. This critical mismatch is eliminated, and a negative real-JWT test verifies ordinary workers cannot acquire these rights. Live function-ownership/ACL, exact sequence and table grants, defaults, and a complete authoritative schema-only dump are still outstanding, so the test remains **non-authoritative**. No data rows or secrets were copied and the production schema was not changed.

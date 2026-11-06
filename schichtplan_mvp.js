@@ -85,7 +85,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.9.13";
+const APP_VERSION = "0.9.14";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -101,10 +101,17 @@ const HUMBEL_COLORS = Object.freeze({
 });
 const VERSION_LOG = [
   {
-    "version": "0.9.13",
-    "date": "2026-11-06 19:48",
+    "version": "0.9.14",
+    "date": "2026-11-06 20:17",
     "changes": [
-      "Gestapelten isolierten Legacy-RLS-Sicherheitsreview mit korrigierter dynamischer Versionsfooter-Regression und neuem geschützten Test-SHA zusammengeführt. Echte Auth-/Negativtests bleiben aktiv; keine Produktivfreigabe oder Rollenänderung."
+      "Separaten Legacy-RLS-Testkandidaten mit dem verbesserten Originalschema-Simulationsstand (6 Originalfunktionen, 25 Indizes) zusammengeführt; echte negative Berechtigungstests inklusive restriktiver Abteilungsrolle aktiv. Keine produktive Migration, keine Aktivierung."
+    ]
+  },
+  {
+    "version": "0.9.13",
+    "date": "2026-11-06 20:16",
+    "changes": [
+      "Isolierten Datenbank-Schemakatalog um sechs ausschließlich lesend verifizierte Originalfunktionen und 25 eigenständige Indizes ergänzt. Eine zu weit gehende simulierte Abteilungsberechtigung durch die originale restriktive Regel ersetzt; reale negative Rollenprüfung hinzugefügt. Keine Produktionsdaten oder DB-Änderungen."
     ]
   },
   {
