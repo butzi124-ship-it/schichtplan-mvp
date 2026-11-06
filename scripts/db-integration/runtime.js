@@ -4,17 +4,17 @@ const dir=path.resolve('/tmp/humbel-isolated-db'),file=path.join(dir,'runtime.js
 const names=['humbel-worker','humbel-edge','humbel-gateway','humbel-rest','humbel-auth','humbel-db'];
 function docker(args,env={}){return execFileSync('docker',args,{env:{...process.env,...env},encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();}
 function stop(){for(const n of names)try{docker(['rm','-f','-v',n]);}catch{}try{docker(['network','rm','humbel-isolated']);}catch{}if(fs.existsSync(file))fs.unlinkSync(file);}
-async function waitFor(fn,label){for(let i=0;i<90;i++){try{if(await fn())return;}catch{}await new Promise(r=>setTimeout(r,1000));}throw Error('Isolated runtime startup failed: '+label);}
+async function waitFor(fn,label){let last='';for(let i=0;i<90;i++){try{if(await fn())return;}catch(e){last=e.code||e.name;}await new Promise(r=>setTimeout(r,1000));}throw Error('Isolated runtime startup failed: '+label+' ('+last+')');}
 function token(secret,role){const b=x=>Buffer.from(JSON.stringify(x)).toString('base64url');const value=b({alg:'HS256',typ:'JWT'})+'.'+b({role,iss:'humbel-isolated',iat:Math.floor(Date.now()/1000),exp:Math.floor(Date.now()/1000)+7200});return value+'.'+crypto.createHmac('sha256',secret).update(value).digest('base64url');}
 async function start(){
  if(!process.env.GITHUB_ACTIONS)throw Error('This launcher is restricted to the isolated GitHub runner');
  docker(['info','--format','{{.ServerVersion}}']);stop();fs.mkdirSync(dir,{recursive:true,mode:0o700});
- const config=guard({isolated:true,host:'127.0.0.1',port:55432,user:'postgres',database:'humbel_isolated_test',password:crypto.randomBytes(32).toString('hex'),jwtSecret:crypto.randomBytes(32).toString('hex'),workerSecret:crypto.randomBytes(32).toString('hex'),sentinel:crypto.randomBytes(32).toString('hex'),auth:'http://127.0.0.1:59999',rest:'http://127.0.0.1:53000',edge:'http://127.0.0.1:59000',worker:'http://127.0.0.1:59001'});
+ const config=guard({isolated:true,host:'127.0.0.1',port:55432,user:'supabase_admin',database:'humbel_isolated_test',password:crypto.randomBytes(32).toString('hex'),jwtSecret:crypto.randomBytes(32).toString('hex'),workerSecret:crypto.randomBytes(32).toString('hex'),sentinel:crypto.randomBytes(32).toString('hex'),auth:'http://127.0.0.1:59999',rest:'http://127.0.0.1:53000',edge:'http://127.0.0.1:59000',worker:'http://127.0.0.1:59001'});
  config.anonKey=token(config.jwtSecret,'anon');config.serviceKey=token(config.jwtSecret,'service_role');fs.writeFileSync(file,JSON.stringify(config),{mode:0o600});
  const digests={};for(const [key,image]of Object.entries(images)){docker(['pull',image]);digests[key]=JSON.parse(docker(['image','inspect','--format','{{json .RepoDigests}}',image]));}
  fs.mkdirSync('artifacts/db-integration',{recursive:true});fs.writeFileSync('artifacts/db-integration/images.json',JSON.stringify(digests,null,2));
  docker(['network','create','--internal','humbel-isolated']);
- docker(['run','-d','--name','humbel-db','--network','humbel-isolated','--network-alias','humbel-db','-p','127.0.0.1:55432:5432','--env','POSTGRES_PASSWORD','--env','POSTGRES_DB',images.postgres,'postgres','-c','listen_addresses=*'],{POSTGRES_PASSWORD:config.password,POSTGRES_DB:config.database});
+ docker(['run','-d','--name','humbel-db','--network','humbel-isolated','--network-alias','humbel-db','-p','127.0.0.1:55432:5432','--env','POSTGRES_PASSWORD','--env','POSTGRES_DB','--env','PGPASSWORD','--env','PGDATABASE',images.postgres,'postgres','-c','listen_addresses=*'],{POSTGRES_PASSWORD:config.password,POSTGRES_DB:config.database,PGPASSWORD:config.password,PGDATABASE:config.database});
  await waitFor(async()=>{const db=new Client(config);try{await db.connect();return true;}finally{await db.end();}},'postgres');
  const db=new Client(config);await db.connect();try{
  await db.query(`alter database humbel_isolated_test set "humbel.isolated_sentinel"='${config.sentinel}'`);
