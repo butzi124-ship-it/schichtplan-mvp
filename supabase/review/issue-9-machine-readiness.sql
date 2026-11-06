@@ -57,6 +57,7 @@ declare o public.production_order_operations;e public.production_operation_execu
 begin
  if not article_master_private.readiness_enabled() or auth.uid() is null or not exists(select 1 from public.production_order_operations init_op where init_op.order_id=p_order_id and article_master_private.readiness_allowed(init_op.id,'plan')) then raise exception 'Denied' using errcode='42501'; end if;
  perform 1 from public.production_orders where id=p_order_id for update;
+ if not exists(select 1 from public.production_order_operations init_op where init_op.order_id=p_order_id and article_master_private.readiness_allowed(init_op.id,'plan')) then raise exception 'Permission changed while waiting' using errcode='42501';end if;
  for o in select * from public.production_order_operations where order_id=p_order_id order by position loop
   insert into public.production_operation_execution(operation_id,machine_id) values(o.id,(o.data->>'machine_id')::uuid) on conflict do nothing returning * into e;
   if found then perform article_master_private.readiness_event(o.id,gen_random_uuid(),'plan','{}',null,to_jsonb(e)); end if;
@@ -81,6 +82,7 @@ begin
  select * into b from public.production_orders where id=o.order_id for update;
  select * into s from public.production_order_article_snapshots where order_id=o.order_id;
  select * into e from public.production_operation_execution where operation_id=o.id for update;
+ if not article_master_private.readiness_allowed(p_operation_id,case when p_action in('assign','cancel') then 'plan' when p_action='handover' then 'confirm' else 'work' end) then raise exception 'Permission changed while waiting' using errcode='42501';end if;
  if e.operation_id is null then raise exception 'Explicit initialization required' using errcode='22023'; end if;
  body:=jsonb_build_object('action',p_action,'quantity',p_quantity,'machine_id',p_machine_id,'planned_start',p_planned_start,'reason',p_reason);
  select * into prior from public.production_readiness_events where request_id=p_request_id;

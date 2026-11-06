@@ -12,7 +12,7 @@
     ".codex/config.toml": "8c91972f392226685f869ff23f39e9dc47c75dff2158d33b6e576c615471a581",
     "js/article-master.js": "db5e1bfcd4130dd8ee19bb9402455069f1af50b73c573aa0f965a1d20af742b7",
     "tests/qa/article-integration-patches.json": "d236acb26bdfe537171b9e1274120af0f2fbc4122e56977eb91470135702ea45",
-    "tests/articles.spec.js": "5cc9b2ba2a3bc4280e6a8a190d8896ee99cdc920207e2c69584b9ca4494d234e",
+    "tests/articles.spec.js": "bbef3bd4c87118d219e1fb3266e7e0ade7b124788fecf335066eceb334ea277c",
     "tests/helpers/article-db.js": "f132d7df34c369e8a5cb1dc27eb13f206c1fabc82a4dd483ae39dbdd231134e6",
     "tests/articles/database.test.js": "49c296da971117d6c881f168e46204868072b571d14d70b1ceaa21ba64042afc",
     "tests/fixtures/article-reference.json": "c2fcfa95b974465ecd0db2321000b4bfea47c0e9ee0d521c6de3e005a435705c",
@@ -36,7 +36,7 @@
     "tests/readiness.spec.js": "1d860a03f2c8c44c597cec84cc37213d7ac3633f2939da8c0fa8ce1635b7a792",
     "tests/readiness/database.test.js": "29028bc11ee2ef0473f790c08f9d82c0732e81eccc8fea2b913c418a5fb4cc81",
     "tests/readiness/unit.test.js": "db5b9c9be92d25d9b68e6b86805df39e257aa1d92a9393903d7ee465d9ea8edc",
-    "supabase/review/issue-9-machine-readiness.sql": "e81eb96a4343ad88eacca016942339c1eb1172d0177ecb946dfe67f4e6351b8d"
+    "supabase/review/issue-9-machine-readiness.sql": "d87abba25601ee38503c934728df13ffd8fbdc022d1552ba85617eee5f9009f4"
   },
   "reviewedPresentationPatch": "\n    #toolSearch,\n    #toolFilterLabel,\n    #toolFilterT,\n    #toolFilterD,\n    #toolFilterHolder,\n    #toolFilterImageStatus {\n      min-width: 0;\n      width: 100%;\n      max-width: 100%;\n    }\n",
   "reviewedPresentationReplacements": [
