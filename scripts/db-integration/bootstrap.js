@@ -5,7 +5,9 @@ async function main(){const config=guard(JSON.parse(fs.readFileSync('/tmp/humbel
  await db.query(`alter database humbel_isolated_test set "humbel.isolated_sentinel"='${config.sentinel}'`);
  await db.query(`do $$begin if not exists(select 1 from pg_roles where rolname='anon') then create role anon nologin;end if;if not exists(select 1 from pg_roles where rolname='authenticated') then create role authenticated nologin;end if;if not exists(select 1 from pg_roles where rolname='service_role') then create role service_role nologin bypassrls;end if;if not exists(select 1 from pg_roles where rolname='authenticator') then create role authenticator login noinherit;end if;if not exists(select 1 from pg_roles where rolname='supabase_auth_admin') then create role supabase_auth_admin login;end if;end$$;grant anon,authenticated,service_role to authenticator;`);
  await db.query(`alter role authenticator password '${config.password}';alter role supabase_auth_admin password '${config.password}';create schema if not exists auth authorization supabase_auth_admin;grant all on schema auth to supabase_auth_admin;grant create on database humbel_isolated_test to supabase_auth_admin;`);
- await db.query(`create or replace function auth.uid() returns uuid language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claim.sub',true),''),(nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'sub'))::uuid$$;create or replace function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;grant usage on schema auth to anon,authenticated,service_role;grant execute on function auth.uid(),auth.jwt() to anon,authenticated,service_role;`);
+ await db.query('grant usage on schema auth to anon,authenticated,service_role');
+ // Auth accessors are supplied by the real Supabase image / GoTrue migrations, never test substitutes.
+
  }finally{await db.end();}
 
 }

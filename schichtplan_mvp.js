@@ -85,7 +85,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.9.5";
+const APP_VERSION = "0.9.6";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -100,6 +100,13 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    "version": "0.9.6",
+    "date": "2026-11-06 19:02",
+    "changes": [
+      "Native Auth-Hilfsfunktionen vollständig dem Supabase-Image und den echten GoTrue-Migrationen überlassen; Eigentümerkonflikt beim Auth-Start beseitigt und reale Auth-Funktionsherkunft geprüft. Keine produktive Auth-Änderung."
+    ]
+  },
   {
     "version": "0.9.5",
     "date": "2026-11-06 19:00",
