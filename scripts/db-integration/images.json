@@ -1,0 +1,7 @@
+{
+  "postgres": "supabase/postgres:17.6.1.136",
+  "auth": "supabase/gotrue:v2.197.0",
+  "rest": "postgrest/postgrest:v14.18",
+  "edge": "supabase/edge-runtime:v1.77.9",
+  "node": "node:22-alpine"
+}

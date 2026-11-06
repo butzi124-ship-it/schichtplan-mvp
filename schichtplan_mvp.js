@@ -85,7 +85,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.9.0";
+const APP_VERSION = "0.9.1";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -100,6 +100,13 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    "version": "0.9.1",
+    "date": "2026-11-06 18:32",
+    "changes": [
+      "Isolierte Datenbank-Abnahmeinfrastruktur für PostgreSQL, echte Auth-JWTs, PostgREST, Edge Runtime und Paralleltests ergänzt. Schema-Katalogspiegel und fehlende Originaldefinitionen werden ausdrücklich unterschieden; keine Produktivverbindung oder Feature-Aktivierung."
+    ]
+  },
   {
     "version": "0.9.0",
     "date": "2026-11-06 11:36",

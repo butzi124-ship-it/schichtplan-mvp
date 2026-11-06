@@ -43,7 +43,7 @@ test.describe('Article master',()=>{
  }
  test('disabled feature issues no article RPC and creates no broken menu',async({page})=>{
   await login(page,{enabled:false});
-  await expect(page.locator('#versionFooter button')).toHaveText('Versionslog · v0.9.0');
+  await expect(page.locator('#versionFooter button')).toHaveText('Versionslog · v0.9.1');
   await page.locator('#tabs').getByRole('button',{name:'Produktion',exact:true}).click();
   await expect(page.getByRole('button',{name:'Artikelstamm',exact:true})).toHaveCount(0);
   expect(calls).toEqual([]);
