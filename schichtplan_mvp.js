@@ -85,7 +85,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.9.10";
+const APP_VERSION = "0.9.11";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -100,6 +100,13 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    "version": "0.9.11",
+    "date": "2026-11-06 19:29",
+    "changes": [
+      "Nach erfolgreichem echten 13/13-Supabase-Integrationstest den geprüften SHA-256-Schutzwert der geänderten Forecast-SQL-Datei explizit im QA-Integritätsschutz nachgezogen. Schutzprüfung und echte Parallel-/RLS-Tests bleiben vollständig aktiv; keine produktive DB-Änderung."
+    ]
+  },
   {
     "version": "0.9.10",
     "date": "2026-11-06 19:26",
