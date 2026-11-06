@@ -79,6 +79,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --ignore-scripts
+      - run: npm run test:article-db
       - run: npm run test:ci
       - run: npm run test:qa
       - run: npm run qa:check

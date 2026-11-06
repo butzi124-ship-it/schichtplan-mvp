@@ -2,7 +2,7 @@ const { defineConfig, devices } = require("@playwright/test");
 
 module.exports = defineConfig({
   testDir: "./tests",
-  testMatch: "smoke.spec.js",
+  testMatch: ["smoke.spec.js", "articles.spec.js"],
   grepInvert: /@visual/,
   forbidOnly: !!process.env.CI,
   failOnFlakyTests: !!process.env.CI,
@@ -27,22 +27,22 @@ module.exports = defineConfig({
     },
     {
       name: "mobile-chromium",
-      grep: /Production counter feedback|Production order navigation|Production touch view|Sequential production stations/,
+      grep: /Production counter feedback|Production order navigation|Production touch view|Sequential production stations|Article master/,
       use: { ...devices["Pixel 5"], viewport: { width: 390, height: 844 } },
     },
     {
       name: "tablet-chromium",
-      grep: /Production order navigation|Production touch view|Sequential production stations/,
+      grep: /Production order navigation|Production touch view|Sequential production stations|Article master/,
       use: { ...devices["Desktop Chrome"], viewport: { width: 1024, height: 768 }, hasTouch: true },
     },
     {
       name: "firefox",
-      grep: /Production order navigation|Production touch view|Sequential production stations/,
+      grep: /Production order navigation|Production touch view|Sequential production stations|Article master/,
       use: { ...devices["Desktop Firefox"] },
     },
     {
       name: "webkit",
-      grep: /Production order navigation|Production touch view|Sequential production stations/,
+      grep: /Production order navigation|Production touch view|Sequential production stations|Article master/,
       use: { ...devices["Desktop Safari"] },
     },
   ],

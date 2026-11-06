@@ -5,6 +5,13 @@ const supabaseClient = createClient(
   window.SUPABASE_PUBLISHABLE_KEY,
 );
 
+// Article data stays in the module closure, never in persisted state/localStorage.
+const articleMaster = window.HumbelArticleMaster.create({
+  client: supabaseClient, actor: () => currentSupabaseUser?.id || null,
+  role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },
+});
+articleMaster.bind(document);
+
 let supabaseReady = false;
 let currentSupabaseUser = null;
 let currentEmployeeRecord = null;
@@ -56,7 +63,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.5.19";
+const APP_VERSION = "0.6.3";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -72,14 +79,34 @@ const HUMBEL_COLORS = Object.freeze({
 });
 const VERSION_LOG = [
   {
+    version: "0.6.3",
+    date: "2026-11-06 05:36",
+    changes: ["Artikelstamm mit dem erfolgreich geprüften main-Merge von PR #2 synchronisiert; Funktionen, Sicherheitsregeln und Tests unverändert erhalten.", "Integrationsdokumentation aktualisiert; Artikelstamm bleibt deaktiviert, produktive Migration und Deployment bleiben gesondert freigabepflichtig."],
+  },
+  {
+    version: "0.6.2",
+    date: "2026-11-06 04:28",
+    changes: ["CI-Git-Prüfung auf das Checkout-Workspace beschränkt freigegeben; Besitzprüfung bleibt für andere Verzeichnisse aktiv.", "Fehlende Browser-Ergebnisse werden ausdrücklich als nicht ausgeführt dokumentiert; beide Pflicht-Gates bleiben fail-closed."],
+  },
+  {
     version: "0.5.19",
     date: "2026-11-06 04:28",
     changes: ["CI-Git-Prüfung auf das Checkout-Workspace beschränkt freigegeben; Besitzprüfung bleibt für andere Verzeichnisse aktiv.", "Fehlende Browser-Ergebnisse werden ausdrücklich als nicht ausgeführt dokumentiert; beide Pflicht-Gates bleiben fail-closed."],
   },
   {
+    version: "0.6.1",
+    date: "2026-11-06 04:22",
+    changes: ["Artikelstamm-PR #11 mit aktuellem main und der synchronisierten QA-Basis zusammengeführt; Pflichtcheck e2e und alle Sicherheitsregeln erhalten.", "Produktive Migration und Artikelaktivierung bleiben gesperrt; Merge und Deployment benötigen ausdrückliche Freigabe."],
+  },
+  {
     version: "0.5.18",
     date: "2026-11-06 04:19",
     changes: ["QA-PR #2 mit aktuellem main synchronisiert; Entwicklungs- und Sicherheitsregeln sowie Pflichtcheck e2e erhalten.", "Erweiterte Browser-, Bild- und Berichtstests vereinheitlicht; Deployment erfordert gesonderte manuelle Freigabe."],
+  },
+  {
+    version: "0.6.0",
+    date: "2026-11-06 03:45",
+    changes: ["Artikelstamm mit Entwürfen, Freigaben, Revisionen und separaten Berechtigungen vorbereitet; bis zur DB-Freigabe deaktiviert (Aufgabe #7)."],
   },
   {
     version: "0.5.17",
@@ -2534,6 +2561,7 @@ async function logoutSupabase() {
   state.ui = state.ui || {};
   state.ui.supabaseReady = false;
   state.ui.toolsInitialLoaded = false;
+  articleMaster.reset();
   currentSupabaseUser = null;
   currentEmployeeRecord = null;
   currentUser = null;
@@ -3082,6 +3110,7 @@ function logout() {
 }
 
 function render() {
+  void articleMaster.ensureSession();
   if (!currentUser) return;
   cleanupOrderArchive();
 
@@ -3100,6 +3129,7 @@ function render() {
   }
   if (currentUser.role === "department_admin") tabs.push("produktion");
   if (currentUser.role === "employee") tabs.push("werkzeugverwaltung");
+  if (articleMaster.hasAccess() && !tabs.includes("produktion")) tabs.push("produktion");
 
   const tabsEl = document.getElementById("tabs");
   tabsEl.className = "humbel-main-nav flex gap-2 flex-wrap";
@@ -3254,6 +3284,13 @@ function setPersonnelManagementSubTab(subTab) {
 }
 
 function setProductionSubTab(subTab) {
+  if (subTab === "articles") {
+    if (!articleMaster.hasAccess()) return;
+    state.productionSubTab = subTab;
+    render();
+    void articleMaster.open();
+    return;
+  }
   if (!PRODUCTION_SUBTABS.some((t) => t.id === subTab)) return;
   state.productionSubTab = subTab;
   persist();
@@ -5947,6 +5984,12 @@ function getDepartmentLeaderHint(employee) {
 }
 
 function renderProduction() {
+  if (articleMaster.hasAccess() && (!canAccessProduction() || state.productionSubTab === "articles")) {
+    return `<div class='bg-white rounded-xl shadow p-4'><h2>Produktion</h2>
+      <button class='px-3 py-2 rounded border humbel-subtab-active' onclick="setProductionSubTab('articles')">Artikelstamm</button>
+      ${canAccessProduction() ? `<button class='px-3 py-2 rounded border' onclick="setProductionSubTab('departments')">Abteilungen</button>` : ""}
+      ${articleMaster.render()}</div>`;
+  }
   if (!canAccessProduction()) {
     return `<div class='bg-white rounded-xl shadow p-4'>
       <h2 class='text-lg font-semibold'>Produktion</h2>
@@ -5958,7 +6001,8 @@ function renderProduction() {
     ? state.productionSubTab
     : "departments";
   const compactCounts = subTab === "counts" && getProductionCounterView() === "production";
-  const subTabButtons = PRODUCTION_SUBTABS.map((tab) => {
+  const visibleProductionTabs = articleMaster.hasAccess() ? [...PRODUCTION_SUBTABS, { id: "articles", label: "Artikelstamm" }] : PRODUCTION_SUBTABS;
+  const subTabButtons = visibleProductionTabs.map((tab) => {
     const active = subTab === tab.id;
     return `<button class='px-3 py-2 rounded border ${active ? "humbel-subtab-active" : "humbel-subtab"}' onclick="setProductionSubTab('${tab.id}')">${tab.label}</button>`;
   }).join("");

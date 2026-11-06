@@ -1,0 +1,34 @@
+{
+  "issue": 7,
+  "reason": "Explicit article feature hooks. Reversing these exact hooks plus reviewed presentation edits must reproduce the frozen legacy business hash. No old production access predicate changed.",
+  "patches": [
+    {
+      "before": "let supabaseReady = false;",
+      "after": "// Article data stays in the module closure, never in persisted state/localStorage.\nconst articleMaster = window.HumbelArticleMaster.create({\n  client: supabaseClient, actor: () => currentSupabaseUser?.id || null,\n  role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },\n});\narticleMaster.bind(document);\n\nlet supabaseReady = false;"
+    },
+    {
+      "before": "  currentSupabaseUser = null;\n  currentEmployeeRecord = null;",
+      "after": "  articleMaster.reset();\n  currentSupabaseUser = null;\n  currentEmployeeRecord = null;"
+    },
+    {
+      "before": "function render() {\n  if (!currentUser) return;",
+      "after": "function render() {\n  void articleMaster.ensureSession();\n  if (!currentUser) return;"
+    },
+    {
+      "before": "  if (currentUser.role === \"employee\") tabs.push(\"werkzeugverwaltung\");",
+      "after": "  if (currentUser.role === \"employee\") tabs.push(\"werkzeugverwaltung\");\n  if (articleMaster.hasAccess() && !tabs.includes(\"produktion\")) tabs.push(\"produktion\");"
+    },
+    {
+      "before": "  if (!PRODUCTION_SUBTABS.some((t) => t.id === subTab)) return;",
+      "after": "  if (subTab === \"articles\") {\n    if (!articleMaster.hasAccess()) return;\n    state.productionSubTab = subTab;\n    render();\n    void articleMaster.open();\n    return;\n  }\n  if (!PRODUCTION_SUBTABS.some((t) => t.id === subTab)) return;"
+    },
+    {
+      "before": "function renderProduction() {\n  if (!canAccessProduction()) {",
+      "after": "function renderProduction() {\n  if (articleMaster.hasAccess() && (!canAccessProduction() || state.productionSubTab === \"articles\")) {\n    return `<div class='bg-white rounded-xl shadow p-4'><h2>Produktion</h2>\n      <button class='px-3 py-2 rounded border humbel-subtab-active' onclick=\"setProductionSubTab('articles')\">Artikelstamm</button>\n      ${canAccessProduction() ? `<button class='px-3 py-2 rounded border' onclick=\"setProductionSubTab('departments')\">Abteilungen</button>` : \"\"}\n      ${articleMaster.render()}</div>`;\n  }\n  if (!canAccessProduction()) {"
+    },
+    {
+      "before": "  const subTabButtons = PRODUCTION_SUBTABS.map((tab) => {",
+      "after": "  const visibleProductionTabs = articleMaster.hasAccess() ? [...PRODUCTION_SUBTABS, { id: \"articles\", label: \"Artikelstamm\" }] : PRODUCTION_SUBTABS;\n  const subTabButtons = visibleProductionTabs.map((tab) => {"
+    }
+  ]
+}

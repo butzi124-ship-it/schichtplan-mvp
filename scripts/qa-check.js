@@ -6,6 +6,10 @@ const { listTests } = require("./list-tests");
 const { hash, appBusiness, sourceViolations } = require("./qa-policy");
 const protectedFiles = require("../tests/qa/protected-files.json");
 let app = fs.readFileSync("schichtplan_mvp.js", "utf8").replace(/\r\n/g, "\n");
+for (const {before, after} of require("../tests/qa/article-integration-patches.json").patches) {
+  assert.equal(app.split(after).length - 1, 1, "Article integration hook must remain exact and unique");
+  app = app.replace(after, before);
+}
 if (protectedFiles.reviewedPresentationPatch) {
   assert(app.includes(protectedFiles.reviewedPresentationPatch), "Reviewed CSS patch must remain exact");
   app = app.replace(protectedFiles.reviewedPresentationPatch, "");
@@ -46,4 +50,4 @@ const provenance = JSON.parse(fs.readFileSync(path.join(root, "provenance.json")
 assert.equal(provenance.files.length, 33);
 assert.equal(provenance.image, "mcr.microsoft.com/playwright:v1.62.1-noble");
 for (const ref of provenance.files) assert.equal(hash(fs.readFileSync(path.join(root, ref.file))), ref.sha256, `Unreviewed reference change: ${ref.file}`);
-console.log(`QA integrity passed: ${legacy.length} legacy identities retained, legacy business logic unchanged, strict release chain and 33 versioned references verified.`);
+console.log(`QA integrity passed: ${legacy.length} legacy identities retained, legacy business logic preserved outside explicit article hooks, strict release chain and 33 versioned references verified.`);
