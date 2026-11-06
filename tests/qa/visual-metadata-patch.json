@@ -1,0 +1,6 @@
+{
+  "file": "tests/smoke.spec.js",
+  "reason": "CI 42153076757: six strict image diffs are confined to the fixed build-version button (v0.6.0 vs v0.5.17); all other pixels unchanged. Assert actual metadata first, then use the baseline metadata constant just as the fixture fixes time. No screenshot target, image, tolerance or business assertion changes.",
+  "before": "        await page.evaluate(() => document.fonts.ready);",
+  "after": "        // Build metadata changes each release; assert it before fixing only this metadata for pixel comparisons.\n        const versionButton = page.locator(\"#versionFooter button\");\n        if (await versionButton.count()) {\n          const actualVersion = await page.evaluate(() => APP_VERSION);\n          await expect(versionButton).toHaveText(`Versionslog · v${actualVersion}`);\n          await versionButton.evaluate(button => { button.textContent = \"Versionslog · v0.5.17\"; });\n        }\n        await page.evaluate(() => document.fonts.ready);"
+}

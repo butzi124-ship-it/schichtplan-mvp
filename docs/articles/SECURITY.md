@@ -50,3 +50,7 @@ Vor Aktivierung erforderlich: SQL/Security-Review; Prüfung der bestehenden empl
 Referenzfixture: nur sicher erkannte Werte zu 32505, Spannflansch, ITEM A (Switzerland) Ltd., 90MnCrV8. Herkunft Seite 7/10, kein vollständiger Operationsplan. BA 812150 und Menge 48 existieren ausschließlich als separate synthetische Auftragsfixture, nie im Artikelinhalt.
 
 Quellen: https://supabase.com/docs/guides/database/postgres/row-level-security ; https://supabase.com/docs/guides/database/functions ; https://pglite.dev/docs/ ; https://pglite.dev/docs/api . CLI-Changelog vom 04.11.2026 gelesen: v3 ist lokal als Standard; hier ausschließlich migration new verwendet, weder link noch db push/up aufgerufen.
+
+## Stabile Bildvergleichs-Metadaten
+
+Der erste CI-Lauf 42153076757 meldete sechs Bildunterschiede. Actual/Expected wurden heruntergeladen und die Differenzrechtecke geprüft: ausschließlich der feste Versionsknopf (v0.6.0 statt v0.5.17), keine anderen Pixel. Der Visual-Fixture prüft nun zuerst den echten Knopftext gegen APP_VERSION und setzt nur diesen Build-Metadatenwert für den Bildvergleich auf den bekannten Referenzwert, analog zur festgesetzten Uhrzeit. Ein separater funktionaler Fall prüft den echten Text v0.6.0. Kein Referenz-PNG, Screenshot-Ziel, Toleranzwert oder Geschäftsassert wurde geändert. Ein exakter reversibler Fixture-Patch schützt weiter den ursprünglichen Regressionstesthash.

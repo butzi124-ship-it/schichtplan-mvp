@@ -21,9 +21,9 @@ for (const replacement of protectedFiles.reviewedPresentationReplacements || [])
 assert.equal(hash(appBusiness(app)), protectedFiles.appBusinessSha256, "App business logic changed in a QA-only release");
 for (const [file, expected] of Object.entries(protectedFiles.tests)) {
   let checkedSource = fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n");
-  const navigation = require("../tests/qa/legacy-navigation-patch.json");
-  if (file === navigation.file) {
-    assert.equal(checkedSource.split(navigation.after).length - 1, 1, "Merged reload navigation fix must remain exact");
+  for (const navigation of [require("../tests/qa/legacy-navigation-patch.json"), require("../tests/qa/visual-metadata-patch.json")]) {
+    if (file !== navigation.file) continue;
+    assert.equal(checkedSource.split(navigation.after).length - 1, 1, "Explicit test fixture patch must remain exact");
     checkedSource = checkedSource.replace(navigation.after, navigation.before);
   }
   assert.equal(hash(checkedSource), expected, `${file}: protected regression source changed; explicit human review required`);

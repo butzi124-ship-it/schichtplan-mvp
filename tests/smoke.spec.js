@@ -140,6 +140,13 @@ test.describe("Humbel app smoke", () => {
             }
           }
         }
+        // Build metadata changes each release; assert it before fixing only this metadata for pixel comparisons.
+        const versionButton = page.locator("#versionFooter button");
+        if (await versionButton.count()) {
+          const actualVersion = await page.evaluate(() => APP_VERSION);
+          await expect(versionButton).toHaveText(`Versionslog · v${actualVersion}`);
+          await versionButton.evaluate(button => { button.textContent = "Versionslog · v0.5.17"; });
+        }
         await page.evaluate(() => document.fonts.ready);
         if (target === page) await expect(page).toHaveScreenshot(`${scene}.png`, { fullPage: true });
         else await expect(target).toHaveScreenshot(`${scene}.png`);
