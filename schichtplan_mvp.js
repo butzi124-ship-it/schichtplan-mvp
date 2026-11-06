@@ -85,7 +85,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.9.11";
+const APP_VERSION = "0.9.12";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -100,6 +100,13 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    "version": "0.9.12",
+    "date": "2026-11-06 19:37",
+    "changes": [
+      "Separaten, ausschließlich isoliert anwendbaren RLS-/Rollen-Sicherheitsreview und echte negative Auth-/REST-Tests für Planner, Mitarbeiter und Werkzeugmaterialien vorbereitet. Admin-only-Matrix noch nicht fachlich freigegeben; keine produktiven Sicherheitsänderungen."
+    ]
+  },
   {
     "version": "0.9.11",
     "date": "2026-11-06 19:29",
