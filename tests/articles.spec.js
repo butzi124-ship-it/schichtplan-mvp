@@ -43,7 +43,10 @@ test.describe('Article master',()=>{
  }
  test('disabled feature issues no article RPC and creates no broken menu',async({page})=>{
   await login(page,{enabled:false});
-  await expect(page.locator('#versionFooter button')).toHaveText('Versionslog · v0.9.9');
+  const version=await page.evaluate(()=>({app:APP_VERSION,log:VERSION_LOG[0]?.version}));
+  expect(version.app).toMatch(/^\d+\.\d+\.\d+$/);
+  expect(version.log).toBe(version.app);
+  await expect(page.locator('#versionFooter button')).toHaveText(`Versionslog · v${version.app}`);
   await page.locator('#tabs').getByRole('button',{name:'Produktion',exact:true}).click();
   await expect(page.getByRole('button',{name:'Artikelstamm',exact:true})).toHaveCount(0);
   expect(calls).toEqual([]);

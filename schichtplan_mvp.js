@@ -85,7 +85,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.9.12";
+const APP_VERSION = "0.9.13";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -101,10 +101,17 @@ const HUMBEL_COLORS = Object.freeze({
 });
 const VERSION_LOG = [
   {
-    "version": "0.9.12",
-    "date": "2026-11-06 19:37",
+    "version": "0.9.13",
+    "date": "2026-11-06 19:48",
     "changes": [
-      "Separaten, ausschließlich isoliert anwendbaren RLS-/Rollen-Sicherheitsreview und echte negative Auth-/REST-Tests für Planner, Mitarbeiter und Werkzeugmaterialien vorbereitet. Admin-only-Matrix noch nicht fachlich freigegeben; keine produktiven Sicherheitsänderungen."
+      "Gestapelten isolierten Legacy-RLS-Sicherheitsreview mit korrigierter dynamischer Versionsfooter-Regression und neuem geschützten Test-SHA zusammengeführt. Echte Auth-/Negativtests bleiben aktiv; keine Produktivfreigabe oder Rollenänderung."
+    ]
+  },
+  {
+    "version": "0.9.12",
+    "date": "2026-11-06 19:46",
+    "changes": [
+      "Browser-Regression für Versionsfooter an tatsächliche APP_VERSION und führenden VERSION_LOG-Eintrag gekoppelt; Anzeige und Log müssen exakt übereinstimmen. Nicht mehr an zufällige historische Entwicklungsnummer gebunden. Geschützter Test-SHA bewusst aktualisiert, keine Testfälle deaktiviert."
     ]
   },
   {
