@@ -1,54 +1,45 @@
-# Entwicklung und Freigabe
+# Entwicklung, Prüfung und ausdrückliche Freigabe
 
-## Aufgaben ohne Übertragen zwischen Chats
+Aufträge kommen aus GitHub-Issues. Ablauf: Issue → separater Branch → Draft-PR → vollständige CI → Review und ausdrückliche Nutzerfreigabe → kontrollierter Merge. Ein Merge und ein Deployment sind getrennte Entscheidungen. Kein automatischer Merge, kein direkter Push nach main, keine produktive DB-/RLS-/Auth-Änderung. Regeln aus AGENTS.md und die zusätzlichen QA-Sicherheitsregeln gelten gemeinsam.
 
-GitHub-Issues sind das Backlog. Ein Auftrag an Codex/Work nennt Repository und Issue-Nummer; der Agent liest Issue, Kommentare, AGENTS.md und aktuellen Code. Pro Aufgabe: Issue → Arbeitsbranch → Draft-PR → CI → Review/Freigabe → Merge → Pages. Umsetzung und überprüfbare Ergebnisse bleiben im PR. Es besteht keine Abhängigkeit von einem offenen Desktop-Chat. Dieses Repository startet selbst keinen KI-Agenten und erteilt keine automatische Merge-Freigabe.
-
-## Lokale Prüfung
-
-Node 22 wie in CI verwenden:
+## Vereinte Pflichtprüfungen
 
 ```sh
-npm ci
-npx playwright install --with-deps chromium
+npm ci --ignore-scripts
 node --check schichtplan_mvp.js
 node --check tests/smoke.spec.js
 npm run check:syntax
 npm run test:ci
+npm run test:qa
+npm run qa:check
+npm run test:agents
+npm run qa:agent-server
 npm run test:e2e
 git diff --check
 ```
 
-Alle vorhandenen Tests und Gerätefilter bleiben erhalten: Desktop Chromium führt die gesamte Suite aus, Phone und Tablet die bisherigen Produktionstests. Mindestens 251 Browser-Testfälle sind der Ausgangsstand. CI verbietet test.only. Screenshots und Traces bleiben bei Fehlern erhalten; HTML, JSON und Zusammenfassung werden 14 Tage als Artefakte gespeichert. Der Actions-Lauf zeigt im Summary Ergebnisse je Gerät, auch instabile und übersprungene Fälle. Bei frühem Abbruch steht ausdrücklich, dass Browser-Ergebnisse fehlen. Der Statuscheck bleibt `e2e`; fehlgeschlagene Schritte werden nicht ignoriert.
+Visuals laufen ausschließlich im gepinnten Playwright-1.62.1-noble-Container: zweimal 33 strikte Vergleiche ohne Referenzänderung. test:e2e enthält die vollständige Chromium-Suite und die bestehenden kritischen Firefox-/WebKit-Fälle. 251 ursprüngliche Chromium-Identitäten und ihre Geschäfts-/Sicherheitsasserts bleiben geschützt. Fokus, Skip, erwartete Fehler, akzeptierte Flakiness, erzwungene Klicks oder gelockerte Bildtoleranzen dürfen keinen grünen Lauf erzeugen.
 
-Die Browser-Suite arbeitet mit synthetischen Daten und Supabase-Mocks. Sie beweist keine echten SQL-, RLS- oder Concurrency-Eigenschaften. Ein separates Supabase-Testprojekt ist optional und derzeit nicht eingerichtet. Niemals Produktionszugänge oder -daten verwenden. Firefox/WebKit oder visuelle Vergleiche nur bei entsprechendem Änderungsrisiko ergänzen.
+Der Report aus #1 bleibt erhalten: JSON-Reporter, APP_VERSION, VERSION_LOG/Berlin-Zeit, tatsächlicher Checkout-SHA, PR-Head, CI-Link und Geräteergebnisse. Der zusätzliche QA-Reporter liefert Fehlerdiagnosen und Artefakte. Beide verwenden denselben Testlauf; es gibt keine konkurrierenden Browserpipelines. Reports, Screenshots und Traces bleiben 14 Tage verfügbar. Ein Report ist keine Freigabe.
 
-## Verbindliche Einrichtung durch Repository-Administrator
+Für den Artikel-PR kommen alle Artikel-Browserfälle und `npm run test:article-db` hinzu. Letzteres führt ausschließlich die vorgeschlagene SQL-Datei gegen synthetische Tabellen/Auth-Shims in einer wegwerfbaren PGlite-Instanz aus. Keine Produktionsverbindung. Das ist kein vollständiges Supabase-Auth-/REST-/Realtime-/Mehrverbindungs-Ergebnis. Die allgemeine `test:db:preflight` muss ohne diese Voraussetzungen weiterhin BLOCKED_NOT_TESTED melden, nicht grün vortäuschen.
 
-Stand 05.11.2026: Rulesets-Liste leer; Branch-Protection-Abfrage über Connector HTTP 403. Der lesbare Branch-Endpunkt meldet für main ausdrücklich `protected: false`, `protection.enabled: false` und keine erforderlichen Checks. main ist damit derzeit ungeschützt. Der Connector bietet keine Schreibfunktion für diese Administration. Vor dem ersten Merge sind folgende Schritte erforderlich:
+## Bestehender Schutz und tatsächliche Gate-Kette
 
-1. Repository → Settings → Rules → Rulesets → New ruleset → New branch ruleset. Name `main-reviewed-e2e`, Enforcement status **Active**.
-2. Target branches → Include default branch (`main`). Bypass list leer lassen, auch keine Administrator-Ausnahme hinzufügen.
-3. **Restrict deletions**, **Block force pushes** und **Require a pull request before merging** aktivieren. Mindestens eine unabhängige Approval, stale approvals verwerfen, Gespräche auflösen lassen. Für ein Ein-Personen-Repository muss ein weiterer berechtigter Reviewer eingerichtet werden; eine Selbstfreigabe ist kein unabhängiges Review.
-4. **Require status checks to pass** aktivieren, `e2e` hinzufügen, als Quelle GitHub Actions wählen. **Require branches to be up to date before merging** aktivieren. Keine Pfadfilter oder erlaubten Überspringungen hinzufügen. Den Check nach dem ersten Lauf dieses PR auswählen.
-5. Speichern. Unter Rulesets prüfen, dass die Regel aktiv auf main wirkt. Alternativ klassische Branch Protection für exakt main mit denselben Anforderungen und **Do not allow bypassing the above settings** einrichten. Nicht zwei widersprüchliche Regelwerke anlegen.
-6. Settings → Pages prüfen: bestehende Quelle und Pfad zunächst dokumentieren/sichern. Wenn Pages weiter aus main veröffentlicht, verhindert ausschließlich der verifizierte Branch-Schutz das Veröffentlichen ungeprüfter Änderungen. Ein separater Actions-Deployment-Workflow ist in dieser Änderung bewusst nicht eingerichtet. Die unveränderte Quelle allein garantiert keinen Schutz.
+Am 06.11.2026 gelesen: main `1ac495261bb38912507ef1cdb1205aa0eb07c66b`, aktives Ruleset `main-reviewed-e2e` (26664844), PR-Zwang, strikte Aktualität, GitHub-Actions-Check **e2e**, keine Bypass-Akteure, keine Force-Pushes oder Löschungen. Das vorhandene Ruleset wird nicht umgestellt. Die importierbare Vorlage unter docs/qa/main-ruleset.json erhält denselben Pflichtcheck.
 
-Direktlinks:
-- https://github.com/butzi124-ship-it/schichtplan-mvp/settings/rules
-- https://github.com/butzi124-ship-it/schichtplan-mvp/settings/pages
+Functional Browsers + QA Integrity + Visual Regression → Quality Gate → **e2e**. Beide Aggregatoren laufen mit `always()` und akzeptieren nur `success` ihrer vollständigen Abhängigkeiten. Die Unit-Tests führen die tatsächlichen Shell-Gates mit grünen, roten, abgebrochenen, ausgelassenen und leeren Resultaten aus. Ein roter/skipped/cancelled Schritt kann nicht kosmetisch als grün durchgereicht werden.
 
-## Kontrollierter Abnahmetest nach Aktivierung
+## Deployment ist separat gesperrt
 
-1. Einen separaten Probe-Branch von main erstellen und einen Draft-PR nur mit einer neuen Datei `tests/ci-gate-probe.spec.js` öffnen: `const { test, expect } = require('@playwright/test'); test('gate probe', () => expect(true).toBe(false));`. Keine vorhandenen Tests ändern.
-2. Roten `e2e`-Lauf abwarten, PR bereit zur Prüfung setzen und im Merge-Bereich nachweisen, dass **e2e required / failed** das Mergen verhindert. Screenshot/CI-URL und SHA dokumentieren. Niemals auf Merge oder Bypass klicken. Scheitert der Blockierungsnachweis, Schutz korrigieren; nicht veröffentlichen.
-3. Probe-Datei wieder entfernen, eine harmlose Dokumentationsverbesserung auf demselben Branch behalten und alle Prüfungen erneut ausführen. Aktuellen grünen SHA, Geräteergebnisse und Review festhalten.
-4. Pages-/Deployment-Historie prüfen: roter Probe-SHA darf nicht ausgerollt worden sein. main-SHA unverändert prüfen. Probe-PR anschließend schließen oder die grüne Dokumentationsänderung nach unabhängiger Freigabe kontrolliert mergen.
+Der Workflow deployt weder bei push noch bei pull_request – auch nicht nach main. Der Deployment-Job benötigt erfolgreiche e2e-Prüfung, main als Ref, `workflow_dispatch` und das ausdrücklich gesetzte Boolean-Input `deploy_approved=true` (Standard false). Dieses Input darf erst nach ausdrücklicher Nutzerfreigabe gesetzt/ausgelöst werden. Dieser Integrationsauftrag enthält keine solche Freigabe.
 
-Der rote Probelauf ist vor Einrichtung des Schutzes kein Beweis und wird in diesem Zustand nicht als bestanden behauptet. Issue #1 bleibt offen, bis Administration, roter Blockierungsnachweis und kontrollierte Freigabe dokumentiert sind.
+Wichtig: Eine eventuell noch aktive alte Pages-Quelle „Deploy from a branch / main“ würde den neuen Actions-Deployment-Job umgehen. Ihr aktueller Administrationszustand ist über den Connector nicht nachgewiesen. **Vor jedem tatsächlichen Merge mit möglicher Veröffentlichung** muss der Administrator unter Settings → Pages die Quelle prüfen und gesichert auf GitHub Actions umstellen oder Legacy-Deployment anderweitig stoppen. Keine Behauptung eines vollständig abgesicherten produktiven Deployments ohne diesen Nachweis. Diese PRs ändern keine Repository-Settings und führen kein Deployment aus.
 
-## PR-Bericht und Veröffentlichung
+## Integrationsreihenfolge
 
-Die PR-Vorlage beschreibt Änderungen und Risiken; GitHub Actions ergänzt je Lauf automatisch den technischen Bericht im Actions Summary und als `test-results/ci-summary.md`. Der Checkout-SHA ist bei PR-Läufen der getestete Merge-Commit; PR-Head wird separat genannt. Beide nicht verwechseln. Kein Bot-Kommentar und keine Schreibberechtigung für CI erforderlich. PR-Beschreibung bei neuem Stand aktualisieren. Actions-Links über den Checks-Bereich öffnen.
+PR #2 nimmt main in seine Branch-Historie auf und erhält dessen Regeln, Vorlagen, Berichtstests und Reload-Korrektur. PR #11 übernimmt anschließend diesen geprüften QA-Stand. Beide werden gegen aktuelles main geprüft; PR #11 enthält bis zur Integration von #2 dessen QA-Abhängigkeit und darf deshalb nicht vor #2 integriert werden.
 
-Vor Merge: vollständigen Diff prüfen, grünen aktuellen e2e, Geräteabdeckung, VERSION_LOG und unabhängiges Review prüfen. Kein Auto-Merge. Bei rotem main nach einem Merge keine weiteren Releases; bekannte funktionierende Version nur über geprüften Revert-PR wiederherstellen. Deploy-Änderungen benötigen vorher Vergleich und Sicherung der aktuellen Pages-Konfiguration.
+Nach einer später ausdrücklich genehmigten Integration von #2 ist #11 gegen das dann tatsächlich neue main erneut auf Aktualität/sauberen Diff zu prüfen; bei Squash/Rebase oder weiteren Änderungen sind Synchronisation und CI erneut erforderlich. Aktuelle Freigabebereitschaft bezieht sich ausschließlich auf die dokumentierten Heads und main-Basis. Keine Vorabfreigabe für künftige SHAs. Aufgabe #8 beginnt erst nach ausdrücklicher Freigabe dieser Integrationsschritte.
+
+Produktive Artikel-Migration und Aktivierung bleiben gesondert freizugeben. Bis dahin bleibt der Artikel-Schalter aus. Alle bisherigen BA-, Mengen-, Rollen- und Datenbankinformationen bleiben erhalten.

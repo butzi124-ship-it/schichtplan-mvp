@@ -1,76 +1,176 @@
-name: E2E Smoke Tests
-
+name: QA and Release
 on:
   push:
   pull_request:
   workflow_dispatch:
-
+    inputs:
+      deploy_approved:
+        description: "Explicit deployment approval; only after owner authorization"
+        type: boolean
+        required: false
+        default: false
 permissions:
   contents: read
-
 concurrency:
-  group: e2e-${{ github.workflow }}-${{ github.ref }}
+  group: qa-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
-  e2e:
-    name: e2e
-    runs-on: ubuntu-latest
+  functional:
+    name: Functional Browsers
+    runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.62.1-noble
     timeout-minutes: 20
-
+    env:
+      # GitHub mounts /github/home as pwuser; Firefox rejects it when the container runs as root.
+      HOME: /root
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           persist-credentials: false
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
-
+      - run: npm ci --ignore-scripts
       - name: Syntax and whitespace checks
         run: |
           node --check schichtplan_mvp.js
           node --check tests/smoke.spec.js
           npm run check:syntax
-          git show --format= --check HEAD
-
-      - name: CI report regression tests
-        run: npm run test:ci
-
-      - name: E2E smoke tests
-        run: npm run test:e2e
-
-      - name: Write CI report
+          git -c safe.directory="$GITHUB_WORKSPACE" show --format= --check HEAD
+      - run: npm run test:agents
+      - run: npm run test:e2e
+      - name: Preserve version and commit report
         if: always()
         env:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          export TESTED_SHA="$(git rev-parse HEAD)"
+          TESTED_SHA="$(git -c safe.directory="$GITHUB_WORKSPACE" rev-parse HEAD)"
+          export TESTED_SHA
           node scripts/ci-report.js
-
-      - name: Upload Playwright report
+      - name: Summarize actual results
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: playwright-report/
-          if-no-files-found: ignore
-          retention-days: 14
-
-      - name: Upload machine-readable results, summary and failure traces
+        run: |
+          if test -f artifacts/functional/summary.md; then
+            cat artifacts/functional/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Browser results unavailable: an earlier required step failed; not a passing browser run.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
-          name: test-results
-          path: test-results/
-          if-no-files-found: ignore
+          name: functional-report-${{ github.sha }}
+          path: |
+            playwright-report/
+            test-results/functional/
+            artifacts/functional/
+            test-results/results.json
+            test-results/ci-summary.md
           retention-days: 14
+  integrity:
+    name: QA Integrity
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run test:ci
+      - run: npm run test:qa
+      - run: npm run qa:check
+      - name: Record real database coverage honestly
+        run: |
+          echo '## Real database tests: BLOCKED / NOT EXECUTED' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Catalog inventory is not a restored database. Docker/local Supabase, authoritative migrations and isolated auth fixtures are required. No production write tests are permitted.' >> "$GITHUB_STEP_SUMMARY"
+  visual:
+    name: Visual Regression
+    runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.62.1-noble
+    timeout-minutes: 15
+    env:
+      HUMBEL_VISUAL_ENV: playwright-1.62.1-noble
+      QA_ARTIFACT_DIR: artifacts/visual
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run test:visual
+      - name: Repeat strict visual comparison to detect unstable fixtures
+        run: npm run test:visual
+        env:
+          QA_ARTIFACT_DIR: artifacts/visual-repeat
+      - name: Summarize actual visual results
+        if: always()
+        run: cat artifacts/visual/summary.md artifacts/visual-repeat/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-report-${{ github.sha }}
+          path: |
+            visual-report/
+            test-results/visual/
+            artifacts/visual/
+            artifacts/visual-repeat/
+          retention-days: 14
+  quality-gate:
+    name: Quality Gate
+    if: always()
+    needs: [functional, integrity, visual]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Fail closed unless every required job passed
+        env:
+          FUNCTIONAL: ${{ needs.functional.result }}
+          INTEGRITY: ${{ needs.integrity.result }}
+          VISUAL: ${{ needs.visual.result }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          echo "QA commit: $COMMIT" >> "$GITHUB_STEP_SUMMARY"
+          test "$FUNCTIONAL" = success
+          test "$INTEGRITY" = success
+          test "$VISUAL" = success
+  e2e:
+    name: e2e
+    if: always()
+    needs: quality-gate
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Preserve required check and fail closed
+        env:
+          GATE: ${{ needs.quality-gate.result }}
+        run: test "$GATE" = success
+  deploy:
+    name: Deploy Tested Main
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.deploy_approved == true
+    needs: e2e
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/stage-pages.js
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+      - uses: actions/deploy-pages@v4
+        id: deployment

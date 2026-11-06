@@ -1,0 +1,33 @@
+name: Initial Visual Baselines
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  initial-references:
+    runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.62.1-noble
+    timeout-minutes: 15
+    env:
+      QA_ARTIFACT_DIR: artifacts/bootstrap
+      HUMBEL_VISUAL_ENV: playwright-1.62.1-noble
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Refuse to overwrite any existing references
+        run: node -e "const fs=require('fs');if(fs.existsSync('tests/visual-snapshots')&&fs.readdirSync('tests/visual-snapshots',{recursive:true}).some(f=>f.endsWith('.png')))throw Error('References already exist; explicit design-change review is required.');"
+      - run: npm ci --ignore-scripts
+      - name: Generate and strictly compare initial Linux references, never commit automatically
+        run: node scripts/initialize-visual.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: initial-visual-baselines
+          path: |
+            tests/visual-snapshots/
+            artifacts/bootstrap/
+            test-results/visual/
+          retention-days: 14

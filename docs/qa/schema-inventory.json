@@ -1,0 +1,5191 @@
+{
+  "capturedAt": "2026-11-05",
+  "source": "Production catalog SELECT only; no table rows exported",
+  "restorable": false,
+  "tables": [
+    {
+      "name": "departments",
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "name": "employees",
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "name": "order_events",
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "name": "planner_absence_replacements",
+      "rls_forced": false,
+      "rls_enabled": false
+    },
+    {
+      "name": "planner_absences",
+      "rls_forced": false,
+      "rls_enabled": false
+    },
+    {
+      "name": "planner_assignments",
+      "rls_forced": false,
+      "rls_enabled": false
+    },
+    {
+      "name": "planner_availability",
+      "rls_forced": false,
+      "rls_enabled": false
+    },
+    {
+      "name": "planner_saturday_requests",
+      "rls_forced": false,
+      "rls_enabled": false
+    },
+    {
+      "name": "planner_shift_cancellations",
+      "rls_forced": false,
+      "rls_enabled": false
+    },
+    {
+      "name": "planner_sick_leaves",
+      "rls_forced": false,
+      "rls_enabled": false
+    },
+    {
+      "name": "planner_special_day_assignments",
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "name": "planner_special_days",
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "name": "planner_swaps",
+      "rls_forced": false,
+      "rls_enabled": false
+    },
+    {
+      "name": "planner_tasks",
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "name": "planner_vacations",
+      "rls_forced": false,
+      "rls_enabled": false
+    },
+    {
+      "name": "production_checklist_templates",
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "name": "production_counts",
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "name": "production_machine50_storage",
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "name": "production_machines",
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "name": "production_order_checklist",
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "name": "production_order_employees",
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "name": "production_order_history",
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "name": "production_order_stations",
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "name": "production_orders",
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "name": "production_qa_causes",
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "name": "production_station_counts",
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "name": "production_station_events",
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "name": "shift_definitions",
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "name": "tool_journal",
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "name": "tool_materials",
+      "rls_forced": false,
+      "rls_enabled": false
+    },
+    {
+      "name": "tools",
+      "rls_forced": false,
+      "rls_enabled": true
+    }
+  ],
+  "columns": [
+    {
+      "table": "departments",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "departments",
+      "name": "name",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "departments",
+      "name": "code",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "departments",
+      "name": "leader_employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "departments",
+      "name": "active",
+      "type": "boolean",
+      "udt": "bool",
+      "nullable": "NO",
+      "default": "true",
+      "identity": "NO"
+    },
+    {
+      "table": "departments",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "departments",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "employees",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "employees",
+      "name": "auth_user_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "employees",
+      "name": "display_name",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "employees",
+      "name": "role",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": "'employee'::text",
+      "identity": "NO"
+    },
+    {
+      "table": "employees",
+      "name": "employee_type",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": "'springer'::text",
+      "identity": "NO"
+    },
+    {
+      "table": "employees",
+      "name": "slot_code",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "employees",
+      "name": "is_active",
+      "type": "boolean",
+      "udt": "bool",
+      "nullable": "NO",
+      "default": "true",
+      "identity": "NO"
+    },
+    {
+      "table": "employees",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "employees",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "employees",
+      "name": "color_key",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "employees",
+      "name": "first_name",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "employees",
+      "name": "last_name",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "employees",
+      "name": "personnel_no",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "employees",
+      "name": "department",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "employees",
+      "name": "department_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "order_events",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "order_events",
+      "name": "tool_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "order_events",
+      "name": "event_type",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "order_events",
+      "name": "qty",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "order_events",
+      "name": "t_number",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "order_events",
+      "name": "label",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "order_events",
+      "name": "size_text",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "order_events",
+      "name": "manufacturer",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "order_events",
+      "name": "article_no",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "order_events",
+      "name": "shelf",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "order_events",
+      "name": "employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "order_events",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absence_replacements",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absence_replacements",
+      "name": "shift_id",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absence_replacements",
+      "name": "shift_date",
+      "type": "date",
+      "udt": "date",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absence_replacements",
+      "name": "source_type",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absence_replacements",
+      "name": "source_id",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absence_replacements",
+      "name": "absent_user",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absence_replacements",
+      "name": "from_date",
+      "type": "date",
+      "udt": "date",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absence_replacements",
+      "name": "to_date",
+      "type": "date",
+      "udt": "date",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absence_replacements",
+      "name": "mode",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absence_replacements",
+      "name": "replacement_user",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absence_replacements",
+      "name": "week_from",
+      "type": "date",
+      "udt": "date",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absence_replacements",
+      "name": "week_to",
+      "type": "date",
+      "udt": "date",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absence_replacements",
+      "name": "created_by_employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absence_replacements",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absence_replacements",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absences",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absences",
+      "name": "absence_key",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absences",
+      "name": "absence_date",
+      "type": "date",
+      "udt": "date",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absences",
+      "name": "user_name",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absences",
+      "name": "absence_type",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": "'abwesend'::text",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absences",
+      "name": "created_by_employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absences",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_absences",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_assignments",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_assignments",
+      "name": "shift_id",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_assignments",
+      "name": "shift_date",
+      "type": "date",
+      "udt": "date",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_assignments",
+      "name": "assigned_user",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_assignments",
+      "name": "created_by_employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_assignments",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_assignments",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_availability",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_availability",
+      "name": "availability_key",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_availability",
+      "name": "shift_id",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_availability",
+      "name": "shift_date",
+      "type": "date",
+      "udt": "date",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_availability",
+      "name": "user_name",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_availability",
+      "name": "status",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_availability",
+      "name": "created_by_employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_availability",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_availability",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_saturday_requests",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_saturday_requests",
+      "name": "request_key",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_saturday_requests",
+      "name": "shift_id",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_saturday_requests",
+      "name": "shift_date",
+      "type": "date",
+      "udt": "date",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_saturday_requests",
+      "name": "user_name",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_saturday_requests",
+      "name": "created_by_employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_saturday_requests",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_saturday_requests",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_shift_cancellations",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_shift_cancellations",
+      "name": "shift_id",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_shift_cancellations",
+      "name": "shift_date",
+      "type": "date",
+      "udt": "date",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_shift_cancellations",
+      "name": "reason",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_shift_cancellations",
+      "name": "created_by_employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_shift_cancellations",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_shift_cancellations",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_sick_leaves",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_sick_leaves",
+      "name": "user_name",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_sick_leaves",
+      "name": "from_date",
+      "type": "date",
+      "udt": "date",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_sick_leaves",
+      "name": "to_date",
+      "type": "date",
+      "udt": "date",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_sick_leaves",
+      "name": "created_by_employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_sick_leaves",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_sick_leaves",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_special_day_assignments",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_special_day_assignments",
+      "name": "shift_id",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_special_day_assignments",
+      "name": "shift_date",
+      "type": "date",
+      "udt": "date",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_special_day_assignments",
+      "name": "assigned_user",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_special_day_assignments",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "YES",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_special_days",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_special_days",
+      "name": "day_date",
+      "type": "date",
+      "udt": "date",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_special_days",
+      "name": "type",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_special_days",
+      "name": "label",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_special_days",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "YES",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_swaps",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_swaps",
+      "name": "user_a",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_swaps",
+      "name": "user_b",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_swaps",
+      "name": "start_date",
+      "type": "date",
+      "udt": "date",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_swaps",
+      "name": "end_date",
+      "type": "date",
+      "udt": "date",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_swaps",
+      "name": "created_by_employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_swaps",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_swaps",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_tasks",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_tasks",
+      "name": "title",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_tasks",
+      "name": "description",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_tasks",
+      "name": "assigned_to",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_tasks",
+      "name": "due_date",
+      "type": "date",
+      "udt": "date",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_tasks",
+      "name": "status",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": "'open'::text",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_tasks",
+      "name": "created_by_employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_tasks",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_tasks",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_tasks",
+      "name": "completed_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_vacations",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_vacations",
+      "name": "user_name",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_vacations",
+      "name": "from_date",
+      "type": "date",
+      "udt": "date",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_vacations",
+      "name": "to_date",
+      "type": "date",
+      "udt": "date",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_vacations",
+      "name": "created_by_employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "planner_vacations",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "planner_vacations",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_checklist_templates",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_checklist_templates",
+      "name": "item_key",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_checklist_templates",
+      "name": "item_label",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_checklist_templates",
+      "name": "active",
+      "type": "boolean",
+      "udt": "bool",
+      "nullable": "NO",
+      "default": "true",
+      "identity": "NO"
+    },
+    {
+      "table": "production_checklist_templates",
+      "name": "sort_order",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "production_checklist_templates",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_checklist_templates",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_counts",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_counts",
+      "name": "machine_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_counts",
+      "name": "department_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_counts",
+      "name": "employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_counts",
+      "name": "order_no",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_counts",
+      "name": "article_no",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_counts",
+      "name": "good_qty",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "production_counts",
+      "name": "scrap_qty",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "production_counts",
+      "name": "note",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_counts",
+      "name": "status",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": "'running'::text",
+      "identity": "NO"
+    },
+    {
+      "table": "production_counts",
+      "name": "started_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_counts",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_counts",
+      "name": "completed_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_machine50_storage",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_machine50_storage",
+      "name": "order_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_machine50_storage",
+      "name": "total_pallets",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "production_machine50_storage",
+      "name": "pieces_per_pallet",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "2",
+      "identity": "NO"
+    },
+    {
+      "table": "production_machine50_storage",
+      "name": "used_pallets",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "production_machine50_storage",
+      "name": "current_mode",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_machine50_storage",
+      "name": "current_pieces_on_pallet",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "production_machine50_storage",
+      "name": "two_one_mode",
+      "type": "boolean",
+      "udt": "bool",
+      "nullable": "NO",
+      "default": "false",
+      "identity": "NO"
+    },
+    {
+      "table": "production_machine50_storage",
+      "name": "pallets",
+      "type": "jsonb",
+      "udt": "jsonb",
+      "nullable": "NO",
+      "default": "'[]'::jsonb",
+      "identity": "NO"
+    },
+    {
+      "table": "production_machine50_storage",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_machine50_storage",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_machines",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_machines",
+      "name": "name",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_machines",
+      "name": "machine_code",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_machines",
+      "name": "department_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_machines",
+      "name": "active",
+      "type": "boolean",
+      "udt": "bool",
+      "nullable": "NO",
+      "default": "true",
+      "identity": "NO"
+    },
+    {
+      "table": "production_machines",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_machines",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_checklist",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_checklist",
+      "name": "order_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_checklist",
+      "name": "item_key",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_checklist",
+      "name": "item_label",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_checklist",
+      "name": "checked",
+      "type": "boolean",
+      "udt": "bool",
+      "nullable": "NO",
+      "default": "false",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_checklist",
+      "name": "checked_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_checklist",
+      "name": "checked_by_employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_checklist",
+      "name": "sort_order",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_checklist",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_checklist",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_employees",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_employees",
+      "name": "order_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_employees",
+      "name": "employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_employees",
+      "name": "employee_name",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_employees",
+      "name": "personnel_no",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_employees",
+      "name": "role",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": "'worker'::text",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_employees",
+      "name": "sort_order",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_employees",
+      "name": "active",
+      "type": "boolean",
+      "udt": "bool",
+      "nullable": "NO",
+      "default": "true",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_employees",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_employees",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_history",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_history",
+      "name": "order_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_history",
+      "name": "station_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_history",
+      "name": "employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_history",
+      "name": "history_type",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_history",
+      "name": "qty",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_history",
+      "name": "payload",
+      "type": "jsonb",
+      "udt": "jsonb",
+      "nullable": "NO",
+      "default": "'{}'::jsonb",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_history",
+      "name": "note",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_history",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_stations",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_stations",
+      "name": "order_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_stations",
+      "name": "station_no",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_stations",
+      "name": "name",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_stations",
+      "name": "lock_name",
+      "type": "boolean",
+      "udt": "bool",
+      "nullable": "NO",
+      "default": "false",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_stations",
+      "name": "op_number",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_stations",
+      "name": "time_status",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_stations",
+      "name": "actual_time_minutes",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_stations",
+      "name": "scrap_total",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_stations",
+      "name": "clarify_total",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_stations",
+      "name": "scrap_lifetime",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_stations",
+      "name": "clarify_lifetime",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_stations",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_order_stations",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_orders",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_orders",
+      "name": "machine_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_orders",
+      "name": "department_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_orders",
+      "name": "ba_number",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_orders",
+      "name": "article_number",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_orders",
+      "name": "ba_quantity",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "production_orders",
+      "name": "target_quantity",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "production_orders",
+      "name": "pallet_count",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "production_orders",
+      "name": "pieces_per_pallet",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "production_orders",
+      "name": "use_chain_logic",
+      "type": "boolean",
+      "udt": "bool",
+      "nullable": "NO",
+      "default": "true",
+      "identity": "NO"
+    },
+    {
+      "table": "production_orders",
+      "name": "status",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": "'running'::text",
+      "identity": "NO"
+    },
+    {
+      "table": "production_orders",
+      "name": "started_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_orders",
+      "name": "completed_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_orders",
+      "name": "created_by_employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_orders",
+      "name": "updated_by_employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_orders",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_orders",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_qa_causes",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_qa_causes",
+      "name": "group_id",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_qa_causes",
+      "name": "group_label",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_qa_causes",
+      "name": "reason_id",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_qa_causes",
+      "name": "reason_label",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_qa_causes",
+      "name": "active",
+      "type": "boolean",
+      "udt": "bool",
+      "nullable": "NO",
+      "default": "true",
+      "identity": "NO"
+    },
+    {
+      "table": "production_qa_causes",
+      "name": "sort_order",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "production_qa_causes",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_qa_causes",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_station_counts",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_station_counts",
+      "name": "order_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_station_counts",
+      "name": "station_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_station_counts",
+      "name": "order_employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_station_counts",
+      "name": "good_qty",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "production_station_counts",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_station_counts",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_station_events",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "production_station_events",
+      "name": "order_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_station_events",
+      "name": "station_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_station_events",
+      "name": "order_employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_station_events",
+      "name": "employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_station_events",
+      "name": "event_type",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_station_events",
+      "name": "qty",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "production_station_events",
+      "name": "qa_cause_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_station_events",
+      "name": "note",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "production_station_events",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "shift_definitions",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "shift_definitions",
+      "name": "name",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "shift_definitions",
+      "name": "shift_key",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "shift_definitions",
+      "name": "start_time",
+      "type": "time without time zone",
+      "udt": "time",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "shift_definitions",
+      "name": "end_time",
+      "type": "time without time zone",
+      "udt": "time",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "shift_definitions",
+      "name": "requires_time",
+      "type": "boolean",
+      "udt": "bool",
+      "nullable": "NO",
+      "default": "true",
+      "identity": "NO"
+    },
+    {
+      "table": "shift_definitions",
+      "name": "active",
+      "type": "boolean",
+      "udt": "bool",
+      "nullable": "NO",
+      "default": "true",
+      "identity": "NO"
+    },
+    {
+      "table": "shift_definitions",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "shift_definitions",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "tool_journal",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "tool_journal",
+      "name": "tool_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tool_journal",
+      "name": "employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tool_journal",
+      "name": "qty",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "tool_journal",
+      "name": "action",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tool_journal",
+      "name": "note",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tool_journal",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "tool_journal",
+      "name": "stock_before",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tool_journal",
+      "name": "stock_after",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tool_journal",
+      "name": "tool_label",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tool_journal",
+      "name": "tool_t_number",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tool_journal",
+      "name": "user_name",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tool_materials",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "tool_materials",
+      "name": "name",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tool_materials",
+      "name": "sort_order",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "tool_materials",
+      "name": "is_active",
+      "type": "boolean",
+      "udt": "bool",
+      "nullable": "NO",
+      "default": "true",
+      "identity": "NO"
+    },
+    {
+      "table": "tool_materials",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "tool_materials",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "t_number",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "label",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "diameter",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "thread_prefix",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "thread_pitch",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "shelf",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "article_no",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "holder",
+      "type": "text",
+      "udt": "text",
+      "nullable": "NO",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "stock",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "min_stock",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "optimal_stock",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "manufacturer",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "ordered",
+      "type": "boolean",
+      "udt": "bool",
+      "nullable": "NO",
+      "default": "false",
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "ordered_qty",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "insert_tool",
+      "type": "boolean",
+      "udt": "bool",
+      "nullable": "NO",
+      "default": "false",
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "insert_edges",
+      "type": "integer",
+      "udt": "int4",
+      "nullable": "NO",
+      "default": "0",
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "created_by_employee_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "NO",
+      "default": "now()",
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "corner_radius",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "material_id",
+      "type": "uuid",
+      "udt": "uuid",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "insert_radius",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "overhang_length",
+      "type": "numeric",
+      "udt": "numeric",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "is_borrowed",
+      "type": "boolean",
+      "udt": "bool",
+      "nullable": "YES",
+      "default": "false",
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "borrowed_to",
+      "type": "text",
+      "udt": "text",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    },
+    {
+      "table": "tools",
+      "name": "borrowed_at",
+      "type": "timestamp with time zone",
+      "udt": "timestamptz",
+      "nullable": "YES",
+      "default": null,
+      "identity": "NO"
+    }
+  ],
+  "policies": [
+    {
+      "cmd": "DELETE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM employees e\n  WHERE ((e.auth_user_id = auth.uid()) AND (e.is_active = true) AND (e.role = 'admin'::text))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "departments",
+      "permissive": "PERMISSIVE",
+      "policyname": "departments_delete_admin",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "departments",
+      "permissive": "PERMISSIVE",
+      "policyname": "departments_insert_admin",
+      "schemaname": "public",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM employees e\n  WHERE ((e.auth_user_id = auth.uid()) AND (e.is_active = true) AND (e.role = 'admin'::text))))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM employees e\n  WHERE ((e.auth_user_id = auth.uid()) AND (e.is_active = true) AND (e.role = ANY (ARRAY['admin'::text, 'department_admin'::text])))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "departments",
+      "permissive": "PERMISSIVE",
+      "policyname": "departments_select_allowed",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM employees e\n  WHERE ((e.auth_user_id = auth.uid()) AND (e.is_active = true) AND (e.role = 'admin'::text))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "departments",
+      "permissive": "PERMISSIVE",
+      "policyname": "departments_update_admin",
+      "schemaname": "public",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM employees e\n  WHERE ((e.auth_user_id = auth.uid()) AND (e.is_active = true) AND (e.role = 'admin'::text))))"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "employees",
+      "permissive": "PERMISSIVE",
+      "policyname": "employees_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "is_admin()",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "employees",
+      "permissive": "PERMISSIVE",
+      "policyname": "employees_delete_admin",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "employees",
+      "permissive": "PERMISSIVE",
+      "policyname": "employees_insert",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "employees",
+      "permissive": "PERMISSIVE",
+      "policyname": "employees_insert_admin",
+      "schemaname": "public",
+      "with_check": "is_admin()"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "employees",
+      "permissive": "PERMISSIVE",
+      "policyname": "employees_select",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "employees",
+      "permissive": "PERMISSIVE",
+      "policyname": "employees_select_authenticated",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "employees",
+      "permissive": "PERMISSIVE",
+      "policyname": "employees_update",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "is_admin()",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "employees",
+      "permissive": "PERMISSIVE",
+      "policyname": "employees_update_admin",
+      "schemaname": "public",
+      "with_check": "is_admin()"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "order_events",
+      "permissive": "PERMISSIVE",
+      "policyname": "order_events_select_authenticated",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "ALL",
+      "qual": "is_admin()",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "order_events",
+      "permissive": "PERMISSIVE",
+      "policyname": "order_events_write_admin",
+      "schemaname": "public",
+      "with_check": "is_admin()"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_absence_replacements",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_absence_replacements_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_absence_replacements",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_absence_replacements_insert",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_absence_replacements",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_absence_replacements_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_absence_replacements",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_absence_replacements_select",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_absence_replacements",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_absence_replacements_update",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_absence_replacements",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_absence_replacements_write",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_absences",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_absences_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_absences",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_absences_insert",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_absences",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_absences_select",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_absences",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_absences_update",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_assignments",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_assignments_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_assignments",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_assignments_insert",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_assignments",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_assignments_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_assignments",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_assignments_select",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_assignments",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_assignments_update",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_assignments",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_assignments_write",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_availability",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_availability_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_availability",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_availability_insert",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_availability",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_availability_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_availability",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_availability_select",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_availability",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_availability_update",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_availability",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_availability_write",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_saturday_requests",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_saturday_requests_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_saturday_requests",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_saturday_requests_insert",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_saturday_requests",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_saturday_requests_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_saturday_requests",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_saturday_requests_select",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_saturday_requests",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_saturday_requests_update",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_saturday_requests",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_saturday_requests_write",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_shift_cancellations",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_shift_cancellations_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_shift_cancellations",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_shift_cancellations_insert",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_shift_cancellations",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_shift_cancellations_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_shift_cancellations",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_shift_cancellations_select",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_shift_cancellations",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_shift_cancellations_update",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_shift_cancellations",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_shift_cancellations_write",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_sick_leaves",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_sick_leaves_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_sick_leaves",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_sick_leaves_insert",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_sick_leaves",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_sick_leaves_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_sick_leaves",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_sick_leaves_select",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_sick_leaves",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_sick_leaves_update",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_sick_leaves",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_sick_leaves_write",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_special_day_assignments",
+      "permissive": "PERMISSIVE",
+      "policyname": "allow all special assignments",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_special_days",
+      "permissive": "PERMISSIVE",
+      "policyname": "allow all special days",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_swaps",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_swaps_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_swaps",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_swaps_insert",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_swaps",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_swaps_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_swaps",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_swaps_select",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_swaps",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_swaps_update",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_swaps",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_swaps_write",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_tasks",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_tasks_delete_authenticated",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_tasks",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_tasks_insert_authenticated",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_tasks",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_tasks_select_authenticated",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_tasks",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_tasks_update_authenticated",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_vacations",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_vacations_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_vacations",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_vacations_insert",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_vacations",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_vacations_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_vacations",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_vacations_select",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_vacations",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_vacations_update",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "planner_vacations",
+      "permissive": "PERMISSIVE",
+      "policyname": "planner_vacations_write",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(current_app_employee_role() = 'admin'::text)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_checklist_templates",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_checklist_templates_manage_admin",
+      "schemaname": "public",
+      "with_check": "(current_app_employee_role() = 'admin'::text)"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_checklist_templates",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_checklist_templates_select_authenticated",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM employees e\n  WHERE ((e.auth_user_id = auth.uid()) AND (e.is_active = true) AND (e.role = 'admin'::text))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_counts",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_counts_delete_admin",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_counts",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_counts_insert_allowed",
+      "schemaname": "public",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM employees e\n  WHERE ((e.auth_user_id = auth.uid()) AND (e.is_active = true) AND (e.role = ANY (ARRAY['admin'::text, 'department_admin'::text])))))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM employees e\n  WHERE ((e.auth_user_id = auth.uid()) AND (e.is_active = true) AND (e.role = ANY (ARRAY['admin'::text, 'department_admin'::text])))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_counts",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_counts_select_allowed",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM employees e\n  WHERE ((e.auth_user_id = auth.uid()) AND (e.is_active = true) AND (e.role = ANY (ARRAY['admin'::text, 'department_admin'::text])))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_counts",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_counts_update_allowed",
+      "schemaname": "public",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM employees e\n  WHERE ((e.auth_user_id = auth.uid()) AND (e.is_active = true) AND (e.role = ANY (ARRAY['admin'::text, 'department_admin'::text])))))"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(current_app_employee_role() = 'admin'::text)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_machine50_storage",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_machine50_storage_delete_allowed",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_machine50_storage",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_machine50_storage_insert_allowed",
+      "schemaname": "public",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_machine50_storage.order_id) AND can_access_production_department(o.department_id))))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_machine50_storage.order_id) AND can_access_production_department(o.department_id))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_machine50_storage",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_machine50_storage_select_allowed",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_machine50_storage.order_id) AND can_access_production_department(o.department_id))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_machine50_storage",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_machine50_storage_update_allowed",
+      "schemaname": "public",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_machine50_storage.order_id) AND can_access_production_department(o.department_id))))"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM employees e\n  WHERE ((e.auth_user_id = auth.uid()) AND (e.is_active = true) AND (e.role = 'admin'::text))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_machines",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_machines_delete_admin",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_machines",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_machines_insert_admin",
+      "schemaname": "public",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM employees e\n  WHERE ((e.auth_user_id = auth.uid()) AND (e.is_active = true) AND (e.role = 'admin'::text))))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM employees e\n  WHERE ((e.auth_user_id = auth.uid()) AND (e.is_active = true) AND (e.role = ANY (ARRAY['admin'::text, 'department_admin'::text])))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_machines",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_machines_select_allowed",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM employees e\n  WHERE ((e.auth_user_id = auth.uid()) AND (e.is_active = true) AND (e.role = 'admin'::text))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_machines",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_machines_update_admin",
+      "schemaname": "public",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM employees e\n  WHERE ((e.auth_user_id = auth.uid()) AND (e.is_active = true) AND (e.role = 'admin'::text))))"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_order_checklist.order_id) AND can_access_production_department(o.department_id))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_order_checklist",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_order_checklist_delete_allowed",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_order_checklist",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_order_checklist_insert_allowed",
+      "schemaname": "public",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_order_checklist.order_id) AND can_access_production_department(o.department_id))))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_order_checklist.order_id) AND can_access_production_department(o.department_id))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_order_checklist",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_order_checklist_select_allowed",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_order_checklist.order_id) AND can_access_production_department(o.department_id))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_order_checklist",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_order_checklist_update_allowed",
+      "schemaname": "public",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_order_checklist.order_id) AND can_access_production_department(o.department_id))))"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_order_employees.order_id) AND can_access_production_department(o.department_id))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_order_employees",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_order_employees_delete_allowed",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_order_employees",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_order_employees_insert_allowed",
+      "schemaname": "public",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_order_employees.order_id) AND can_access_production_department(o.department_id))))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_order_employees.order_id) AND can_access_production_department(o.department_id))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_order_employees",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_order_employees_select_allowed",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_order_employees.order_id) AND can_access_production_department(o.department_id))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_order_employees",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_order_employees_update_allowed",
+      "schemaname": "public",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_order_employees.order_id) AND can_access_production_department(o.department_id))))"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(current_app_employee_role() = 'admin'::text)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_order_history",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_order_history_delete_admin",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_order_history",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_order_history_insert_allowed",
+      "schemaname": "public",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_order_history.order_id) AND can_access_production_department(o.department_id))))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_order_history.order_id) AND can_access_production_department(o.department_id))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_order_history",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_order_history_select_allowed",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_order_stations.order_id) AND can_access_production_department(o.department_id))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_order_stations",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_order_stations_delete_allowed",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_order_stations",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_order_stations_insert_allowed",
+      "schemaname": "public",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_order_stations.order_id) AND can_access_production_department(o.department_id))))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_order_stations.order_id) AND can_access_production_department(o.department_id))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_order_stations",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_order_stations_select_allowed",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_order_stations.order_id) AND can_access_production_department(o.department_id))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_order_stations",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_order_stations_update_allowed",
+      "schemaname": "public",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_order_stations.order_id) AND can_access_production_department(o.department_id))))"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(current_app_employee_role() = 'admin'::text)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_orders",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_orders_delete_admin",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_orders",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_orders_insert_allowed",
+      "schemaname": "public",
+      "with_check": "can_access_production_department(department_id)"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "can_access_production_department(department_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_orders",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_orders_select_allowed",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "can_access_production_department(department_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_orders",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_orders_update_allowed",
+      "schemaname": "public",
+      "with_check": "can_access_production_department(department_id)"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(current_app_employee_role() = 'admin'::text)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_qa_causes",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_qa_causes_manage_admin",
+      "schemaname": "public",
+      "with_check": "(current_app_employee_role() = 'admin'::text)"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_qa_causes",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_qa_causes_select_authenticated",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(current_app_employee_role() = 'admin'::text)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_station_counts",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_station_counts_delete_allowed",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_station_counts",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_station_counts_insert_allowed",
+      "schemaname": "public",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_station_counts.order_id) AND can_access_production_department(o.department_id))))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_station_counts.order_id) AND can_access_production_department(o.department_id))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_station_counts",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_station_counts_select_allowed",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_station_counts.order_id) AND can_access_production_department(o.department_id))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_station_counts",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_station_counts_update_allowed",
+      "schemaname": "public",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_station_counts.order_id) AND can_access_production_department(o.department_id))))"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(current_app_employee_role() = 'admin'::text)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_station_events",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_station_events_delete_admin",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_station_events",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_station_events_insert_allowed",
+      "schemaname": "public",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_station_events.order_id) AND can_access_production_department(o.department_id))))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM production_orders o\n  WHERE ((o.id = production_station_events.order_id) AND can_access_production_department(o.department_id))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "production_station_events",
+      "permissive": "PERMISSIVE",
+      "policyname": "production_station_events_select_allowed",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM employees e\n  WHERE ((e.auth_user_id = auth.uid()) AND (e.role = 'admin'::text) AND (e.is_active = true))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "shift_definitions",
+      "permissive": "PERMISSIVE",
+      "policyname": "shift_definitions_delete_admin",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "shift_definitions",
+      "permissive": "PERMISSIVE",
+      "policyname": "shift_definitions_insert_admin",
+      "schemaname": "public",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM employees e\n  WHERE ((e.auth_user_id = auth.uid()) AND (e.role = 'admin'::text) AND (e.is_active = true))))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "shift_definitions",
+      "permissive": "PERMISSIVE",
+      "policyname": "shift_definitions_select_authenticated",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM employees e\n  WHERE ((e.auth_user_id = auth.uid()) AND (e.role = 'admin'::text) AND (e.is_active = true))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "shift_definitions",
+      "permissive": "PERMISSIVE",
+      "policyname": "shift_definitions_update_admin",
+      "schemaname": "public",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM employees e\n  WHERE ((e.auth_user_id = auth.uid()) AND (e.role = 'admin'::text) AND (e.is_active = true))))"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "is_admin()",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "tool_journal",
+      "permissive": "PERMISSIVE",
+      "policyname": "tool_journal_delete_admin",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "tool_journal",
+      "permissive": "PERMISSIVE",
+      "policyname": "tool_journal_delete_authenticated",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "tool_journal",
+      "permissive": "PERMISSIVE",
+      "policyname": "tool_journal_insert_authenticated",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "tool_journal",
+      "permissive": "PERMISSIVE",
+      "policyname": "tool_journal_select_authenticated",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "is_admin()",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "tool_journal",
+      "permissive": "PERMISSIVE",
+      "policyname": "tool_journal_update_admin",
+      "schemaname": "public",
+      "with_check": "is_admin()"
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "tool_journal",
+      "permissive": "PERMISSIVE",
+      "policyname": "tool_journal_update_authenticated",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "tools",
+      "permissive": "PERMISSIVE",
+      "policyname": "tools_select_authenticated",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "true",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "tools",
+      "permissive": "PERMISSIVE",
+      "policyname": "tools_update_authenticated",
+      "schemaname": "public",
+      "with_check": "true"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "is_admin()",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "tools",
+      "permissive": "PERMISSIVE",
+      "policyname": "tools_write_admin",
+      "schemaname": "public",
+      "with_check": "is_admin()"
+    }
+  ],
+  "constraints": [
+    {
+      "name": "departments_code_key",
+      "table": "departments",
+      "definition": "UNIQUE (code)"
+    },
+    {
+      "name": "departments_leader_employee_id_fkey",
+      "table": "departments",
+      "definition": "FOREIGN KEY (leader_employee_id) REFERENCES employees(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "departments_pkey",
+      "table": "departments",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "employees_auth_user_id_fkey",
+      "table": "employees",
+      "definition": "FOREIGN KEY (auth_user_id) REFERENCES auth.users(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "employees_auth_user_id_key",
+      "table": "employees",
+      "definition": "UNIQUE (auth_user_id)"
+    },
+    {
+      "name": "employees_department_id_fkey",
+      "table": "employees",
+      "definition": "FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "employees_display_name_key",
+      "table": "employees",
+      "definition": "UNIQUE (display_name)"
+    },
+    {
+      "name": "employees_employee_type_check",
+      "table": "employees",
+      "definition": "CHECK ((employee_type = ANY (ARRAY['core'::text, 'springer'::text])))"
+    },
+    {
+      "name": "employees_pkey",
+      "table": "employees",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "employees_role_check",
+      "table": "employees",
+      "definition": "CHECK ((role = ANY (ARRAY['admin'::text, 'employee'::text, 'tool_scanner'::text])))"
+    },
+    {
+      "name": "employees_slot_code_check",
+      "table": "employees",
+      "definition": "CHECK ((slot_code = ANY (ARRAY['A'::text, 'B'::text, 'C'::text, 'D'::text, 'E'::text, 'F'::text])))"
+    },
+    {
+      "name": "order_events_employee_id_fkey",
+      "table": "order_events",
+      "definition": "FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "order_events_event_type_check",
+      "table": "order_events",
+      "definition": "CHECK ((event_type = ANY (ARRAY['mark_ordered'::text, 'restock'::text])))"
+    },
+    {
+      "name": "order_events_pkey",
+      "table": "order_events",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "order_events_qty_check",
+      "table": "order_events",
+      "definition": "CHECK ((qty >= 0))"
+    },
+    {
+      "name": "order_events_tool_id_fkey",
+      "table": "order_events",
+      "definition": "FOREIGN KEY (tool_id) REFERENCES tools(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "planner_absence_replacements_created_by_employee_id_fkey",
+      "table": "planner_absence_replacements",
+      "definition": "FOREIGN KEY (created_by_employee_id) REFERENCES employees(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "planner_absence_replacements_mode_chk",
+      "table": "planner_absence_replacements",
+      "definition": "CHECK ((mode = ANY (ARRAY['replace'::text, 'cancel'::text])))"
+    },
+    {
+      "name": "planner_absence_replacements_pkey",
+      "table": "planner_absence_replacements",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "planner_absence_replacements_range_chk",
+      "table": "planner_absence_replacements",
+      "definition": "CHECK ((to_date >= from_date))"
+    },
+    {
+      "name": "planner_absence_replacements_shift_id_key",
+      "table": "planner_absence_replacements",
+      "definition": "UNIQUE (shift_id)"
+    },
+    {
+      "name": "planner_absence_replacements_source_chk",
+      "table": "planner_absence_replacements",
+      "definition": "CHECK ((source_type = ANY (ARRAY['vacation'::text, 'sick'::text])))"
+    },
+    {
+      "name": "planner_absence_replacements_week_range_chk",
+      "table": "planner_absence_replacements",
+      "definition": "CHECK (((week_from IS NULL) OR (week_to IS NULL) OR (week_to >= week_from)))"
+    },
+    {
+      "name": "planner_absences_absence_key_key",
+      "table": "planner_absences",
+      "definition": "UNIQUE (absence_key)"
+    },
+    {
+      "name": "planner_absences_created_by_employee_id_fkey",
+      "table": "planner_absences",
+      "definition": "FOREIGN KEY (created_by_employee_id) REFERENCES employees(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "planner_absences_pkey",
+      "table": "planner_absences",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "planner_assignments_created_by_employee_id_fkey",
+      "table": "planner_assignments",
+      "definition": "FOREIGN KEY (created_by_employee_id) REFERENCES employees(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "planner_assignments_pkey",
+      "table": "planner_assignments",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "planner_assignments_shift_id_key",
+      "table": "planner_assignments",
+      "definition": "UNIQUE (shift_id)"
+    },
+    {
+      "name": "planner_availability_availability_key_key",
+      "table": "planner_availability",
+      "definition": "UNIQUE (availability_key)"
+    },
+    {
+      "name": "planner_availability_created_by_employee_id_fkey",
+      "table": "planner_availability",
+      "definition": "FOREIGN KEY (created_by_employee_id) REFERENCES employees(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "planner_availability_pkey",
+      "table": "planner_availability",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "planner_availability_status_chk",
+      "table": "planner_availability",
+      "definition": "CHECK ((status = ANY (ARRAY['yes'::text, 'no'::text])))"
+    },
+    {
+      "name": "planner_saturday_requests_created_by_employee_id_fkey",
+      "table": "planner_saturday_requests",
+      "definition": "FOREIGN KEY (created_by_employee_id) REFERENCES employees(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "planner_saturday_requests_pkey",
+      "table": "planner_saturday_requests",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "planner_saturday_requests_request_key_key",
+      "table": "planner_saturday_requests",
+      "definition": "UNIQUE (request_key)"
+    },
+    {
+      "name": "planner_shift_cancellations_created_by_employee_id_fkey",
+      "table": "planner_shift_cancellations",
+      "definition": "FOREIGN KEY (created_by_employee_id) REFERENCES employees(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "planner_shift_cancellations_pkey",
+      "table": "planner_shift_cancellations",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "planner_shift_cancellations_shift_id_key",
+      "table": "planner_shift_cancellations",
+      "definition": "UNIQUE (shift_id)"
+    },
+    {
+      "name": "planner_sick_leaves_created_by_employee_id_fkey",
+      "table": "planner_sick_leaves",
+      "definition": "FOREIGN KEY (created_by_employee_id) REFERENCES employees(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "planner_sick_leaves_pkey",
+      "table": "planner_sick_leaves",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "planner_sick_leaves_range_chk",
+      "table": "planner_sick_leaves",
+      "definition": "CHECK ((to_date >= from_date))"
+    },
+    {
+      "name": "planner_special_day_assignments_pkey",
+      "table": "planner_special_day_assignments",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "planner_special_days_pkey",
+      "table": "planner_special_days",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "planner_swaps_created_by_employee_id_fkey",
+      "table": "planner_swaps",
+      "definition": "FOREIGN KEY (created_by_employee_id) REFERENCES employees(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "planner_swaps_pkey",
+      "table": "planner_swaps",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "planner_swaps_range_chk",
+      "table": "planner_swaps",
+      "definition": "CHECK (((end_date IS NULL) OR (end_date >= start_date)))"
+    },
+    {
+      "name": "planner_swaps_users_chk",
+      "table": "planner_swaps",
+      "definition": "CHECK ((user_a <> user_b))"
+    },
+    {
+      "name": "planner_tasks_created_by_employee_id_fkey",
+      "table": "planner_tasks",
+      "definition": "FOREIGN KEY (created_by_employee_id) REFERENCES employees(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "planner_tasks_pkey",
+      "table": "planner_tasks",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "planner_vacations_created_by_employee_id_fkey",
+      "table": "planner_vacations",
+      "definition": "FOREIGN KEY (created_by_employee_id) REFERENCES employees(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "planner_vacations_pkey",
+      "table": "planner_vacations",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "planner_vacations_range_chk",
+      "table": "planner_vacations",
+      "definition": "CHECK ((to_date >= from_date))"
+    },
+    {
+      "name": "production_checklist_templates_item_key_key",
+      "table": "production_checklist_templates",
+      "definition": "UNIQUE (item_key)"
+    },
+    {
+      "name": "production_checklist_templates_pkey",
+      "table": "production_checklist_templates",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "production_counts_department_id_fkey",
+      "table": "production_counts",
+      "definition": "FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "production_counts_employee_id_fkey",
+      "table": "production_counts",
+      "definition": "FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "production_counts_machine_id_fkey",
+      "table": "production_counts",
+      "definition": "FOREIGN KEY (machine_id) REFERENCES production_machines(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "production_counts_pkey",
+      "table": "production_counts",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "production_machine50_storage_current_mode_check",
+      "table": "production_machine50_storage",
+      "definition": "CHECK ((current_mode = ANY (ARRAY['1er'::text, '2er'::text])))"
+    },
+    {
+      "name": "production_machine50_storage_current_pieces_on_pallet_check",
+      "table": "production_machine50_storage",
+      "definition": "CHECK ((current_pieces_on_pallet >= 0))"
+    },
+    {
+      "name": "production_machine50_storage_order_id_fkey",
+      "table": "production_machine50_storage",
+      "definition": "FOREIGN KEY (order_id) REFERENCES production_orders(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "production_machine50_storage_order_id_key",
+      "table": "production_machine50_storage",
+      "definition": "UNIQUE (order_id)"
+    },
+    {
+      "name": "production_machine50_storage_pieces_per_pallet_check",
+      "table": "production_machine50_storage",
+      "definition": "CHECK ((pieces_per_pallet >= 0))"
+    },
+    {
+      "name": "production_machine50_storage_pkey",
+      "table": "production_machine50_storage",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "production_machine50_storage_total_pallets_check",
+      "table": "production_machine50_storage",
+      "definition": "CHECK ((total_pallets >= 0))"
+    },
+    {
+      "name": "production_machine50_storage_used_pallets_check",
+      "table": "production_machine50_storage",
+      "definition": "CHECK ((used_pallets >= 0))"
+    },
+    {
+      "name": "production_machines_department_id_fkey",
+      "table": "production_machines",
+      "definition": "FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "production_machines_machine_code_key",
+      "table": "production_machines",
+      "definition": "UNIQUE (machine_code)"
+    },
+    {
+      "name": "production_machines_pkey",
+      "table": "production_machines",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "production_order_checklist_checked_by_employee_id_fkey",
+      "table": "production_order_checklist",
+      "definition": "FOREIGN KEY (checked_by_employee_id) REFERENCES employees(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "production_order_checklist_order_id_fkey",
+      "table": "production_order_checklist",
+      "definition": "FOREIGN KEY (order_id) REFERENCES production_orders(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "production_order_checklist_order_id_item_key_key",
+      "table": "production_order_checklist",
+      "definition": "UNIQUE (order_id, item_key)"
+    },
+    {
+      "name": "production_order_checklist_pkey",
+      "table": "production_order_checklist",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "production_order_employees_employee_id_fkey",
+      "table": "production_order_employees",
+      "definition": "FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "production_order_employees_order_id_employee_id_key",
+      "table": "production_order_employees",
+      "definition": "UNIQUE (order_id, employee_id)"
+    },
+    {
+      "name": "production_order_employees_order_id_fkey",
+      "table": "production_order_employees",
+      "definition": "FOREIGN KEY (order_id) REFERENCES production_orders(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "production_order_employees_pkey",
+      "table": "production_order_employees",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "production_order_history_employee_id_fkey",
+      "table": "production_order_history",
+      "definition": "FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "production_order_history_order_id_fkey",
+      "table": "production_order_history",
+      "definition": "FOREIGN KEY (order_id) REFERENCES production_orders(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "production_order_history_pkey",
+      "table": "production_order_history",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "production_order_history_station_id_fkey",
+      "table": "production_order_history",
+      "definition": "FOREIGN KEY (station_id) REFERENCES production_order_stations(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "production_order_stations_actual_time_minutes_check",
+      "table": "production_order_stations",
+      "definition": "CHECK (((actual_time_minutes IS NULL) OR (actual_time_minutes >= 0)))"
+    },
+    {
+      "name": "production_order_stations_clarify_lifetime_check",
+      "table": "production_order_stations",
+      "definition": "CHECK ((clarify_lifetime >= 0))"
+    },
+    {
+      "name": "production_order_stations_clarify_total_check",
+      "table": "production_order_stations",
+      "definition": "CHECK ((clarify_total >= 0))"
+    },
+    {
+      "name": "production_order_stations_order_id_fkey",
+      "table": "production_order_stations",
+      "definition": "FOREIGN KEY (order_id) REFERENCES production_orders(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "production_order_stations_order_id_station_no_key",
+      "table": "production_order_stations",
+      "definition": "UNIQUE (order_id, station_no)"
+    },
+    {
+      "name": "production_order_stations_pkey",
+      "table": "production_order_stations",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "production_order_stations_scrap_lifetime_check",
+      "table": "production_order_stations",
+      "definition": "CHECK ((scrap_lifetime >= 0))"
+    },
+    {
+      "name": "production_order_stations_scrap_total_check",
+      "table": "production_order_stations",
+      "definition": "CHECK ((scrap_total >= 0))"
+    },
+    {
+      "name": "production_order_stations_station_no_check",
+      "table": "production_order_stations",
+      "definition": "CHECK ((station_no > 0))"
+    },
+    {
+      "name": "production_order_stations_time_status_check",
+      "table": "production_order_stations",
+      "definition": "CHECK ((time_status = ANY (ARRAY['ok'::text, 'changed'::text])))"
+    },
+    {
+      "name": "production_orders_ba_quantity_check",
+      "table": "production_orders",
+      "definition": "CHECK ((ba_quantity >= 0))"
+    },
+    {
+      "name": "production_orders_created_by_employee_id_fkey",
+      "table": "production_orders",
+      "definition": "FOREIGN KEY (created_by_employee_id) REFERENCES employees(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "production_orders_department_id_fkey",
+      "table": "production_orders",
+      "definition": "FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "production_orders_machine_id_fkey",
+      "table": "production_orders",
+      "definition": "FOREIGN KEY (machine_id) REFERENCES production_machines(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "production_orders_pallet_count_check",
+      "table": "production_orders",
+      "definition": "CHECK ((pallet_count >= 0))"
+    },
+    {
+      "name": "production_orders_pieces_per_pallet_check",
+      "table": "production_orders",
+      "definition": "CHECK ((pieces_per_pallet >= 0))"
+    },
+    {
+      "name": "production_orders_pkey",
+      "table": "production_orders",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "production_orders_status_check",
+      "table": "production_orders",
+      "definition": "CHECK ((status = ANY (ARRAY['running'::text, 'paused'::text, 'completed'::text, 'cancelled'::text])))"
+    },
+    {
+      "name": "production_orders_target_quantity_check",
+      "table": "production_orders",
+      "definition": "CHECK ((target_quantity >= 0))"
+    },
+    {
+      "name": "production_orders_updated_by_employee_id_fkey",
+      "table": "production_orders",
+      "definition": "FOREIGN KEY (updated_by_employee_id) REFERENCES employees(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "production_qa_causes_group_id_reason_id_key",
+      "table": "production_qa_causes",
+      "definition": "UNIQUE (group_id, reason_id)"
+    },
+    {
+      "name": "production_qa_causes_pkey",
+      "table": "production_qa_causes",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "production_station_counts_good_qty_check",
+      "table": "production_station_counts",
+      "definition": "CHECK ((good_qty >= 0))"
+    },
+    {
+      "name": "production_station_counts_order_employee_id_fkey",
+      "table": "production_station_counts",
+      "definition": "FOREIGN KEY (order_employee_id) REFERENCES production_order_employees(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "production_station_counts_order_id_fkey",
+      "table": "production_station_counts",
+      "definition": "FOREIGN KEY (order_id) REFERENCES production_orders(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "production_station_counts_pkey",
+      "table": "production_station_counts",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "production_station_counts_station_id_fkey",
+      "table": "production_station_counts",
+      "definition": "FOREIGN KEY (station_id) REFERENCES production_order_stations(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "production_station_counts_station_id_order_employee_id_key",
+      "table": "production_station_counts",
+      "definition": "UNIQUE (station_id, order_employee_id)"
+    },
+    {
+      "name": "production_station_events_employee_id_fkey",
+      "table": "production_station_events",
+      "definition": "FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "production_station_events_event_type_check",
+      "table": "production_station_events",
+      "definition": "CHECK ((event_type = ANY (ARRAY['good'::text, 'good_correction'::text, 'scrap'::text, 'scrap_correction'::text, 'clarify'::text, 'clarify_correction'::text, 'station_created'::text, 'station_deleted'::text, 'station_renamed'::text, 'order_created'::text, 'order_completed'::text, 'order_cancelled'::text, 'checklist'::text, 'time_changed'::text, 'note'::text])))"
+    },
+    {
+      "name": "production_station_events_order_employee_id_fkey",
+      "table": "production_station_events",
+      "definition": "FOREIGN KEY (order_employee_id) REFERENCES production_order_employees(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "production_station_events_order_id_fkey",
+      "table": "production_station_events",
+      "definition": "FOREIGN KEY (order_id) REFERENCES production_orders(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "production_station_events_pkey",
+      "table": "production_station_events",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "production_station_events_qa_cause_id_fkey",
+      "table": "production_station_events",
+      "definition": "FOREIGN KEY (qa_cause_id) REFERENCES production_qa_causes(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "production_station_events_station_id_fkey",
+      "table": "production_station_events",
+      "definition": "FOREIGN KEY (station_id) REFERENCES production_order_stations(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "shift_definitions_pkey",
+      "table": "shift_definitions",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "shift_definitions_shift_key_key",
+      "table": "shift_definitions",
+      "definition": "UNIQUE (shift_key)"
+    },
+    {
+      "name": "tool_journal_employee_id_fkey",
+      "table": "tool_journal",
+      "definition": "FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "tool_journal_pkey",
+      "table": "tool_journal",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "tool_journal_tool_id_fkey",
+      "table": "tool_journal",
+      "definition": "FOREIGN KEY (tool_id) REFERENCES tools(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "tool_materials_name_key",
+      "table": "tool_materials",
+      "definition": "UNIQUE (name)"
+    },
+    {
+      "name": "tool_materials_pkey",
+      "table": "tool_materials",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "tools_created_by_employee_id_fkey",
+      "table": "tools",
+      "definition": "FOREIGN KEY (created_by_employee_id) REFERENCES employees(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "tools_holder_check",
+      "table": "tools",
+      "definition": "CHECK ((holder = ANY (ARRAY['HSK 100'::text, 'HSK 63'::text])))"
+    },
+    {
+      "name": "tools_insert_edges_check",
+      "table": "tools",
+      "definition": "CHECK ((insert_edges >= 0))"
+    },
+    {
+      "name": "tools_material_id_fkey",
+      "table": "tools",
+      "definition": "FOREIGN KEY (material_id) REFERENCES tool_materials(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "tools_min_stock_check",
+      "table": "tools",
+      "definition": "CHECK ((min_stock >= 0))"
+    },
+    {
+      "name": "tools_optimal_stock_check",
+      "table": "tools",
+      "definition": "CHECK ((optimal_stock >= 0))"
+    },
+    {
+      "name": "tools_ordered_qty_check",
+      "table": "tools",
+      "definition": "CHECK ((ordered_qty >= 0))"
+    },
+    {
+      "name": "tools_pkey",
+      "table": "tools",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "tools_stock_check",
+      "table": "tools",
+      "definition": "CHECK ((stock >= 0))"
+    },
+    {
+      "name": "tools_t_number_key",
+      "table": "tools",
+      "definition": "UNIQUE (t_number)"
+    }
+  ],
+  "triggers": [
+    {
+      "name": "trg_employees_updated_at",
+      "table": "employees",
+      "definition": "CREATE TRIGGER trg_employees_updated_at BEFORE UPDATE ON public.employees FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+    },
+    {
+      "name": "set_updated_at_planner_absence_replacements",
+      "table": "planner_absence_replacements",
+      "definition": "CREATE TRIGGER set_updated_at_planner_absence_replacements BEFORE UPDATE ON public.planner_absence_replacements FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+    },
+    {
+      "name": "set_updated_at_planner_absences",
+      "table": "planner_absences",
+      "definition": "CREATE TRIGGER set_updated_at_planner_absences BEFORE UPDATE ON public.planner_absences FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+    },
+    {
+      "name": "set_updated_at_planner_assignments",
+      "table": "planner_assignments",
+      "definition": "CREATE TRIGGER set_updated_at_planner_assignments BEFORE UPDATE ON public.planner_assignments FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+    },
+    {
+      "name": "set_updated_at_planner_availability",
+      "table": "planner_availability",
+      "definition": "CREATE TRIGGER set_updated_at_planner_availability BEFORE UPDATE ON public.planner_availability FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+    },
+    {
+      "name": "set_updated_at_planner_saturday_requests",
+      "table": "planner_saturday_requests",
+      "definition": "CREATE TRIGGER set_updated_at_planner_saturday_requests BEFORE UPDATE ON public.planner_saturday_requests FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+    },
+    {
+      "name": "set_updated_at_planner_shift_cancellations",
+      "table": "planner_shift_cancellations",
+      "definition": "CREATE TRIGGER set_updated_at_planner_shift_cancellations BEFORE UPDATE ON public.planner_shift_cancellations FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+    },
+    {
+      "name": "set_updated_at_planner_sick_leaves",
+      "table": "planner_sick_leaves",
+      "definition": "CREATE TRIGGER set_updated_at_planner_sick_leaves BEFORE UPDATE ON public.planner_sick_leaves FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+    },
+    {
+      "name": "set_updated_at_planner_swaps",
+      "table": "planner_swaps",
+      "definition": "CREATE TRIGGER set_updated_at_planner_swaps BEFORE UPDATE ON public.planner_swaps FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+    },
+    {
+      "name": "set_updated_at_planner_vacations",
+      "table": "planner_vacations",
+      "definition": "CREATE TRIGGER set_updated_at_planner_vacations BEFORE UPDATE ON public.planner_vacations FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+    },
+    {
+      "name": "trg_tools_updated_at",
+      "table": "tools",
+      "definition": "CREATE TRIGGER trg_tools_updated_at BEFORE UPDATE ON public.tools FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+    }
+  ]
+}

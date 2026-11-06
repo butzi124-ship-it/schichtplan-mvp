@@ -1,0 +1,140 @@
+{
+  "image": "mcr.microsoft.com/playwright:v1.62.1-noble",
+  "playwright": "1.62.1",
+  "sourceCommit": "f026821cfec911955e7786fbed68ff6c2964fa78",
+  "workflowRun": "41977286948",
+  "files": [
+    {
+      "file": "visual-desktop/6m-dialog.png",
+      "sha256": "0584670c0a127cc2e79b5af9aac9f8476716fe41cf374668fcfa1786142b8fe9"
+    },
+    {
+      "file": "visual-desktop/article-tabs.png",
+      "sha256": "01f202c051448550ccf20398abe8c5ae1031fe46b9696fa929753cf09dd94636"
+    },
+    {
+      "file": "visual-desktop/completion-ready.png",
+      "sha256": "107ad0040c8029640bd293c8e7d402c564000bfa5d82485061161415e7a99c9c"
+    },
+    {
+      "file": "visual-desktop/good-counter.png",
+      "sha256": "f88273b3ada7b4445eddd275b3d764542c28a9127321d3760b5c1c2a35218887"
+    },
+    {
+      "file": "visual-desktop/login.png",
+      "sha256": "b148dce4b49e2618f7c3089b8b1d718bc0cd9b39e50a5d404d34a39ec44bb76d"
+    },
+    {
+      "file": "visual-desktop/mandatory-checklist.png",
+      "sha256": "ae5ba4d644fae1e1c00e0123c30f3550bc049cf7b89a0a156274e0c384b0651e"
+    },
+    {
+      "file": "visual-desktop/production-overview.png",
+      "sha256": "3fd13dae13bc8357fd8a7843741322a4f8d35daf4b44dd334c899175b518a625"
+    },
+    {
+      "file": "visual-desktop/scrap-clarification.png",
+      "sha256": "01784a4c8a88718ee2cd8d5478e6d23efef9416b280646610a7b735b11850fe3"
+    },
+    {
+      "file": "visual-desktop/station-tabs.png",
+      "sha256": "1e12f36c623c27a216c5ad04c909a20ec005d27f1fd257cb5c741aea1ccc3e51"
+    },
+    {
+      "file": "visual-desktop/tool-management.png",
+      "sha256": "f8b4de179119fe578b521f1947d6fb02dd01589c2621b2465be5abc678c63147"
+    },
+    {
+      "file": "visual-desktop/touch-production.png",
+      "sha256": "0afa14d3f6839ab80243536e1159e612e39fff87787fc5e12e1d059d4a2ef067"
+    },
+    {
+      "file": "visual-mobile/6m-dialog.png",
+      "sha256": "4f9b8d269460245c03c6b266bea8aae3254b54c55cd44e759251ceea411d930e"
+    },
+    {
+      "file": "visual-mobile/article-tabs.png",
+      "sha256": "ed6d74ce62e6261b30049517e3c65bdc834ebde112ae1bfe905ff54543acd593"
+    },
+    {
+      "file": "visual-mobile/completion-ready.png",
+      "sha256": "b2a1548e43b6da65ea4b42b2a14c490fe5badac65f2a80235c25964b484828ff"
+    },
+    {
+      "file": "visual-mobile/good-counter.png",
+      "sha256": "ae9364addfc702438fa9bfaddfd1fb61f24f38f7af583a6c68b35e270441c76b"
+    },
+    {
+      "file": "visual-mobile/login.png",
+      "sha256": "735620b2292e3f1d1822090ad6c7986287b5b6a1bcdd3734e16fb8d231d14cdb"
+    },
+    {
+      "file": "visual-mobile/mandatory-checklist.png",
+      "sha256": "f5466454129d6bb46943324c05518c78ba24a757b2ebc37fadf4889af7ac2468"
+    },
+    {
+      "file": "visual-mobile/production-overview.png",
+      "sha256": "9f85d8ddd1d62be73069542e8ee7a2e8554c77e7e652cf08485d1768ab5721d3"
+    },
+    {
+      "file": "visual-mobile/scrap-clarification.png",
+      "sha256": "04c3f533d313460427e256dff0256d8293104b7d043d984a62e8252ceef98403"
+    },
+    {
+      "file": "visual-mobile/station-tabs.png",
+      "sha256": "273fbd64910807a4c0efae5dbf89e98b50b74b604f1ef47ff35687511dac5518"
+    },
+    {
+      "file": "visual-mobile/tool-management.png",
+      "sha256": "29e0d2a41e8e2aade0ede8eec05f991afbe8c3ea8f4d24b4713438ef18466bd5"
+    },
+    {
+      "file": "visual-mobile/touch-production.png",
+      "sha256": "cb3027363a6756f1230aaf9ef76192c1725b7b780d1fc180e96374cbb0292212"
+    },
+    {
+      "file": "visual-tablet/6m-dialog.png",
+      "sha256": "5330148704801f27d897fac765a0d986c463f735c2bdaabcc52487b8f2b56bc4"
+    },
+    {
+      "file": "visual-tablet/article-tabs.png",
+      "sha256": "7faefcfe8d7ea21188df1d0a1300f8582c7eb6cfc2dbe3852ea608e36646cf4d"
+    },
+    {
+      "file": "visual-tablet/completion-ready.png",
+      "sha256": "5ca252bacab13a615c9d79cd0763f854b19b94f4a06f1d683b8cc23c25f31db6"
+    },
+    {
+      "file": "visual-tablet/good-counter.png",
+      "sha256": "7362ebf83ebd6d6783c56ab02381944ac89ef567ed3decc54e2ccc602a76e1f1"
+    },
+    {
+      "file": "visual-tablet/login.png",
+      "sha256": "b69ecb7523b369e58e3d81d9f383b6eb820b8a462e2e93b35f1317f5795d5562"
+    },
+    {
+      "file": "visual-tablet/mandatory-checklist.png",
+      "sha256": "ba11c28953981b2181f464f06e3cce1b714cab23be0a24f76743eaf10c6abad7"
+    },
+    {
+      "file": "visual-tablet/production-overview.png",
+      "sha256": "795b6e19d7aab9e91c5725110cdfff366007019c01770e659c44bd0aba9e315c"
+    },
+    {
+      "file": "visual-tablet/scrap-clarification.png",
+      "sha256": "9ea130e44e3cc9f4fb53b86ccdc09e83d011ffc37c60cf9e8c7e5adfe2f6fc37"
+    },
+    {
+      "file": "visual-tablet/station-tabs.png",
+      "sha256": "24682db9310503ebfac686b55999c8409cbe845e532c379fa911ef671eaeda2a"
+    },
+    {
+      "file": "visual-tablet/tool-management.png",
+      "sha256": "8dd257a4b18e1f371bdfb50d7199ef5006919c156b263874ea1d1e3fe377f2d4"
+    },
+    {
+      "file": "visual-tablet/touch-production.png",
+      "sha256": "4adb9c16f5cd3692e2de7c5c8af529dc0160d3c8f7f87eee792e963fc2540b4a"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "appBusinessSha256": "a6de03aa3ce6a007a720604eaefb9a837783c4379a49fe44329271f3cb9367e1",
+  "tests": {
+    "tests/smoke.spec.js": "583abce7ad459618724561da2664a35c138a3a5ff3025368aed3e6c64b971a08",
+    "tests/helpers/supabase-mock.js": "26964fab6825325700abba975887d8e1ccbe7b29741fa9c5750a90257970a5eb",
+    "tests/helpers/mock-page.js": "28392b12d2daf8c354bb47a4931ea6ebcb5cc1273b336d8a79109cb0633af3a8",
+    "tests/seed.spec.ts": "6e836bc14768e8428db56d1a861192d16c789b7f7bd8106f2b1db1e3951d41fe",
+    "AGENTS.md": "d229abca5db3cec9253dc50384390df29293195de4fb182c1e50687305d42d3d",
+    ".codex/agents/playwright_test_planner.toml": "fb8fb651728df353847debdda3d46afbb45b86a31390f8234ef2f5d7798dc748",
+    ".codex/agents/playwright_test_generator.toml": "3889f429ea9baa99a4136d692686d94f06dcd5513025b758f672f8fb870000b7",
+    ".codex/agents/playwright_test_healer.toml": "46a6330c2970d0d40582924ad384e77a9e14b9bb60bd5e12c6b9c2b49b339f9f",
+    ".codex/config.toml": "8c91972f392226685f869ff23f39e9dc47c75dff2158d33b6e576c615471a581",
+    "tests/qa/legacy-navigation-patch.json": "422d6644fb3258e4dcc37482eaaee60b8670bb566a5abfe873d44fe338e1f109",
+    "tests/qa/visual-metadata-patch.json": "31116f2631bcdd20b5f571d7f181fddc488e734a6f0891e7aef070dde0282d69",
+    "tests/qa/release-gate.test.js": "9ff5aab758b14b9b24261c32c7fca6fff0e3e04acb81ea866febd951b3fbec87"
+  },
+  "reviewedPresentationPatch": "\n    #toolSearch,\n    #toolFilterLabel,\n    #toolFilterT,\n    #toolFilterD,\n    #toolFilterHolder,\n    #toolFilterImageStatus {\n      min-width: 0;\n      width: 100%;\n      max-width: 100%;\n    }\n",
+  "reviewedPresentationReplacements": [
+    {
+      "before": "body > .max-w-7xl > header > .flex {",
+      "after": "body > :is(.max-w-7xl, .max-w-none) > header > .flex {"
+    },
+    {
+      "before": "body > .max-w-7xl > header > .flex > div {",
+      "after": "body > :is(.max-w-7xl, .max-w-none) > header > .flex > div {"
+    }
+  ],
+  "reviewReason": "Initial Linux visual tests exposed intrinsic tool-filter widths and a mobile header rule no longer matching when tools/storage switch the wrapper to max-w-none. Only six control widths and the two existing header selectors change; no app logic or business assertion changed."
+}

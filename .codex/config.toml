@@ -1,0 +1,4 @@
+[mcp_servers.playwright-test]
+command = "cmd"
+args = ["/c", "npx", "playwright", "run-test-mcp-server", "--config", "playwright.agents.config.js"]
+startup_timeout_sec = 30

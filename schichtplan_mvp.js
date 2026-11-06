@@ -56,7 +56,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.5.17";
+const APP_VERSION = "0.5.19";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -71,6 +71,16 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.5.19",
+    date: "2026-11-06 04:28",
+    changes: ["CI-Git-Prüfung auf das Checkout-Workspace beschränkt freigegeben; Besitzprüfung bleibt für andere Verzeichnisse aktiv.", "Fehlende Browser-Ergebnisse werden ausdrücklich als nicht ausgeführt dokumentiert; beide Pflicht-Gates bleiben fail-closed."],
+  },
+  {
+    version: "0.5.18",
+    date: "2026-11-06 04:19",
+    changes: ["QA-PR #2 mit aktuellem main synchronisiert; Entwicklungs- und Sicherheitsregeln sowie Pflichtcheck e2e erhalten.", "Erweiterte Browser-, Bild- und Berichtstests vereinheitlicht; Deployment erfordert gesonderte manuelle Freigabe."],
+  },
   {
     version: "0.5.17",
     date: "2026-11-05 06:41",
@@ -870,6 +880,17 @@ function injectHumbelDesignStyles() {
       background: #ffffff !important;
     }
 
+    #toolSearch,
+    #toolFilterLabel,
+    #toolFilterT,
+    #toolFilterD,
+    #toolFilterHolder,
+    #toolFilterImageStatus {
+      min-width: 0;
+      width: 100%;
+      max-width: 100%;
+    }
+
     input:focus,
     select:focus,
     textarea:focus {
@@ -1147,12 +1168,12 @@ function injectHumbelDesignStyles() {
     }
     @media (max-width: 700px) {
       /* Header overflow expands Chromium's mobile layout viewport and offsets touch hit testing. */
-      body > .max-w-7xl > header > .flex {
+      body > :is(.max-w-7xl, .max-w-none) > header > .flex {
         flex-wrap: wrap;
         min-width: 0;
         max-width: 100%;
       }
-      body > .max-w-7xl > header > .flex > div {
+      body > :is(.max-w-7xl, .max-w-none) > header > .flex > div {
         min-width: 0;
         overflow-wrap: anywhere;
       }

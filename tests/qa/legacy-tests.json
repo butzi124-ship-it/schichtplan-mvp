@@ -1,0 +1,1009 @@
+{
+  "sourceCommit": "cb15e8e12279a6def4806da20b062cfc6e04565c",
+  "tests": [
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > loads, logs in locally, and navigates modules and subtabs"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > blocks production overcounts and preserves scroll in target quantity flows"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > direct list link BA BA-nav-second öffnen opens the exact order"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > direct list link Artikel 4345433 öffnen opens the exact order"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > article tabs isolate counts employees stations checklist and protocol without mutations"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > identical articles remain distinct and a missing article falls back to BA"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > required first initialization runs once and machine reselect preserves the chosen BA"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > completed order leaves active tabs and keeps machine open"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > cancelled order leaves active tabs and keeps machine open"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > last inactive order shows empty machine view and terminal orders cannot open"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > fallback to a fresh active BA initializes its station and checklist"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > department admin opens only own machines and orders without global rights"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > employee cannot see or invoke production order navigation"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > tool_scanner cannot see or invoke production order navigation"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > touch tabs scroll internally without page overflow or vertical jumps"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > load error retains selected order quantities and all existing production data"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > direct list link BA BA-nav-second öffnen opens the exact order"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > direct list link Artikel 4345433 öffnen opens the exact order"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > article tabs isolate counts employees stations checklist and protocol without mutations"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > identical articles remain distinct and a missing article falls back to BA"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > required first initialization runs once and machine reselect preserves the chosen BA"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > completed order leaves active tabs and keeps machine open"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > cancelled order leaves active tabs and keeps machine open"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > last inactive order shows empty machine view and terminal orders cannot open"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > fallback to a fresh active BA initializes its station and checklist"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > department admin opens only own machines and orders without global rights"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > employee cannot see or invoke production order navigation"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > tool_scanner cannot see or invoke production order navigation"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > touch tabs scroll internally without page overflow or vertical jumps"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > load error retains selected order quantities and all existing production data"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > direct list link BA BA-nav-second öffnen opens the exact order"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > direct list link Artikel 4345433 öffnen opens the exact order"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > article tabs isolate counts employees stations checklist and protocol without mutations"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > identical articles remain distinct and a missing article falls back to BA"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > required first initialization runs once and machine reselect preserves the chosen BA"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > completed order leaves active tabs and keeps machine open"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > cancelled order leaves active tabs and keeps machine open"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > last inactive order shows empty machine view and terminal orders cannot open"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > fallback to a fresh active BA initializes its station and checklist"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > department admin opens only own machines and orders without global rights"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > employee cannot see or invoke production order navigation"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > tool_scanner cannot see or invoke production order navigation"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > touch tabs scroll internally without page overflow or vertical jumps"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production order navigation > load error retains selected order quantities and all existing production data"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: single station keeps its target and loss accounting"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: two legacy steps count 5 plus 5 as 5 finished parts and survive view changes"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: three steps use only final good parts and the immediate predecessor"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: staff totals share predecessor capacity without mixing orders"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap and clarification consume capacity but never create finished goods"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: predecessor is rechecked when the 6M dialog saves"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: corrections must run downstream first and cannot make negative counts"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: inconsistent stored quantities are not repaired silently or completed"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: single station keeps its target and loss accounting"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: two legacy steps count 5 plus 5 as 5 finished parts and survive view changes"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: three steps use only final good parts and the immediate predecessor"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: staff totals share predecessor capacity without mixing orders"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap and clarification consume capacity but never create finished goods"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: predecessor is rechecked when the 6M dialog saves"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: corrections must run downstream first and cannot make negative counts"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: inconsistent stored quantities are not repaired silently or completed"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap example A uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap example B uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap example C uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap example D uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap example E uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap in three and four steps is counted once without consuming finished goods twice"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap correction increases remaining quantity while lifetime and zero limits stay unchanged"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap does not bypass clarification checklist sequence status or role guards"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap completion writes correct totals only after explicit confirmation"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap example A uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap example B uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap example C uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap example D uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap example E uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap in three and four steps is counted once without consuming finished goods twice"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap correction increases remaining quantity while lifetime and zero limits stay unchanged"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap does not bypass clarification checklist sequence status or role guards"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap completion writes correct totals only after explicit confirmation"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > station details retain changed time and lifetime semantics while new stations default to OK"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > reload keeps legacy flags and stored times without automatic writes"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: single station keeps its target and loss accounting"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: two legacy steps count 5 plus 5 as 5 finished parts and survive view changes"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: three steps use only final good parts and the immediate predecessor"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: staff totals share predecessor capacity without mixing orders"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap and clarification consume capacity but never create finished goods"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: predecessor is rechecked when the 6M dialog saves"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: corrections must run downstream first and cannot make negative counts"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: inconsistent stored quantities are not repaired silently or completed"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: single station keeps its target and loss accounting"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: two legacy steps count 5 plus 5 as 5 finished parts and survive view changes"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: three steps use only final good parts and the immediate predecessor"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: staff totals share predecessor capacity without mixing orders"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap and clarification consume capacity but never create finished goods"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: predecessor is rechecked when the 6M dialog saves"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: corrections must run downstream first and cannot make negative counts"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: inconsistent stored quantities are not repaired silently or completed"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap example A uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap example B uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap example C uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap example D uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap example E uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap in three and four steps is counted once without consuming finished goods twice"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap correction increases remaining quantity while lifetime and zero limits stay unchanged"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap does not bypass clarification checklist sequence status or role guards"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap completion writes correct totals only after explicit confirmation"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap example A uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap example B uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap example C uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap example D uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap example E uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap in three and four steps is counted once without consuming finished goods twice"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap correction increases remaining quantity while lifetime and zero limits stay unchanged"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap does not bypass clarification checklist sequence status or role guards"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap completion writes correct totals only after explicit confirmation"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > station details retain changed time and lifetime semantics while new stations default to OK"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > reload keeps legacy flags and stored times without automatic writes"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: single station keeps its target and loss accounting"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: two legacy steps count 5 plus 5 as 5 finished parts and survive view changes"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: three steps use only final good parts and the immediate predecessor"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: staff totals share predecessor capacity without mixing orders"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap and clarification consume capacity but never create finished goods"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: predecessor is rechecked when the 6M dialog saves"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: corrections must run downstream first and cannot make negative counts"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: inconsistent stored quantities are not repaired silently or completed"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: single station keeps its target and loss accounting"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: two legacy steps count 5 plus 5 as 5 finished parts and survive view changes"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: three steps use only final good parts and the immediate predecessor"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: staff totals share predecessor capacity without mixing orders"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap and clarification consume capacity but never create finished goods"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: predecessor is rechecked when the 6M dialog saves"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: corrections must run downstream first and cannot make negative counts"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: inconsistent stored quantities are not repaired silently or completed"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap example A uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap example B uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap example C uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap example D uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap example E uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap in three and four steps is counted once without consuming finished goods twice"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap correction increases remaining quantity while lifetime and zero limits stay unchanged"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap does not bypass clarification checklist sequence status or role guards"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > overview: scrap completion writes correct totals only after explicit confirmation"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap example A uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap example B uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap example C uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap example D uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap example E uses final good parts and current scrap across steps"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap in three and four steps is counted once without consuming finished goods twice"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap correction increases remaining quantity while lifetime and zero limits stay unchanged"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap does not bypass clarification checklist sequence status or role guards"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > production: scrap completion writes correct totals only after explicit confirmation"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > station details retain changed time and lifetime semantics while new stations default to OK"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Sequential production stations > reload keeps legacy flags and stored times without automatic writes"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > responsive defaults and explicit preference survive navigation and reload"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > overview stays complete while touch view contains only counting controls"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > station and article tabs preserve unique selections and separate values"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > multiple employees count separately using existing good plus and minus actions"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > employee add disclosure reuses assignment and displays a new separate counter"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > scrap plus requires 6M and correction uses the same colored feedback"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > clarify plus requires 6M and correction uses the same colored feedback"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > cancelled 6M dialog restores the counter anchor without booking"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > invalid or vanished 6M cause cannot be saved"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > target limit blocks all positive amounts while correction remains available"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > target is rechecked when the 6M dialog is saved"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > rapid good presses while saving produce one mutation and event"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > touch targets animation height and scroll stay stable without horizontal overflow"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > complete order opens mandatory checklist and cannot bypass unmet conditions"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > completion touch surface remains clear after scrolling with larger header typography"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > completion checklist blocks finishing even when no remaining quantity is open"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > department admin keeps own department access and cannot navigate to foreign work"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > employee cannot enter the production touch view"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > tool_scanner cannot enter the production touch view"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > failed count write preserves values and shows a technical error without feedback"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > load error preserves all existing production data and the active station"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > responsive defaults and explicit preference survive navigation and reload"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > overview stays complete while touch view contains only counting controls"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > station and article tabs preserve unique selections and separate values"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > multiple employees count separately using existing good plus and minus actions"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > employee add disclosure reuses assignment and displays a new separate counter"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > scrap plus requires 6M and correction uses the same colored feedback"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > clarify plus requires 6M and correction uses the same colored feedback"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > cancelled 6M dialog restores the counter anchor without booking"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > invalid or vanished 6M cause cannot be saved"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > target limit blocks all positive amounts while correction remains available"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > target is rechecked when the 6M dialog is saved"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > rapid good presses while saving produce one mutation and event"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > touch targets animation height and scroll stay stable without horizontal overflow"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > complete order opens mandatory checklist and cannot bypass unmet conditions"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > completion touch surface remains clear after scrolling with larger header typography"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > completion checklist blocks finishing even when no remaining quantity is open"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > department admin keeps own department access and cannot navigate to foreign work"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > employee cannot enter the production touch view"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > tool_scanner cannot enter the production touch view"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > failed count write preserves values and shows a technical error without feedback"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > load error preserves all existing production data and the active station"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > responsive defaults and explicit preference survive navigation and reload"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > overview stays complete while touch view contains only counting controls"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > station and article tabs preserve unique selections and separate values"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > multiple employees count separately using existing good plus and minus actions"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > employee add disclosure reuses assignment and displays a new separate counter"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > scrap plus requires 6M and correction uses the same colored feedback"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > clarify plus requires 6M and correction uses the same colored feedback"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > cancelled 6M dialog restores the counter anchor without booking"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > invalid or vanished 6M cause cannot be saved"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > target limit blocks all positive amounts while correction remains available"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > target is rechecked when the 6M dialog is saved"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > rapid good presses while saving produce one mutation and event"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > touch targets animation height and scroll stay stable without horizontal overflow"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > complete order opens mandatory checklist and cannot bypass unmet conditions"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > completion touch surface remains clear after scrolling with larger header typography"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > completion checklist blocks finishing even when no remaining quantity is open"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > department admin keeps own department access and cannot navigate to foreign work"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > employee cannot enter the production touch view"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > tool_scanner cannot enter the production touch view"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > failed count write preserves values and shows a technical error without feedback"
+    },
+    {
+      "project": "tablet-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production touch view > load error preserves all existing production data and the active station"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > good +1 confirms with color and stable layout"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > good -1 confirms with color and stable layout"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > good failed database write never flashes success"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > good rapid duplicate calls produce one booking and one event"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > scrap +1 confirms with color and stable layout"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > scrap -1 confirms with color and stable layout"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > scrap failed database write never flashes success"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > scrap rapid duplicate calls produce one booking and one event"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > clarify +1 confirms with color and stable layout"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > clarify -1 confirms with color and stable layout"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > clarify failed database write never flashes success"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > clarify rapid duplicate calls produce one booking and one event"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > target block prevents every mutation and keeps correction available"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > five station metrics keep their values and shortened labels"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > target reached while 6M dialog is open blocks saving without feedback or writes"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > failed event write keeps the technical error and avoids a success animation"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > reduced motion announces success without animation"
+    },
+    {
+      "project": "chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > consecutive successful bookings restart the effect after full render"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > good +1 confirms with color and stable layout"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > good -1 confirms with color and stable layout"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > good failed database write never flashes success"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > good rapid duplicate calls produce one booking and one event"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > scrap +1 confirms with color and stable layout"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > scrap -1 confirms with color and stable layout"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > scrap failed database write never flashes success"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > scrap rapid duplicate calls produce one booking and one event"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > clarify +1 confirms with color and stable layout"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > clarify -1 confirms with color and stable layout"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > clarify failed database write never flashes success"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > clarify rapid duplicate calls produce one booking and one event"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > target block prevents every mutation and keeps correction available"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > five station metrics keep their values and shortened labels"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > target reached while 6M dialog is open blocks saving without feedback or writes"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > failed event write keeps the technical error and avoids a success animation"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > reduced motion announces success without animation"
+    },
+    {
+      "project": "mobile-chromium",
+      "title": "smoke.spec.js > Humbel app smoke > Production counter feedback > consecutive successful bookings restart the effect after full render"
+    }
+  ]
+}
