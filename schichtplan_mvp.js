@@ -85,7 +85,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.9.3";
+const APP_VERSION = "0.9.4";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -100,6 +100,13 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    "version": "0.9.4",
+    "date": "2026-11-06 18:50",
+    "changes": [
+      "Native Testclients vollständig in das interne Docker-Netz verlegt: keine veröffentlichten Ports, nur feste containerinterne Loopback-Proxies und unabhängige Datenbankverbindungen. Isolation wird am tatsächlichen Containerzustand geprüft; keine produktive Verbindung."
+    ]
+  },
   {
     "version": "0.9.3",
     "date": "2026-11-06 18:44",
