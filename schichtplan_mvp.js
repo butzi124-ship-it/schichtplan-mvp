@@ -85,7 +85,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.9.11";
+const APP_VERSION = "0.9.12";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -100,6 +100,13 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    "version": "0.9.12",
+    "date": "2026-11-06 19:46",
+    "changes": [
+      "Browser-Regression für Versionsfooter an tatsächliche APP_VERSION und führenden VERSION_LOG-Eintrag gekoppelt; Anzeige und Log müssen exakt übereinstimmen. Nicht mehr an zufällige historische Entwicklungsnummer gebunden. Geschützter Test-SHA bewusst aktualisiert, keine Testfälle deaktiviert."
+    ]
+  },
   {
     "version": "0.9.11",
     "date": "2026-11-06 19:29",
