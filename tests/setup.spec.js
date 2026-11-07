@@ -20,13 +20,13 @@ test.describe('Machine readiness Phase 3 setup times',()=>{
  test('general pause outside setup mask; return question no starts nothing; yes requires mode',async({page})=>{
   await login(page);await begin(page);await page.locator('#tabs').getByRole('button',{name:'Dashboard',exact:true}).click();await page.getByRole('button',{name:'Zur Pause abmelden',exact:true}).click();await page.getByRole('button',{name:'Aus Pause zurückmelden',exact:true}).click();await expect(page.getByRole('region',{name:'Rüstung fortsetzen'})).toBeVisible();await page.getByRole('button',{name:'Nein, später',exact:true}).click();
   expect((await api.db.query('select count(*)::int n from public.production_operation_activity_segments where ended_at is null')).rows[0].n).toBe(0);
-  await page.getByRole('button',{name:'Zur Pause abmelden',exact:true}).click();await page.getByRole('button',{name:'Aus Pause zurückmelden',exact:true}).click();await page.getByRole('button',{name:'Ja, Modus auswählen',exact:true}).click();await page.getByRole('region',{name:'Rüstung fortsetzen'}).getByRole('button',{name:'Extern rüsten',exact:true}).click();
+  await page.getByRole('button',{name:'Zur Pause abmelden',exact:true}).click();await page.getByRole('button',{name:'Aus Pause zurückmelden',exact:true}).click();await page.getByRole('button',{name:'Ja, Modus auswählen',exact:true}).click();await page.getByRole('region',{name:'Rüstung fortsetzen'}).getByRole('button',{name:'Extern rüsten',exact:true}).click();await expect(page.locator('#setup-personal [role=status]')).toContainText('bestätigt');
   expect((await api.db.query('select count(*)::int n from public.production_operation_activity_segments where ended_at is null')).rows[0].n).toBe(1);
  });
  test('shared close from another participant removes resume offer; personal pause retains colleague',async({page})=>{
   await login(page);await begin(page);const rid=(await api.db.query('select id from public.production_setup_runs')).rows[0].id;
   await api.rpc(reviewer,'setup_time_command',{p_action:'start',p_request_id:randomUUID(),p_operation_id:snapshot.op_rows[0].id,p_run_id:rid,p_mode:'external'});
-  await page.getByRole('button',{name:'Zur Pause abmelden',exact:true}).click();expect((await api.db.query('select user_id from public.production_operation_activity_segments where ended_at is null')).rows[0].user_id).toBe(reviewer);
+  await page.getByRole('button',{name:'Zur Pause abmelden',exact:true}).click();await expect(page.locator('#setup-personal [role=status]')).toContainText('bestätigt');expect((await api.db.query('select user_id from public.production_operation_activity_segments where ended_at is null')).rows[0].user_id).toBe(reviewer);
   await api.rpc(reviewer,'setup_time_command',{p_action:'finish',p_request_id:randomUUID(),p_operation_id:snapshot.op_rows[0].id,p_run_id:rid});await page.getByRole('button',{name:'Aus Pause zurückmelden',exact:true}).click();await expect(page.getByRole('region',{name:'Rüstung fortsetzen'})).toHaveCount(0);
  });
  test('correction stores reason and immutable old/new audit; failure preserves input for retry',async({page})=>{
@@ -37,6 +37,14 @@ test.describe('Machine readiness Phase 3 setup times',()=>{
   await login(page);await begin(page);failNext=true;await page.locator('#tabs').getByRole('button',{name:'Abmelden',exact:true}).click();await expect(page.locator('#setup-personal [role=alert]')).toContainText('nicht bestätigt');await expect(page.locator('#tabs')).toBeVisible();await page.locator('#tabs').getByRole('button',{name:'Abmelden',exact:true}).click();await expect(page.locator('#tabs')).toBeHidden();
   expect((await api.db.query('select count(*)::int n from public.production_operation_activity_segments where ended_at is null')).rows[0].n).toBe(0);await expect(page.locator('#setup-personal')).toHaveCount(0);
   calls=[];await login(page,{enabled:false});await expect(page.locator('#setup-times')).toHaveCount(0);expect(calls.some(c=>c.name.startsWith('setup_time_'))).toBe(false);
+ });
+ test('workplace takeover ends predecessor only and asks successor to explicitly choose a mode',async({page})=>{
+  const r=await api.rpc(reviewer,'setup_time_command',{p_action:'start',p_request_id:randomUUID(),p_operation_id:snapshot.op_rows[0].id,p_mode:'external'});
+  await login(page);await card(page).getByRole('button',{name:/Arbeitsplatz übernehmen von/}).click();await expect(page.getByRole('region',{name:'Rüstung fortsetzen'})).toBeVisible();
+  expect((await api.db.query('select count(*)::int n from public.production_operation_activity_segments where ended_at is null')).rows[0].n).toBe(0);
+  await page.getByRole('button',{name:'Ja, Modus auswählen',exact:true}).click();await page.getByRole('region',{name:'Rüstung fortsetzen'}).getByRole('button',{name:'Extern rüsten',exact:true}).click();
+  await expect(page.locator('#setup-personal [role=status]')).toContainText('bestätigt');
+  const active=(await api.db.query('select user_id,setup_run_id from public.production_operation_activity_segments where ended_at is null')).rows;expect(active).toHaveLength(1);expect(active[0].user_id).toBe(worker);expect(active[0].setup_run_id).toBe(r.run_id);
  });
  test('machine switch aborts open run with configured reason, next machine requires explicit setup start',async({page})=>{
   await login(page);await begin(page);const c=page.getByRole('article',{name:'Maschinenzuordnung BA 812200 OP 010'});await c.getByLabel('Zielmaschine',{exact:true}).selectOption(machineA2);await c.getByLabel('Begründung',{exact:true}).fill('Synthetic move during setup');await c.getByLabel('Rüst-Abbruchgrund').selectOption('synthetic-machine-change');await c.getByRole('button',{name:'Maschine wählen',exact:true}).click();await expect(page.locator('#op-routing [role=status]')).toContainText('Audit gespeichert');await page.getByRole('button',{name:'Rüstzeiten neu laden',exact:true}).click();await expect(page.locator('#setup-times')).toContainText('Alternative A');expect((await api.db.query('select count(*)::int n from public.production_operation_activity_segments where ended_at is null')).rows[0].n).toBe(0);

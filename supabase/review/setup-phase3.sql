@@ -15,7 +15,7 @@ create table public.production_setup_interruptions(
 );
 -- Corrections overlay immutable original segments; each revision retains full old/new evidence.
 create table public.production_setup_corrections(
- id uuid primary key default gen_random_uuid(),segment_id uuid not null references public.production_operation_activity_segments(id),
+ id uuid primary key default gen_random_uuid(),revision bigint generated always as identity unique,segment_id uuid not null references public.production_operation_activity_segments(id),
  request_id uuid not null unique,actor_id uuid not null references auth.users(id),happened_at timestamptz not null,
  before_state jsonb not null,after_state jsonb not null,reason text not null check(length(trim(reason)) between 1 and 4000)
 );
@@ -67,7 +67,7 @@ end;$$;
 create trigger setup_section_closed after update of closed_at on public.production_operation_machine_sections for each row when(old.closed_at is null and new.closed_at is not null) execute function article_master_private.setup_section_closed();
 create function article_master_private.setup_effective() returns table(id uuid,section_id uuid,user_id uuid,activity text,started_at timestamptz,ended_at timestamptz,setup_run_id uuid) language sql stable security definer set search_path='' as $$
  select a.id,a.section_id,a.user_id,coalesce(c.after_state->>'activity',a.activity),coalesce((c.after_state->>'started_at')::timestamptz,a.started_at),coalesce((c.after_state->>'ended_at')::timestamptz,a.ended_at),a.setup_run_id
- from public.production_operation_activity_segments a left join lateral(select after_state from public.production_setup_corrections where segment_id=a.id order by happened_at desc,id desc limit 1)c on true
+ from public.production_operation_activity_segments a left join lateral(select after_state from public.production_setup_corrections where segment_id=a.id order by revision desc limit 1)c on true
 $$;
 create function article_master_private.setup_command(action text,request uuid,op uuid default null,run uuid default null,mode text default null,segment uuid default null,expected jsonb default null,change jsonb default null,reason text default null,previous_user uuid default null)
 returns jsonb language plpgsql security definer set search_path='' as $$
@@ -100,6 +100,7 @@ begin
   select * into x from public.production_operation_machine_sections where operation_id=op and closed_at is null for update;
   if x.id is null or not(article_master_private.routing_operator(op,x.machine_id) or article_master_private.routing_manager(x.department_id)) or previous_user is null or previous_user=auth.uid() then raise exception 'Takeover denied' using errcode='42501';end if;
   -- Explicit predecessor from this workspace only; cannot stop another OP.
+  if not exists(select 1 from public.production_operation_activity_segments where user_id=previous_user and section_id=x.id and ended_at is null) then raise exception 'Predecessor already stopped' using errcode='PT409';end if;
   target_user:=previous_user;
  else
   if action='correct' then select * into booked from public.production_operation_activity_segments where id=segment;run:=booked.setup_run_id;end if;
@@ -139,7 +140,7 @@ begin
   after_data:=before_data||jsonb_build_object('started_at',start_value,'ended_at',end_value,'activity',activity_value);
   insert into public.production_setup_corrections(segment_id,request_id,actor_id,happened_at,before_state,after_state,reason) values(segment,request,auth.uid(),stamp,before_data,after_data,trim(reason));
  else
-  if x.closed_at is not null or r.ended_at is not null or exists(select 1 from public.production_orders b join public.production_order_operations o on o.order_id=b.id left join public.production_operation_execution e on e.operation_id=o.id where o.id=op and (b.status not in('running','paused') or e.work_status in('completed','cancelled'))) then raise exception 'Run/OP closed' using errcode='PT409';end if;
+  if x.closed_at is not null or r.ended_at is not null or (action='start' and exists(select 1 from public.production_orders b join public.production_order_operations o on o.order_id=b.id left join public.production_operation_execution e on e.operation_id=o.id where o.id=op and (b.status not in('running','paused') or e.work_status in('completed','cancelled')))) then raise exception 'Run/OP closed' using errcode='PT409';end if;
   before_data:=jsonb_build_object('run',to_jsonb(r),'segments',coalesce((select jsonb_agg(to_jsonb(s)) from public.production_operation_activity_segments s where s.setup_run_id=r.id),'[]'::jsonb));
   if action<>'start' and r.id is null then raise exception 'No open setup' using errcode='PT409';end if;
   if action='start' then
@@ -183,7 +184,7 @@ begin
  coalesce((select jsonb_agg(to_jsonb(a)||jsonb_build_object('can_correct',a.ended_at is not null and (a.user_id=auth.uid() or article_master_private.routing_manager(x.department_id)),'correction_count',(select count(*) from public.production_setup_corrections c where c.segment_id=a.id)) order by a.started_at) from article_master_private.setup_effective() a where a.setup_run_id=r.id),'[]') segments,
  coalesce((select jsonb_agg(to_jsonb(c) order by happened_at) from public.production_setup_corrections c join public.production_operation_activity_segments a on a.id=c.segment_id where a.setup_run_id=r.id and(a.user_id=auth.uid() or article_master_private.routing_manager(x.department_id))),'[]') corrections
  from public.production_setup_runs r where r.section_id=x.id)z),'[]') runs,
- coalesce((select jsonb_agg(jsonb_build_object('user_id',a.user_id)) from public.production_operation_activity_segments a where a.section_id=x.id and a.ended_at is null and a.user_id<>auth.uid()),'[]') predecessors
+ coalesce((select jsonb_agg(jsonb_build_object('user_id',a.user_id,'display_name',coalesce((select coalesce(to_jsonb(e)->>'display_name',to_jsonb(e)->>'name') from public.employees e where e.auth_user_id=a.user_id limit 1),a.user_id::text))) from public.production_operation_activity_segments a where a.section_id=x.id and a.ended_at is null and a.user_id<>auth.uid()),'[]') predecessors
  from public.production_operation_machine_sections x join public.production_order_operations o on o.id=x.operation_id
  join public.production_orders b on b.id=o.order_id join public.production_machines m on m.id=x.machine_id
  where article_master_private.routing_visible(o.id)
@@ -203,7 +204,7 @@ declare machine uuid;
 begin
  perform pg_advisory_xact_lock(73103,1);
  select machine_id into machine from public.production_operation_execution where operation_id=op;
- if action='start' and exists(select 1 from public.production_operation_activity_segments a join public.production_operation_machine_sections x on x.id=a.section_id where x.machine_id=machine and a.ended_at is null and a.activity='setup_internal') then raise exception 'Machine internally occupied' using errcode='PT409';end if;
+ if action in('start','resume') and exists(select 1 from public.production_operation_activity_segments a join public.production_operation_machine_sections x on x.id=a.section_id where x.machine_id=machine and a.ended_at is null and a.activity='setup_internal') then raise exception 'Machine internally occupied' using errcode='PT409';end if;
  return article_master_private.readiness_command_before_setup(op,action,request,expected,quantity,target,planned,reason);
 end;$$;
 -- Rebind public wrappers explicitly after adapting their private implementations.

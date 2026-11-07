@@ -56,7 +56,7 @@ test('correction needs reason, original remains immutable, stale audit and overl
  await assert.rejects(cmd(worker,'correct',op,r.run_id,{p_segment_id:a.id,p_expected:effective,p_change:change,p_reason:'Stale'}),e=>e.code==='PT409');
  await assert.rejects(api.asUser(worker,()=>api.db.query('delete from public.production_setup_corrections')),e=>e.code==='42501');
 });
-test('permissions fail closed: foreign worker, scanner, mutable admin and expired deputy',async()=>{
+test('foreign employee and mutable admin role cannot finish another run',async()=>{
  const op=await fresh(),r=await start(worker,op);await assert.rejects(start(outsider,op),e=>e.code==='42501');await assert.rejects(cmd(outsider,'finish',op,r.run_id),e=>e.code==='42501');
  await api.db.query("update public.employees set role='admin' where auth_user_id=$1",[outsider]);try{await assert.rejects(cmd(outsider,'finish',op,r.run_id),e=>e.code==='42501');}finally{await api.db.query("update public.employees set role='employee' where auth_user_id=$1",[outsider]);}
  await cmd(manager,'finish',op,r.run_id);
@@ -90,4 +90,13 @@ test('server gate, scanner and raw history access fail closed',async()=>{
  const op=await fresh();await api.db.query("update public.employees set role='tool_scanner' where auth_user_id=$1",[worker]);try{assert.deepEqual((await view(worker)).rows,[]);await assert.rejects(start(worker,op),e=>e.code==='42501');}finally{await api.db.query("update public.employees set role='employee' where auth_user_id=$1",[worker]);}
  await api.db.exec('update public.production_setup_settings set enabled=false');try{assert.deepEqual((await view(manager)).rows,[]);await assert.rejects(start(manager,op),e=>e.code==='42501');}finally{await api.db.exec('update public.production_setup_settings set enabled=true');}
  for(const table of ['production_setup_events','production_setup_runs','production_setup_corrections'])await assert.rejects(api.asUser(worker,()=>api.db.query('select * from public.'+table)),e=>e.code==='42501');
+});
+test('stale takeover cannot change another employees pause state; terminal BA still allows safe personal finish',async()=>{
+ const op=await fresh(),r=await start(worker,op);await cmd(worker,'pause');await assert.rejects(cmd(reviewer,'takeover',op,null,{p_previous_user:worker}),e=>e.code==='PT409');assert.equal((await view(worker)).paused,true);await cmd(worker,'return');await start(worker,op,r.run_id);
+ await api.db.query("update public.production_operation_execution set work_status='cancelled' where operation_id=$1",[op]);await cmd(worker,'end_own',op,r.run_id);await cmd(worker,'finish',op,r.run_id);assert((await rows()).rows.filter(a=>a.setup_run_id===r.run_id).every(a=>a.ended_at));
+});
+test('existing production start and resume reject internal machine occupation; external is independent',async()=>{
+ const op=await fresh(),r=await start(worker,op,null,'internal');const execution=(await api.db.query('select row_version from public.production_operation_execution where operation_id=$1',[op])).rows[0];
+ for(const action of ['start','resume'])await assert.rejects(api.rpc(worker,'machine_readiness_command',{p_operation_id:op,p_action:action,p_request_id:randomUUID(),p_expected_version:execution.row_version,p_reason:'Synthetic blocked production'}),e=>e.code==='PT409');
+ await cmd(worker,'finish',op,r.run_id);
 });
