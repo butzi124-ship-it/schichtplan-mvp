@@ -10,21 +10,23 @@
  function deadline(row,today){return row.due_date<today?'Endtermin überschritten; Abschlussprognose fehlt':'Endtermin hinterlegt; Abschlussprognose fehlt (#10)';}
  const date=v=>v?new Intl.DateTimeFormat('de-DE',{dateStyle:'medium',timeStyle:'short',timeZone:'Europe/Berlin'}).format(new Date(v)):'Nicht hinterlegt';
  function create({client,actor,role,redraw,forecast=null}){
+  const routing=root.HumbelRouting?.create({client,actor,role,redraw,changed:()=>execute('reload')});
   let user=null,generation=0,loaded=false,loading=false,allowed=false,rows=[],machines=[],today='',busy=false,error='',notice='',filter='';
   const forms=new Map(),requests=new Map();
   const enabled=()=>root.HUMBEL_MACHINE_READINESS_ENABLED===true&&root.HUMBEL_OPERATIONS_ENABLED===true&&root.HUMBEL_ARTICLE_MASTER_ENABLED===true;
-  function reset(){generation++;user=null;loaded=loading=allowed=busy=false;rows=[];machines=[];today=error=notice=filter='';forms.clear();requests.clear();}
+  function reset(){routing?.reset();generation++;user=null;loaded=loading=allowed=busy=false;rows=[];machines=[];today=error=notice=filter='';forms.clear();requests.clear();}
   function valid(){return enabled()&&user&&user===actor()&&role()!=='tool_scanner';}
-  function hasAccess(){return !!(valid()&&allowed);}
+  function hasAccess(){return !!(routing?.enabled()&&routing.hasAccess()||valid()&&allowed);}
   async function rpc(name,params={}){const r=await client.rpc(name,params);if(r.error){throw Error(r.error.code==='42501'?'Keine gültige Maschinenberechtigung.':r.error.code==='40001'?'Stand geändert. Neu laden; Eingaben bleiben erhalten.':r.error.code==='22023'?'Aktion nicht zulässig: vollständige physische Übergabe, Vorgängerfreigabe, Status und Begründung prüfen.':'Maschinenstatus nicht verfügbar. Eingaben bleiben erhalten; bei unklarer Antwort vor erneutem Bestätigen neu laden.');}return r.data;}
-  async function load(ticket){if(forecast)await forecast.refresh();const r=await rpc('machine_readiness_view');if(ticket!==generation||!valid())return;allowed=r.can_view;rows=r.rows||[];machines=r.machines||[];today=r.evaluated_on||'';}
-  async function ensureSession(){if(!enabled()||!actor()||role()==='tool_scanner'){if(user)reset();return;}if(user!==actor()){reset();user=actor();}if(loaded||loading)return;loading=true;const t=generation;try{await load(t);}catch(e){if(t===generation)error=e.message;}finally{if(t===generation){loaded=true;loading=false;redraw();}}}
+  async function load(ticket){if(forecast)await forecast.refresh();const r=await rpc('machine_readiness_view');if(ticket!==generation||!valid())return;allowed=r.can_view||!!(routing?.enabled()&&r.rows?.length);rows=r.rows||[];machines=r.machines||[];today=r.evaluated_on||'';}
+  async function ensureSession(){if(routing?.enabled())await routing.ensureSession();if(!enabled()||!actor()||role()==='tool_scanner'){if(user)reset();return;}if(user!==actor()){reset();user=actor();}if(loaded||loading)return;loading=true;const t=generation;try{await load(t);}catch(e){if(t===generation)error=e.message;}finally{if(t===generation){loaded=true;loading=false;redraw();}}}
   function values(id){if(!forms.has(id))forms.set(id,{quantity:'',reason:'',machine:'',start:''});return forms.get(id);}
   function render(){
-   if(!valid()||!allowed&&!error)return '';
+   const routingPanel=routing?.enabled()?routing.render():'';
+   if(!valid()||!allowed&&!error)return routingPanel;
    const shown=filter?rows.filter(r=>(r.machine_id||'unassigned')===filter):rows;
    const groups=[...new Map(rows.map(r=>[r.machine_id||'unassigned',r.machine_name])).entries()];
-   return `<section id="machine-readiness" aria-label="OP-Maschinenübersicht">${style()}<h3>OP-Maschinenübersicht</h3><p>Material- und Arbeitsbereitschaft. Terminstatus separat. Teilmengenfreigabe deaktiviert. OP ist keine Spannung. Bewertungstag: ${escape(today)} (Europe/Berlin); aktuelle Daten über Neu laden.</p>
+   return `${routingPanel}<section id="machine-readiness" aria-label="OP-Maschinenübersicht">${style()}<h3>OP-Maschinenübersicht</h3><p>Material- und Arbeitsbereitschaft. Terminstatus separat. Teilmengenfreigabe deaktiviert. OP ist keine Spannung. Bewertungstag: ${escape(today)} (Europe/Berlin); aktuelle Daten über Neu laden.</p>
     <button type="button" data-readiness="reload" ${busy?'disabled':''}>Maschinenstatus neu laden</button>${error?`<p role="alert">${escape(error)}</p>`:''}${notice?`<p role="status">${escape(notice)}</p>`:''}
     <label for="readiness-machine-filter">Maschine filtern</label><select id="readiness-machine-filter"><option value="">Alle zugeordneten Maschinen</option>${groups.map(([id,name])=>`<option value="${escape(id)}" ${filter===id?'selected':''}>${escape(name)}</option>`).join('')}</select>
     ${shown.map(card).join('')||'<p>Keine berechtigten BA-Operationen vorhanden.</p>'}</section>`;
@@ -46,6 +48,7 @@
   function style(){return `<style>#machine-readiness{max-width:100%;overflow-wrap:anywhere}#machine-readiness *{box-sizing:border-box;min-width:0}#machine-readiness h3,#machine-readiness h4{font-weight:700;margin:10px 0}.readiness-card{border:1px solid #94a3b8;border-radius:8px;padding:12px;margin:12px 0}.readiness-card>section{padding:10px;margin:10px 0;border:1px solid #cbd5e1}.readiness-card .deadline{border-left:5px solid #475569;background:#f8fafc}.readiness-card .work-state{font-weight:700}#machine-readiness label{display:block;margin:8px 0}#machine-readiness input,#machine-readiness textarea,#machine-readiness select{display:block;width:100%;padding:10px;border:1px solid #94a3b8;border-radius:4px}#machine-readiness textarea{min-height:80px}#machine-readiness button{min-height:44px;padding:8px 12px;margin:4px;border:1px solid #64748b;border-radius:4px}#machine-readiness button:disabled{opacity:.45}#machine-readiness pre{white-space:pre-wrap}.material-light{display:inline-block;width:22px;height:22px;border:2px solid #334155;border-radius:50%;margin-right:8px;vertical-align:middle}.yellow{background:#facc15}.green{background:#22c55e}.alternating{background:#facc15;animation:readiness-alternate 1.6s steps(1) infinite}.blinking{background:#22c55e;animation:readiness-blink 1.6s steps(1) infinite}@keyframes readiness-alternate{50%{background:#22c55e}}@keyframes readiness-blink{50%{opacity:.3}}.closed .material-light{animation:none!important}@media(prefers-reduced-motion:reduce){#machine-readiness .material-light{animation:none!important}.alternating{background:linear-gradient(90deg,#facc15 50%,#22c55e 50%)}.blinking{outline:3px double #166534}}</style>`;}
   function collect(form){const v=values(form.dataset.readinessForm),data=new FormData(form);for(const k of ['quantity','reason','machine','start'])v[k]=String(data.get(k)||'');return v;}
   function bind(document){
+   routing?.bind(document);
    document.addEventListener('submit',e=>{if(e.target.matches('[data-readiness-form]'))e.preventDefault();});
    document.addEventListener('input',e=>{const form=e.target.closest('[data-readiness-form]');if(form)collect(form);});
    document.addEventListener('change',e=>{if(e.target.id==='readiness-machine-filter'){filter=e.target.value;redraw();}const form=e.target.closest('[data-readiness-form]');if(form)collect(form);});
@@ -66,7 +69,7 @@
     }
    }catch(e){if(ticket===generation)error=e.message;}finally{if(ticket===generation){busy=false;redraw();}}
   }
-  return{ensureSession,hasAccess,render,reset,bind,refresh:()=>execute('reload')};
+  return{ensureSession,hasAccess,render,reset,bind,refresh:async()=>{if(routing?.enabled())await routing.refresh();return execute('reload');}};
  }
  const api={create,material,may,terminal,deadline};root.HumbelMachineReadiness=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window==='undefined'?globalThis:window);
