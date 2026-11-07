@@ -31,6 +31,8 @@
           throw Error(messages[result.error.code] || 'Speichern / Laden fehlgeschlagen. Eingaben bleiben erhalten.');
         }
         snapshot = result.data;
+        const operation=snapshot?.op_rows?.find(o=>o.op_number===snapshot.selected_op);
+        if(operation&&root.HUMBEL_OP_ROUTING_ENABLED===true)root.dispatchEvent(new CustomEvent('humbel-operation-open',{detail:{operation_id:operation.id}}));
         if (action === 'create') {
           notice = snapshot.existing ? 'Vorhandenen BA geöffnet. Keine Daten geändert.' : 'BA mit freigegebenem Artikel- und OP-Snapshot angelegt.';
           if (!snapshot.existing) fields = {ba:'', article:'', quantity:''};

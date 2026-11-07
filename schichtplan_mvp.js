@@ -86,7 +86,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.10.1";
+const APP_VERSION = "0.11.5";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -101,6 +101,39 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.11.5",
+    date: "2026-11-07 14:03",
+    changes: ["Rückgabe-Regressionsprüfung kontrolliert den Zugriffsentzug beim abgebenden AL sowie OP und Benachrichtigung beim ursprünglichen AL. Datenmodell bestätigt Rechteübergang; Produktlogik und bestehende Assertions bleiben erhalten."],
+  },
+  {
+    version: "0.11.4",
+    date: "2026-11-07 14:01",
+    changes: ["AL-Browserregression öffnet nach dem Produktionsbereich ausdrücklich die vorhandene OP-Maschinenübersicht. Der reguläre AL-Einstieg über die Abteilungsansicht bleibt erhalten; alle fachlichen Assertions bleiben unverändert."],
+  },
+  {
+    version: "0.11.3",
+    date: "2026-11-07 13:39",
+    changes: ["Maschinen-, Begründungs- und Rüstabbruchfelder erhalten eindeutige Label-Verknüpfungen für barrierefreie Bedienung. Native Routing-Abnahme inklusive JWT, Parallelbuchung und HTTP-409-Konflikt besteht 27/27; Browserregression bleibt unverändert."],
+  },
+  {
+    version: "0.11.2",
+    date: "2026-11-07 13:37",
+    changes: ["Maschinenabschnitte zeigen lesbare Maschinennamen; Abschnittsidentität und Ist-Historie bleiben erhalten. Neue Routing-Versionskonflikte liefern HTTP 409 statt wiederholbarer Serialisierungsfehler; native HTTP-Regression prüft die unveränderte Konfliktablehnung."],
+  },
+  {
+    version: "0.11.1",
+    date: "2026-11-07 13:26",
+    changes: ["OP-Barcode und Drei-Felder-Anlage öffnen bei aktiviertem Routing direkt die bereits ausgewählte OP-Maschinenzuordnung; keine zweite OP-Auswahl und keine Zählerbuchung. Sitzungs-/Berechtigungsprüfung bleibt serverseitig erhalten.", "Bekannten Legacy-Rollenconstraint ausschließlich im SQL-Reviewentwurf um die bereits von App und Originalfunktion verwendete AL-Rolle ergänzt; keine produktive Rollen-/Auth-Änderung."],
+  },
+  {
+    version: "0.11.0",
+    date: "2026-11-07 13:17",
+    changes: [
+      "Deaktivierte OP-Maschinenzuordnung um Abteilungsleiter-Festlegung, aktive Stellvertretung, abteilungsübergreifende operative Verantwortung und direkte Rückgabe mit persistenten App-Benachrichtigungen ergänzt.",
+      "Maschinenabschnitte und atomare Unterbrechung persönlicher Zeitsegmente bei Maschinenwechsel vorbereitet; Pflicht-Abbruchgrund bei aktiver Rüstung. Bestehende OP, BA-Snapshots, Stückzahlzähler und Ist-Daten bleiben erhalten. Nur SQL-Reviewentwurf und isolierte Tests, keine produktive Migration oder Aktivierung."
+    ],
+  },
   {
     version: "0.10.1",
     date: "2026-11-07 12:37",
