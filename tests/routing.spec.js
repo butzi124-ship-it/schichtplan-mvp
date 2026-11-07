@@ -12,6 +12,7 @@ test.describe('Machine readiness Phase 2 routing',()=>{
   uid=user;await page.goto(appUrl);await page.getByRole('button',{name:'Mido/Admin'}).click();
   await page.evaluate(({user,role,enabled})=>{window.HUMBEL_ARTICLE_MASTER_ENABLED=true;window.HUMBEL_OPERATIONS_ENABLED=true;window.HUMBEL_BA_ENTRY_ENABLED=true;window.HUMBEL_MACHINE_READINESS_ENABLED=true;window.HUMBEL_OP_ROUTING_ENABLED=enabled;currentSupabaseUser={id:user};currentUser.role=role;render();},{user,role,enabled});
   await page.locator('#tabs').getByRole('button',{name:'Produktion',exact:true}).click();
+  await page.getByRole('button',{name:'OP-Maschinenübersicht',exact:true}).click();
  }
  const card=page=>page.getByRole('article',{name:'Maschinenzuordnung BA 812200 OP 010'});
  async function choose(page,target,action='Maschine wählen'){

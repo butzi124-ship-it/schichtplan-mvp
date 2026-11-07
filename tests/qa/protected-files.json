@@ -60,7 +60,7 @@
     "tests/ba-entry/database.test.js": "e7c20b97c976ddf34c2d9e1807c7620631b4689decc67a2f5bf23e08456a843d",
     "js/op-routing.js": "f507e78e63e291be2b56293c5cc93172f716e012134503a75c035812ba507881",
     "supabase/review/op-routing-phase2.sql": "27878083e07e9ca8301601072726c38ea7d981923e4b44d4983e5cc0cba0660a",
-    "tests/routing.spec.js": "3b4766303043f1766ef5da497ff6f8ab6fc2b10f19fba05e2aedceb049bf0fcc",
+    "tests/routing.spec.js": "9c9a273ab26c80925e47c3692b269a658c82c470baf146c28a95ed56a6703dab",
     "tests/routing/database.test.js": "e3e0db5c9cdefc29f5ed19c36a41bd12c31d578e8e418cc86e1124a94baa7727",
     "tests/helpers/routing-db.js": "62812d6aa1a121d1a3eaf2ca44eea7d31b78706a856099bf246e29804bbcf0f9",
     "tests/db-integration/routing-extension.js": "345c5feba959804d71827b960de23616cc0d3fd61a31780bbf6b164e7a1cbe02"
