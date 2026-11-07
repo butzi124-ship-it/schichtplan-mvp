@@ -86,7 +86,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.11.2";
+const APP_VERSION = "0.11.3";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -101,6 +101,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.11.3",
+    date: "2026-11-07 13:39",
+    changes: ["Maschinen-, Begründungs- und Rüstabbruchfelder erhalten eindeutige Label-Verknüpfungen für barrierefreie Bedienung. Native Routing-Abnahme inklusive JWT, Parallelbuchung und HTTP-409-Konflikt besteht 27/27; Browserregression bleibt unverändert."],
+  },
   {
     version: "0.11.2",
     date: "2026-11-07 13:37",
