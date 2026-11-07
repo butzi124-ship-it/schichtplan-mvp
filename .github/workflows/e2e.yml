@@ -38,6 +38,7 @@ jobs:
           node --check tests/smoke.spec.js
           npm run check:syntax
           git -c safe.directory="$GITHUB_WORKSPACE" show --format= --check HEAD
+      - run: npm run qa:agent-server
       - run: npm run test:agents
       - run: npm run test:e2e
       - name: Preserve version and commit report
@@ -80,6 +81,7 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run test:article-db
+      - run: npm run test:ba-entry
       - run: npm run test:operations
       - run: npm run test:readiness
       - run: npm run test:forecast

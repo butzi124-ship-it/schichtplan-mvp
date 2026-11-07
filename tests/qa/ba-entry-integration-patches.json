@@ -1,0 +1,18 @@
+{
+  "issue": 17,
+  "reason": "Explicit Phase 1 hooks; reverse only these additions before existing immutable legacy checksum. No legacy roles/counters changed.",
+  "patches": [
+    {
+      "before": "  canCreate: () => canAccessProduction() && articleMaster.hasAccess(),\n  machines: () => getActiveProductionOrderMachines(),\n",
+      "after": "  canCreate: () => canAccessProduction() && articleMaster.hasAccess(),\n  canEnter: () => articleMaster.hasAccess(),\n  machines: () => getActiveProductionOrderMachines(),\n"
+    },
+    {
+      "before": "function renderProduction() {\n  if (machineReadiness.hasAccess() && (state.productionSubTab === \"readiness\" || (!canAccessProduction() && state.productionSubTab !== \"articles\"))) {\n",
+      "after": "function renderProduction() {\n  if (operations.hasEntryAccess() && !canAccessProduction() && state.productionSubTab === \"orders\") {\n    return `<div class='bg-white rounded-xl shadow p-4'><h2>Produktion</h2>\n      <button onclick=\"setProductionSubTab('articles')\">Artikelstamm</button>\n      <button onclick=\"setProductionSubTab('orders')\">Auftr\u00e4ge / BA</button>\n      ${operations.orderPanel()}</div>`;\n  }\n  if (machineReadiness.hasAccess() && (state.productionSubTab === \"readiness\" || (!canAccessProduction() && state.productionSubTab !== \"articles\"))) {\n"
+    },
+    {
+      "before": "      ${canAccessProduction() ? `<button class='px-3 py-2 rounded border' onclick=\"setProductionSubTab('departments')\">Abteilungen</button>` : \"\"}\n      ${articleMaster.render()}</div>`;\n",
+      "after": "      ${canAccessProduction() ? `<button class='px-3 py-2 rounded border' onclick=\"setProductionSubTab('departments')\">Abteilungen</button>` : \"\"}\n      ${operations.hasEntryAccess() ? `<button onclick=\"setProductionSubTab('orders')\">Auftr\u00e4ge / BA</button>` : \"\"}\n      ${articleMaster.render()}</div>`;\n"
+    }
+  ]
+}

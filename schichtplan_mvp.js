@@ -22,6 +22,7 @@ const operations = window.HumbelOperations.create({
   client: supabaseClient, actor: () => currentSupabaseUser?.id || null,
   role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },
   canCreate: () => canAccessProduction() && articleMaster.hasAccess(),
+  canEnter: () => articleMaster.hasAccess(),
   machines: () => getActiveProductionOrderMachines(),
   refreshOrders: () => refreshProductionOrdersFromSupabase(),
 });
@@ -85,7 +86,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.9.1";
+const APP_VERSION = "0.10.0";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -100,6 +101,14 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.10.0",
+    date: "2026-11-07 12:33",
+    changes: [
+      "Deaktivierten Drei-Felder-BA-Einstieg für berechtigte Mitarbeiter der ersten OP ergänzt; vorhandene Barcode-/Snapshot-Anzeige wiederverwendet. Doppelte BA werden geöffnet, Ist-/Zählerdaten nicht kopiert.",
+      "Separater SQL-Reviewentwurf mit unabhängigen Erst-OP-Berechtigungen, atomarer BA-Anlage und Audit; Termin/Maschine optional. AL-Regel bleibt offen. Keine produktive Migration, Aktivierung oder Veröffentlichung."
+    ],
+  },
   {
     "version": "0.9.1",
     "date": "2026-11-07 10:35",
@@ -6058,6 +6067,12 @@ function getDepartmentLeaderHint(employee) {
 }
 
 function renderProduction() {
+  if (operations.hasEntryAccess() && !canAccessProduction() && state.productionSubTab === "orders") {
+    return `<div class='bg-white rounded-xl shadow p-4'><h2>Produktion</h2>
+      <button onclick="setProductionSubTab('articles')">Artikelstamm</button>
+      <button onclick="setProductionSubTab('orders')">Aufträge / BA</button>
+      ${operations.orderPanel()}</div>`;
+  }
   if (machineReadiness.hasAccess() && (state.productionSubTab === "readiness" || (!canAccessProduction() && state.productionSubTab !== "articles"))) {
     return `<div class='bg-white rounded-xl shadow p-4'><h2>Produktion</h2>
       <button onclick="setProductionSubTab('readiness')">OP-Maschinenübersicht</button>
@@ -6069,6 +6084,7 @@ function renderProduction() {
     return `<div class='bg-white rounded-xl shadow p-4'><h2>Produktion</h2>
       <button class='px-3 py-2 rounded border humbel-subtab-active' onclick="setProductionSubTab('articles')">Artikelstamm</button>
       ${canAccessProduction() ? `<button class='px-3 py-2 rounded border' onclick="setProductionSubTab('departments')">Abteilungen</button>` : ""}
+      ${operations.hasEntryAccess() ? `<button onclick="setProductionSubTab('orders')">Aufträge / BA</button>` : ""}
       ${articleMaster.render()}</div>`;
   }
   if (!canAccessProduction()) {
