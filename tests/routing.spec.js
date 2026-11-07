@@ -30,7 +30,8 @@ test.describe('Machine readiness Phase 2 routing',()=>{
   await login(page,{user:reviewer,role:'department_admin'});await choose(page,foreignMachine,'Verbindlich festlegen (AL)');await expect(page.locator('#op-routing [role=status]')).toContainText('AL wurden innerhalb der App benachrichtigt');
   await expect(card(page)).toContainText('Verbindliche BA-OP-Maschine');await expect(card(page).getByRole('button',{name:'Verbindlich festlegen (AL)',exact:true})).toHaveCount(0);
   await page.evaluate(()=>logoutSupabase());await login(page,{user:leaderB,role:'department_admin'});await expect(page.getByRole('region',{name:'AL-Benachrichtigungen'})).toContainText('Operative Verantwortung übernommen');
-  await choose(page,machine,'An ursprüngliche Abteilung zurückgeben');await expect(card(page)).toContainText('Ausführende Abteilung: Fertigung');
+  await choose(page,machine,'An ursprüngliche Abteilung zurückgeben');await expect(page.locator('#op-routing [role=status]')).toContainText('Audit gespeichert');await expect(card(page)).toHaveCount(0);
+  await page.evaluate(()=>logoutSupabase());await login(page,{user:reviewer,role:'department_admin'});await expect(card(page)).toContainText('Ausführende Abteilung: Fertigung');await expect(page.getByRole('region',{name:'AL-Benachrichtigungen'})).toContainText('Zurückgegeben');
   expect((await api.db.query('select department_id from public.production_orders where id=$1',[snapshot.order_id])).rows[0].department_id).toBe(department);
  });
  test('configured setup abort mandatory; two personal segments close together and new machine starts no timer',async({page})=>{
