@@ -1,4 +1,4 @@
-# Phase 3 – Rüstzeiterfassung (Reviewstand 0.12.1)
+# Phase 3 – Rüstzeiterfassung (Reviewstand 0.12.2)
 
 Gestapelter Draft auf PR #20 `feature/ba-op-phase2`, geprüft gegen dessen tatsächlichen Head `e276270adc704fc9033e304ff5ad81db56593ecd`. Ref #17, verbindliche Spezifikation PR #18. Neuer Branch `feature/ba-op-phase3`. Kein Merge, Deployment, produktiver Datenbankzugriff oder Feature-Aktivierung.
 
@@ -27,7 +27,7 @@ Lokaler Stand vor CI:
 |---|---|
 | npm ci --ignore-scripts | bestanden |
 | Hauptdatei/Smoke node --check + check:syntax | bestanden |
-| Phase 3 SQL/Unit | 16/16 bestanden, eingebettetes PGlite, keine native Parallelität |
+| Phase 3 SQL/Unit | 17/17 bestanden, eingebettetes PGlite, keine native Parallelität |
 | Artikel / OP / Readiness / Forecast / BA / Routing | 8 + 15 + 17 + 30 + 9 + 10 = 89/89 bestanden |
 | test:ci / test:qa | 2/2 und 9/9 bestanden |
 | qa:check | 251 Legacy-Identitäten, alter Business-Hash nach expliziter Hook-Umkehr und 33 Bildreferenzen erhalten |
@@ -36,7 +36,7 @@ Lokaler Stand vor CI:
 | Lokale Visuals | blockiert: vorgeschriebener gepinnter Container fehlt |
 | Allgemeiner DB-Preflight | BLOCKED_NOT_TESTED; kein autoritativer Restore/isolierter nativer Stack lokal |
 
-35 neue Phase-3-Browserausführungen (7 Fälle × Desktop/Smartphone/Tablet/Firefox/WebKit) sind der vollständigen unveränderten bisherigen Matrix hinzugefügt. Insgesamt 678 Browserfälle. Echte Geräte/Scannerhardware nicht getestet; Gerätebezeichnungen meinen Browser-/Viewportprofile.
+40 neue Phase-3-Browserausführungen (8 Fälle × Desktop/Smartphone/Tablet/Firefox/WebKit) sind der vollständigen unveränderten bisherigen Matrix hinzugefügt. Insgesamt 683 Browserfälle. Echte Geräte/Scannerhardware nicht getestet; Gerätebezeichnungen meinen Browser-/Viewportprofile.
 
 Native CI-Extension ergänzt die unveränderten 14 Baseline-, 6 Phase-1- und 7 Phase-2-Fälle um Phase-3-Fälle, inklusive realer JWT-/Raw-Denials, unabhängiger PostgreSQL-Verbindungen, parallelem Start/Abschluss/Pause/Maschinenwechsel, HTTP-409, Audit-Rollback und bestehender Stückzahlen. Pinned Infrastruktur aus #15: `25e9a6914e38fc791d9ecad13d92a45e30d19bb3`. Ergebnisse/CI-Links und tatsächlicher finaler SHA werden im Draft-PR nach dem Lauf ergänzt. Keine grüne Datenbankabnahme vor tatsächlicher Ausführung.
 
@@ -72,3 +72,5 @@ Frontend: `js/setup-times.js`, `js/machine-readiness.js`, `schichtplan_mvp.html`
 | 12 Datenintegrität | unveränderte Altzähler/Ausschuss, unveränderte Snapshots/Ist-Minuten in bestehenden Tests; 251 geschützte Testidentitäten und exakter Legacy-Business-Hash |
 
 Erster nativer Vorabstand `34f3729a0713d68f4d4c037e006991cccc36f484` (0.12.0): [35/35 native Tests und 2/2 Zielschutztests bestanden](https://github.com/butzi124-ship-it/schichtplan-mvp/actions/runs/42393464728). Strikte Visuals dieses Vorabstands bestanden zweimal 33/33. Der nachfolgende Stand 0.12.1 ergänzt insbesondere die veraltete Übernahme und die interne Belegung bei Produktionsfortsetzung; hierfür werden neue vollständige CI-Läufe verlangt. Finale CI-Nachweise und Commit-SHA stehen im PR-Bericht und sind nicht durch diesen historischen Vorablauf ersetzt.
+
+0.12.2 ergänzt den historischen Eigenzugriff nach Abteilungswechsel sowie AL-Korrekturrechte nach aktueller ausführender Zuständigkeit, mit SQL-, nativen JWT- und Browserregressionen.

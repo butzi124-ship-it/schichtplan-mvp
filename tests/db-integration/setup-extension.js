@@ -66,6 +66,12 @@ async function run(context){
   for(const action of ['start','resume'])await assert.rejects(rpc(p.worker,'machine_readiness_command',{p_operation_id:op,p_action:action,p_request_id:randomUUID(),p_expected_version:e.row_version,p_reason:'Synthetic production against internal setup'}),e=>e.code==='PT409'&&e.status===409);
   await cmd(p.worker,'finish',op,r.run_id);
  });
+ await check('Native historical own correction survives department transfer; original AL loses correction authority',async()=>{
+  const op=await fresh(),r=await start(p.worker,op);await cmd(p.worker,'finish',op,r.run_id);const route=(await rpc(p.worker,'op_routing_view')).rows.find(x=>x.operation_id===op),target=(await db.query('select m.id from public.production_machines m join public.production_routing_capabilities c on c.machine_id=m.id where m.department_id=$1 limit 1',[s.foreign])).rows[0].id;
+  await rpc(p.reviewer,'op_routing_command',{p_operation_id:op,p_action:'fix',p_request_id:randomUUID(),p_expected_version:route.row_version,p_machine_id:target,p_reason:'Synthetic transfer after setup'});
+  const own=(await rpc(p.worker,'setup_time_view')).rows.flatMap(x=>x.runs).find(x=>x.id===r.run_id).segments[0];assert.equal(own.can_correct,true);assert.equal((await rpc(p.reviewer,'setup_time_view')).rows.flatMap(x=>x.runs).find(x=>x.id===r.run_id).segments[0].can_correct,false);
+  const {can_correct,correction_count,...expected}=own,extra={p_segment_id:own.id,p_expected:expected,p_change:{started_at:own.started_at,ended_at:own.ended_at,activity:'setup_internal'},p_reason:'Synthetic historical correction'};await assert.rejects(cmd(p.reviewer,'correct',op,r.run_id,extra),e=>e.code==='42501');await cmd(p.worker,'correct',op,r.run_id,extra);
+ });
  results.limitations.push('Phase 3 requires separately approved trusted authority provisioning, original schema/ACL restore and review SQL activation. Embedded tests do not replace native concurrency evidence. No MOBATIME integration or Phase 4 counter attribution.');
 }
 module.exports={run};

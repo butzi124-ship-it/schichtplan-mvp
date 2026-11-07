@@ -100,3 +100,13 @@ test('existing production start and resume reject internal machine occupation; e
  for(const action of ['start','resume'])await assert.rejects(api.rpc(worker,'machine_readiness_command',{p_operation_id:op,p_action:action,p_request_id:randomUUID(),p_expected_version:execution.row_version,p_reason:'Synthetic blocked production'}),e=>e.code==='PT409');
  await cmd(worker,'finish',op,r.run_id);
 });
+test('own historical corrections remain visible after department transfer; management corrections follow current responsibility',async()=>{
+ const op=await fresh(),r=await start(worker,op);await cmd(worker,'finish',op,r.run_id);
+ const route=(await api.rpc(worker,'op_routing_view')).rows.find(x=>x.operation_id===op);
+ await api.rpc(reviewer,'op_routing_command',{p_operation_id:op,p_action:'fix',p_request_id:randomUUID(),p_expected_version:route.row_version,p_machine_id:foreignMachine,p_reason:'Synthetic transfer after setup'});
+ const own=(await view(worker)).rows.flatMap(x=>x.runs).find(x=>x.id===r.run_id).segments[0];assert.equal(own.can_correct,true);
+ assert.equal((await view(reviewer)).rows.flatMap(x=>x.runs).find(x=>x.id===r.run_id).segments[0].can_correct,false);
+ assert.equal((await view(leaderB)).rows.flatMap(x=>x.runs).find(x=>x.id===r.run_id).segments[0].can_correct,true);
+ const {can_correct,correction_count,...expected}=own,extra={p_segment_id:own.id,p_expected:expected,p_change:{started_at:own.started_at,ended_at:own.ended_at,activity:'setup_internal'},p_reason:'Synthetic own historical correction'};
+ await assert.rejects(cmd(reviewer,'correct',op,r.run_id,extra),e=>e.code==='42501');await cmd(worker,'correct',op,r.run_id,extra);
+});

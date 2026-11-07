@@ -30,7 +30,7 @@
    doc.addEventListener('submit',e=>{const f=e.target.closest('[data-setup-correction]');if(!f)return;e.preventDefault();collect(f);const id=f.dataset.setupCorrection,a=data.rows.flatMap(x=>x.runs).flatMap(r=>r.segments).find(a=>a.id===id);if(!a)return;const {can_correct,correction_count,...expected}=a,v=forms.get(id);if(!v.reason.trim()){error='Pflichtbegründung erforderlich.';redraw();return;}void execute('correct',{p_operation_id:f.dataset.op,p_run_id:f.dataset.run,p_segment_id:id,p_expected:expected,p_change:{started_at:v.started_at,ended_at:v.ended_at,activity:v.activity},p_reason:v.reason});});
    doc.addEventListener('click',e=>{const b=e.target.closest('[data-setup]');if(!b||!valid()||busy)return;const action=b.dataset.setup;if(action==='arm'){armed=b.dataset.op;redraw();return;}if(action==='resume-no'){dismissed=prompt;prompt=null;armed='';redraw();return;}if(action==='resume-yes'){armed=b.dataset.run;redraw();return;}if(action==='reload'){void refresh();return;}void execute(action,{...(b.dataset.op?{p_operation_id:b.dataset.op}:{}),...(b.dataset.run?{p_run_id:b.dataset.run}:{}),...(b.dataset.mode?{p_mode:b.dataset.mode}:{}),...(b.dataset.previous?{p_previous_user:b.dataset.previous}:{})});});
   }
-  return{enabled,reset,ensureSession,render,renderGeneral,refresh,beforeLogout,bind};
+  return{enabled,reset,ensureSession,hasAccess:()=>valid()&&data.rows.length>0,render,renderGeneral,refresh,beforeLogout,bind};
  }
  root.HumbelSetupTimes={create};if(typeof module!=='undefined')module.exports=root.HumbelSetupTimes;
 })(typeof window==='undefined'?globalThis:window);

@@ -1,5 +1,5 @@
 const {test,expect}=require('@playwright/test'),{randomUUID}=require('node:crypto');const {prepareMockPage,appUrl}=require('./helpers/mock-page');
-const {setupDatabase,worker,reviewer,machine,machineA2}=require('./helpers/setup-db');
+const {setupDatabase,worker,reviewer,machine,machineA2,foreignMachine}=require('./helpers/setup-db');
 test.describe('Machine readiness Phase 3 setup times',()=>{
  let api,uid,snapshot,calls,failNext;
  test.beforeEach(async({page})=>{
@@ -45,6 +45,11 @@ test.describe('Machine readiness Phase 3 setup times',()=>{
   await page.getByRole('button',{name:'Ja, Modus auswählen',exact:true}).click();await page.getByRole('region',{name:'Rüstung fortsetzen'}).getByRole('button',{name:'Extern rüsten',exact:true}).click();
   await expect(page.locator('#setup-personal [role=status]')).toContainText('bestätigt');
   const active=(await api.db.query('select user_id,setup_run_id from public.production_operation_activity_segments where ended_at is null')).rows;expect(active).toHaveLength(1);expect(active[0].user_id).toBe(worker);expect(active[0].setup_run_id).toBe(r.run_id);
+ });
+ test('own historical setup stays reachable and correctable after cross-department transfer',async({page})=>{
+  const r=await command('start',null,{p_mode:'external'});await command('finish',r.run_id);const op=snapshot.op_rows[0].id,route=(await api.rpc(worker,'op_routing_view')).rows.find(x=>x.operation_id===op);
+  await api.rpc(reviewer,'op_routing_command',{p_operation_id:op,p_action:'fix',p_request_id:randomUUID(),p_expected_version:route.row_version,p_machine_id:foreignMachine,p_reason:'Synthetic transfer before historical correction'});
+  await login(page);await expect(card(page)).toBeVisible();await card(page).getByText('Rüstzeit korrigieren',{exact:true}).click();const f=card(page).locator('form[data-setup-correction]');await f.getByLabel('Rüstmodus',{exact:true}).selectOption('setup_internal');await f.getByLabel('Pflichtbegründung').fill('Synthetic historical correction');await f.getByRole('button',{name:'Korrektur speichern'}).click();await expect(card(page)).toContainText('Korrekturen: 1');
  });
  test('machine switch aborts open run with configured reason, next machine requires explicit setup start',async({page})=>{
   await login(page);await begin(page);const c=page.getByRole('article',{name:'Maschinenzuordnung BA 812200 OP 010'});await c.getByLabel('Zielmaschine',{exact:true}).selectOption(machineA2);await c.getByLabel('Begründung',{exact:true}).fill('Synthetic move during setup');await c.getByLabel('Rüst-Abbruchgrund').selectOption('synthetic-machine-change');await c.getByRole('button',{name:'Maschine wählen',exact:true}).click();await expect(page.locator('#op-routing [role=status]')).toContainText('Audit gespeichert');await page.getByRole('button',{name:'Rüstzeiten neu laden',exact:true}).click();await expect(page.locator('#setup-times')).toContainText('Alternative A');expect((await api.db.query('select count(*)::int n from public.production_operation_activity_segments where ended_at is null')).rows[0].n).toBe(0);
