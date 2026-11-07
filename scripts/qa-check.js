@@ -43,6 +43,11 @@ for (const [file, expected] of Object.entries(protectedFiles.tests)) {
     assert.equal(checkedSource.split(change.after).length - 1, 1, "Explicit quantity file adapter must remain exact and unique");
     checkedSource = checkedSource.replace(change.after, change.before);
   }
+  for (const change of [...(protectedFiles.reviewedTestClockPatches || [])].reverse()) {
+    if (change.file !== file) continue;
+    assert.equal(checkedSource.split(change.after).length - 1, 1, "Reviewed test clock patch must remain exact and unique");
+    checkedSource = checkedSource.replace(change.after, change.before);
+  }
   assert.equal(hash(checkedSource), expected, `${file}: protected regression source changed; explicit human review required`);
   assert.deepEqual(sourceViolations(fs.readFileSync(file, "utf8")), [], `${file}: forbidden skip/force/failure annotation`);
 }

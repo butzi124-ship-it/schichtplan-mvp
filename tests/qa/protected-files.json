@@ -92,5 +92,17 @@
       "after": "body > :is(.max-w-7xl, .max-w-none) > header > .flex > div {"
     }
   ],
-  "reviewReason": "Initial Linux visual tests exposed intrinsic tool-filter widths and a mobile header rule no longer matching when tools/storage switch the wrapper to max-w-none. Only six control widths and the two existing header selectors change; no app logic or business assertion changed."
+  "reviewReason": "Initial Linux visual tests exposed intrinsic tool-filter widths and a mobile header rule no longer matching when tools/storage switch the wrapper to max-w-none. Only six control widths and the two existing header selectors change; no app logic or business assertion changed.",
+  "reviewedTestClockPatches": [
+    {
+      "file": "tests/forecast/database.test.js",
+      "before": "const {test,before,after}=require('node:test');const a=require('node:assert/strict');const {randomUUID}=require('node:crypto');const {forecastDatabase,seedForecast,manager,worker,outsider,department,machine,order}=require('../helpers/forecast-db');const {calculate}=require('../../js/production-forecast');",
+      "after": "const {test,before,beforeEach,after,mock}=require('node:test');const a=require('node:assert/strict');const {randomUUID}=require('node:crypto');const {forecastDatabase,seedForecast,manager,worker,outsider,department,machine,order}=require('../helpers/forecast-db');const {calculate}=require('../../js/production-forecast');"
+    },
+    {
+      "file": "tests/forecast/database.test.js",
+      "before": "let api,seed,last;before(async()=>{api=await forecastDatabase();seed=await seedForecast(api);});after(async()=>api?.db.close());",
+      "after": "// PGlite's WASM wall clock uses Date too: freeze JS observations and SQL now()/clock_timestamp()\n// together. A morning leaves room for same-day arrivals; real late-night runs must not\n// change the publication/rollback scenarios. Advance between tests for run ordering.\nlet api,seed,last;before(async()=>{mock.timers.enable({apis:['Date'],now:new Date('2026-11-07T09:00:00Z')});api=await forecastDatabase();seed=await seedForecast(api);});\nbeforeEach(()=>mock.timers.tick(1000));\nafter(async()=>{try{await api?.db.close();}finally{mock.timers.reset();}});"
+    }
+  ]
 }
