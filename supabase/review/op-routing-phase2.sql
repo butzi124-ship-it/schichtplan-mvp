@@ -127,7 +127,7 @@ begin
  select o.order_id into oid from public.production_operation_machine_sections s join public.production_order_operations o on o.id=s.operation_id where s.id=new.section_id;
  perform 1 from public.production_orders where id=oid for update;
  select closed_at into closed from public.production_operation_machine_sections where id=new.section_id for update;
- if new.ended_at is null and closed is not null then raise exception 'Machine section already closed' using errcode='40001';end if;
+ if new.ended_at is null and closed is not null then raise exception 'Machine section already closed' using errcode='PT409';end if;
  return new;
 end; $$;
 create trigger routing_activity_insert_guard before insert on public.production_operation_activity_segments for each row execute function article_master_private.routing_activity_insert_guard();
@@ -161,7 +161,7 @@ begin
   if prior.operation_id<>op or prior.actor_id<>auth.uid() or prior.payload<>body then raise exception 'Request reused' using errcode='22023';end if;
   return prior.after_state;
  end if;
- if coalesce(r.row_version,0) is distinct from expected then raise exception 'Stale routing' using errcode='40001';end if;
+ if coalesce(r.row_version,0) is distinct from expected then raise exception 'Stale routing' using errcode='PT409';end if;
  select b.status into status from public.production_orders b where b.id=o.order_id;
  if status not in('running','paused') or e.work_status in('completed','cancelled') then raise exception 'Terminal BA/OP' using errcode='22023';end if;
  if reason is null or length(trim(reason)) not between 1 and 4000 then raise exception 'Reason required' using errcode='22023';end if;
@@ -236,7 +236,7 @@ begin
  from public.production_machines m where article_master_private.routing_suitable(o.id,m.id) and (c.machine_id is null or m.id=c.machine_id)
  and (article_master_private.routing_manager(article_master_private.routing_department(o.id)) or not coalesce(r.binding,false) and article_master_private.routing_operator(o.id,m.id))),'[]'::jsonb) machines,
  exists(select 1 from public.production_operation_activity_segments a join public.production_operation_machine_sections x on x.id=a.section_id where x.operation_id=o.id and a.ended_at is null and a.activity like 'setup_%') active_setup,
- coalesce((select jsonb_agg(to_jsonb(x) order by x.opened_at,x.id) from public.production_operation_machine_sections x where x.operation_id=o.id),'[]'::jsonb) sections,
+ coalesce((select jsonb_agg(to_jsonb(x)||jsonb_build_object('machine_name',(select name from public.production_machines where id=x.machine_id)) order by x.opened_at,x.id) from public.production_operation_machine_sections x where x.operation_id=o.id),'[]'::jsonb) sections,
  coalesce((select jsonb_agg(to_jsonb(ev) order by ev.happened_at,ev.request_id) from public.production_operation_routing_events ev where ev.operation_id=o.id),'[]'::jsonb) events
  from public.production_order_operations o join public.production_order_article_snapshots s on s.order_id=o.order_id join public.production_orders b on b.id=o.order_id
  join public.departments od on od.id=s.department_id join public.departments ed on ed.id=article_master_private.routing_department(o.id)

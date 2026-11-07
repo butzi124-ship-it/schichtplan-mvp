@@ -52,7 +52,7 @@ async function run(context){
   const rows=(await db.query('select ended_at from public.production_operation_activity_segments where section_id=$1',[section])).rows;assert(rows.every(r=>r.ended_at));assert.equal(rows[0].ended_at.getTime(),rows[1].ended_at.getTime());
   assert.equal((await db.query('select work_status from public.production_operation_execution where operation_id=$1',[op])).rows[0].work_status,'paused');
   assert((await rpc(p.reviewer,'op_routing_view')).notifications.some(n=>n.operation_id===op&&n.kind==='returned'));
-  await assert.rejects(db.query("insert into public.production_operation_activity_segments(section_id,user_id,activity,started_at) values($1,$2,'production',now())",[section,p.worker.id]),e=>e.code==='40001');
+  await assert.rejects(db.query("insert into public.production_operation_activity_segments(section_id,user_id,activity,started_at) values($1,$2,'production',now())",[section,p.worker.id]),e=>e.code==='PT409');
  });
  await check('Two independent PostgreSQL routing requests: duplicate idempotency and stale-version exclusion',async()=>{
   const fresh=await create('812241'),oid=fresh.op_rows[0].id,request=randomUUID();
@@ -62,7 +62,7 @@ async function run(context){
    const replies=await Promise.all([c1,c2].map(c=>sqlAs(p.worker,c=>c.query('select public.op_routing_command($1,$2,$3,$4,$5,$6,$7) result',params),{connection:c})));
    assert.deepEqual(replies[0].rows[0].result,replies[1].rows[0].result);
    assert.equal(Number((await db.query('select count(*) n from public.production_operation_routing_events where operation_id=$1',[oid])).rows[0].n),1);
-   await assert.rejects(command(p.worker,oid,'select',s.machines[0],0),e=>e.code==='40001');
+   await assert.rejects(command(p.worker,oid,'select',s.machines[0],0),e=>e.code==='PT409'&&e.status===409);
   }finally{await c1.end();await c2.end();}
  });
  await check('Notification/audit failures roll back machine sections and active time interruption atomically',async()=>{

@@ -86,7 +86,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.11.1";
+const APP_VERSION = "0.11.2";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -101,6 +101,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.11.2",
+    date: "2026-11-07 13:37",
+    changes: ["Maschinenabschnitte zeigen lesbare Maschinennamen; Abschnittsidentität und Ist-Historie bleiben erhalten. Neue Routing-Versionskonflikte liefern HTTP 409 statt wiederholbarer Serialisierungsfehler; native HTTP-Regression prüft die unveränderte Konfliktablehnung."],
+  },
   {
     version: "0.11.1",
     date: "2026-11-07 13:26",

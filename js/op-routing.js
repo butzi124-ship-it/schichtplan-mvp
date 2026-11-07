@@ -11,7 +11,7 @@
   function reset(){if(pollTimer)root.clearInterval(pollTimer);pollTimer=null;generation++;user=null;loaded=loading=busy=false;rows=[];notes=[];reasons=[];error=notice=selected='';forms.clear();requests.clear();}
   function valid(){return enabled()&&!!user&&user===actor()&&role()!=='tool_scanner';}
   function hasAccess(){return !!(valid()&&(rows.length||notes.length));}
-  async function rpc(name,params){const r=await client.rpc(name,params);if(r.error){const messages={'42501':'Keine gültige OP-/Maschinenberechtigung oder verbindliche Maschinenbindung.','40001':'Stand inzwischen geändert. Neu laden; Eingaben bleiben erhalten.','22023':'Zuordnung nicht zulässig. Status, Abbruchgrund und empfangenden AL prüfen.'};throw Error(messages[r.error.code]||'Maschinenzuordnung nicht verfügbar. Eingaben bleiben erhalten.');}return r.data;}
+  async function rpc(name,params){const r=await client.rpc(name,params);if(r.error){const messages={'42501':'Keine gültige OP-/Maschinenberechtigung oder verbindliche Maschinenbindung.','PT409':'Stand inzwischen geändert. Neu laden; Eingaben bleiben erhalten.','22023':'Zuordnung nicht zulässig. Status, Abbruchgrund und empfangenden AL prüfen.'};throw Error(messages[r.error.code]||'Maschinenzuordnung nicht verfügbar. Eingaben bleiben erhalten.');}return r.data;}
   async function load(ticket){const data=await rpc('op_routing_view',{});if(ticket!==generation||!valid())return;rows=data.rows||[];notes=data.notifications||[];reasons=data.abort_reasons||[];}
   async function ensureSession(){
    if(!enabled()||!actor()||role()==='tool_scanner'){if(user)reset();return;}
@@ -35,7 +35,7 @@
     ${r.can_manage?`<button type="button" data-routing-action="fix" ${!r.machines.length?'disabled':''}>Verbindlich festlegen (AL)</button>`:''}
     ${r.can_return?'<button type="button" data-routing-action="return">An ursprüngliche Abteilung zurückgeben</button>':''}
     </fieldset></form>
-    <details><summary>Maschinenabschnitte (${r.sections.length})</summary><ol>${r.sections.map(s=>`<li>Maschine ${html(s.machine_id)} · ${html(date(s.opened_at))} → ${html(date(s.closed_at))}${s.close_reason?' · '+html(s.close_reason):''}</li>`).join('')}</ol><p>Die Abschnitte führen keinen zweiten Stückzahlzähler. Personenbezogene Zeitstarts und die genaue Spannungs-/Zählerzuordnung folgen in Phase 3/4.</p></details>
+    <details><summary>Maschinenabschnitte (${r.sections.length})</summary><ol>${r.sections.map(s=>`<li>Maschine ${html(s.machine_name||'Nicht benannte Maschine')} · ${html(date(s.opened_at))} → ${html(date(s.closed_at))}${s.close_reason?' · '+html(s.close_reason):''}</li>`).join('')}</ol><p>Die Abschnitte führen keinen zweiten Stückzahlzähler. Personenbezogene Zeitstarts und die genaue Spannungs-/Zählerzuordnung folgen in Phase 3/4.</p></details>
     <details><summary>Zuordnungshistorie (${r.events.length})</summary><ol>${r.events.map(e=>`<li>${html(date(e.happened_at))} · ${html(e.action)} · ${html(e.payload.reason)} · ${e.interrupted_segments.length} persönliche Segmente unterbrochen</li>`).join('')}</ol></details>
    </article>`;
   }

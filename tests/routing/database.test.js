@@ -68,7 +68,7 @@ test('return interrupts active production without marking OP complete; legacy as
 });
 test('duplicate request is idempotent, stale update rejected, and notification failure rolls back assignment, sections and audit',async()=>{
  const {op}=await fresh();const id=randomUUID(),params={p_request_id:id};const r=await command(reviewer,op,'fix',foreignMachine,0,params);assert.deepEqual(await command(reviewer,op,'fix',foreignMachine,0,params),r);
- await assert.rejects(command(reviewer,op,'fix',machine,0),e=>['42501','40001'].includes(e.code));
+ await assert.rejects(command(reviewer,op,'fix',machine,0),e=>['42501','PT409'].includes(e.code));
  const other=await fresh();await api.db.exec("create function public.synthetic_notify_abort() returns trigger language plpgsql as $$begin raise exception 'Synthetic notification failure';end$$;create trigger synthetic_notify_abort before insert on public.production_operation_routing_notifications for each row execute function public.synthetic_notify_abort()");
  try{await assert.rejects(command(reviewer,other.op,'fix',foreignMachine));assert.equal((await api.db.query('select count(*)::int n from public.production_operation_routing where operation_id=$1',[other.op])).rows[0].n,0);}
  finally{await api.db.exec('drop trigger synthetic_notify_abort on public.production_operation_routing_notifications;drop function public.synthetic_notify_abort()');}
@@ -99,5 +99,5 @@ test('switch closes only this OP; an unrelated personal segment remains active a
  await api.db.query("insert into public.production_operation_activity_segments(section_id,user_id,activity,started_at) values($1,$2,'setup_internal',now()),($3,$4,'production',now())",[sa,worker,sb,reviewer]);
  await command(worker,one.op,'select',machineA2,a.row_version,{p_abort_code:'synthetic-machine-change'});
  assert.equal((await api.db.query('select ended_at from public.production_operation_activity_segments where section_id=$1',[sb])).rows[0].ended_at,null);
- await assert.rejects(api.db.query("insert into public.production_operation_activity_segments(section_id,user_id,activity,started_at) values($1,$2,'production',now())",[sa,manager]),e=>e.code==='40001');
+ await assert.rejects(api.db.query("insert into public.production_operation_activity_segments(section_id,user_id,activity,started_at) values($1,$2,'production',now())",[sa,manager]),e=>e.code==='PT409');
 });
