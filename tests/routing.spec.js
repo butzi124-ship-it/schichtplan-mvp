@@ -52,7 +52,6 @@ test.describe('Machine readiness Phase 2 routing',()=>{
   await login(page,{enabled:false});await expect(page.locator('#op-routing')).toHaveCount(0);expect(calls.some(c=>c.name==='op_routing_view')).toBe(false);
   await page.evaluate(()=>{window.HUMBEL_OP_ROUTING_ENABLED=true;render();});await expect(page.locator('#op-routing')).toBeVisible();
   await page.getByRole('button',{name:'Artikelstamm',exact:true}).first().click();await page.getByRole('button',{name:'Aufträge / BA',exact:true}).first().click();const p=page.getByRole('region',{name:'BA-Erstanlage'});
-  await p.getByLabel('BA-/OP-Barcode',{exact:true}).fill('812200.010');await p.getByRole('button',{name:'Barcode öffnen',exact:true}).click();await expect(p.getByRole('status')).toContainText('Keine Mengenbuchung');
-  await p.getByRole('button',{name:'Maschinenzuordnung OP 010',exact:true}).click();await expect(card(page)).toBeVisible();await expect(page.locator('#op-routing .routing-card')).toHaveCount(1);
+  await p.getByLabel('BA-/OP-Barcode',{exact:true}).fill('812200.010');await p.getByRole('button',{name:'Barcode öffnen',exact:true}).click();await expect(card(page)).toBeVisible();await expect(page.locator('#op-routing .routing-card')).toHaveCount(1);
  });
 });

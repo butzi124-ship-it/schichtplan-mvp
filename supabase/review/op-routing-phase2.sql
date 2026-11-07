@@ -2,6 +2,21 @@
 begin;
 set local lock_timeout='5s';
 set local statement_timeout='20s';
+-- Captured legacy catalog allows only admin/employee/tool_scanner while the existing
+-- app and original department helper already use department_admin. Explicit review
+-- transition, NOT a fixture relaxation or a change applied to production.
+do $role_contract$
+declare definition text;
+begin
+ select pg_get_constraintdef(oid) into definition from pg_constraint where conrelid='public.employees'::regclass and conname='employees_role_check';
+ if definition is null then raise exception 'Missing authoritative employees role constraint';end if;
+ if definition not like '%department_admin%' then
+  if definition <> 'CHECK ((role = ANY (ARRAY[''admin''::text, ''employee''::text, ''tool_scanner''::text])))' then raise exception 'Unknown employees role constraint; separate review required';end if;
+  alter table public.employees drop constraint employees_role_check;
+  alter table public.employees add constraint employees_role_check check(role in('admin','employee','tool_scanner','department_admin'));
+ end if;
+end;
+$role_contract$;
 create table public.production_routing_settings(singleton boolean primary key default true check(singleton),enabled boolean not null default false);
 insert into public.production_routing_settings values(true,false);
 -- Independently provisioned authority; mutable employee.role alone cannot confer AL/admin rights.

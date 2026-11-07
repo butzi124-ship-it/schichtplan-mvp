@@ -8,7 +8,7 @@ Bestehende Grundlagen: `production_order_operations` und Artikel-/BA-Snapshots s
 
 ## Implementierte Abläufe
 
-- Beim Öffnen einer OP: konkrete Maschine aus dem eingefrorenen Artikel-OP-Snapshot vorauswählen; nach erfolgter Zuordnung aktuelle BA-OP-Maschine anzeigen. Eine fehlende historische Standardmaschine wird nicht erfunden.
+- OP-Barcode bzw. Erst-OP-Anlage öffnet bei aktivem Routing direkt dieselbe ausgewählte OP ohne zweite OP-Auswahl. Beim Öffnen einer OP: konkrete Maschine aus dem eingefrorenen Artikel-OP-Snapshot vorauswählen; nach erfolgter Zuordnung aktuelle BA-OP-Maschine anzeigen. Eine fehlende historische Standardmaschine wird nicht erfunden.
 - Mitarbeiter dürfen geeignete, aktive Maschinen ihrer ausführenden Abteilung wählen. Eignung einer Alternative benötigt eine ausdrücklich provisionierte Maschinen-/Maschinengruppen-Zuordnung und einen gültigen Maschinen-Arbeitsgrant. Die bereits freigegebene konkrete Standardmaschine gilt als dokumentierte Vorgabe, nicht als automatisch zwingende Bindung.
 - Aktiver zuständiger AL, aktive legitimierte Stellvertretung bzw. unabhängig berechtigter Admin können eine BA-OP verbindlich festlegen, auch in eine andere Abteilung. Normale Mitarbeiter können diese Bindung nicht aufheben oder ändern. Eine technische zwingende Maschinenbindung ist vorrangig und wird auch bei Rückgabe geprüft.
 - Die ausführende Abteilung folgt der tatsächlich zugeordneten Maschine; die ursprüngliche Abteilung bleibt unveränderlich in der OP-Zuordnung vermerkt. Ursprüngliche AL behalten Übersicht, der ausführende AL übernimmt operative Rechte. BA-Dept, Artikelrevision, OP-ID und BA-Hauptverantwortung werden nicht verändert.
@@ -22,7 +22,9 @@ Bestehende Grundlagen: `production_order_operations` und Artikel-/BA-Snapshots s
 
 ## Datenmodell als nicht angewandter Reviewentwurf
 
-`supabase/review/op-routing-phase2.sql` ist **keine registrierte/ausgeführte Produktionsmigration**. Voraussetzung sind die abgenommenen Strukturen #7/#8/#9 und Phase 1. Zehn neue Tabellen:
+`supabase/review/op-routing-phase2.sql` ist **keine registrierte/ausgeführte Produktionsmigration**. Voraussetzung sind die abgenommenen Strukturen #7/#8/#9 und Phase 1. Zusätzlich enthält der Entwurf die explizite Erweiterung des bekannten Legacy-Constraints employees_role_check um die bereits in App und Originalfunktion verwendete Rolle department_admin. Der ursprüngliche Katalog erlaubte nur admin/employee/tool_scanner; der erste native Lauf stoppte folgerichtig mit SQLSTATE 23514 vor den neuen AL-Fällen. Die Korrektur ist **Bestandteil des Review-SQL**, keine abgeschwächte Testfixture: unbekannte/missing Constraintdefinitionen blockieren die Anwendung. Keine bestehenden Rollenwerte oder Mitarbeiter werden konvertiert, keine Authority automatisch vergeben. Dieser zusätzliche Schema-/Berechtigungsaspekt benötigt gesonderte produktive Sicherheitsabnahme.
+
+Zehn neue Tabellen:
 
 | Tabelle | Zweck |
 |---|---|

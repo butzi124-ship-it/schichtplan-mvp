@@ -56,11 +56,16 @@
    busy=true;error=notice='';const t=generation;redraw();try{await rpc('op_routing_command',body);if(t!==generation||!valid())return;requests.delete(r.operation_id);forms.delete(r.operation_id);await load(t);await changed();notice='Maschinenzuordnung mit Audit gespeichert. Betroffene AL wurden innerhalb der App benachrichtigt; kein automatischer Rüst-/Fertigungsstart.';}
    catch(e){if(t===generation&&user===actor())error=e.message;}finally{if(t===generation){busy=false;redraw();}}
   }
+  async function openOperation(id){
+   if(!enabled()||!id)return;await ensureSession();if(!valid())return;
+   const t=generation;try{await load(t);if(t!==generation||!valid()||!rows.some(r=>r.operation_id===id))return;selected=id;root.setProductionSubTab('readiness');}catch(e){if(t===generation){error=e.message;redraw();}}
+  }
   function bind(doc){
+   root.addEventListener('humbel-operation-open',e=>{void openOperation(e.detail?.operation_id);});
    for(const type of ['input','change'])doc.addEventListener(type,e=>{const form=e.target.closest('[data-routing-form]');if(form&&!busy)collect(form);});
    doc.addEventListener('submit',e=>{if(e.target.matches('[data-routing-form]'))e.preventDefault();});
    doc.addEventListener('click',e=>{
-    const opener=e.target.closest('[data-routing-open]');if(opener&&enabled()){void (async()=>{await ensureSession();selected=opener.dataset.routingOpen;await refresh();if(hasAccess())root.setProductionSubTab('readiness');})();return;}
+    const opener=e.target.closest('[data-routing-open]');if(opener&&enabled()){void openOperation(opener.dataset.routingOpen);return;}
     if(e.target.closest('[data-routing-reload]'))void refresh();if(e.target.closest('[data-routing-all]')){selected='';redraw();}
     const b=e.target.closest('[data-routing-action]');if(!b||!valid()||busy)return;const form=b.closest('form');collect(form);const r=rows.find(r=>r.operation_id===form.dataset.routingForm);if(r)void execute(b.dataset.routingAction,r);
    });

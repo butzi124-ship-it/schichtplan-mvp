@@ -5,16 +5,19 @@ const leaderB='00000000-0000-0000-0000-000000000005',deputy='00000000-0000-0000-
 const machineA2='30000000-0000-0000-0000-000000000003';
 async function routingDatabase({enabled=true}={}){
  const api=await baEntryDatabase();
+ await api.db.query("update public.employees set role='employee' where auth_user_id=$1",[ids.reviewer]);
+ await api.db.exec("alter table public.employees add constraint employees_role_check check(role in('admin','employee','tool_scanner'))");
  await api.db.exec(`alter table public.departments add column leader_employee_id uuid references public.employees(id);
  alter table public.production_order_stations add column actual_time_minutes integer;
  update public.production_order_stations set actual_time_minutes=42;
  insert into auth.users values('${leaderB}'),('${deputy}');
- insert into public.employees(auth_user_id,department_id,role) values('${leaderB}','${ids.foreignDepartment}','department_admin'),('${deputy}','${ids.foreignDepartment}','employee');
+ insert into public.employees(auth_user_id,department_id,role) values('${leaderB}','${ids.foreignDepartment}','employee'),('${deputy}','${ids.foreignDepartment}','employee');
  update public.departments set leader_employee_id=(select id from public.employees where auth_user_id=case when departments.id='${ids.department}' then '${ids.reviewer}'::uuid else '${leaderB}'::uuid end);
  insert into public.production_machines values('${machineA2}','Alternative A','TEST-A2','${ids.department}',true);`);
  await api.db.exec(fs.readFileSync('supabase/review/issue-9-machine-readiness.sql','utf8'));
  await api.db.exec('update public.production_readiness_settings set enabled=true');
  await api.db.exec(fs.readFileSync('supabase/review/op-routing-phase2.sql','utf8'));
+ await api.db.query("update public.employees set role='department_admin' where auth_user_id=any($1::uuid[])",[[ids.reviewer,leaderB]]);
  if(enabled)await api.db.exec('update public.production_routing_settings set enabled=true');
  await api.db.query("insert into public.production_routing_authorities values($1,$2,'admin',null,now()-interval '1 day',now()+interval '1 day',false,$1),($1,$3,'admin',null,now()-interval '1 day',now()+interval '1 day',false,$1),($4,$2,'leader',null,now()-interval '1 day',now()+interval '1 day',false,$1),($5,$3,'leader',null,now()-interval '1 day',now()+interval '1 day',false,$1),($6,$3,'deputy',$5,now()-interval '1 day',now()+interval '1 day',false,$1)",[ids.manager,ids.department,ids.foreignDepartment,ids.reviewer,leaderB,deputy]);
  await api.db.query("insert into public.production_routing_capabilities values($1,'TEST'),($2,'TEST'),($3,'TEST')",[ids.machine,machineA2,ids.foreignMachine]);
