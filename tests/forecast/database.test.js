@@ -2,7 +2,7 @@ const {test,before,beforeEach,after,mock}=require('node:test');const a=require('
 // PGlite's WASM wall clock uses Date too: freeze JS observations and SQL now()/clock_timestamp()
 // together. A morning leaves room for same-day arrivals; real late-night runs must not
 // change the publication/rollback scenarios. Advance between tests for run ordering.
-let api,seed,last;before(async()=>{mock.timers.enable({apis:['Date'],now:new Date('2026-11-07T09:00:00Z')});api=await forecastDatabase();seed=await seedForecast(api);});
+let api,seed,last;before(async()=>{mock.timers.enable({apis:['Date'],now:new Date(require('../fixtures/forecast-clock.json').instant)});api=await forecastDatabase();seed=await seedForecast(api);});
 beforeEach(()=>mock.timers.tick(1000));
 after(async()=>{try{await api?.db.close();}finally{mock.timers.reset();}});
 const input=()=>api.rpc(manager,'production_forecast_input',{p_department_id:department,p_request_id:randomUUID()});

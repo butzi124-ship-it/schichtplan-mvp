@@ -39,7 +39,13 @@ jobs:
           cp implementation/tests/db-integration/setup-extension.js isolated/tests/db-integration/setup-extension.js
           cp implementation/supabase/review/quantity-phase4.sql isolated/supabase/review/
           cp implementation/tests/db-integration/quantity-extension.js isolated/tests/db-integration/security-extension.js
+          mkdir -p isolated/tests/fixtures
+          cp implementation/tests/fixtures/forecast-clock.json isolated/tests/fixtures/
+          cp implementation/tests/db-integration/forecast-clock.js isolated/tests/db-integration/
           echo "Implementation: $GITHUB_SHA; isolated infrastructure: 25e9a6914e38fc791d9ecad13d92a45e30d19bb3" >> "$GITHUB_STEP_SUMMARY"
+      - name: Apply exact clock-only adapters to pinned native test sources
+        run: node tests/db-integration/forecast-clock.js prepare
+        working-directory: isolated
       - run: npm ci --ignore-scripts
         working-directory: isolated
       - run: npm run test:db:guard
