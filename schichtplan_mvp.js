@@ -86,7 +86,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.10.0";
+const APP_VERSION = "0.10.1";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -101,6 +101,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.10.1",
+    date: "2026-11-07 12:37",
+    changes: ["Bereits vorhandene BA auch bei inzwischen archivierter Artikelquelle direkt aus dem Drei-Felder-Einstieg öffnen; keine Neuanlage oder Datenänderung. Serverseitigen Aktivierungsschalter während der Anlage sperren; Regression ergänzt."],
+  },
   {
     version: "0.10.0",
     date: "2026-11-07 12:33",

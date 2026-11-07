@@ -73,6 +73,11 @@ begin
   end if;
   if p_quantity is null or p_quantity<=0 or length(trim(coalesce(p_article_number,''))) not between 1 and 80 or p_op_number is not null
     then raise exception 'Three valid fields required' using errcode='22023'; end if;
+  -- An existing BA stays openable even when its article revision was archived.
+  -- This is read-only; writers still recheck under the shared BA lock below.
+  select count(*),(array_agg(id))[1] into existing_count,oid from public.production_orders where trim(ba_number)=p_ba_number;
+  if existing_count>1 then raise exception 'Ambiguous legacy BA' using errcode='22023'; end if;
+  if existing_count=1 then return article_master_private.ba_entry_read(oid)||jsonb_build_object('existing',true); end if;
   -- Parent -> revision -> BA lock order agrees with the existing order_from_article API.
   select count(*),(array_agg(i.id))[1] into matches,oid from public.article_master_items i
     where i.number_key=upper(trim(p_article_number)) and exists(
@@ -85,6 +90,7 @@ begin
   select * into plan from public.article_operation_plans where revision_id=r.id;
   first_op:=(plan.operations->0->>'number')::integer;
   -- Lock independently provisioned authority until the creation transaction completes.
+  perform 1 from public.production_ba_entry_settings where singleton for share;
   perform 1 from public.departments where id=a.department_id for share;
   perform 1 from public.employees where auth_user_id=auth.uid() for share;
   perform 1 from public.article_master_scopes where user_id=auth.uid() and department_id=a.department_id for share;

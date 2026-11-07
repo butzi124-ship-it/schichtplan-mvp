@@ -54,10 +54,10 @@
     "supabase/functions/production-forecast-worker/index.ts": "866c57b9d593c85e04424dd9d8b4bc94fc615e29940b6aeaf87ffae426f668af",
     "js/ba-entry.js": "224045d57612e6451a113b38e91a79fa265c96ea41cd446f51b4ddeaa5976465",
     "tests/qa/ba-entry-integration-patches.json": "2199936890f815ad88191b0d1f8e1999e33ab59a76d787b681c1b4d05ebaa814",
-    "supabase/review/ba-entry-phase1.sql": "e03b155edf620292a6d5a5078d01e3023852b3cd75b7a448d52992928667248b",
+    "supabase/review/ba-entry-phase1.sql": "16a2173efb2e2b10dd0b866a7b3e90893d5b6e1c6db83a3c4522a41acf040ca3",
     "tests/ba-entry.spec.js": "117605bf69417e11e9f04197dd28edb7e02202a778fd194e3b5d5da8f0f67a17",
     "tests/helpers/ba-entry-db.js": "1757ba07920568a97d98058509d4b5344a8b3332d5aedba01af62ce4e668d314",
-    "tests/ba-entry/database.test.js": "a25b6584f312a791ef8b558f59bf2986fe1ef94ea3d0e7b2a2afc489f34e6045"
+    "tests/ba-entry/database.test.js": "e7c20b97c976ddf34c2d9e1807c7620631b4689decc67a2f5bf23e08456a843d"
   },
   "reviewedPresentationPatch": "\n    #toolSearch,\n    #toolFilterLabel,\n    #toolFilterT,\n    #toolFilterD,\n    #toolFilterHolder,\n    #toolFilterImageStatus {\n      min-width: 0;\n      width: 100%;\n      max-width: 100%;\n    }\n",
   "reviewedPresentationReplacements": [

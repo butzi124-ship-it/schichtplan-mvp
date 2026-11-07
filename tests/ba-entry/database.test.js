@@ -74,3 +74,10 @@ test('server defaults off and anon is denied; existing five-field API validation
   await assert.rejects(api.asUser(null,()=>api.db.query("select public.ba_entry_command('create','812173','32505',1)"),'anon'),e=>e.code==='42501');
   await assert.rejects(api.rpc(manager,'order_from_article',{p_revision_id:revision.id,p_ba_number:'812173',p_quantity:1}),e=>e.code==='22023');
 });
+
+test('existing BA remains openable from create entry after all source revisions are archived',async()=>{
+  const rows=(await api.db.query("select id,row_version from public.article_master_revisions where status='released'")).rows;
+  for(const r of rows)await api.rpc(manager,'operations_article_command',{p_action:'archive',p_revision_id:r.id,p_expected_version:r.row_version});
+  const s=await create(worker,'000812160',999);assert.equal(s.existing,true);assert.equal(s.quantity,48);
+  await assert.rejects(create(worker,'812174'),e=>e.code==='22023');
+});
