@@ -40,7 +40,7 @@ test.describe('Machine readiness Phase 3 setup times',()=>{
  });
  test('workplace takeover ends predecessor only and asks successor to explicitly choose a mode',async({page})=>{
   const r=await api.rpc(reviewer,'setup_time_command',{p_action:'start',p_request_id:randomUUID(),p_operation_id:snapshot.op_rows[0].id,p_mode:'external'});
-  await login(page);await card(page).getByRole('button',{name:/Arbeitsplatz übernehmen von/}).click();await expect(page.getByRole('region',{name:'Rüstung fortsetzen'})).toBeVisible();
+  await login(page);await card(page).getByRole('button',{name:'Rüsten beginnen',exact:true}).click();await expect(page.getByRole('region',{name:'Rüstung fortsetzen'})).toBeVisible();await page.getByRole('button',{name:'Nein, später',exact:true}).click();await card(page).getByRole('button',{name:/Arbeitsplatz übernehmen von/}).click();await expect(page.getByRole('region',{name:'Rüstung fortsetzen'})).toBeVisible();
   expect((await api.db.query('select count(*)::int n from public.production_operation_activity_segments where ended_at is null')).rows[0].n).toBe(0);
   await page.getByRole('button',{name:'Ja, Modus auswählen',exact:true}).click();await page.getByRole('region',{name:'Rüstung fortsetzen'}).getByRole('button',{name:'Extern rüsten',exact:true}).click();
   await expect(page.locator('#setup-personal [role=status]')).toContainText('bestätigt');

@@ -1,4 +1,4 @@
-# Phase 3 – Rüstzeiterfassung (Reviewstand 0.12.2)
+# Phase 3 – Rüstzeiterfassung (Reviewstand 0.12.3)
 
 Gestapelter Draft auf PR #20 `feature/ba-op-phase2`, geprüft gegen dessen tatsächlichen Head `e276270adc704fc9033e304ff5ad81db56593ecd`. Ref #17, verbindliche Spezifikation PR #18. Neuer Branch `feature/ba-op-phase3`. Kein Merge, Deployment, produktiver Datenbankzugriff oder Feature-Aktivierung.
 
@@ -74,3 +74,5 @@ Frontend: `js/setup-times.js`, `js/machine-readiness.js`, `schichtplan_mvp.html`
 Erster nativer Vorabstand `34f3729a0713d68f4d4c037e006991cccc36f484` (0.12.0): [35/35 native Tests und 2/2 Zielschutztests bestanden](https://github.com/butzi124-ship-it/schichtplan-mvp/actions/runs/42393464728). Strikte Visuals dieses Vorabstands bestanden zweimal 33/33. Der nachfolgende Stand 0.12.1 ergänzt insbesondere die veraltete Übernahme und die interne Belegung bei Produktionsfortsetzung; hierfür werden neue vollständige CI-Läufe verlangt. Finale CI-Nachweise und Commit-SHA stehen im PR-Bericht und sind nicht durch diesen historischen Vorablauf ersetzt.
 
 0.12.2 ergänzt den historischen Eigenzugriff nach Abteilungswechsel sowie AL-Korrekturrechte nach aktueller ausführender Zuständigkeit, mit SQL-, nativen JWT- und Browserregressionen.
+
+0.12.3 fragt auch beim OP-Öffnen bzw. beim Einstieg eines nachfolgenden Mitarbeiters in eine offene Rüstung ausdrücklich nach Fortsetzung (Ja/Nein, dann Modus). Kein automatischer Zeitstart.
