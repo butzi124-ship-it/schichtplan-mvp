@@ -6,6 +6,10 @@ const { listTests } = require("./list-tests");
 const { hash, appBusiness, sourceViolations } = require("./qa-policy");
 const protectedFiles = require("../tests/qa/protected-files.json");
 let app = fs.readFileSync("schichtplan_mvp.js", "utf8").replace(/\r\n/g, "\n");
+for (const {before, after} of [...require("../tests/qa/quantity-integration-patches.json").patches].reverse()) {
+  assert.equal(app.split(after).length - 1, 1, "Quantity hook must remain exact and unique");
+  app = app.replace(after, before);
+}
 for (const {before, after} of [...require("../tests/qa/setup-integration-patches.json").patches].reverse()) {
   assert.equal(app.split(after).length - 1, 1, "Setup hook must remain exact and unique");
   app = app.replace(after, before);
@@ -33,6 +37,16 @@ for (const [file, expected] of Object.entries(protectedFiles.tests)) {
     if (file !== navigation.file) continue;
     assert.equal(checkedSource.split(navigation.after).length - 1, 1, "Explicit test fixture patch must remain exact");
     checkedSource = checkedSource.replace(navigation.after, navigation.before);
+  }
+  for (const change of [...require("../tests/qa/quantity-integration-patches.json").filePatches].reverse()) {
+    if (change.file !== file) continue;
+    assert.equal(checkedSource.split(change.after).length - 1, 1, "Explicit quantity file adapter must remain exact and unique");
+    checkedSource = checkedSource.replace(change.after, change.before);
+  }
+  for (const change of [...(protectedFiles.reviewedTestClockPatches || [])].reverse()) {
+    if (change.file !== file) continue;
+    assert.equal(checkedSource.split(change.after).length - 1, 1, "Reviewed test clock patch must remain exact and unique");
+    checkedSource = checkedSource.replace(change.after, change.before);
   }
   assert.equal(hash(checkedSource), expected, `${file}: protected regression source changed; explicit human review required`);
   assert.deepEqual(sourceViolations(fs.readFileSync(file, "utf8")), [], `${file}: forbidden skip/force/failure annotation`);

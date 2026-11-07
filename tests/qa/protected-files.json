@@ -71,7 +71,15 @@
     "tests/helpers/setup-db.js": "7aa4915f1653f3e8b9c0122beb842d677701febec4b300d68baf39a1568fb9fc",
     "tests/db-integration/setup-extension.js": "24976ab54241a2f24c2e9d5d1177a8b2d38e53547e92150015da8290ee8c8d69",
     "tests/qa/setup-integration-patches.json": "c03985196b492b70003a5dbde778aa14b8de0792409a2560f49f32177291ecdb",
-    "tests/setup/unit.test.js": "34ae329f6506cc9efced88e876653db2e730d424bb09a0ab640c80573c26120a"
+    "tests/setup/unit.test.js": "34ae329f6506cc9efced88e876653db2e730d424bb09a0ab640c80573c26120a",
+    "js/op-quantities.js": "ce490cee30b2b838a348c8034d476dcb02ae279ce2d827c1e35756a5c10ff756",
+    "supabase/review/quantity-phase4.sql": "339df1f388d03b5fa8e08682c968b0b0e6d0285044b32fee229c159610d5a8af",
+    "tests/helpers/quantity-db.js": "adbb5d0d975e9d51d3bf5fcf7f182154be001287567f92ce539655b17c68d95c",
+    "tests/quantity/database.test.js": "a9bf9b8180b51d5d2c8dd8e8dce160d9028bb1a2e9d6c79abf5f65387b45a3dd",
+    "tests/quantity/unit.test.js": "586a78ba8dd206e3ecba2c6799d5ec560586c850bdf8a615cfe2f0e3aaabe878",
+    "tests/quantity.spec.js": "62d94b539e8118b0a2f56a44a18b18ea3357d8dfc70a0de175fe165f559264d9",
+    "tests/db-integration/quantity-extension.js": "c0a6b93d503465154bdd157d2d36a8d9933133e7a3a23c5a83cd67c4f46a1ed1",
+    "tests/qa/quantity-integration-patches.json": "c663cd4ddf45f4508faa93f43644fb74f5c5d208bc2c2b4da601d9b4a1706b64"
   },
   "reviewedPresentationPatch": "\n    #toolSearch,\n    #toolFilterLabel,\n    #toolFilterT,\n    #toolFilterD,\n    #toolFilterHolder,\n    #toolFilterImageStatus {\n      min-width: 0;\n      width: 100%;\n      max-width: 100%;\n    }\n",
   "reviewedPresentationReplacements": [
@@ -84,5 +92,47 @@
       "after": "body > :is(.max-w-7xl, .max-w-none) > header > .flex > div {"
     }
   ],
-  "reviewReason": "Initial Linux visual tests exposed intrinsic tool-filter widths and a mobile header rule no longer matching when tools/storage switch the wrapper to max-w-none. Only six control widths and the two existing header selectors change; no app logic or business assertion changed."
+  "reviewReason": "Initial Linux visual tests exposed intrinsic tool-filter widths and a mobile header rule no longer matching when tools/storage switch the wrapper to max-w-none. Only six control widths and the two existing header selectors change; no app logic or business assertion changed.",
+  "reviewedTestClockPatches": [
+    {
+      "file": "tests/forecast/database.test.js",
+      "before": "const {test,before,after}=require('node:test');const a=require('node:assert/strict');const {randomUUID}=require('node:crypto');const {forecastDatabase,seedForecast,manager,worker,outsider,department,machine,order}=require('../helpers/forecast-db');const {calculate}=require('../../js/production-forecast');",
+      "after": "const {test,before,beforeEach,after,mock}=require('node:test');const a=require('node:assert/strict');const {randomUUID}=require('node:crypto');const {forecastDatabase,seedForecast,manager,worker,outsider,department,machine,order}=require('../helpers/forecast-db');const {calculate}=require('../../js/production-forecast');"
+    },
+    {
+      "file": "tests/forecast/database.test.js",
+      "before": "let api,seed,last;before(async()=>{api=await forecastDatabase();seed=await seedForecast(api);});after(async()=>api?.db.close());",
+      "after": "// PGlite's WASM wall clock uses Date too: freeze JS observations and SQL now()/clock_timestamp()\n// together. A morning leaves room for same-day arrivals; real late-night runs must not\n// change the publication/rollback scenarios. Advance between tests for run ordering.\nlet api,seed,last;before(async()=>{mock.timers.enable({apis:['Date'],now:new Date(require('../fixtures/forecast-clock.json').instant)});api=await forecastDatabase();seed=await seedForecast(api);});\nbeforeEach(()=>mock.timers.tick(1000));\nafter(async()=>{try{await api?.db.close();}finally{mock.timers.reset();}});"
+    },
+    {
+      "file": "tests/forecast.spec.js",
+      "before": "const {test,expect}=require('@playwright/test');const {prepareMockPage,appUrl}=require('./helpers/mock-page');const {forecastDatabase,seedForecast,manager,worker,department,order}=require('./helpers/forecast-db');const {create}=require('../js/forecast-service');const {calculate}=require('../js/production-forecast');\n",
+      "after": "const {test,expect}=require('@playwright/test');const {prepareMockPage,appUrl}=require('./helpers/mock-page');const {forecastDatabase,seedForecast,manager,worker,department,order}=require('./helpers/forecast-db');const {create}=require('../js/forecast-service');const {calculate}=require('../js/production-forecast');\nconst {mock}=require('node:test');const forecastClock=require('./fixtures/forecast-clock.json');\n"
+    },
+    {
+      "file": "tests/forecast.spec.js",
+      "before": " test.beforeEach(async({page})=>{api=await forecastDatabase();await seedForecast(api);uid=manager;calls=[];fail=false;\n",
+      "after": " test.beforeEach(async({page})=>{mock.timers.enable({apis:['Date'],now:Date.parse(forecastClock.instant)});await page.clock.setFixedTime(Date.now());api=await forecastDatabase();await seedForecast(api);uid=manager;calls=[];fail=false;\n"
+    },
+    {
+      "file": "tests/forecast.spec.js",
+      "before": " await page.exposeFunction('__forecastInvoke',async body=>{if(fail)return{data:null,error:{message:'Synthetic transport failure'}};const r=await handler(new Request('https://isolated.test',{method:'POST',headers:{authorization:'Bearer synthetic'},body:JSON.stringify(body)}));return{data:await r.json(),error:r.ok?null:{message:'Synthetic error'}};});\n",
+      "after": " await page.exposeFunction('__forecastInvoke',async body=>{mock.timers.tick(1000);await page.clock.setFixedTime(Date.now());if(fail)return{data:null,error:{message:'Synthetic transport failure'}};const r=await handler(new Request('https://isolated.test',{method:'POST',headers:{authorization:'Bearer synthetic'},body:JSON.stringify(body)}));return{data:await r.json(),error:r.ok?null:{message:'Synthetic error'}};});\n"
+    },
+    {
+      "file": "tests/forecast.spec.js",
+      "before": " });test.afterEach(async()=>api?.db.close());\n",
+      "after": " });test.afterEach(async()=>{try{await api?.db.close();}finally{mock.timers.reset();}});\n"
+    },
+    {
+      "file": "tests/forecast.spec.js",
+      "before": " test('expired cache loses green automatically; fresh source required and material never released',async({page})=>{await api.db.exec('update public.production_forecast_settings set max_age_seconds=2');await open(page);await recalc(page);await expect(card(page).locator('.forecast-panel')).toHaveAttribute('data-forecast-color','green');await expect(card(page).locator('.forecast-panel')).toHaveAttribute('data-forecast-color','unknown');await expect(card(page).locator('[data-material]')).toHaveAttribute('data-material','planned');});\n",
+      "after": " test('expired cache loses green automatically; fresh source required and material never released',async({page})=>{await api.db.exec('update public.production_forecast_settings set max_age_seconds=2');await open(page);await recalc(page);await expect(card(page).locator('.forecast-panel')).toHaveAttribute('data-forecast-color','green');mock.timers.tick(3000);await page.clock.setFixedTime(Date.now());await expect(card(page).locator('.forecast-panel')).toHaveAttribute('data-forecast-color','unknown');await expect(card(page).locator('[data-material]')).toHaveAttribute('data-material','planned');});\n"
+    },
+    {
+      "file": "tests/helpers/forecast-db.js",
+      "before": "async function forecastDatabase(){const api=await readinessDatabase();await api.db.exec(`\n",
+      "after": "async function forecastDatabase(){const api=await readinessDatabase();await api.db.query(\"select set_config('TimeZone',$1,false)\",[require('../fixtures/forecast-clock.json').zone]);await api.db.exec(`\n"
+    }
+  ]
 }

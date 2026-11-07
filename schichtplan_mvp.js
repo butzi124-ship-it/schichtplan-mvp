@@ -11,6 +11,13 @@ const productionForecast = window.HumbelForecastUI.create({
   changed: () => machineReadiness.refresh(),
 });
 productionForecast.bind(document);
+const opQuantities = window.HumbelQuantities.create({
+  client: supabaseClient, actor: () => currentSupabaseUser?.id || null,
+  role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },
+  renderEmployee: (station, entry, editable) => renderProductionStationEmployeeCounter(station, entry, editable),
+  renderAmounts: (station, editable) => renderProductionStationScrapClarifyControls(station, editable),
+});
+opQuantities.bind(document);
 const setupTimes = window.HumbelSetupTimes.create({
   client: supabaseClient, actor: () => currentSupabaseUser?.id || null,
   role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },
@@ -100,7 +107,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.12.4";
+const APP_VERSION = "0.13.2";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -115,6 +122,21 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.13.2",
+    date: "2026-11-08 00:22",
+    changes: ["Gemeinsame Prognose-Testzeit für Node/PGlite und Browser; explizite Berliner Datenbankzeitzone und gemeinsamer Zeitfortschritt einschließlich Cacheablauf. Native isolierte SQL-/Edge-Abnahme verwendet dieselbe Basiszeit über reine Testuhr-Adapter mit unveränderten Assertions, Statusregeln und Phase-4-Funktionen."],
+  },
+  {
+    version: "0.13.1",
+    date: "2026-11-07 23:49",
+    changes: ["Prognose-Datenbanktests verwenden eine gemeinsame deterministische JavaScript-/SQL-Zeit mit geordneter Fortschreibung. Regressionen prüfen späte Schicht, Berliner Tageswechsel und beide Sommerzeitwechsel; bestehende Veröffentlichungs-/Rollback-Assertions und Phase-4-Funktionen bleiben erhalten."],
+  },
+  {
+    version: "0.13.0",
+    date: "2026-11-07 23:30",
+    changes: ["Phase 4 verknüpft den bestehenden Spannungs-/Mitarbeiterzähler eindeutig mit BA-OP und Maschinenabschnitten. Nur letzte Spannung liefert OP-Gutteile; Teilmengen laufen ohne Vorgängerabschluss weiter. Atomare idempotente Buchungen erhalten Ausschuss/6M und markieren Mengenwidersprüche. SQL ausschließlich Reviewentwurf, alle Schalter deaktiviert; keine Phase-5-Aktivierung."],
+  },
   {
     version: "0.12.4",
     date: "2026-11-07 18:13",
@@ -2708,6 +2730,7 @@ async function logoutSupabase() {
   if (!(await setupTimes.beforeLogout())) return;
   await supabaseClient.auth.signOut();
   setupTimes.reset();
+  opQuantities.reset();
   stopToolAutoRefresh();
   stopToolRealtimeSubscription();
   state.ui = state.ui || {};
@@ -3265,6 +3288,7 @@ function logout() {
 }
 
 function render() {
+  void opQuantities.ensureSession();
   void setupTimes.ensureSession();
   void machineReadiness.ensureSession();
   void articleMaster.ensureSession();
@@ -3284,6 +3308,7 @@ function render() {
       "adminsystem",
     );
   }
+  if (opQuantities.hasAccess() && !tabs.includes("produktion")) tabs.push("produktion");
   if (currentUser.role === "department_admin") tabs.push("produktion");
   if (currentUser.role === "employee") tabs.push("werkzeugverwaltung");
   if (articleMaster.hasAccess() && !tabs.includes("produktion")) tabs.push("produktion");
@@ -6151,6 +6176,9 @@ function getDepartmentLeaderHint(employee) {
 }
 
 function renderProduction() {
+  if (opQuantities.hasAccess() && state.productionSubTab === "counts" && !canAccessProduction()) {
+    return `<div class='bg-white rounded-xl shadow p-4'><h2>Produktion</h2><button onclick="setProductionSubTab('readiness')">OP-Maschinenübersicht</button>${opQuantities.render()}${renderProductionQaCauseModal()}</div>`;
+  }
   if (operations.hasEntryAccess() && !canAccessProduction() && state.productionSubTab === "orders") {
     return `<div class='bg-white rounded-xl shadow p-4'><h2>Produktion</h2>
       <button onclick="setProductionSubTab('articles')">Artikelstamm</button>
@@ -6162,6 +6190,7 @@ function renderProduction() {
       <button onclick="setProductionSubTab('readiness')">OP-Maschinenübersicht</button>
       ${articleMaster.hasAccess() ? `<button onclick="setProductionSubTab('articles')">Artikelstamm</button>` : ""}
       ${canAccessProduction() ? `<button onclick="setProductionSubTab('departments')">Abteilungen</button>` : ""}
+      ${opQuantities.hasAccess() ? `<button onclick="setProductionSubTab('counts')">OP-Stückzahlzähler</button>` : ""}
       ${machineReadiness.render()}</div>`;
   }
   if (articleMaster.hasAccess() && (!canAccessProduction() || state.productionSubTab === "articles")) {
@@ -6590,6 +6619,8 @@ function getProductionOrderStations(orderId) {
 }
 
 function getProductionOrderStationById(stationId) {
+  const linked = opQuantities.station(stationId);
+  if (linked) return linked;
   if (!stationId) return null;
   return (state.productionOrderStations || []).find((station) => station.id === stationId) || null;
 }
@@ -6608,6 +6639,7 @@ function getProductionOrderEmployeeById(entryId) {
 }
 
 function getProductionStationCount(stationId, orderEmployeeId) {
+  if (opQuantities.station(stationId)) return opQuantities.count(stationId, orderEmployeeId);
   if (!stationId || !orderEmployeeId) return null;
   return (state.productionStationCounts || []).find(
     (count) => count.station_id === stationId && count.order_employee_id === orderEmployeeId,
@@ -6619,6 +6651,7 @@ function getProductionStationGoodQty(stationId, orderEmployeeId) {
 }
 
 function getProductionStationGoodTotal(stationId) {
+  if (opQuantities.station(stationId)) return opQuantities.goodTotal(stationId);
   if (!stationId) return 0;
   return (state.productionStationCounts || [])
     .filter((count) => count.station_id === stationId)
@@ -6647,6 +6680,8 @@ function getProductionOrderClarifyTotal(orderId) {
 }
 
 function getProductionOrderCompletedGoodTotal(orderId) {
+  const linked = opQuantities.finished(orderId);
+  if (linked !== null) return linked;
   const stations = getProductionOrderStations(orderId);
   if (!stations.length) return 0;
   const lastStation = stations[stations.length - 1];
@@ -6716,6 +6751,11 @@ function calculatePreparedRemainingQuantity(order) {
 }
 
 function getProductionQuantityLimitInfo(order, station) {
+  if (station && opQuantities.station(station.id)) {
+    const linked = opQuantities.station(station.id);
+    const totalCounted = Number(linked.good) + linked.scrap_total + linked.clarify_total;
+    return { blockPlus: false, overTarget: totalCounted > linked.available, targetQuantity: opQuantities.operation(station.id).target, totalCounted, limitQuantity: linked.available, remainingAllowed: Math.max(0, linked.available - totalCounted), message: "Mengenwidersprüche werden nachvollziehbar erfasst; Buchungen bleiben erhalten." };
+  }
   const targetQuantity = Math.max(0, Math.trunc(Number(order?.target_quantity || 0)));
   if (!order || !station || station.order_id !== order.id) {
     return { blockPlus: false, overTarget: false, targetQuantity, totalCounted: 0 };
@@ -6749,6 +6789,7 @@ function getProductionQuantityLimitInfo(order, station) {
 }
 
 function getProductionGoodCorrectionBlocker(station) {
+  if (opQuantities.station(station.id)) return "";
   const stations = getProductionOrderStations(station.order_id);
   const nextStation = stations[stations.findIndex(entry => entry.id === station.id) + 1];
   if (!nextStation) return "";
@@ -6906,6 +6947,11 @@ async function ensureActiveProductionCounterSelection() {
 }
 
 function renderProductionCountsTab() {
+  if (opQuantities.enabled()) return opQuantities.render() + `<details><summary>Bisherige Aufträge / Zähler</summary>${renderPhase3ProductionCountsTab()}</details>`;
+  return renderPhase3ProductionCountsTab();
+}
+
+function renderPhase3ProductionCountsTab() {
   const machines = getVisibleProductionMachines().filter(
     (machine) => machine.active !== false,
   );
@@ -8347,7 +8393,7 @@ function openProductionQaCauseModal(stationId, type) {
   const order = getProductionOrderById(station?.order_id);
   const anchorKey = `amount:${stationId}:${type}`;
   const anchorTop = getScrollAnchorElement(anchorKey)?.getBoundingClientRect().top ?? null;
-  if (!station || !["scrap", "clarify"].includes(type) || !canEditProductionOrder(order)) {
+  if (!station || !["scrap", "clarify"].includes(type) || !(opQuantities.operation(stationId)?.can_work || canEditProductionOrder(order))) {
     setProductionStatus("Du darfst diese Menge nicht ändern.", true);
     renderPreservingScroll(anchorKey);
     return;
@@ -8466,6 +8512,10 @@ async function confirmProductionQaCauseModal() {
 }
 
 async function adjustProductionStationAmount(stationId, type, delta, options = {}) {
+  if (opQuantities.station(stationId)) {
+    if (delta > 0 && !options.qaCauseId) return openProductionQaCauseModal(stationId, type);
+    return opQuantities.adjust(stationId, null, type, delta, options);
+  }
   const station = getProductionOrderStationById(stationId);
   const order = getProductionOrderById(station?.order_id);
   const anchorKey = `amount:${stationId}:${type}`;
@@ -8595,6 +8645,7 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
 }
 
 async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta, retried = false) {
+  if (opQuantities.station(stationId)) return opQuantities.adjust(stationId, orderEmployeeId, "good", delta);
   const station = getProductionOrderStationById(stationId);
   const order = getProductionOrderById(station?.order_id);
   const orderEmployee = getProductionOrderEmployeeById(orderEmployeeId);
