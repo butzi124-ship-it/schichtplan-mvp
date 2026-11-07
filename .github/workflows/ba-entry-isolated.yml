@@ -1,0 +1,60 @@
+name: BA Entry Isolated Acceptance
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ba-entry-db-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  ba-entry-native:
+    name: Native BA entry / JWT / concurrency
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: implementation
+          persist-credentials: false
+      - name: Reuse reviewed isolated infrastructure without modifying PR 15 or 16
+        uses: actions/checkout@v4
+        with:
+          ref: 25e9a6914e38fc791d9ecad13d92a45e30d19bb3
+          path: isolated
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: isolated/package-lock.json
+      - name: Overlay only current Phase 1 proposal and native extension
+        run: |
+          cp implementation/supabase/review/ba-entry-phase1.sql isolated/supabase/review/
+          cp implementation/tests/db-integration/ba-entry-extension.js isolated/tests/db-integration/security-extension.js
+          echo "Implementation: $GITHUB_SHA; isolated infrastructure: 25e9a6914e38fc791d9ecad13d92a45e30d19bb3" >> "$GITHUB_STEP_SUMMARY"
+      - run: npm ci --ignore-scripts
+        working-directory: isolated
+      - run: npm run test:db:guard
+        working-directory: isolated
+      - name: Start only ephemeral internal containers
+        run: node scripts/db-integration/runtime.js start
+        working-directory: isolated
+      - name: Real baseline plus Phase 1 SQL, JWT, RLS and concurrent requests
+        run: docker exec humbel-gateway node scripts/db-integration/run.js
+        working-directory: isolated
+      - name: Record actual coverage and remaining security blockers
+        if: always()
+        run: node scripts/db-integration/summary.js
+        working-directory: isolated
+      - name: Destroy isolated containers, network, volumes and temporary keys
+        if: always()
+        run: node scripts/db-integration/runtime.js stop
+        working-directory: isolated
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ba-entry-isolated-${{ github.sha }}
+          path: isolated/artifacts/db-integration/
+          retention-days: 14

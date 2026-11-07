@@ -37,11 +37,12 @@
   }
  }
  function symbol(value){return `<figure class="operation-barcode"><svg data-ba-barcode="${escape(value)}" role="img" aria-label="Barcode ${escape(value)}"></svg><figcaption>${escape(value)}</figcaption></figure>`;}
- function create({client,actor,role,redraw,canCreate,machines,refreshOrders}){
+ function create({client,actor,role,redraw,canCreate,canEnter=canCreate,machines,refreshOrders}){
   let session=null,generation=0,row=null,ops=null,busy=false,error='',notice='',released=[],chosen=null,snapshot=null;
   let search='',scan='',orderForm={ba:'',quantity:'',due:'',machine:''};
+  const entry=root.HumbelBAEntry?.create({client,actor,role,redraw,hasAccess:canEnter,renderSnapshot});
   const enabled=()=>root.HUMBEL_OPERATIONS_ENABLED===true&&root.HUMBEL_ARTICLE_MASTER_ENABLED===true;
-  function reset(){generation++;session=null;row=null;ops=null;busy=false;error=notice=search=scan='';released=[];chosen=null;snapshot=null;orderForm={ba:'',quantity:'',due:'',machine:''};}
+  function reset(){entry?.reset();generation++;session=null;row=null;ops=null;busy=false;error=notice=search=scan='';released=[];chosen=null;snapshot=null;orderForm={ba:'',quantity:'',due:'',machine:''};}
   function active(){if(session!==actor()){reset();session=actor();}return enabled()&&!!session&&role()!=='tool_scanner';}
   function allowed(){return active()&&canCreate();}
   async function rpc(name,params){const result=await client.rpc(name,params);if(result.error){const code=result.error.code;throw Error(code==='23505'?'Diese BA-Nummer oder Revision ist bereits vorhanden.':code==='40001'?'Stand inzwischen geändert. Neu laden; Eingaben bleiben erhalten.':code==='42501'?'Keine gültige Berechtigung.':code==='22023'||code==='22007'?'Ungültige Eingaben oder Operationsplan.':'Speichern / Laden fehlgeschlagen. Eingaben bleiben erhalten.');}return result.data;}
@@ -70,6 +71,7 @@
   }
   function machineOptions(dept,id){return machines().filter(m=>m.department_id===dept&&m.active!==false).map(m=>`<option value="${escape(m.id)}" ${m.id===id?'selected':''}>${escape(m.name||m.machine_code)}</option>`).join('');}
   function orderPanel(){
+   if(entry?.enabled())return entry.render();
    if(!allowed())return '';
    return `${styles()}<section id="operations-orders" aria-label="BA aus Artikel"><h3>Neue BA aus freigegebenem Artikel</h3><p>Neue Nummer, Menge und Termin eingeben. Keine alten Zähler, Checklisten oder Spannungen werden kopiert. Der bisherige BA-Pfad bleibt unten verfügbar.</p>${messages()}
     <form id="ops-search"><label>Artikelnummer für BA<input name="article" value="${escape(search)}" maxlength="80"></label><button ${busy?'disabled':''}>Freigegebene Revision suchen</button></form>
@@ -78,9 +80,10 @@
     <form id="ops-scan"><label>BA-/OP-Barcode scannen<input name="barcode" value="${escape(scan)}" autocomplete="off" maxlength="30"></label><button ${busy?'disabled':''}>BA / OP öffnen</button></form>
     ${snapshot?renderSnapshot(snapshot):''}</section>`;
   }
-  function renderSnapshot(s){return `<section aria-label="BA-Operationssnapshot"><h4>BA ${escape(s.ba_number)} · ${s.quantity} Stück · Termin ${escape(s.due_date)} · Artikelrevision ${s.article_revision} · unveränderlicher Snapshot</h4><p>Freigabe: ${escape(s.released_at)} · Verantwortlich: ${escape(s.released_by)}</p>${symbol(barcode(s.ba_number))}<p>Artikel: ${escape(s.article_data.designation)} · ${escape(s.article_data.material)}</p>${s.op_rows.map(o=>`<section aria-label="BA OP ${opNumber(o.op_number)}" ${s.selected_op===o.op_number?'data-selected-op="true" aria-current="step"':''}><h5>OP ${opNumber(o.op_number)} · Position ${o.position} · Vorgänger ${o.predecessor===null?'–':opNumber(o.predecessor)}</h5>${symbol(barcode(s.ba_number,o.op_number))}<p>${escape(o.data.activity)} · Gruppe ${escape(o.data.machine_group)}</p><dl>${textFields.filter(k=>!['activity','machine_group'].includes(k)).map(k=>`<dt>${labels[k]}</dt><dd>${escape(o.data[k])||'–'}</dd>`).join('')}<dt>Maschine</dt><dd>${escape(o.data.machine_id)||'Nicht festgelegt'}</dd>${['tr','te'].map(k=>`<dt>${k==='tr'?'Tr':'Te je Stück'}</dt><dd>${o.data[k].value===null?'Nicht angegeben':escape(o.data[k].value)+' '+escape(o.data[k].unit)}</dd>`).join('')}</dl><p>Spannungen separat im bestehenden Auftrag anlegen und mit dieser OP-Nummer kennzeichnen. Keine Zählerbuchung durch Scan.</p></section>`).join('')}</section>`;}
+  function renderSnapshot(s){return `<section aria-label="BA-Operationssnapshot"><h4>BA ${escape(s.ba_number)} · ${s.quantity} Stück · Termin ${s.due_date?escape(s.due_date):'Nicht geplant'} · Artikelrevision ${s.article_revision} · unveränderlicher Snapshot</h4><p>Freigabe: ${escape(s.released_at)} · Verantwortlich: ${escape(s.released_by)}</p>${symbol(barcode(s.ba_number))}<p>Artikel: ${escape(s.article_data.designation)} · ${escape(s.article_data.material)}</p>${s.op_rows.map(o=>`<section aria-label="BA OP ${opNumber(o.op_number)}" ${s.selected_op===o.op_number?'data-selected-op="true" aria-current="step"':''}><h5>OP ${opNumber(o.op_number)} · Position ${o.position} · Vorgänger ${o.predecessor===null?'–':opNumber(o.predecessor)}</h5>${symbol(barcode(s.ba_number,o.op_number))}<p>${escape(o.data.activity)} · Gruppe ${escape(o.data.machine_group)}</p><dl>${textFields.filter(k=>!['activity','machine_group'].includes(k)).map(k=>`<dt>${labels[k]}</dt><dd>${escape(o.data[k])||'–'}</dd>`).join('')}<dt>Maschine</dt><dd>${escape(o.data.machine_id)||'Nicht festgelegt'}</dd>${['tr','te'].map(k=>`<dt>${k==='tr'?'Tr':'Te je Stück'}</dt><dd>${o.data[k].value===null?'Nicht angegeben':escape(o.data[k].value)+' '+escape(o.data[k].unit)}</dd>`).join('')}</dl><p>Spannungen separat im bestehenden Auftrag anlegen und mit dieser OP-Nummer kennzeichnen. Keine Zählerbuchung durch Scan.</p></section>`).join('')}</section>`;}
   function collectOrder(form){const f=new FormData(form);for(const k of ['ba','quantity','due','machine'])orderForm[k]=String(f.get(k)||'');}
   function bind(document){
+   entry?.bind(document);
    const observer=new MutationObserver(()=>{if(enabled())drawBarcodes(document);});observer.observe(document.getElementById('view')||document.body,{childList:true,subtree:true});
    document.addEventListener('input',e=>{
     if(e.target.closest('#ops-create'))collectOrder(e.target.closest('form'));
@@ -107,7 +110,7 @@
     if(e.target.id==='ops-scan'){scan=String(new FormData(e.target).get('barcode')||'');void run(async t=>{const p=parseBarcode(scan);const r=await rpc('operation_scan',{p_barcode:p.value});if(current(t)){snapshot=r;notice='BA / OP geöffnet. Keine Mengenbuchung.';}});}
    });
   }
-  return{enabled,reset,renderArticle,orderPanel,bind,articleCommandName:()=>enabled()?'operations_article_command':'article_master_command'};
+  return{enabled,reset,renderArticle,orderPanel,bind,hasEntryAccess:()=>!!entry?.hasAccess(),articleCommandName:()=>enabled()?'operations_article_command':'article_master_command'};
  }
  const api={create,opNumber,parseBarcode,barcode,blank,normalize};root.HumbelOperations=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window==='undefined'?globalThis:window);
