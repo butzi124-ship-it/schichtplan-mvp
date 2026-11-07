@@ -1,0 +1,101 @@
+{
+  "reason": "Explicit Phase 4 adapter hooks. Reverse these to prove the exact unchanged legacy business hash; all protected tests and assertions retained.",
+  "patches": [
+    {
+      "before": "const setupTimes = window.HumbelSetupTimes.create({",
+      "after": "const opQuantities = window.HumbelQuantities.create({\n  client: supabaseClient, actor: () => currentSupabaseUser?.id || null,\n  role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },\n  renderEmployee: (station, entry, editable) => renderProductionStationEmployeeCounter(station, entry, editable),\n  renderAmounts: (station, editable) => renderProductionStationScrapClarifyControls(station, editable),\n});\nopQuantities.bind(document);\nconst setupTimes = window.HumbelSetupTimes.create({"
+    },
+    {
+      "before": "function render() {\n  void setupTimes.ensureSession();",
+      "after": "function render() {\n  void opQuantities.ensureSession();\n  void setupTimes.ensureSession();"
+    },
+    {
+      "before": "  setupTimes.reset();\n  stopToolAutoRefresh();",
+      "after": "  setupTimes.reset();\n  opQuantities.reset();\n  stopToolAutoRefresh();"
+    },
+    {
+      "before": "function renderProductionCountsTab() {",
+      "after": "function renderProductionCountsTab() {\n  if (opQuantities.enabled()) return opQuantities.render() + `<details><summary>Bisherige Aufträge / Zähler</summary>${renderPhase3ProductionCountsTab()}</details>`;\n  return renderPhase3ProductionCountsTab();\n}\n\nfunction renderPhase3ProductionCountsTab() {"
+    },
+    {
+      "before": "function renderProduction() {",
+      "after": "function renderProduction() {\n  if (opQuantities.hasAccess() && state.productionSubTab === \"counts\" && !canAccessProduction()) {\n    return `<div class='bg-white rounded-xl shadow p-4'><h2>Produktion</h2><button onclick=\"setProductionSubTab('readiness')\">OP-Maschinenübersicht</button>${opQuantities.render()}${renderProductionQaCauseModal()}</div>`;\n  }"
+    },
+    {
+      "before": "  if (currentUser.role === \"department_admin\") tabs.push(\"produktion\");",
+      "after": "  if (opQuantities.hasAccess() && !tabs.includes(\"produktion\")) tabs.push(\"produktion\");\n  if (currentUser.role === \"department_admin\") tabs.push(\"produktion\");"
+    },
+    {
+      "before": "function getProductionOrderStationById(stationId) {",
+      "after": "function getProductionOrderStationById(stationId) {\n  const linked = opQuantities.station(stationId);\n  if (linked) return linked;"
+    },
+    {
+      "before": "function getProductionStationCount(stationId, orderEmployeeId) {",
+      "after": "function getProductionStationCount(stationId, orderEmployeeId) {\n  if (opQuantities.station(stationId)) return opQuantities.count(stationId, orderEmployeeId);"
+    },
+    {
+      "before": "function getProductionStationGoodTotal(stationId) {",
+      "after": "function getProductionStationGoodTotal(stationId) {\n  if (opQuantities.station(stationId)) return opQuantities.goodTotal(stationId);"
+    },
+    {
+      "before": "function getProductionQuantityLimitInfo(order, station) {",
+      "after": "function getProductionQuantityLimitInfo(order, station) {\n  if (station && opQuantities.station(station.id)) {\n    const linked = opQuantities.station(station.id);\n    const totalCounted = Number(linked.good) + linked.scrap_total + linked.clarify_total;\n    return { blockPlus: false, overTarget: totalCounted > linked.available, targetQuantity: opQuantities.operation(station.id).target, totalCounted, limitQuantity: linked.available, remainingAllowed: Math.max(0, linked.available - totalCounted), message: \"Mengenwidersprüche werden nachvollziehbar erfasst; Buchungen bleiben erhalten.\" };\n  }"
+    },
+    {
+      "before": "function getProductionGoodCorrectionBlocker(station) {",
+      "after": "function getProductionGoodCorrectionBlocker(station) {\n  if (opQuantities.station(station.id)) return \"\";"
+    },
+    {
+      "before": "async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta, retried = false) {",
+      "after": "async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta, retried = false) {\n  if (opQuantities.station(stationId)) return opQuantities.adjust(stationId, orderEmployeeId, \"good\", delta);"
+    },
+    {
+      "before": "async function adjustProductionStationAmount(stationId, type, delta, options = {}) {",
+      "after": "async function adjustProductionStationAmount(stationId, type, delta, options = {}) {\n  if (opQuantities.station(stationId)) {\n    if (delta > 0 && !options.qaCauseId) return openProductionQaCauseModal(stationId, type);\n    return opQuantities.adjust(stationId, null, type, delta, options);\n  }"
+    },
+    {
+      "before": "function openProductionQaCauseModal(stationId, type) {\n  const station = getProductionOrderStationById(stationId);\n  const order = getProductionOrderById(station?.order_id);\n  const anchorKey = `amount:${stationId}:${type}`;\n  const anchorTop = getScrollAnchorElement(anchorKey)?.getBoundingClientRect().top ?? null;\n  if (!station || ![\"scrap\", \"clarify\"].includes(type) || !canEditProductionOrder(order)) {\n    setProductionStatus(\"Du darfst diese Menge nicht ändern.\", true);\n    renderPreservingScroll(anchorKey);\n    return;\n  }\n  const limitInfo = getProductionQuantityLimitInfo(order, station);\n  if (limitInfo.blockPlus) {\n    setProductionStatus(\"\");\n    setProductionLocalStatus(anchorKey, limitInfo.message, true);\n    renderPreservingScroll(anchorKey);\n    return;\n  }\n  if (!supabaseReady) {\n    setProductionStatus(\"Supabase ist nicht erreichbar.\", true);\n    renderPreservingScroll(anchorKey);\n    return;\n  }\n  const causes = state.productionQaCauses || [];\n  if (!causes.length) {\n    setProductionStatus(\"Keine aktiven 6M-Ursachen geladen. +1 kann nicht ohne Ursache gebucht werden.\", true);\n    renderPreservingScroll(anchorKey);\n    return;\n  }\n  state.ui = state.ui || {};\n  state.ui.productionQaCauseModal = {\n    stationId,\n    type,\n    anchorKey,\n    anchorTop,\n    selectedCauseId: causes[0]?.id || \"\",\n    note: \"\",\n  };\n  setProductionStatus(\"\");\n  renderPreservingScroll(anchorKey);\n}\n\n",
+      "after": "function openProductionQaCauseModal(stationId, type) {\n  const station = getProductionOrderStationById(stationId);\n  const order = getProductionOrderById(station?.order_id);\n  const anchorKey = `amount:${stationId}:${type}`;\n  const anchorTop = getScrollAnchorElement(anchorKey)?.getBoundingClientRect().top ?? null;\n  if (!station || ![\"scrap\", \"clarify\"].includes(type) || !(opQuantities.operation(stationId)?.can_work || canEditProductionOrder(order))) {\n    setProductionStatus(\"Du darfst diese Menge nicht ändern.\", true);\n    renderPreservingScroll(anchorKey);\n    return;\n  }\n  const limitInfo = getProductionQuantityLimitInfo(order, station);\n  if (limitInfo.blockPlus) {\n    setProductionStatus(\"\");\n    setProductionLocalStatus(anchorKey, limitInfo.message, true);\n    renderPreservingScroll(anchorKey);\n    return;\n  }\n  if (!supabaseReady) {\n    setProductionStatus(\"Supabase ist nicht erreichbar.\", true);\n    renderPreservingScroll(anchorKey);\n    return;\n  }\n  const causes = state.productionQaCauses || [];\n  if (!causes.length) {\n    setProductionStatus(\"Keine aktiven 6M-Ursachen geladen. +1 kann nicht ohne Ursache gebucht werden.\", true);\n    renderPreservingScroll(anchorKey);\n    return;\n  }\n  state.ui = state.ui || {};\n  state.ui.productionQaCauseModal = {\n    stationId,\n    type,\n    anchorKey,\n    anchorTop,\n    selectedCauseId: causes[0]?.id || \"\",\n    note: \"\",\n  };\n  setProductionStatus(\"\");\n  renderPreservingScroll(anchorKey);\n}\n\n"
+    },
+    {
+      "before": "function getProductionOrderCompletedGoodTotal(orderId) {",
+      "after": "function getProductionOrderCompletedGoodTotal(orderId) {\n  const linked = opQuantities.finished(orderId);\n  if (linked !== null) return linked;"
+    },
+    {
+      "before": "      ${machineReadiness.render()}</div>`;",
+      "after": "      ${opQuantities.hasAccess() ? `<button onclick=\"setProductionSubTab('counts')\">OP-Stückzahlzähler</button>` : \"\"}\n      ${machineReadiness.render()}</div>`;"
+    }
+  ],
+  "filePatches": [
+    {
+      "file": "schichtplan_mvp.html",
+      "before": "",
+      "after": "    <script>window.HUMBEL_OP_QUANTITIES_ENABLED = false;</script>\n    <script src=\"./js/op-quantities.js\"></script>\n"
+    },
+    {
+      "file": "js/machine-readiness.js",
+      "before": " function may(row,action){if(terminal(row)||!row.initialized)return false;if(action==='assign'||action==='cancel')return row.can_plan&&!(action==='assign'&&row.work_status==='running');if(!row.machine_active&&action!=='pause'||row.order_status!=='running'&&action!=='pause')return false;if(action==='handover')return row.can_confirm&&row.predecessor_released&&row.received_quantity===0&&['planned','paused'].includes(row.work_status);if(!row.can_work)return false;return action==='start'?row.work_status==='ready'&&row.received_quantity===row.quantity:action==='resume'?row.work_status==='paused'&&row.received_quantity===row.quantity:['pause','complete'].includes(action)&&row.work_status==='running';}\n",
+      "after": " function may(row,action){if(row.quantity_linked){if(terminal(row)||!row.initialized||!row.machine_active&&action!=='pause'||row.order_status!=='running'&&action!=='pause')return false;if(['complete','cancel'].includes(action))return false;if(action==='handover')return row.can_confirm&&row.quantity_available>row.received_quantity;if(action==='start')return row.can_work&&row.work_status==='ready'&&row.received_quantity>0;if(action==='resume')return row.can_work&&row.work_status==='paused'&&row.received_quantity>0;}if(terminal(row)||!row.initialized)return false;if(action==='assign'||action==='cancel')return row.can_plan&&!(action==='assign'&&row.work_status==='running');if(!row.machine_active&&action!=='pause'||row.order_status!=='running'&&action!=='pause')return false;if(action==='handover')return row.can_confirm&&row.predecessor_released&&row.received_quantity===0&&['planned','paused'].includes(row.work_status);if(!row.can_work)return false;return action==='start'?row.work_status==='ready'&&row.received_quantity===row.quantity:action==='resume'?row.work_status==='paused'&&row.received_quantity===row.quantity:['pause','complete'].includes(action)&&row.work_status==='running';}\n"
+    },
+    {
+      "file": "js/machine-readiness.js",
+      "before": "    ${!r.predecessor_released?'<p>Vorgänger noch nicht vollständig freigegeben. Keine Teilmengenfreigabe.</p>':''}\n",
+      "after": "    ${r.quantity_linked?`<p>Rechnerisch verfügbare Teilmenge: ${r.quantity_available}. Physische Übergabe separat bestätigen; Gutmenge stammt aus dem bestehenden OP-Zähler. Abschluss folgt in Phase 5.</p>`:!r.predecessor_released?'<p>Vorgänger noch nicht vollständig freigegeben. Keine Teilmengenfreigabe.</p>':''}\n"
+    },
+    {
+      "file": "js/machine-readiness.js",
+      "before": "    <form data-readiness-form=\"${r.operation_id}\"><label for=\"ready-qty-${r.operation_id}\">Bestätigte Gutmenge (Freigabeprotokoll)</label><input id=\"ready-qty-${r.operation_id}\" name=\"quantity\" type=\"number\" min=\"1\" max=\"${r.quantity}\" step=\"1\" value=\"${escape(f.quantity)}\"><p>Keine Buchung in Mitarbeiter- oder Stationszähler.</p>\n",
+      "after": "    <form data-readiness-form=\"${r.operation_id}\"><label for=\"ready-qty-${r.operation_id}\">${r.quantity_linked?'Physisch übergebene Gesamtmenge':'Bestätigte Gutmenge (Freigabeprotokoll)'}</label><input id=\"ready-qty-${r.operation_id}\" name=\"quantity\" type=\"number\" min=\"1\" max=\"${r.quantity_linked?r.quantity_available:r.quantity}\" step=\"1\" value=\"${escape(f.quantity)}\"><p>Keine Buchung in Mitarbeiter- oder Stationszähler.</p>\n"
+    },
+    {
+      "file": "js/machine-readiness.js",
+      "before": "    <div class=\"readiness-actions\">${[['handover','Physische Übergabe bestätigen'],['start','Arbeit beginnen'],['pause','Unterbrechen'],['resume','Fortsetzen'],['complete','OP abschließen'],['assign','Maschine / Start planen'],['cancel','OP abbrechen']].map(([action,label])=>`<button type=\"button\" data-readiness=\"${action}\" ${busy||!may(r,action)?'disabled':''}>${label}</button>`).join('')}</div></form>\n",
+      "after": "    <div class=\"readiness-actions\">${[['handover','Physische Übergabe bestätigen'],['start','Arbeit beginnen'],['pause','Unterbrechen'],['resume','Fortsetzen'],['complete','OP abschließen'],['assign','Maschine / Start planen'],['cancel','OP abbrechen']].map(([action,label])=>`<button type=\"button\" data-readiness=\"${action}\" ${busy||r.quantity_linked&&['complete','cancel'].includes(action)||!may(r,action)?'disabled':''}>${label}</button>`).join('')}</div></form>\n"
+    },
+    {
+      "file": "js/machine-readiness.js",
+      "before": "     let qty=null;if(['handover','complete'].includes(action)){qty=Number(v.quantity);if(!Number.isSafeInteger(qty)||qty!==row.quantity)throw Error('Vollständige Auftragsmenge erforderlich. Teilmengenfreigabe deaktiviert.');}\n",
+      "after": "     let qty=null;if(['handover','complete'].includes(action)){qty=Number(v.quantity);if(!Number.isSafeInteger(qty)||(row.quantity_linked?qty<1||qty>row.quantity_available:qty!==row.quantity))throw Error(row.quantity_linked?'Positive physisch übergebene Gesamtmenge innerhalb der rechnerisch verfügbaren Teilmenge erforderlich.':'Vollständige Auftragsmenge erforderlich. Teilmengenfreigabe deaktiviert.');}\n"
+    }
+  ]
+}

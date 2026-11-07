@@ -71,7 +71,15 @@
     "tests/helpers/setup-db.js": "7aa4915f1653f3e8b9c0122beb842d677701febec4b300d68baf39a1568fb9fc",
     "tests/db-integration/setup-extension.js": "24976ab54241a2f24c2e9d5d1177a8b2d38e53547e92150015da8290ee8c8d69",
     "tests/qa/setup-integration-patches.json": "c03985196b492b70003a5dbde778aa14b8de0792409a2560f49f32177291ecdb",
-    "tests/setup/unit.test.js": "34ae329f6506cc9efced88e876653db2e730d424bb09a0ab640c80573c26120a"
+    "tests/setup/unit.test.js": "34ae329f6506cc9efced88e876653db2e730d424bb09a0ab640c80573c26120a",
+    "js/op-quantities.js": "ce490cee30b2b838a348c8034d476dcb02ae279ce2d827c1e35756a5c10ff756",
+    "supabase/review/quantity-phase4.sql": "339df1f388d03b5fa8e08682c968b0b0e6d0285044b32fee229c159610d5a8af",
+    "tests/helpers/quantity-db.js": "adbb5d0d975e9d51d3bf5fcf7f182154be001287567f92ce539655b17c68d95c",
+    "tests/quantity/database.test.js": "a9bf9b8180b51d5d2c8dd8e8dce160d9028bb1a2e9d6c79abf5f65387b45a3dd",
+    "tests/quantity/unit.test.js": "586a78ba8dd206e3ecba2c6799d5ec560586c850bdf8a615cfe2f0e3aaabe878",
+    "tests/quantity.spec.js": "62d94b539e8118b0a2f56a44a18b18ea3357d8dfc70a0de175fe165f559264d9",
+    "tests/db-integration/quantity-extension.js": "c0a6b93d503465154bdd157d2d36a8d9933133e7a3a23c5a83cd67c4f46a1ed1",
+    "tests/qa/quantity-integration-patches.json": "c663cd4ddf45f4508faa93f43644fb74f5c5d208bc2c2b4da601d9b4a1706b64"
   },
   "reviewedPresentationPatch": "\n    #toolSearch,\n    #toolFilterLabel,\n    #toolFilterT,\n    #toolFilterD,\n    #toolFilterHolder,\n    #toolFilterImageStatus {\n      min-width: 0;\n      width: 100%;\n      max-width: 100%;\n    }\n",
   "reviewedPresentationReplacements": [

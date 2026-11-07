@@ -29,14 +29,16 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: isolated/package-lock.json
-      - name: Overlay current Phase 1, 2 and 3 proposals and native extensions
+      - name: Overlay current Phase 1–4 proposals and native extensions
         run: |
           cp implementation/supabase/review/ba-entry-phase1.sql isolated/supabase/review/
           cp implementation/tests/db-integration/ba-entry-extension.js isolated/tests/db-integration/ba-entry-extension.js
           cp implementation/supabase/review/op-routing-phase2.sql isolated/supabase/review/
           cp implementation/tests/db-integration/routing-extension.js isolated/tests/db-integration/routing-extension.js
           cp implementation/supabase/review/setup-phase3.sql isolated/supabase/review/
-          cp implementation/tests/db-integration/setup-extension.js isolated/tests/db-integration/security-extension.js
+          cp implementation/tests/db-integration/setup-extension.js isolated/tests/db-integration/setup-extension.js
+          cp implementation/supabase/review/quantity-phase4.sql isolated/supabase/review/
+          cp implementation/tests/db-integration/quantity-extension.js isolated/tests/db-integration/security-extension.js
           echo "Implementation: $GITHUB_SHA; isolated infrastructure: 25e9a6914e38fc791d9ecad13d92a45e30d19bb3" >> "$GITHUB_STEP_SUMMARY"
       - run: npm ci --ignore-scripts
         working-directory: isolated
@@ -45,7 +47,7 @@ jobs:
       - name: Start only ephemeral internal containers
         run: node scripts/db-integration/runtime.js start
         working-directory: isolated
-      - name: Real baseline plus Phase 1/2/3 SQL, JWT, RLS and concurrent requests
+      - name: Real baseline plus Phase 1/2/3/4 SQL, JWT, RLS and concurrent requests
         run: docker exec humbel-gateway node scripts/db-integration/run.js
         working-directory: isolated
       - name: Record actual coverage and remaining security blockers
