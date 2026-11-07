@@ -11,7 +11,21 @@ const productionForecast = window.HumbelForecastUI.create({
   changed: () => machineReadiness.refresh(),
 });
 productionForecast.bind(document);
+const setupTimes = window.HumbelSetupTimes.create({
+  client: supabaseClient, actor: () => currentSupabaseUser?.id || null,
+  role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },
+  changed: () => machineReadiness.refresh(),
+  shiftEnd: () => {
+    if (!currentUser) return null;
+    const now = Date.now();
+    return generateThreeMonths().filter(s => s.assigned === currentUser.name)
+      .map(s => shiftDateRange(s)).filter(s => s.start.getTime() <= now && s.end.getTime() + 12 * 3600000 >= now)
+      .sort((a, b) => b.end - a.end)[0]?.end || null;
+  },
+});
+setupTimes.bind(document);
 const machineReadiness = window.HumbelMachineReadiness.create({
+  setup: setupTimes,
   forecast: productionForecast,
   client: supabaseClient, actor: () => currentSupabaseUser?.id || null,
   role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },
@@ -86,7 +100,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.11.5";
+const APP_VERSION = "0.12.0";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -101,6 +115,12 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.12.0",
+    date: "2026-11-07 17:48",
+    changes: ["Phase 3: gemeinsame Rüstvorgänge, persönliche interne/externe Segmente, allgemeine Pause, Abmeldung/Übernahme, Korrekturaudit und getrennte Zeitkennzahlen. Deaktivierter Reviewentwurf; keine produktive Migration oder Aktivierung."],
+  },
+
   {
     version: "0.11.5",
     date: "2026-11-07 14:03",
@@ -2665,7 +2685,9 @@ async function loginWithSupabase() {
 }
 
 async function logoutSupabase() {
+  if (!(await setupTimes.beforeLogout())) return;
   await supabaseClient.auth.signOut();
+  setupTimes.reset();
   stopToolAutoRefresh();
   stopToolRealtimeSubscription();
   state.ui = state.ui || {};
@@ -2683,6 +2705,7 @@ async function logoutSupabase() {
   document.getElementById("tabs")?.classList.add("hidden");
   document.getElementById("sessionInfo").textContent = "";
   document.getElementById("view").innerHTML = "";
+  document.getElementById("personal-production-times")?.remove();
   setLoginStatus("Supabase-Session gelöscht.");
 }
 
@@ -3222,6 +3245,7 @@ function logout() {
 }
 
 function render() {
+  void setupTimes.ensureSession();
   void machineReadiness.ensureSession();
   void articleMaster.ensureSession();
   if (!currentUser) return;
@@ -3258,6 +3282,8 @@ function render() {
       .join("") +
     `<button class="px-3 py-2 rounded bg-red-700 text-white" onclick="logout()">Abmelden</button>`;
 
+  document.getElementById("personal-production-times")?.remove();
+  tabsEl.insertAdjacentHTML("afterend", `<div id="personal-production-times">${setupTimes.renderGeneral()}</div>`);
   tabsEl.classList.remove("hidden");
 
   document.getElementById("sessionInfo").textContent =

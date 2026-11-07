@@ -6,6 +6,10 @@ const { listTests } = require("./list-tests");
 const { hash, appBusiness, sourceViolations } = require("./qa-policy");
 const protectedFiles = require("../tests/qa/protected-files.json");
 let app = fs.readFileSync("schichtplan_mvp.js", "utf8").replace(/\r\n/g, "\n");
+for (const {before, after} of [...require("../tests/qa/setup-integration-patches.json").patches].reverse()) {
+  assert.equal(app.split(after).length - 1, 1, "Setup hook must remain exact and unique");
+  app = app.replace(after, before);
+}
 for (const {before, after} of [...require("../tests/qa/ba-entry-integration-patches.json").patches].reverse()) {
   assert.equal(app.split(after).length - 1, 1, "BA entry hook must remain exact and unique");
   app = app.replace(after, before);

@@ -9,8 +9,8 @@
  function may(row,action){if(terminal(row)||!row.initialized)return false;if(action==='assign'||action==='cancel')return row.can_plan&&!(action==='assign'&&row.work_status==='running');if(!row.machine_active&&action!=='pause'||row.order_status!=='running'&&action!=='pause')return false;if(action==='handover')return row.can_confirm&&row.predecessor_released&&row.received_quantity===0&&['planned','paused'].includes(row.work_status);if(!row.can_work)return false;return action==='start'?row.work_status==='ready'&&row.received_quantity===row.quantity:action==='resume'?row.work_status==='paused'&&row.received_quantity===row.quantity:['pause','complete'].includes(action)&&row.work_status==='running';}
  function deadline(row,today){return row.due_date<today?'Endtermin überschritten; Abschlussprognose fehlt':'Endtermin hinterlegt; Abschlussprognose fehlt (#10)';}
  const date=v=>v?new Intl.DateTimeFormat('de-DE',{dateStyle:'medium',timeStyle:'short',timeZone:'Europe/Berlin'}).format(new Date(v)):'Nicht hinterlegt';
- function create({client,actor,role,redraw,forecast=null}){
-  const routing=root.HumbelRouting?.create({client,actor,role,redraw,changed:()=>execute('reload')});
+ function create({setup,client,actor,role,redraw,forecast=null}){
+  const routing=root.HumbelRouting?.create({client,actor,role,redraw,changed:async()=>{await setup?.refresh();return execute('reload');}});
   let user=null,generation=0,loaded=false,loading=false,allowed=false,rows=[],machines=[],today='',busy=false,error='',notice='',filter='';
   const forms=new Map(),requests=new Map();
   const enabled=()=>root.HUMBEL_MACHINE_READINESS_ENABLED===true&&root.HUMBEL_OPERATIONS_ENABLED===true&&root.HUMBEL_ARTICLE_MASTER_ENABLED===true;
@@ -22,7 +22,7 @@
   async function ensureSession(){if(routing?.enabled())await routing.ensureSession();if(!enabled()||!actor()||role()==='tool_scanner'){if(user)reset();return;}if(user!==actor()){reset();user=actor();}if(loaded||loading)return;loading=true;const t=generation;try{await load(t);}catch(e){if(t===generation)error=e.message;}finally{if(t===generation){loaded=true;loading=false;redraw();}}}
   function values(id){if(!forms.has(id))forms.set(id,{quantity:'',reason:'',machine:'',start:''});return forms.get(id);}
   function render(){
-   const routingPanel=routing?.enabled()?routing.render():'';
+   const routingPanel=(routing?.enabled()?routing.render():'')+(setup?.enabled()?setup.render():'');
    if(!valid()||!allowed&&!error)return routingPanel;
    const shown=filter?rows.filter(r=>(r.machine_id||'unassigned')===filter):rows;
    const groups=[...new Map(rows.map(r=>[r.machine_id||'unassigned',r.machine_name])).entries()];
