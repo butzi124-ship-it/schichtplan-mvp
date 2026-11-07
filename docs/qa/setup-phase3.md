@@ -1,4 +1,4 @@
-# Phase 3 – Rüstzeiterfassung (Reviewstand 0.12.3)
+# Phase 3 – Rüstzeiterfassung (Reviewstand 0.12.4)
 
 Gestapelter Draft auf PR #20 `feature/ba-op-phase2`, geprüft gegen dessen tatsächlichen Head `e276270adc704fc9033e304ff5ad81db56593ecd`. Ref #17, verbindliche Spezifikation PR #18. Neuer Branch `feature/ba-op-phase3`. Kein Merge, Deployment, produktiver Datenbankzugriff oder Feature-Aktivierung.
 
@@ -76,3 +76,5 @@ Erster nativer Vorabstand `34f3729a0713d68f4d4c037e006991cccc36f484` (0.12.0): [
 0.12.2 ergänzt den historischen Eigenzugriff nach Abteilungswechsel sowie AL-Korrekturrechte nach aktueller ausführender Zuständigkeit, mit SQL-, nativen JWT- und Browserregressionen.
 
 0.12.3 fragt auch beim OP-Öffnen bzw. beim Einstieg eines nachfolgenden Mitarbeiters in eine offene Rüstung ausdrücklich nach Fortsetzung (Ja/Nein, dann Modus). Kein automatischer Zeitstart.
+
+0.12.4 verknüpft das Korrektur-Moduslabel eindeutig und verwendet im Pausen-Browsertest den tatsächlichen Navigationsnamen `Start / Dashboard`. Keine Assertion gelockert.
