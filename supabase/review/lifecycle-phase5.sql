@@ -48,10 +48,6 @@ declare latest public.production_lifecycle_cases;op uuid;oid uuid;remaining bigi
  insert into public.production_lifecycle_cases(conflict_id,quantity_request,after_completion) select conf,request,b.status='completed' or exists(select 1 from public.production_operation_execution where operation_id=op and work_status='completed') from public.production_orders b where b.id=oid;
  perform article_master_private.lifecycle_notify(oid,op,request,'quantity_case');
 end;$$;
--- Adopt detected Phase-4 cases without changing their original IDs or notifications.
--- A missing historical completion relation stays unknown, not inferred from current status.
-insert into public.production_lifecycle_cases(conflict_id,quantity_request,detected_at,after_completion)
-select c.id,c.first_request,c.first_detected,null::boolean from public.production_quantity_conflicts c join public.production_order_operations o on o.id=c.operation_id join public.production_orders b on b.id=o.order_id left join public.production_operation_execution e on e.operation_id=o.id;
 create function article_master_private.lifecycle_adopt_cases() returns trigger language plpgsql security definer set search_path='' as $$begin
  if new.enabled and not old.enabled then
  insert into public.production_lifecycle_cases(conflict_id,quantity_request,detected_at,after_completion)
@@ -261,4 +257,11 @@ do $permissions$declare t text;f record;begin
 end;$permissions$;
 revoke all on function public.ba_lifecycle_command(uuid,text,uuid,integer,uuid,jsonb),public.ba_lifecycle_view() from public,anon,authenticated;
 grant execute on function article_master_private.lifecycle_command(uuid,uuid,text,uuid,integer,jsonb),article_master_private.lifecycle_view(),article_master_private.lifecycle_enabled(),article_master_private.lifecycle_context(uuid,text),public.ba_lifecycle_command(uuid,text,uuid,integer,uuid,jsonb),public.ba_lifecycle_view() to authenticated;
+-- Finish all DDL/RLS/trigger installation before backfilling rows. Their deferred
+-- foreign keys remain checked at this same transaction's COMMIT; later ALTER TABLE
+-- would fail with 55006 when existing Phase-4 conflicts queue those trigger events.
+-- Adopt detected Phase-4 cases without changing their original IDs or notifications.
+-- A missing historical completion relation stays unknown, not inferred from current status.
+insert into public.production_lifecycle_cases(conflict_id,quantity_request,detected_at,after_completion)
+select c.id,c.first_request,c.first_detected,null::boolean from public.production_quantity_conflicts c join public.production_order_operations o on o.id=c.operation_id join public.production_orders b on b.id=o.order_id left join public.production_operation_execution e on e.operation_id=o.id;
 commit;

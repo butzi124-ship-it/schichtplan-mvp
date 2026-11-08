@@ -1,3 +1,39 @@
+# Korrektur 0.14.1 – Installation auf befülltem Phase-4-Bestand
+
+Ausgangspunkt: PR #23, Branch `feature/ba-op-phase5`, Commit `13acc5dcbe2df70c397ac5dcdc0bc6771448178e`. APP_VERSION **0.14.1**, VERSION_LOG mit tatsächlicher Europe/Berlin-Zeit. Ausschließlich Installationsreihenfolge, zusätzlicher Regressionstest, Version und dieser Bericht geändert; Fachfunktionen der Phasen 1–5 unverändert.
+
+## Nachgewiesene Ursache und Korrektur
+
+Der isolierte [native Lauf 42446965606](https://github.com/butzi124-ship-it/schichtplan-mvp/actions/runs/42446965606) beendet alle bisherigen **43/43** Tests erfolgreich. Sein Ergebnisartefakt meldet danach beim Einrichten von Phase 5: `55006: cannot ALTER TABLE "production_lifecycle_cases" because it has pending trigger events`. Der Fehler wurde lokal mit der unveränderten SQL gegen PostgreSQL/PGlite reproduziert. Der PL/pgSQL-Kontext identifiziert `alter table public.production_lifecycle_cases enable row level security` im abschließenden Rechteblock.
+
+Die vorherige Abnahme hat bereits echte Phase-4-Mengenklärfälle erzeugt. Deren Übernahme in `production_lifecycle_cases` löst aufgeschobene Fremdschlüsselprüfungen aus (`DEFERRABLE INITIALLY DEFERRED`). Das spätere `ALTER TABLE` innerhalb derselben Transaktion ist deshalb unzulässig. Die bisherigen lokalen Lifecycle-Fixtures installierten Phase 5 vor dem Erzeugen solcher Fälle und erfassten diesen Migrationspfad nicht.
+
+Die unveränderte Übernahme steht jetzt **nach sämtlichen DDL-, Trigger-, RLS- und Rechteanweisungen, unmittelbar vor COMMIT**. Die Installation bleibt eine atomare Transaktion; alle Fremdschlüssel und Rechteprüfungen bleiben aktiv. Keine Triggerabschaltung, Constraint-Umgehung, Statusregeländerung oder automatische Mengenkorrektur. Die neun nativen Phase-5-Tests und die Workflowkette **43 + 9 = 52** bleiben unverändert und werden nach erfolgreicher Installation erreicht.
+
+Der neue Test `tests/lifecycle/installation.test.js` erzeugt über die vorhandenen RPCs einen realen Phase-4-Spannungswiderspruch, installiert die echte SQL und prüft erhaltene Mengen-, Benachrichtigungs- und Zeitdaten, eindeutige Übernahme samt Ursprungsreferenzen, unveränderten deaktivierten Schalter, alle zehn RLS-Tabellen, direkte Zugriffssperren, unveränderliche Historie und alle vier aufgeschobenen Fremdschlüssel. Ein absichtlich ungültiger Fremdschlüssel wird weiterhin am Commit mit `23503` zurückgewiesen. Anschließend ist der übernommene Fall über das berechtigte RPC im rein synthetischen Test lesbar. Keine bestehenden Tests oder Assertions geändert.
+
+## Lokale Ergebnisse dieses Fixes
+
+| Prüfung | Ergebnis |
+|---|---|
+| Installation, Pflicht-Syntaxprüfungen einschließlich neuer Testdatei | bestanden |
+| Lifecycle-SQL-/Adapter-/Installationsregression | **26/26** |
+| Unverengte bestehende Modulverträge einschließlich Phase 4 und Prognose | **131/131** |
+| CI-Bericht / QA-Gates | **2/2**, **9/9** |
+| `qa:check`, `qa:agent-server`, `git diff --check` | bestanden |
+| Vollständiges `test:e2e`, alle fünf Browserprofile | 718 aufgerufen; Browserstart wegen fehlender Binaries blockiert, keine fachliche Browserabnahme |
+| `test:agents` | Browserstart wegen fehlendem Binary blockiert |
+| Gepinnte Visuals | BLOCKED_NOT_TESTED: erforderlicher Playwright-1.62.1-noble-Container fehlt |
+| `test:db:preflight`, native 52-Fälle-/JWT-/Mehrverbindungsabnahme | BLOCKED_NOT_TESTED: lokale isolierte Dockerlaufzeit fehlt; PGlite ersetzt diese Abnahme nicht |
+
+Die bereits erfolgreiche GitHub-QA des vorherigen Standes (718 Browserfälle, 66 visuelle Prüfungen und Quality Gate/e2e) gilt nicht als Ausführung dieses neuen Commits. Die native Gesamtabnahme der Korrektur bleibt GitHub vorbehalten. Keine produktive Datenbankverbindung oder Aktivierung; keine Berechtigungsänderung. Bestehende offene fachliche und technische Punkte aus dem ursprünglichen Bericht bleiben bestehen.
+
+Push aktualisiert den bestehenden Draft-PR; die konfigurierten Workflows **QA and Release** sowie **BA and OP Isolated Acceptance** werden anschließend durch GitHub ausgelöst. Kein zusätzlicher Dispatch und keine Statusabfrage nach dem Push. Kein Merge oder Deployment.
+
+---
+
+Der folgende ursprüngliche Bericht dokumentiert den historischen Entwicklungsstand **0.14.0**.
+
 # Phase 5 – BA-Mengen, Nachfertigung, Mengenklärfälle und Abschlüsse
 
 ## Basis und Umfang

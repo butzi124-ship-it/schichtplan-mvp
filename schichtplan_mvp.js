@@ -114,7 +114,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.14.0";
+const APP_VERSION = "0.14.1";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -129,6 +129,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.14.1",
+    date: "2026-11-08 06:20",
+    changes: ["Phase-5-Installation übernimmt vorhandene Phase-4-Klärfälle erst nach vollständiger DDL-/RLS-/Trigger-Konfiguration. Verhindert PostgreSQL 55006 durch ausstehende aufgeschobene Fremdschlüsselprüfungen; atomare Transaktion, Integritätsprüfungen und sämtliche Fachfunktionen bleiben erhalten. Regression prüft befüllten Phase-4-Bestand sowie Ablehnung ungültiger Fremdschlüssel am Commit."],
+  },
   {
     version: "0.14.0",
     date: "2026-11-08 05:26",
