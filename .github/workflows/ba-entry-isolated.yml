@@ -40,7 +40,9 @@ jobs:
           cp implementation/supabase/review/quantity-phase4.sql isolated/supabase/review/
           cp implementation/tests/db-integration/quantity-extension.js isolated/tests/db-integration/quantity-extension.js
           cp implementation/supabase/review/lifecycle-phase5.sql isolated/supabase/review/
-          cp implementation/tests/db-integration/lifecycle-extension.js isolated/tests/db-integration/security-extension.js
+          cp implementation/tests/db-integration/lifecycle-extension.js isolated/tests/db-integration/lifecycle-extension.js
+          cp implementation/supabase/review/ba-initial-responsibility.sql isolated/supabase/review/
+          cp implementation/tests/db-integration/initial-responsibility-extension.js isolated/tests/db-integration/security-extension.js
           mkdir -p isolated/tests/fixtures
           cp implementation/tests/fixtures/forecast-clock.json isolated/tests/fixtures/
           cp implementation/tests/db-integration/forecast-clock.js isolated/tests/db-integration/
