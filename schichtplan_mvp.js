@@ -3386,7 +3386,7 @@ function render() {
   const view = document.getElementById("view");
   if (view?.parentElement) {
     view.parentElement.className =
-      ["werkzeugverwaltung", "lagerverwaltung"].includes(currentTab)
+      ["werkzeugverwaltung", "lagerverwaltung", "dashboard"].includes(currentTab)
         ? "w-full max-w-none p-4 space-y-4"
         : "max-w-7xl mx-auto p-4 space-y-4";
   }
