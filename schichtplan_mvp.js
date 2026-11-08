@@ -114,7 +114,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.14.2";
+const APP_VERSION = "0.15.0";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -129,6 +129,11 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {
+    version: "0.15.0",
+    date: "2026-11-08 07:13",
+    changes: ["Automatische BA-Hauptverantwortung bei OP-1-Anlage: eindeutige aktive Abteilungsleitung aus vertrauenswürdigen serverseitigen Zuordnungen; andernfalls Hauptverantwortung offen. Atomarer Audit, unveränderte Drei-Felder-Anlage, bestehende begründete Verantwortungsübertragung und unabhängige OP-Zuständigkeiten. Separater Serverschalter standardmäßig aus; SQL ausschließlich Reviewentwurf."],
+  },
   {
     version: "0.14.2",
     date: "2026-11-08 06:28",

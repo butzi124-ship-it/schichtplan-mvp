@@ -42,6 +42,11 @@ for (const [file, expected] of Object.entries(protectedFiles.tests)) {
     assert.equal(checkedSource.split(navigation.after).length - 1, 1, "Explicit test fixture patch must remain exact");
     checkedSource = checkedSource.replace(navigation.after, navigation.before);
   }
+  for (const change of [...require("../tests/qa/initial-responsibility-integration-patches.json").filePatches].reverse()) {
+    if (change.file !== file) continue;
+    assert.equal(checkedSource.split(change.after).length - 1, 1, "Explicit initial responsibility presentation must remain exact and unique");
+    checkedSource = checkedSource.replace(change.after, change.before);
+  }
   for (const change of [...require("../tests/qa/lifecycle-integration-patches.json").filePatches].reverse()) {
     if (change.file !== file) continue;
     assert.equal(checkedSource.split(change.after).length - 1, 1, "Explicit lifecycle adapter must remain exact");

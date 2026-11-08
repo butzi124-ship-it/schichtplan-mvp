@@ -64,7 +64,7 @@
         <form id="ba-entry-search"><fieldset ${busy?'disabled':''}><legend>Manuelle BA-/OP-Suche</legend>
           <label>BA für Suche<input name="ba" inputmode="numeric" maxlength="24" value="${html(lookup.ba)}"></label>
           <label>OP-Nummer (optional)<input name="op" type="number" min="1" max="999" step="1" value="${html(lookup.op)}"></label><button>BA / OP suchen</button></fieldset></form>
-        ${snapshot ? snapshot.legacy ? `<section aria-label="Bestehender BA"><h4>BA ${html(snapshot.ba_number)}</h4><p>Bestandsauftrag geöffnet. Fertigungsdaten und bestehende Zähler bleiben im bisherigen Auftragsbereich erhalten; kein OP-Snapshot wurde nachträglich erzeugt.</p></section>` : `<p>BA-Hauptverantwortung: Zuordnungsregel noch offen. Keine automatische AL-Zuordnung.</p>${renderSnapshot(snapshot)}` : ''}</section>`;
+        ${snapshot ? snapshot.legacy ? `<section aria-label="Bestehender BA"><h4>BA ${html(snapshot.ba_number)}</h4><p>Bestandsauftrag geöffnet. Fertigungsdaten und bestehende Zähler bleiben im bisherigen Auftragsbereich erhalten; kein OP-Snapshot wurde nachträglich erzeugt.</p></section>` : `<p>${snapshot.responsibility_status==='assigned'?`BA-Hauptverantwortlicher AL: ${html(snapshot.principal_label||'Zugeordnete Abteilungsleitung')}`:snapshot.responsibility_status==='open'?'Hauptverantwortung offen. Ein Administrator kann die Erstzuordnung nachholen.':'BA-Hauptverantwortung: Zuordnungsregel noch offen. Keine automatische AL-Zuordnung.'}</p>${renderSnapshot(snapshot)}` : ''}</section>`;
     }
     function bind(document) {
       for (const type of ['input','change']) document.addEventListener(type, event => {
