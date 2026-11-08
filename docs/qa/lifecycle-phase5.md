@@ -1,3 +1,47 @@
+# Korrektur 0.14.2 – Akteursbezogene Zuordnung bei historischer Korrektur
+
+PR #23, bestehender Branch `feature/ba-op-phase5`, Parent `5f1c73784924fcee8c80e0c067d0c9c65b894489`. APP_VERSION **0.14.2**, VERSION_LOG **2026-11-08 06:28 Europe/Berlin**.
+
+## Ursache und konkrete verweigerte Aktion
+
+Der [native Lauf 42450433711](https://github.com/butzi124-ship-it/schichtplan-mvp/actions/runs/42450433711) führt nach behobener Installation alle 52 Fälle aus; 51 bestehen. Der benannte Fall scheitert bereits bei **`correct_count` durch `p.worker`**, vor `resolve` und vor `quantity`. Die native Hilfsfunktion `get` las bisher ausschließlich als `p.manager`. `lifecycle_row` bezieht `amounts.own_person_id` aus der vorhandenen `quantity_row`; diese ermittelt die aktive Mitarbeiterzuordnung ausdrücklich anhand von **`auth.uid()` des Lesers**. Der Administrator hat in diesem BA keine eigene Zuordnung: `null` wurde als `person_id` an den Mitarbeiteraufruf weitergereicht.
+
+Die bestehende Prüfung in `quantity_command` verweigert dies korrekt mit **42501 / HTTP 403**, `Own assigned employee or current AL required`. Ein berechtigter Korrekturkontext erlaubt historische geschlossene Abschnitte, ersetzt aber niemals Mitarbeiter-, Maschinen- oder Abteilungsrechte. Dieser Fehler wurde lokal mit dem echten unveränderten SQL und dem bisherigen Administrator-Lesepfad reproduziert. Derselbe Aufruf mit der aus der Mitarbeitersicht gelesenen Zuordnung funktioniert bei abgeschlossenem BA.
+
+## Eng begrenzte Korrektur und Rechtebeleg
+
+`get(snap,user=p.manager)` erlaubt nun den ausdrücklich angegebenen Leser. Ausschließlich die historische Mitarbeiterkorrektur liest vorher mit `get(closed,p.worker)`; eine zusätzliche Assertion verlangt die tatsächlich vorhandene eigene Zuordnung. Alle bisherigen nativen Assertions und alle neun Phase-5-Fälle bleiben erhalten. `supabase/review/lifecycle-phase5.sql` und sämtliche anderen Fach-/Rechtefunktionen bleiben **unverändert**.
+
+Zusätzlicher lokaler SQL-Regressionstest trennt die Zuständigkeiten absichtlich: `leaderB` ist gespeicherter BA-Haupt-AL einer anderen Abteilung, `reviewer` bleibt operativer OP-AL. Er prüft:
+
+- Bisheriger falscher Zuordnungsaufruf scheitert mit exakt 42501 und passender Fehlermeldung; der gesamte Zustand bleibt unverändert.
+- Eigene historische Mitarbeiterkorrektur gelingt, neue Differenz öffnet einen separaten Nach-Abschluss-Klärfall; BA/OP und alle historischen Abschlusssnapshots bleiben geschlossen/unverändert.
+- BA-Haupt-AL und Mitarbeiter dürfen den OP-Klärfall nicht auflösen; nur der operativ zuständige OP-AL löst mit begründeter verbleibender Abweichung auf. Die Restdifferenz bleibt sichtbar.
+- Der operative OP-AL darf allein keine BA-Nachfertigung freigeben. Der gespeicherte BA-Haupt-AL darf die Menge erhöhen und neue Abschnitte freigeben. Zähler und Abschlusshistorie bleiben erhalten.
+
+Damit bestätigt die Prüfung die bestehende Trennung: `resolve` verwendet `routing_manager(routing_department(conf_op))`; `quantity` verwendet `lifecycle_manage(oid)`. Die BA-Hauptverantwortung erteilt keine zusätzliche operative OP-Zuständigkeit. Ein BA-Abschluss entzieht weder bestehende eigene Korrekturrechte noch die gesondert berechtigte Fallbearbeitung oder ausdrückliche Nachfertigung.
+
+## Lokale Prüfungen und Grenzen
+
+| Prüfung | Ergebnis |
+|---|---|
+| `npm ci --ignore-scripts`, vorgeschriebene Syntaxprüfungen, neue/native Testsyntax | bestanden |
+| Gesamte Lifecycle-SQL-/Adapter-/Installationssuite | **27/27** |
+| Unverengte bestehende Modulverträge einschließlich Phase 4 und Prognose | **131/131** |
+| CI-Bericht / QA-Gates | **2/2**, **9/9** |
+| `qa:check`, `qa:agent-server`, `git diff --check` | bestanden |
+| Vollständiges `test:e2e`, Desktop/Mobil/Tablet/Firefox/WebKit | 718 aufgerufen; Browserstart durch fehlende Binaries blockiert |
+| Agent-Seed / gepinnte Visuals | BLOCKED_NOT_TESTED, Browserbinary bzw. vorgeschriebener CI-Container fehlt |
+| DB-Preflight / native 52-Fälle-JWT-/Mehrverbindungsabnahme | BLOCKED_NOT_TESTED, isolierte lokale Dockerlaufzeit fehlt |
+
+PGlite ist kein Nachweis nativer JWT-/HTTP-/Mehrverbindungsabnahme. Für den neuen Commit wird kein natives 52/52-Ergebnis behauptet. Keine SQL-, Rollen-, RLS-, Status- oder Fachregeländerung, keine gelockerten Assertions, Skips oder Filterverengung. Die offenen fachlichen und technischen Punkte der früheren Berichte bleiben bestehen. Alle Module bleiben deaktiviert; SQL bleibt Reviewentwurf.
+
+Der Push aktualisiert ausschließlich den bestehenden PR-Branch. Konfiguriert sind **QA and Release** und **BA and OP Isolated Acceptance**; danach keine CI-Abfragen, kein zusätzlicher Dispatch und kein Warten. Kein Merge, Deployment oder produktiver Datenbankeingriff.
+
+---
+
+Die folgenden Abschnitte dokumentieren die historischen Stände 0.14.1 und 0.14.0.
+
 # Korrektur 0.14.1 – Installation auf befülltem Phase-4-Bestand
 
 Ausgangspunkt: PR #23, Branch `feature/ba-op-phase5`, Commit `13acc5dcbe2df70c397ac5dcdc0bc6771448178e`. APP_VERSION **0.14.1**, VERSION_LOG mit tatsächlicher Europe/Berlin-Zeit. Ausschließlich Installationsreihenfolge, zusätzlicher Regressionstest, Version und dieser Bericht geändert; Fachfunktionen der Phasen 1–5 unverändert.
