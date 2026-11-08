@@ -10,7 +10,11 @@ concurrency:
   cancel-in-progress: true
 jobs:
   ba-entry-native:
-    name: Native BA and OP routing / JWT / concurrency
+    strategy:
+      fail-fast: false
+      matrix:
+        acceptance: [diagnostic, hardening, ba-op]
+    name: Native acceptance / ${{ matrix.acceptance }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -29,26 +33,15 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: isolated/package-lock.json
-      - name: Overlay current Phase 1–5 proposals and native extensions
+      - name: Assemble and verify all SQL and application inputs from this checkout
         run: |
-          cp implementation/supabase/review/ba-entry-phase1.sql isolated/supabase/review/
-          cp implementation/tests/db-integration/ba-entry-extension.js isolated/tests/db-integration/ba-entry-extension.js
-          cp implementation/supabase/review/op-routing-phase2.sql isolated/supabase/review/
-          cp implementation/tests/db-integration/routing-extension.js isolated/tests/db-integration/routing-extension.js
-          cp implementation/supabase/review/setup-phase3.sql isolated/supabase/review/
-          cp implementation/tests/db-integration/setup-extension.js isolated/tests/db-integration/setup-extension.js
-          cp implementation/supabase/review/quantity-phase4.sql isolated/supabase/review/
-          cp implementation/tests/db-integration/quantity-extension.js isolated/tests/db-integration/quantity-extension.js
-          cp implementation/supabase/review/lifecycle-phase5.sql isolated/supabase/review/
-          cp implementation/tests/db-integration/lifecycle-extension.js isolated/tests/db-integration/lifecycle-extension.js
-          cp implementation/supabase/review/ba-initial-responsibility.sql isolated/supabase/review/
-          cp implementation/tests/db-integration/initial-responsibility-extension.js isolated/tests/db-integration/security-extension.js
-          mkdir -p isolated/tests/fixtures
-          cp implementation/tests/fixtures/forecast-clock.json isolated/tests/fixtures/
-          cp implementation/tests/db-integration/forecast-clock.js isolated/tests/db-integration/
-          echo "Implementation: $GITHUB_SHA; isolated infrastructure: 25e9a6914e38fc791d9ecad13d92a45e30d19bb3" >> "$GITHUB_STEP_SUMMARY"
+          node implementation/tests/db-integration/integration-source.js assemble implementation isolated
+          echo "Integration checkout: $(git -C implementation rev-parse HEAD); harness only: 25e9a6914e38fc791d9ecad13d92a45e30d19bb3; mode: ${{ matrix.acceptance }}" >> "$GITHUB_STEP_SUMMARY"
       - name: Apply exact clock-only adapters to pinned native test sources
         run: node tests/db-integration/forecast-clock.js prepare
+        working-directory: isolated
+      - name: Separate mandatory native extension points and verify provenance before connection
+        run: node tests/db-integration/integration-source.js prepare-runner
         working-directory: isolated
       - run: npm ci --ignore-scripts
         working-directory: isolated
@@ -57,8 +50,8 @@ jobs:
       - name: Start only ephemeral internal containers
         run: node scripts/db-integration/runtime.js start
         working-directory: isolated
-      - name: Real baseline plus Phase 1/2/3/4/5 SQL, JWT, RLS and concurrent requests
-        run: docker exec humbel-gateway node scripts/db-integration/run.js
+      - name: Real baseline and explicit isolated acceptance mode
+        run: docker exec humbel-gateway node scripts/db-integration/run.js ${{ matrix.acceptance }}
         working-directory: isolated
       - name: Record actual coverage and remaining security blockers
         if: always()
@@ -71,6 +64,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ba-entry-isolated-${{ github.sha }}
+          name: ba-entry-isolated-${{ matrix.acceptance }}-${{ github.sha }}
           path: isolated/artifacts/db-integration/
           retention-days: 14
