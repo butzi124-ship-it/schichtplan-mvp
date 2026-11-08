@@ -83,6 +83,7 @@ jobs:
       - run: npm run test:article-db
       - run: npm run test:routing
       - run: npm run test:quantity
+      - run: npm run test:lifecycle
       - run: npm run test:setup
       - run: npm run test:ba-entry
       - run: npm run test:operations

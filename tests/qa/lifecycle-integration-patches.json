@@ -1,0 +1,73 @@
+{
+  "reason": "Explicit Phase 5 integration only. Original protected hashes, counters, tests and disabled behavior remain.",
+  "patches": [
+    {
+      "before": "opQuantities.bind(document);",
+      "after": "opQuantities.bind(document);\nconst baLifecycle = window.HumbelBALifecycle.create({\n  client: supabaseClient, actor: () => currentSupabaseUser?.id || null,\n  role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },\n  changed: () => Promise.all([opQuantities.refresh(), machineReadiness.refresh(), setupTimes.refresh()]),\n  causes: () => state.productionQaCauses || [],\n});\nbaLifecycle.bind(document);"
+    },
+    {
+      "before": "  void opQuantities.ensureSession();",
+      "after": "  void opQuantities.ensureSession();\n  void baLifecycle.ensureSession();"
+    },
+    {
+      "before": "  opQuantities.reset();",
+      "after": "  opQuantities.reset();\n  baLifecycle.reset();"
+    },
+    {
+      "before": "${opQuantities.render()}${renderProductionQaCauseModal()}",
+      "after": "${opQuantities.render()}${baLifecycle.render()}${renderProductionQaCauseModal()}"
+    },
+    {
+      "before": "return opQuantities.render() + `<details>",
+      "after": "return opQuantities.render() + baLifecycle.render() + `<details>"
+    },
+    {
+      "before": "if (opQuantities.hasAccess() && !tabs.includes(\"produktion\"))",
+      "after": "if ((opQuantities.hasAccess() || baLifecycle.hasAccess()) && !tabs.includes(\"produktion\"))"
+    },
+    {
+      "before": "if (opQuantities.hasAccess() && state.productionSubTab === \"counts\" && !canAccessProduction())",
+      "after": "if ((opQuantities.hasAccess() || baLifecycle.hasAccess()) && state.productionSubTab === \"counts\" && !canAccessProduction())"
+    },
+    {
+      "before": "      ${opQuantities.hasAccess() ? `<button onclick=\"setProductionSubTab('counts')\">OP-Stückzahlzähler</button>` : \"\"}",
+      "after": "      ${opQuantities.hasAccess() ? `<button onclick=\"setProductionSubTab('counts')\">OP-Stückzahlzähler</button>` : \"\"}\n      ${baLifecycle.hasAccess() && !opQuantities.hasAccess() ? `<button onclick=\"setProductionSubTab('counts')\">BA-Mengen und Abschlüsse</button>` : \"\"}"
+    },
+    {
+      "before": "  if (!canAccessProduction()) {\n    return `<div class='bg-white rounded-xl shadow p-4'>\n      <h2 class='text-lg font-semibold'>Produktion</h2>",
+      "after": "  if (baLifecycle.hasAccess() && !canAccessProduction()) {\n    return `<div class='bg-white rounded-xl shadow p-4'>${baLifecycle.render()}</div>`;\n  }\n  if (!canAccessProduction()) {\n    return `<div class='bg-white rounded-xl shadow p-4'>\n      <h2 class='text-lg font-semibold'>Produktion</h2>"
+    }
+  ],
+  "filePatches": [
+    {
+      "file": "js/op-quantities.js",
+      "before": "await load(t);notice='Buchung bestätigt.",
+      "after": "await load(t);if(typeof root.dispatchEvent==='function')root.dispatchEvent(new root.CustomEvent('humbel-quantity-changed'));notice='Buchung bestätigt."
+    },
+    {
+      "file": "js/op-quantities.js",
+      "before": "Bearbeitung folgt in Phase 5.",
+      "after": "${root.HUMBEL_BA_LIFECYCLE_ENABLED===true?'Bearbeitung und Historie in der BA-Abschlussverwaltung.':'Bearbeitung folgt in Phase 5.'}"
+    },
+    {
+      "file": "js/op-quantities.js",
+      "before": "Offener Mengenwiderspruch ${html(s.conflict_id)}",
+      "after": "${root.HUMBEL_BA_LIFECYCLE_ENABLED===true?'Mengenwiderspruch (Bearbeitungsstatus in BA-Abschlussverwaltung)':'Offener Mengenwiderspruch'} ${html(s.conflict_id)}"
+    },
+    {
+      "file": "schichtplan_mvp.html",
+      "before": "<script src=\"./js/op-quantities.js\"></script>",
+      "after": "<script src=\"./js/op-quantities.js\"></script>\n    <script>window.HUMBEL_BA_LIFECYCLE_ENABLED = false;</script>\n    <script src=\"./js/ba-lifecycle.js\"></script>"
+    },
+    {
+      "file": "js/machine-readiness.js",
+      "before": "Abschluss folgt in Phase 5.",
+      "after": "${root.HUMBEL_BA_LIFECYCLE_ENABLED===true?'Ausdrücklicher Abschluss in BA-Mengen und Abschlüsse.':'Abschluss folgt in Phase 5.'}"
+    },
+    {
+      "file": "js/machine-readiness.js",
+      "before": "${r.quantity_linked?'Physisch übergebene Gesamtmenge':'Bestätigte Gutmenge (Freigabeprotokoll)'}",
+      "after": "${r.quantity_linked?(r.rework_baseline>0?'Zusätzlich physisch übergebene Menge im Fertigungsabschnitt':'Physisch übergebene Gesamtmenge'):'Bestätigte Gutmenge (Freigabeprotokoll)'}"
+    }
+  ]
+}

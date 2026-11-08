@@ -3,7 +3,7 @@
   "version": "0.4.91",
   "private": true,
   "scripts": {
-    "check:syntax": "node --check schichtplan_mvp.js && node --check tests/smoke.spec.js && node --check playwright.config.js && node --check js/article-master.js && node --check tests/articles.spec.js && node --check scripts/ci-report.js && node --check js/operations.js && node --check tests/operations.spec.js && node --check tests/helpers/operations-db.js && node --check js/machine-readiness.js && node --check tests/readiness.spec.js && node --check tests/helpers/readiness-db.js && node --check js/production-forecast.js && node --check js/forecast-service.js && node --check js/forecast-ui.js && node --check tests/forecast.spec.js && node --check tests/helpers/forecast-db.js && node scripts/check-forecast-syntax.js && node --check js/ba-entry.js && node --check tests/ba-entry.spec.js && node --check tests/helpers/ba-entry-db.js && node --check js/op-routing.js && node --check tests/routing.spec.js && node --check tests/helpers/routing-db.js && node --check js/setup-times.js && node --check tests/setup.spec.js && node --check tests/helpers/setup-db.js && node --check tests/db-integration/setup-extension.js && node --check js/op-quantities.js && node --check tests/quantity.spec.js && node --check tests/helpers/quantity-db.js && node --check tests/db-integration/quantity-extension.js",
+    "check:syntax": "node --check schichtplan_mvp.js && node --check tests/smoke.spec.js && node --check playwright.config.js && node --check js/article-master.js && node --check tests/articles.spec.js && node --check scripts/ci-report.js && node --check js/operations.js && node --check tests/operations.spec.js && node --check tests/helpers/operations-db.js && node --check js/machine-readiness.js && node --check tests/readiness.spec.js && node --check tests/helpers/readiness-db.js && node --check js/production-forecast.js && node --check js/forecast-service.js && node --check js/forecast-ui.js && node --check tests/forecast.spec.js && node --check tests/helpers/forecast-db.js && node scripts/check-forecast-syntax.js && node --check js/ba-entry.js && node --check tests/ba-entry.spec.js && node --check tests/helpers/ba-entry-db.js && node --check js/op-routing.js && node --check tests/routing.spec.js && node --check tests/helpers/routing-db.js && node --check js/setup-times.js && node --check tests/setup.spec.js && node --check tests/helpers/setup-db.js && node --check tests/db-integration/setup-extension.js && node --check js/op-quantities.js && node --check tests/quantity.spec.js && node --check tests/helpers/quantity-db.js && node --check tests/db-integration/quantity-extension.js && node --check js/ba-lifecycle.js && node --check tests/helpers/lifecycle-db.js && node --check tests/lifecycle.spec.js && node --check tests/db-integration/lifecycle-extension.js",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:chromium": "playwright test --project=chromium --project=mobile-chromium --project=tablet-chromium",
@@ -23,7 +23,8 @@
     "test:ba-entry": "node --test tests/ba-entry/*.test.js",
     "test:routing": "node --test tests/routing/*.test.js",
     "test:setup": "node --test tests/setup/*.test.js",
-    "test:quantity": "node --test tests/quantity/*.test.js"
+    "test:quantity": "node --test tests/quantity/*.test.js",
+    "test:lifecycle": "node --test tests/lifecycle/*.test.js"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.15",
