@@ -3354,7 +3354,6 @@ function render() {
   if (articleMaster.hasAccess() && !tabs.includes("produktion")) tabs.push("produktion");
   if (machineReadiness.hasAccess() && !tabs.includes("produktion")) tabs.push("produktion");
 
-  document.body.classList.toggle("humbel-home-mode", currentTab === "dashboard");
   const tabsEl = document.getElementById("tabs");
   tabsEl.className = "humbel-main-nav flex gap-2 flex-wrap";
   tabsEl.innerHTML =
@@ -3376,6 +3375,7 @@ function render() {
     `Angemeldet: ${currentUser.name} (${currentUser.role})`;
 
   if (!tabs.includes(currentTab)) currentTab = tabs[0];
+  document.body.classList.toggle("humbel-home-mode", currentTab === "dashboard");
   if (["werkzeugverwaltung", "lagerverwaltung"].includes(currentTab)) {
     startToolRealtimeSubscription().catch(console.warn);
     startToolAutoRefresh();
