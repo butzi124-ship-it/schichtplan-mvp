@@ -1,5 +1,7 @@
 # Automated QA and Release Safeguards (0.5.17)
 
+Aktuelle Produktivvorbereitung: [Sicherheits- und Datenbankfreigabe, Schritt 1 (08.11.2026)](production-release-step1-2026-11-08.md). Status: gesperrt; technische Metadaten und offene Fachentscheidungen getrennt dokumentiert.
+
 ## Coverage and architecture
 
 - All 251 legacy Chromium identities are versioned in tests/qa/legacy-tests.json: desktop 91, phone 89, tablet 71. No business assertion was removed or weakened.
