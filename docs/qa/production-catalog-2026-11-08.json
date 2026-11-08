@@ -1,0 +1,3565 @@
+{
+  "capturedAt": "2026-11-08T06:42:30.374Z",
+  "source": "Supabase connector metadata-only list_projects/list_tables(public,verbose=true)/list_migrations/list_extensions; project matches repository SUPABASE_URL",
+  "project": {
+    "name": "Schichtplan",
+    "ref": "itntnpzqzyjfdnjdshvm",
+    "databaseVersionReported": "17.11.0.003",
+    "postgresEngineReported": "17"
+  },
+  "scope": "public table/column metadata only; not an authoritative schema-only restore; no execute_sql, application rows, auth users, secrets or per-table row estimates retained",
+  "authoritativeRestore": false,
+  "tables": [
+    {
+      "name": "public.employees",
+      "rls_enabled": true,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "auth_user_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable",
+            "unique"
+          ]
+        },
+        {
+          "name": "display_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable",
+            "unique"
+          ]
+        },
+        {
+          "name": "role",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'employee'::text",
+          "check": "role = ANY (ARRAY['admin'::text, 'employee'::text, 'tool_scanner'::text])"
+        },
+        {
+          "name": "employee_type",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'springer'::text",
+          "check": "employee_type = ANY (ARRAY['core'::text, 'springer'::text])"
+        },
+        {
+          "name": "slot_code",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "check": "slot_code = ANY (ARRAY['A'::text, 'B'::text, 'C'::text, 'D'::text, 'E'::text, 'F'::text])"
+        },
+        {
+          "name": "is_active",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "true"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "color_key",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "first_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "last_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "personnel_no",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "department",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "department_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.tools",
+      "rls_enabled": true,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "t_number",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable",
+            "unique"
+          ]
+        },
+        {
+          "name": "label",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "diameter",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "thread_prefix",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "thread_pitch",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "shelf",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "article_no",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "holder",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "check": "holder = ANY (ARRAY['HSK 100'::text, 'HSK 63'::text])"
+        },
+        {
+          "name": "stock",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0",
+          "check": "stock >= 0"
+        },
+        {
+          "name": "min_stock",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0",
+          "check": "min_stock >= 0"
+        },
+        {
+          "name": "optimal_stock",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0",
+          "check": "optimal_stock >= 0"
+        },
+        {
+          "name": "manufacturer",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "ordered",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "false"
+        },
+        {
+          "name": "ordered_qty",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0",
+          "check": "ordered_qty >= 0"
+        },
+        {
+          "name": "insert_tool",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "false"
+        },
+        {
+          "name": "insert_edges",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0",
+          "check": "insert_edges >= 0"
+        },
+        {
+          "name": "created_by_employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "corner_radius",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "material_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "insert_radius",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "overhang_length",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "is_borrowed",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "false"
+        },
+        {
+          "name": "borrowed_to",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "borrowed_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.tool_journal",
+      "rls_enabled": true,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "tool_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "qty",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "action",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "note",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "stock_before",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "stock_after",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "tool_label",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "tool_t_number",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "user_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.order_events",
+      "rls_enabled": true,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "tool_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "event_type",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "check": "event_type = ANY (ARRAY['mark_ordered'::text, 'restock'::text])"
+        },
+        {
+          "name": "qty",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0",
+          "check": "qty >= 0"
+        },
+        {
+          "name": "t_number",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "label",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "size_text",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "manufacturer",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "article_no",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "shelf",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.tool_materials",
+      "rls_enabled": false,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable",
+            "unique"
+          ]
+        },
+        {
+          "name": "sort_order",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "is_active",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "true"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.planner_assignments",
+      "rls_enabled": false,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "shift_id",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable",
+            "unique"
+          ]
+        },
+        {
+          "name": "shift_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "assigned_user",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_by_employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.planner_absences",
+      "rls_enabled": false,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "absence_key",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable",
+            "unique"
+          ]
+        },
+        {
+          "name": "absence_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "user_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "absence_type",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'abwesend'::text"
+        },
+        {
+          "name": "created_by_employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.planner_vacations",
+      "rls_enabled": false,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "user_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "from_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "to_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_by_employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.planner_sick_leaves",
+      "rls_enabled": false,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "user_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "from_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "to_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_by_employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.planner_availability",
+      "rls_enabled": false,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "availability_key",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable",
+            "unique"
+          ]
+        },
+        {
+          "name": "shift_id",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "shift_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "user_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "status",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "check": "status = ANY (ARRAY['yes'::text, 'no'::text])"
+        },
+        {
+          "name": "created_by_employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.planner_swaps",
+      "rls_enabled": false,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "user_a",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "user_b",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "start_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "end_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_by_employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.planner_shift_cancellations",
+      "rls_enabled": false,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "shift_id",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable",
+            "unique"
+          ]
+        },
+        {
+          "name": "shift_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "reason",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_by_employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.planner_saturday_requests",
+      "rls_enabled": false,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "request_key",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable",
+            "unique"
+          ]
+        },
+        {
+          "name": "shift_id",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "shift_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "user_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_by_employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.planner_absence_replacements",
+      "rls_enabled": false,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "shift_id",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable",
+            "unique"
+          ]
+        },
+        {
+          "name": "shift_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "source_type",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "check": "source_type = ANY (ARRAY['vacation'::text, 'sick'::text])"
+        },
+        {
+          "name": "source_id",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "absent_user",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "from_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "to_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "mode",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "check": "mode = ANY (ARRAY['replace'::text, 'cancel'::text])"
+        },
+        {
+          "name": "replacement_user",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "week_from",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "week_to",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_by_employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.planner_special_days",
+      "rls_enabled": true,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "day_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "type",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "label",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.planner_special_day_assignments",
+      "rls_enabled": true,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "shift_id",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "shift_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "assigned_user",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.planner_tasks",
+      "rls_enabled": true,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "title",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "description",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "assigned_to",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "due_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "status",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'open'::text"
+        },
+        {
+          "name": "created_by_employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "completed_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.shift_definitions",
+      "rls_enabled": true,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "shift_key",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable",
+            "unique"
+          ]
+        },
+        {
+          "name": "start_time",
+          "data_type": "time without time zone",
+          "format": "time",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "end_time",
+          "data_type": "time without time zone",
+          "format": "time",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "requires_time",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "true"
+        },
+        {
+          "name": "active",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "true"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.departments",
+      "rls_enabled": true,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "code",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable",
+            "unique"
+          ]
+        },
+        {
+          "name": "leader_employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "active",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "true"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.production_machines",
+      "rls_enabled": true,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "machine_code",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable",
+            "unique"
+          ]
+        },
+        {
+          "name": "department_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "active",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "true"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.production_counts",
+      "rls_enabled": true,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "machine_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "department_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "order_no",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "article_no",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "good_qty",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "scrap_qty",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "note",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "status",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'running'::text"
+        },
+        {
+          "name": "started_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "completed_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.production_orders",
+      "rls_enabled": true,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "machine_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "department_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "ba_number",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "article_number",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "ba_quantity",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0",
+          "check": "ba_quantity >= 0"
+        },
+        {
+          "name": "target_quantity",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0",
+          "check": "target_quantity >= 0"
+        },
+        {
+          "name": "pallet_count",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0",
+          "check": "pallet_count >= 0"
+        },
+        {
+          "name": "pieces_per_pallet",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0",
+          "check": "pieces_per_pallet >= 0"
+        },
+        {
+          "name": "use_chain_logic",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "true"
+        },
+        {
+          "name": "status",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'running'::text",
+          "check": "status = ANY (ARRAY['running'::text, 'paused'::text, 'completed'::text, 'cancelled'::text])"
+        },
+        {
+          "name": "started_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "completed_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_by_employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "updated_by_employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.production_order_employees",
+      "rls_enabled": true,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "order_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "employee_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "personnel_no",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "role",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'worker'::text"
+        },
+        {
+          "name": "sort_order",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "active",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "true"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.production_order_stations",
+      "rls_enabled": true,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "order_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "station_no",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "check": "station_no > 0"
+        },
+        {
+          "name": "name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "lock_name",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "false"
+        },
+        {
+          "name": "op_number",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "time_status",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "check": "time_status = ANY (ARRAY['ok'::text, 'changed'::text])"
+        },
+        {
+          "name": "actual_time_minutes",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "check": "actual_time_minutes IS NULL OR actual_time_minutes >= 0"
+        },
+        {
+          "name": "scrap_total",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0",
+          "check": "scrap_total >= 0"
+        },
+        {
+          "name": "clarify_total",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0",
+          "check": "clarify_total >= 0"
+        },
+        {
+          "name": "scrap_lifetime",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0",
+          "check": "scrap_lifetime >= 0"
+        },
+        {
+          "name": "clarify_lifetime",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0",
+          "check": "clarify_lifetime >= 0"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.production_station_counts",
+      "rls_enabled": true,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "order_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "station_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "order_employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "good_qty",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0",
+          "check": "good_qty >= 0"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.production_qa_causes",
+      "rls_enabled": true,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "group_id",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "group_label",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "reason_id",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "reason_label",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "active",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "true"
+        },
+        {
+          "name": "sort_order",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.production_station_events",
+      "rls_enabled": true,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "order_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "station_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "order_employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "event_type",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "check": "event_type = ANY (ARRAY['good'::text, 'good_correction'::text, 'scrap'::text, 'scrap_correction'::text, 'clarify'::text, 'clarify_correction'::text, 'station_created'::text, 'station_deleted'::text, 'station_renamed'::text, 'order_created'::text, 'order_completed'::text, 'order_cancelled'::text, 'checklist'::text, 'time_changed'::text, 'note'::text])"
+        },
+        {
+          "name": "qty",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "qa_cause_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "note",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.production_order_checklist",
+      "rls_enabled": true,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "order_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "item_key",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "item_label",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "checked",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "false"
+        },
+        {
+          "name": "checked_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "checked_by_employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "sort_order",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.production_checklist_templates",
+      "rls_enabled": true,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "item_key",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable",
+            "unique"
+          ]
+        },
+        {
+          "name": "item_label",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "active",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "true"
+        },
+        {
+          "name": "sort_order",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.production_order_history",
+      "rls_enabled": true,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "order_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "station_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "employee_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "history_type",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "qty",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "payload",
+          "data_type": "jsonb",
+          "format": "jsonb",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'{}'::jsonb"
+        },
+        {
+          "name": "note",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    },
+    {
+      "name": "public.production_machine50_storage",
+      "rls_enabled": true,
+      "primary_keys": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "order_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable",
+            "unique"
+          ]
+        },
+        {
+          "name": "total_pallets",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0",
+          "check": "total_pallets >= 0"
+        },
+        {
+          "name": "pieces_per_pallet",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "2",
+          "check": "pieces_per_pallet >= 0"
+        },
+        {
+          "name": "used_pallets",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0",
+          "check": "used_pallets >= 0"
+        },
+        {
+          "name": "current_mode",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "check": "current_mode = ANY (ARRAY['1er'::text, '2er'::text])"
+        },
+        {
+          "name": "current_pieces_on_pallet",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0",
+          "check": "current_pieces_on_pallet >= 0"
+        },
+        {
+          "name": "two_one_mode",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "false"
+        },
+        {
+          "name": "pallets",
+          "data_type": "jsonb",
+          "format": "jsonb",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'[]'::jsonb"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ]
+    }
+  ],
+  "foreignKeys": [
+    {
+      "name": "production_order_checklist_checked_by_employee_id_fkey",
+      "source_table": "public.production_order_checklist",
+      "source_columns": [
+        "checked_by_employee_id"
+      ],
+      "target_table": "public.employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_counts_employee_id_fkey",
+      "source_table": "public.production_counts",
+      "source_columns": [
+        "employee_id"
+      ],
+      "target_table": "public.employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_orders_created_by_employee_id_fkey",
+      "source_table": "public.production_orders",
+      "source_columns": [
+        "created_by_employee_id"
+      ],
+      "target_table": "public.employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_orders_updated_by_employee_id_fkey",
+      "source_table": "public.production_orders",
+      "source_columns": [
+        "updated_by_employee_id"
+      ],
+      "target_table": "public.employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_order_employees_employee_id_fkey",
+      "source_table": "public.production_order_employees",
+      "source_columns": [
+        "employee_id"
+      ],
+      "target_table": "public.employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_station_events_employee_id_fkey",
+      "source_table": "public.production_station_events",
+      "source_columns": [
+        "employee_id"
+      ],
+      "target_table": "public.employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_order_history_employee_id_fkey",
+      "source_table": "public.production_order_history",
+      "source_columns": [
+        "employee_id"
+      ],
+      "target_table": "public.employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "employees_auth_user_id_fkey",
+      "source_table": "public.employees",
+      "source_columns": [
+        "auth_user_id"
+      ],
+      "target_table": "auth.users",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "tools_created_by_employee_id_fkey",
+      "source_table": "public.tools",
+      "source_columns": [
+        "created_by_employee_id"
+      ],
+      "target_table": "public.employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "tool_journal_employee_id_fkey",
+      "source_table": "public.tool_journal",
+      "source_columns": [
+        "employee_id"
+      ],
+      "target_table": "public.employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "order_events_employee_id_fkey",
+      "source_table": "public.order_events",
+      "source_columns": [
+        "employee_id"
+      ],
+      "target_table": "public.employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "planner_assignments_created_by_employee_id_fkey",
+      "source_table": "public.planner_assignments",
+      "source_columns": [
+        "created_by_employee_id"
+      ],
+      "target_table": "public.employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "planner_absences_created_by_employee_id_fkey",
+      "source_table": "public.planner_absences",
+      "source_columns": [
+        "created_by_employee_id"
+      ],
+      "target_table": "public.employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "planner_vacations_created_by_employee_id_fkey",
+      "source_table": "public.planner_vacations",
+      "source_columns": [
+        "created_by_employee_id"
+      ],
+      "target_table": "public.employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "planner_sick_leaves_created_by_employee_id_fkey",
+      "source_table": "public.planner_sick_leaves",
+      "source_columns": [
+        "created_by_employee_id"
+      ],
+      "target_table": "public.employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "planner_availability_created_by_employee_id_fkey",
+      "source_table": "public.planner_availability",
+      "source_columns": [
+        "created_by_employee_id"
+      ],
+      "target_table": "public.employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "planner_swaps_created_by_employee_id_fkey",
+      "source_table": "public.planner_swaps",
+      "source_columns": [
+        "created_by_employee_id"
+      ],
+      "target_table": "public.employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "planner_shift_cancellations_created_by_employee_id_fkey",
+      "source_table": "public.planner_shift_cancellations",
+      "source_columns": [
+        "created_by_employee_id"
+      ],
+      "target_table": "public.employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "planner_saturday_requests_created_by_employee_id_fkey",
+      "source_table": "public.planner_saturday_requests",
+      "source_columns": [
+        "created_by_employee_id"
+      ],
+      "target_table": "public.employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "planner_absence_replacements_created_by_employee_id_fkey",
+      "source_table": "public.planner_absence_replacements",
+      "source_columns": [
+        "created_by_employee_id"
+      ],
+      "target_table": "public.employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "planner_tasks_created_by_employee_id_fkey",
+      "source_table": "public.planner_tasks",
+      "source_columns": [
+        "created_by_employee_id"
+      ],
+      "target_table": "public.employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "departments_leader_employee_id_fkey",
+      "source_table": "public.departments",
+      "source_columns": [
+        "leader_employee_id"
+      ],
+      "target_table": "public.employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "employees_department_id_fkey",
+      "source_table": "public.employees",
+      "source_columns": [
+        "department_id"
+      ],
+      "target_table": "public.departments",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "tools_material_id_fkey",
+      "source_table": "public.tools",
+      "source_columns": [
+        "material_id"
+      ],
+      "target_table": "public.tool_materials",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "order_events_tool_id_fkey",
+      "source_table": "public.order_events",
+      "source_columns": [
+        "tool_id"
+      ],
+      "target_table": "public.tools",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "tool_journal_tool_id_fkey",
+      "source_table": "public.tool_journal",
+      "source_columns": [
+        "tool_id"
+      ],
+      "target_table": "public.tools",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_machines_department_id_fkey",
+      "source_table": "public.production_machines",
+      "source_columns": [
+        "department_id"
+      ],
+      "target_table": "public.departments",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_orders_department_id_fkey",
+      "source_table": "public.production_orders",
+      "source_columns": [
+        "department_id"
+      ],
+      "target_table": "public.departments",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_counts_department_id_fkey",
+      "source_table": "public.production_counts",
+      "source_columns": [
+        "department_id"
+      ],
+      "target_table": "public.departments",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_counts_machine_id_fkey",
+      "source_table": "public.production_counts",
+      "source_columns": [
+        "machine_id"
+      ],
+      "target_table": "public.production_machines",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_orders_machine_id_fkey",
+      "source_table": "public.production_orders",
+      "source_columns": [
+        "machine_id"
+      ],
+      "target_table": "public.production_machines",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_order_employees_order_id_fkey",
+      "source_table": "public.production_order_employees",
+      "source_columns": [
+        "order_id"
+      ],
+      "target_table": "public.production_orders",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_order_stations_order_id_fkey",
+      "source_table": "public.production_order_stations",
+      "source_columns": [
+        "order_id"
+      ],
+      "target_table": "public.production_orders",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_station_counts_order_id_fkey",
+      "source_table": "public.production_station_counts",
+      "source_columns": [
+        "order_id"
+      ],
+      "target_table": "public.production_orders",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_station_events_order_id_fkey",
+      "source_table": "public.production_station_events",
+      "source_columns": [
+        "order_id"
+      ],
+      "target_table": "public.production_orders",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_order_checklist_order_id_fkey",
+      "source_table": "public.production_order_checklist",
+      "source_columns": [
+        "order_id"
+      ],
+      "target_table": "public.production_orders",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_order_history_order_id_fkey",
+      "source_table": "public.production_order_history",
+      "source_columns": [
+        "order_id"
+      ],
+      "target_table": "public.production_orders",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_machine50_storage_order_id_fkey",
+      "source_table": "public.production_machine50_storage",
+      "source_columns": [
+        "order_id"
+      ],
+      "target_table": "public.production_orders",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_station_events_order_employee_id_fkey",
+      "source_table": "public.production_station_events",
+      "source_columns": [
+        "order_employee_id"
+      ],
+      "target_table": "public.production_order_employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_station_counts_order_employee_id_fkey",
+      "source_table": "public.production_station_counts",
+      "source_columns": [
+        "order_employee_id"
+      ],
+      "target_table": "public.production_order_employees",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_station_counts_station_id_fkey",
+      "source_table": "public.production_station_counts",
+      "source_columns": [
+        "station_id"
+      ],
+      "target_table": "public.production_order_stations",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_station_events_station_id_fkey",
+      "source_table": "public.production_station_events",
+      "source_columns": [
+        "station_id"
+      ],
+      "target_table": "public.production_order_stations",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_order_history_station_id_fkey",
+      "source_table": "public.production_order_history",
+      "source_columns": [
+        "station_id"
+      ],
+      "target_table": "public.production_order_stations",
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "name": "production_station_events_qa_cause_id_fkey",
+      "source_table": "public.production_station_events",
+      "source_columns": [
+        "qa_cause_id"
+      ],
+      "target_table": "public.production_qa_causes",
+      "target_columns": [
+        "id"
+      ]
+    }
+  ],
+  "migrationHistory": [
+    {
+      "version": "20260802073617",
+      "name": "add_full_production_counter_schema"
+    }
+  ],
+  "installedExtensions": [
+    {
+      "name": "plpgsql",
+      "schema": "pg_catalog",
+      "installed_version": "1.0"
+    },
+    {
+      "name": "supabase_vault",
+      "schema": "vault",
+      "installed_version": "0.3.1"
+    },
+    {
+      "name": "pg_stat_statements",
+      "schema": "extensions",
+      "installed_version": "1.11"
+    },
+    {
+      "name": "pgcrypto",
+      "schema": "extensions",
+      "installed_version": "1.3"
+    },
+    {
+      "name": "uuid-ossp",
+      "schema": "extensions",
+      "installed_version": "1.1"
+    }
+  ],
+  "notVerifiedCurrent": [
+    "RLS policy bodies and roles; forced RLS",
+    "function bodies/signatures/owners/EXECUTE ACLs/search_path/dependencies",
+    "table, column, schema, sequence privileges and default ACLs",
+    "database roles/memberships/BYPASSRLS/CREATE privileges",
+    "trigger definitions and dependencies",
+    "complete independent and constraint-backed indexes including validity",
+    "private/auth/storage schemas, publications, exposed API schemas",
+    "current Pages settings and deployed artifact"
+  ]
+}
