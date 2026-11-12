@@ -1,0 +1,1186 @@
+{
+  "baseline": "2e46d3a63c339389f08f16db67d1a9236216e130",
+  "currentEvidence": "docs/qa/security-step5-original-evidence.json",
+  "historicalCatalogSha256": "d2ad520e4f06f4099623738004b89a05dc85d5491f5ad4791ff176c3f31e1968",
+  "authoritativeRestore": false,
+  "currentOriginalSchemaVerified": false,
+  "objects": [
+    {
+      "object": "public.employees",
+      "expectedDefinition": "security_actor_context(); eigene Kontakte nur security_own_contacts(); Admin-Feldprojektion/Provisionierung noch zu spezifizieren",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": true,
+        "columnCount": 15,
+        "definitionSha256": "baf10fcddadc0c5537cc12857d24612d8b94d78fa48aa79100af77e0d562efe2"
+      },
+      "deviation": "No current schema delta established; enabled RLS alone does not prove safe policies/ACL",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; D4,D5,D6; Original-Policy/ACL/Spaltenrechte; kein SELECT* beim Login",
+      "affectedAppFunctions": [
+        "activateEmployee",
+        "activatePersonnelEmployee",
+        "addEmployee",
+        "autosavePersonnelEmployeeDepartment",
+        "clearSlotInSupabase",
+        "createPersonnelEmployee",
+        "deactivateEmployee",
+        "deactivatePersonnelEmployee",
+        "deletePersonnelEmployee",
+        "findEmployeeByPersonnelNo",
+        "getCurrentEmployeeRecord",
+        "loadEmployeesFromSupabase",
+        "saveAllPersonnelChanges",
+        "savePersonnelEmployee",
+        "testSupabaseConnection",
+        "updateEmployee",
+        "updateSlotAssignment"
+      ],
+      "requiredCorrection": "security_actor_context(); eigene Kontakte nur security_own_contacts(); Admin-Feldprojektion/Provisionierung noch zu spezifizieren; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.tools",
+      "expectedDefinition": "Sichere atomare Bestand+Journal/Inventur-Kommandos erst nach Originalnachweis und Rollenentscheidung",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": true,
+        "columnCount": 27,
+        "definitionSha256": "bfc02515b47e22ed985b18792bb81b289da458349c70643f0d07409240009e55"
+      },
+      "deviation": "No current schema delta established; enabled RLS alone does not prove safe policies/ACL",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; Original-ACL/RLS, Scanner-/QR-Scope, Buchungs-/Undo-/Inventurentscheidung",
+      "affectedAppFunctions": [
+        "bookToolChange",
+        "confirmMoveTool",
+        "confirmQrToolRestock",
+        "confirmQrToolWithdraw",
+        "createTool",
+        "deleteTool",
+        "editTool",
+        "loadToolsFromSupabase",
+        "markToolOrdered",
+        "openCreateToolModal",
+        "openManualToolRestock",
+        "openManualToolWithdraw",
+        "reloadSingleToolFromSupabase",
+        "restockTool",
+        "undoToolJournalEntry"
+      ],
+      "requiredCorrection": "Sichere atomare Bestand+Journal/Inventur-Kommandos erst nach Originalnachweis und Rollenentscheidung; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.tool_journal",
+      "expectedDefinition": "Sichere atomare Bestand+Journal/Inventur-Kommandos erst nach Originalnachweis und Rollenentscheidung",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": true,
+        "columnCount": 12,
+        "definitionSha256": "18341a511bd27da8a5241e175d1fd03ba3d3017db9a02dde5da24b36805a7487"
+      },
+      "deviation": "No current schema delta established; enabled RLS alone does not prove safe policies/ACL",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; Original-ACL/RLS, Scanner-/QR-Scope, Buchungs-/Undo-/Inventurentscheidung",
+      "affectedAppFunctions": [
+        "addToolJournalEntry",
+        "loadToolJournalFromSupabase"
+      ],
+      "requiredCorrection": "Sichere atomare Bestand+Journal/Inventur-Kommandos erst nach Originalnachweis und Rollenentscheidung; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.order_events",
+      "expectedDefinition": "Sichere atomare Bestand+Journal/Inventur-Kommandos erst nach Originalnachweis und Rollenentscheidung",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": true,
+        "columnCount": 12,
+        "definitionSha256": "f5d17af5f015855fc7cb36d9e7a13076a0bf28cbabc4f0ee05002a4a665bd624"
+      },
+      "deviation": "No current schema delta established; enabled RLS alone does not prove safe policies/ACL",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; Original-ACL/RLS, Scanner-/QR-Scope, Buchungs-/Undo-/Inventurentscheidung",
+      "affectedAppFunctions": [],
+      "requiredCorrection": "Sichere atomare Bestand+Journal/Inventur-Kommandos erst nach Originalnachweis und Rollenentscheidung; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.tool_materials",
+      "expectedDefinition": "RLS aus Schritt3; Adapter readMaterials mit id,name,sort_order,is_active",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": false,
+        "columnCount": 6,
+        "definitionSha256": "4714d0bb018ce7e442fcd421221b0999de48b7768a729520b7dcdd247392015f"
+      },
+      "deviation": "No current schema delta established; historical RLS disabled",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; Original-ACL/Owner und Verwaltungs-UI; gesamte Werkzeugbuchung separat",
+      "affectedAppFunctions": [
+        "addToolMaterial",
+        "deactivateToolMaterial",
+        "loadToolMaterialsFromSupabase",
+        "renameToolMaterial"
+      ],
+      "requiredCorrection": "RLS aus Schritt3; Adapter readMaterials mit id,name,sort_order,is_active; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.planner_assignments",
+      "expectedDefinition": "security_assignment_command / security_publish_assignment / security_published_schedule",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": false,
+        "columnCount": 7,
+        "definitionSha256": "a3ace5f0f9550e617eef5acaa585ec9d778b97c9812e1b644ca0f895e0573655"
+      },
+      "deviation": "No current schema delta established; historical RLS disabled",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; D1,D2,D5,D6; Namensbindung und atomare kombinierte Aktionen vor UI-Umstellung",
+      "affectedAppFunctions": [
+        "approveSaturdayRequest",
+        "assignOptionalShift",
+        "assignShift",
+        "assignSuggestedSpringer",
+        "cancelShift",
+        "clearManualShift",
+        "deleteReplacementPlanFromSupabase",
+        "loadPlanningDataFromSupabase",
+        "persistReplacementShiftEffects",
+        "resetPlanCurrentFuture"
+      ],
+      "requiredCorrection": "security_assignment_command / security_publish_assignment / security_published_schedule; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.planner_absences",
+      "expectedDefinition": "Schritt3 sperrt Raw-DML; sichere atomare Kommandos noch nicht vollständig definiert",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": false,
+        "columnCount": 8,
+        "definitionSha256": "d0fae98600415d07829434b29c9e4cd70fc0a366ac905d47906e79cf5b97690a"
+      },
+      "deviation": "No current schema delta established; historical RLS disabled",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; D1,D2,D3,D5,D6; Abwesenheitsdaten minimieren, keine Teilumstellung",
+      "affectedAppFunctions": [
+        "deleteManualAbsence",
+        "deleteSickLeave",
+        "deleteVacation",
+        "loadPlanningDataFromSupabase",
+        "markAbsent",
+        "resetPlanCurrentFuture"
+      ],
+      "requiredCorrection": "Schritt3 sperrt Raw-DML; sichere atomare Kommandos noch nicht vollständig definiert; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.planner_vacations",
+      "expectedDefinition": "Schritt3 sperrt Raw-DML; sichere atomare Kommandos noch nicht vollständig definiert",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": false,
+        "columnCount": 7,
+        "definitionSha256": "79a90469cb7aa0547fb0ac4a26e8f85dd4595a5fbc130c83cd57b07c9ad7c7c4"
+      },
+      "deviation": "No current schema delta established; historical RLS disabled",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; D1,D2,D3,D5,D6; Abwesenheitsdaten minimieren, keine Teilumstellung",
+      "affectedAppFunctions": [
+        "addVacation",
+        "deleteVacation",
+        "loadPlanningDataFromSupabase",
+        "resetPlanCurrentFuture"
+      ],
+      "requiredCorrection": "Schritt3 sperrt Raw-DML; sichere atomare Kommandos noch nicht vollständig definiert; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.planner_sick_leaves",
+      "expectedDefinition": "Schritt3 sperrt Raw-DML; sichere atomare Kommandos noch nicht vollständig definiert",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": false,
+        "columnCount": 7,
+        "definitionSha256": "c55da552f8a0feb3269b7f125a4eb16a2a9c1afeae882e20efbe4031a038b252"
+      },
+      "deviation": "No current schema delta established; historical RLS disabled",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; D1,D2,D3,D5,D6; Abwesenheitsdaten minimieren, keine Teilumstellung",
+      "affectedAppFunctions": [
+        "addSickLeave",
+        "deleteSickLeave",
+        "loadPlanningDataFromSupabase",
+        "resetPlanCurrentFuture"
+      ],
+      "requiredCorrection": "Schritt3 sperrt Raw-DML; sichere atomare Kommandos noch nicht vollständig definiert; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.planner_availability",
+      "expectedDefinition": "Schritt3 sperrt Raw-DML; sichere atomare Kommandos noch nicht vollständig definiert",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": false,
+        "columnCount": 9,
+        "definitionSha256": "d98a0c19038a2c44f745fd96313aaf3fe65ebe1710c8bfc28e90aad1738a4514"
+      },
+      "deviation": "No current schema delta established; historical RLS disabled",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; D1,D2,D3,D5,D6; Abwesenheitsdaten minimieren, keine Teilumstellung",
+      "affectedAppFunctions": [
+        "loadAvailabilityFromSupabase",
+        "loadPlanningDataFromSupabase",
+        "resetPlanCurrentFuture",
+        "setWeekendAvailability"
+      ],
+      "requiredCorrection": "Schritt3 sperrt Raw-DML; sichere atomare Kommandos noch nicht vollständig definiert; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.planner_swaps",
+      "expectedDefinition": "Schritt3 sperrt Raw-DML; sichere atomare Kommandos noch nicht vollständig definiert",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": false,
+        "columnCount": 8,
+        "definitionSha256": "ca6dd2731c539afaa70978c61c5f6662117d0abff7d50d9eb9a7c559e1f4d161"
+      },
+      "deviation": "No current schema delta established; historical RLS disabled",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; D1,D2,D3,D5,D6; Abwesenheitsdaten minimieren, keine Teilumstellung",
+      "affectedAppFunctions": [
+        "addSwap",
+        "deleteSwap",
+        "loadPlanningDataFromSupabase",
+        "resetActiveSwaps",
+        "resetPlanCurrentFuture"
+      ],
+      "requiredCorrection": "Schritt3 sperrt Raw-DML; sichere atomare Kommandos noch nicht vollständig definiert; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.planner_shift_cancellations",
+      "expectedDefinition": "Schritt3 sperrt Raw-DML; sichere atomare Kommandos noch nicht vollständig definiert",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": false,
+        "columnCount": 7,
+        "definitionSha256": "1b34cd3addda6aba2ea9f1dd2c6b59424b8b19bd92d0f7b63fb213e27a0e0a3f"
+      },
+      "deviation": "No current schema delta established; historical RLS disabled",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; D1,D2,D3,D5,D6; Abwesenheitsdaten minimieren, keine Teilumstellung",
+      "affectedAppFunctions": [
+        "approveSaturdayRequest",
+        "assignShift",
+        "cancelShift",
+        "clearManualShift",
+        "deleteReplacementPlanFromSupabase",
+        "loadPlanningDataFromSupabase",
+        "persistReplacementShiftEffects",
+        "resetPlanCurrentFuture"
+      ],
+      "requiredCorrection": "Schritt3 sperrt Raw-DML; sichere atomare Kommandos noch nicht vollständig definiert; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.planner_saturday_requests",
+      "expectedDefinition": "Schritt3 sperrt Raw-DML; sichere atomare Kommandos noch nicht vollständig definiert",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": false,
+        "columnCount": 8,
+        "definitionSha256": "6450a64e9adaa49e3875d56094f15890abbc4cffe757cfef1fda184954da7db4"
+      },
+      "deviation": "No current schema delta established; historical RLS disabled",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; D1,D2,D3,D5,D6; Abwesenheitsdaten minimieren, keine Teilumstellung",
+      "affectedAppFunctions": [
+        "approveSaturdayRequest",
+        "loadPlanningDataFromSupabase",
+        "requestSaturdayEvening",
+        "resetPlanCurrentFuture"
+      ],
+      "requiredCorrection": "Schritt3 sperrt Raw-DML; sichere atomare Kommandos noch nicht vollständig definiert; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.planner_absence_replacements",
+      "expectedDefinition": "Schritt3 sperrt Raw-DML; sichere atomare Kommandos noch nicht vollständig definiert",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": false,
+        "columnCount": 15,
+        "definitionSha256": "132e24d191c6376a6f10827fe5cb0fe39c6cb4828c2776fdf00f2b7d5011cca6"
+      },
+      "deviation": "No current schema delta established; historical RLS disabled",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; D1,D2,D3,D5,D6; Abwesenheitsdaten minimieren, keine Teilumstellung",
+      "affectedAppFunctions": [
+        "clearManualShift",
+        "deleteReplacementEntriesFromSupabase",
+        "deleteReplacementPlanFromSupabase",
+        "loadPlanningDataFromSupabase",
+        "resetPlanCurrentFuture",
+        "saveReplacementPlanToSupabase"
+      ],
+      "requiredCorrection": "Schritt3 sperrt Raw-DML; sichere atomare Kommandos noch nicht vollständig definiert; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.planner_special_days",
+      "expectedDefinition": "Schritt3 sperrt Raw-DML; sichere atomare Kommandos noch nicht vollständig definiert",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": true,
+        "columnCount": 5,
+        "definitionSha256": "48bede003fd74b2e257d04609f484743cc01bf5a729859cf2411fc5ebbef5dc7"
+      },
+      "deviation": "No current schema delta established; enabled RLS alone does not prove safe policies/ACL",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; D1,D2,D3,D5,D6; Abwesenheitsdaten minimieren, keine Teilumstellung",
+      "affectedAppFunctions": [
+        "loadPlanningDataFromSupabase"
+      ],
+      "requiredCorrection": "Schritt3 sperrt Raw-DML; sichere atomare Kommandos noch nicht vollständig definiert; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.planner_special_day_assignments",
+      "expectedDefinition": "Schritt3 sperrt Raw-DML; sichere atomare Kommandos noch nicht vollständig definiert",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": true,
+        "columnCount": 5,
+        "definitionSha256": "f43a41f74d10483cd79ea6dbdb96962b7054cf9bb164f5dba4b851e6f0cf435e"
+      },
+      "deviation": "No current schema delta established; enabled RLS alone does not prove safe policies/ACL",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; D1,D2,D3,D5,D6; Abwesenheitsdaten minimieren, keine Teilumstellung",
+      "affectedAppFunctions": [],
+      "requiredCorrection": "Schritt3 sperrt Raw-DML; sichere atomare Kommandos noch nicht vollständig definiert; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.planner_tasks",
+      "expectedDefinition": "Schritt3 sperrt Raw-DML; sichere atomare Kommandos noch nicht vollständig definiert",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": true,
+        "columnCount": 10,
+        "definitionSha256": "7ab68a6ba6a04ae2660ceda396f273849f135b142dfabeeeeb3ed46d95a864f0"
+      },
+      "deviation": "No current schema delta established; enabled RLS alone does not prove safe policies/ACL",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; D1,D2,D3,D5,D6; Abwesenheitsdaten minimieren, keine Teilumstellung",
+      "affectedAppFunctions": [
+        "completeTask",
+        "createTask",
+        "deleteTask",
+        "loadTasksFromSupabase",
+        "saveTaskReassignment"
+      ],
+      "requiredCorrection": "Schritt3 sperrt Raw-DML; sichere atomare Kommandos noch nicht vollständig definiert; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.shift_definitions",
+      "expectedDefinition": "Originalrechte verifizieren; explizite Projektion/Administration; Planungsvertretung kein Stammdatenrecht",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": true,
+        "columnCount": 9,
+        "definitionSha256": "0c665a93e9e6016b006006087f6dc174d83cbd16c79099eecb390fb5d1fa609b"
+      },
+      "deviation": "No current schema delta established; enabled RLS alone does not prove safe policies/ACL",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; D1,D5,D6; globale Schichtmodelle nicht aus AL-Planungsrecht ableiten",
+      "affectedAppFunctions": [
+        "loadShiftDefinitionsFromSupabase",
+        "saveShiftDefinition"
+      ],
+      "requiredCorrection": "Originalrechte verifizieren; explizite Projektion/Administration; Planungsvertretung kein Stammdatenrecht; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.departments",
+      "expectedDefinition": "Originalrechte verifizieren; explizite Projektion/Administration; Planungsvertretung kein Stammdatenrecht",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": true,
+        "columnCount": 7,
+        "definitionSha256": "0d3ed2304978c07287e195d35853d26de616d3c0713ebfbe4965c87e47aea88a"
+      },
+      "deviation": "No current schema delta established; enabled RLS alone does not prove safe policies/ACL",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; D1,D5,D6; globale Schichtmodelle nicht aus AL-Planungsrecht ableiten",
+      "affectedAppFunctions": [
+        "createProductionDepartment",
+        "deleteProductionDepartment",
+        "findDepartmentByCode",
+        "loadDepartmentsFromSupabase",
+        "saveProductionDepartment",
+        "setProductionDepartmentActive"
+      ],
+      "requiredCorrection": "Originalrechte verifizieren; explizite Projektion/Administration; Planungsvertretung kein Stammdatenrecht; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.production_machines",
+      "expectedDefinition": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": true,
+        "columnCount": 7,
+        "definitionSha256": "93d0ae294784810a5ab99e8311477a1db82f689e56cef90b873e3d49cbdfcab3"
+      },
+      "deviation": "No current schema delta established; enabled RLS alone does not prove safe policies/ACL",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; Original-RPC/ACL/Trigger, D7 Mischbetrieb, atomare Mengen/Journal/Forecast-Nachweise",
+      "affectedAppFunctions": [
+        "createProductionMachine",
+        "deleteProductionMachine",
+        "findProductionMachineByCode",
+        "loadProductionMachinesFromSupabase",
+        "saveProductionMachine",
+        "setProductionMachineActive"
+      ],
+      "requiredCorrection": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.production_counts",
+      "expectedDefinition": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": true,
+        "columnCount": 13,
+        "definitionSha256": "2e5b0728e30dd72c228273dc9b369a8cc441ce864ec5d133d994866ed7002eaf"
+      },
+      "deviation": "No current schema delta established; enabled RLS alone does not prove safe policies/ACL",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; Original-RPC/ACL/Trigger, D7 Mischbetrieb, atomare Mengen/Journal/Forecast-Nachweise",
+      "affectedAppFunctions": [
+        "completeProductionCount",
+        "createProductionCount",
+        "loadProductionCountsFromSupabase",
+        "resetProductionCount",
+        "saveProductionCount"
+      ],
+      "requiredCorrection": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.production_orders",
+      "expectedDefinition": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": true,
+        "columnCount": 17,
+        "definitionSha256": "3007e42db6c370873efb3062cbedd6840cd6071916be4885cc79c3c95d7784e9"
+      },
+      "deviation": "No current schema delta established; enabled RLS alone does not prove safe policies/ACL",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; Original-RPC/ACL/Trigger, D7 Mischbetrieb, atomare Mengen/Journal/Forecast-Nachweise",
+      "affectedAppFunctions": [
+        "completeProductionOrderWithChecklist",
+        "createProductionOrder",
+        "loadProductionOrdersFromSupabase",
+        "updateProductionOrderStatus"
+      ],
+      "requiredCorrection": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.production_order_employees",
+      "expectedDefinition": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": true,
+        "columnCount": 10,
+        "definitionSha256": "ed73b2c16dab15805685af5d0f701bd932076cf928593d5bb106da13cf79086c"
+      },
+      "deviation": "No current schema delta established; enabled RLS alone does not prove safe policies/ACL",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; Original-RPC/ACL/Trigger, D7 Mischbetrieb, atomare Mengen/Journal/Forecast-Nachweise",
+      "affectedAppFunctions": [
+        "addProductionOrderEmployee",
+        "loadProductionOrderEmployeesFromSupabase",
+        "setProductionOrderEmployeeActive"
+      ],
+      "requiredCorrection": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.production_order_stations",
+      "expectedDefinition": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": true,
+        "columnCount": 14,
+        "definitionSha256": "b7939f695807e4e3142d6a040f2f76e496807e5f3219cd8bcc65938d20b40be7"
+      },
+      "deviation": "No current schema delta established; enabled RLS alone does not prove safe policies/ACL",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; Original-RPC/ACL/Trigger, D7 Mischbetrieb, atomare Mengen/Journal/Forecast-Nachweise",
+      "affectedAppFunctions": [
+        "adjustProductionStationAmount",
+        "createProductionOrderStation",
+        "deleteProductionOrderStation",
+        "ensureProductionOrderStationsForOrder",
+        "loadProductionOrderStationsFromSupabase",
+        "saveProductionOrderStation"
+      ],
+      "requiredCorrection": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.production_station_counts",
+      "expectedDefinition": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": true,
+        "columnCount": 7,
+        "definitionSha256": "85a14dc137353da1e0b6a4f2053aab61ef92551b2afc119478bff8fee0075c67"
+      },
+      "deviation": "No current schema delta established; enabled RLS alone does not prove safe policies/ACL",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; Original-RPC/ACL/Trigger, D7 Mischbetrieb, atomare Mengen/Journal/Forecast-Nachweise",
+      "affectedAppFunctions": [
+        "adjustProductionStationGoodQty",
+        "loadProductionStationCountsFromSupabase"
+      ],
+      "requiredCorrection": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.production_qa_causes",
+      "expectedDefinition": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": true,
+        "columnCount": 9,
+        "definitionSha256": "f09956287d9c49f7089ef328b0d35ed3df0980c0194d5ca9f7550ba47e6f6c3e"
+      },
+      "deviation": "No current schema delta established; enabled RLS alone does not prove safe policies/ACL",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; Original-RPC/ACL/Trigger, D7 Mischbetrieb, atomare Mengen/Journal/Forecast-Nachweise",
+      "affectedAppFunctions": [
+        "loadProductionQaCausesFromSupabase"
+      ],
+      "requiredCorrection": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.production_station_events",
+      "expectedDefinition": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": true,
+        "columnCount": 10,
+        "definitionSha256": "2688cbc59cf88e3bb0c9ec962089c73ae4cd39f255130e0c5f10f4e9732d4743"
+      },
+      "deviation": "No current schema delta established; enabled RLS alone does not prove safe policies/ACL",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; Original-RPC/ACL/Trigger, D7 Mischbetrieb, atomare Mengen/Journal/Forecast-Nachweise",
+      "affectedAppFunctions": [
+        "loadProductionStationEventsFromSupabase",
+        "writeProductionStationAmountEvent",
+        "writeProductionStationGoodEvent"
+      ],
+      "requiredCorrection": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.production_order_checklist",
+      "expectedDefinition": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": true,
+        "columnCount": 10,
+        "definitionSha256": "9a3e6975b02a29ddc535a760b56e3ba340e1fd84ddab13d9c097f47734916a57"
+      },
+      "deviation": "No current schema delta established; enabled RLS alone does not prove safe policies/ACL",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; Original-RPC/ACL/Trigger, D7 Mischbetrieb, atomare Mengen/Journal/Forecast-Nachweise",
+      "affectedAppFunctions": [
+        "ensureProductionOrderChecklistForOrder",
+        "loadProductionOrderChecklistFromSupabase",
+        "toggleProductionOrderChecklistItem"
+      ],
+      "requiredCorrection": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.production_checklist_templates",
+      "expectedDefinition": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": true,
+        "columnCount": 7,
+        "definitionSha256": "de0bbcec2be42bb69c059640e2ae6e01252bca9ec06fffff64406e98b0bec939"
+      },
+      "deviation": "No current schema delta established; enabled RLS alone does not prove safe policies/ACL",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; Original-RPC/ACL/Trigger, D7 Mischbetrieb, atomare Mengen/Journal/Forecast-Nachweise",
+      "affectedAppFunctions": [
+        "loadProductionChecklistTemplatesFromSupabase"
+      ],
+      "requiredCorrection": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.production_order_history",
+      "expectedDefinition": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": true,
+        "columnCount": 9,
+        "definitionSha256": "59a975a06c0eb9fb9ceb136e2864da6cb869436ed0a570bd06a24b64e8d83a88"
+      },
+      "deviation": "No current schema delta established; enabled RLS alone does not prove safe policies/ACL",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; Original-RPC/ACL/Trigger, D7 Mischbetrieb, atomare Mengen/Journal/Forecast-Nachweise",
+      "affectedAppFunctions": [
+        "loadProductionOrderHistoryFromSupabase",
+        "writeProductionOrderHistory"
+      ],
+      "requiredCorrection": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "public.production_machine50_storage",
+      "expectedDefinition": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel",
+      "actualVerifiedDefinition": "UNVERIFIED at Step5: catalog authentication failed",
+      "historicalEvidence": {
+        "path": "docs/qa/production-catalog-2026-11-08.json",
+        "capturedAt": "2026-11-08T06:42:30.374Z",
+        "rls_enabled": true,
+        "columnCount": 11,
+        "definitionSha256": "a71a1093195fa517e6555f9d9913907f81eb1fb64db12327f14a037460738a3c"
+      },
+      "deviation": "No current schema delta established; enabled RLS alone does not prove safe policies/ACL",
+      "securityRisk": "Unbounded anonymous/authenticated access cannot be excluded; Original-RPC/ACL/Trigger, D7 Mischbetrieb, atomare Mengen/Journal/Forecast-Nachweise",
+      "affectedAppFunctions": [],
+      "requiredCorrection": "Legacy-DML von vorhandenen BA/OP-RPCs trennen; keine pauschale Admin-only-Regel; do not deploy before original restore and acceptance",
+      "verificationStatus": "UNVERIFIED"
+    },
+    {
+      "object": "humbel_security.principals",
+      "objectKind": "table",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "humbel_security.delegations",
+      "objectKind": "table",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "humbel_security.schedule_grants",
+      "objectKind": "table",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "humbel_security.record_grants",
+      "objectKind": "table",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "humbel_security.record_bindings",
+      "objectKind": "table",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "humbel_security.publications",
+      "objectKind": "table",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "humbel_security.contact_fields",
+      "objectKind": "table",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "humbel_security.contacts",
+      "objectKind": "table",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "humbel_security.audit",
+      "objectKind": "table",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "humbel_security.actor_id",
+      "objectKind": "function",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "humbel_security.actor_role",
+      "objectKind": "function",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "humbel_security.is_admin",
+      "objectKind": "function",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "humbel_security.can_plan",
+      "objectKind": "function",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "humbel_security.schedule_scope",
+      "objectKind": "function",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "humbel_security.record_scope",
+      "objectKind": "function",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "public.is_admin",
+      "objectKind": "function",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "public.current_employee_id",
+      "objectKind": "function",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "public.current_app_employee_id",
+      "objectKind": "function",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "public.current_app_employee_role",
+      "objectKind": "function",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "public.can_access_production_department",
+      "objectKind": "function",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "humbel_security.guard_assignment",
+      "objectKind": "function",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "public.security_assignment_command",
+      "objectKind": "function",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "public.security_publish_assignment",
+      "objectKind": "function",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "public.security_published_schedule",
+      "objectKind": "function",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "public.security_own_contacts",
+      "objectKind": "function",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step3-isolated.sql",
+        "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    },
+    {
+      "object": "public.security_actor_context",
+      "objectKind": "function",
+      "expectedDefinition": {
+        "path": "supabase/review/security-step4-integration-isolated.sql",
+        "sha256": "050074da22d74d7e52fb40c0dc9cdf0fb6d01345b23c088ba556179a3973f331"
+      },
+      "actualVerifiedDefinition": "UNVERIFIED; review SQL is not evidence of original deployment",
+      "deviation": "Proposed/replacement candidate object only; current original definition/absence unknown",
+      "securityRisk": "Collision, overload, owner, ACL and dependency drift unverified",
+      "affectedAppFunctions": [
+        "Isolated secure-access adapter / candidate; legacy integration not activated"
+      ],
+      "requiredCorrection": "Compare full original definition and dependency/ACL graph; adapt and test only in approved isolated restore",
+      "verificationStatus": "PROPOSED_ONLY_OR_REPLACEMENT_UNVERIFIED"
+    }
+  ],
+  "repositorySqlInputs": [
+    {
+      "path": "supabase/migrations/20261106023103_article_master_phase1.sql",
+      "sha256": "f771e994df6161ed97dd163514dc2449697770bb2c4771a580e03928580460c4",
+      "classification": "REPOSITORY_PROPOSAL_NOT_PROVEN_DEPLOYED"
+    },
+    {
+      "path": "supabase/migrations/20261106053328_operations_phase2_review.sql",
+      "sha256": "93f04bb7a7fa1d7c211560ae4973646a9e2de26ba4237ed2d02a0354d5c6dde8",
+      "classification": "REPOSITORY_PROPOSAL_NOT_PROVEN_DEPLOYED"
+    },
+    {
+      "path": "supabase/review/ba-entry-phase1.sql",
+      "sha256": "16a2173efb2e2b10dd0b866a7b3e90893d5b6e1c6db83a3c4522a41acf040ca3",
+      "classification": "REPOSITORY_PROPOSAL_NOT_PROVEN_DEPLOYED"
+    },
+    {
+      "path": "supabase/review/ba-initial-responsibility.sql",
+      "sha256": "1465f748d1d864d245db55504b0becb661f3ebfbe18f4dd925ccd3b6bfa94373",
+      "classification": "REPOSITORY_PROPOSAL_NOT_PROVEN_DEPLOYED"
+    },
+    {
+      "path": "supabase/review/issue-10-production-forecast.sql",
+      "sha256": "fff6eed3f17d52877ff923ba8e0ae57997248b1767f76977d516ca0bd851db21",
+      "classification": "REPOSITORY_PROPOSAL_NOT_PROVEN_DEPLOYED"
+    },
+    {
+      "path": "supabase/review/issue-9-machine-readiness.sql",
+      "sha256": "45a78ad46a61fbbf8dad2ca42509a248b62d01db26be13393a63d4c6497bc8b1",
+      "classification": "REPOSITORY_PROPOSAL_NOT_PROVEN_DEPLOYED"
+    },
+    {
+      "path": "supabase/review/legacy-security-hardening-isolated.sql",
+      "sha256": "6f82818b5a46ef42093d9754906a3d6c4e58c32599f42370d588a52d7df926e1",
+      "classification": "REPOSITORY_PROPOSAL_NOT_PROVEN_DEPLOYED"
+    },
+    {
+      "path": "supabase/review/lifecycle-phase5.sql",
+      "sha256": "954c0220667ab3f1c084be634e46eb3326b6209def8a3de31007e0f4bd9aa391",
+      "classification": "REPOSITORY_PROPOSAL_NOT_PROVEN_DEPLOYED"
+    },
+    {
+      "path": "supabase/review/op-routing-phase2.sql",
+      "sha256": "27878083e07e9ca8301601072726c38ea7d981923e4b44d4983e5cc0cba0660a",
+      "classification": "REPOSITORY_PROPOSAL_NOT_PROVEN_DEPLOYED"
+    },
+    {
+      "path": "supabase/review/quantity-phase4.sql",
+      "sha256": "339df1f388d03b5fa8e08682c968b0b0e6d0285044b32fee229c159610d5a8af",
+      "classification": "REPOSITORY_PROPOSAL_NOT_PROVEN_DEPLOYED"
+    },
+    {
+      "path": "supabase/review/security-step3-isolated.sql",
+      "sha256": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252",
+      "classification": "REPOSITORY_PROPOSAL_NOT_PROVEN_DEPLOYED"
+    },
+    {
+      "path": "supabase/review/security-step4-integration-isolated.sql",
+      "sha256": "050074da22d74d7e52fb40c0dc9cdf0fb6d01345b23c088ba556179a3973f331",
+      "classification": "REPOSITORY_PROPOSAL_NOT_PROVEN_DEPLOYED"
+    },
+    {
+      "path": "supabase/review/setup-phase3.sql",
+      "sha256": "4bbb977f7d80753f0a3c1acd4285b0d8bc225f17add244cc487cd82fa09dbc00",
+      "classification": "REPOSITORY_PROPOSAL_NOT_PROVEN_DEPLOYED"
+    }
+  ]
+}
