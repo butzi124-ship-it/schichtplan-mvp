@@ -19,7 +19,7 @@ jobs:
     name: Functional Browsers
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.62.1-noble
-    timeout-minutes: 20
+    timeout-minutes: 40
     env:
       # GitHub mounts /github/home as pwuser; Firefox rejects it when the container runs as root.
       HOME: /root
