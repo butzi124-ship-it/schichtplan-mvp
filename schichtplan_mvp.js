@@ -114,7 +114,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.15.3";
+const APP_VERSION = "0.15.4";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -129,6 +129,7 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  { version: "0.15.4", date: "2026-11-12 06:18", changes: ["QA-Integrität: exakte geprüfte Dashboard-Präsentationsadapter bei unverändertem Geschäftslogik-Hash; zusätzliche Manipulations- und Dashboard-Regressionen."] },
   { version: "0.15.3", date: "2026-11-08 11:04", changes: ["Responsive Startseite nach freigegebener Vorlage mit dunkler Navigation, Schnellzugriffen und rollenbezogenen Bestandsdaten; keine Fachlogik-, Rechte- oder Datenbankänderung."] },
   {
     version: "0.15.2",
