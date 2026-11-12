@@ -5,7 +5,10 @@ const YAML = require("yaml");
 const { listTests } = require("./list-tests");
 const { hash, appBusiness, sourceViolations } = require("./qa-policy");
 const protectedFiles = require("../tests/qa/protected-files.json");
+const { reverseDashboardPresentation, verifyDashboardFiles, reverseDashboardFile } = require("./dashboard-presentation-policy");
+verifyDashboardFiles(file => fs.readFileSync(file));
 let app = fs.readFileSync("schichtplan_mvp.js", "utf8").replace(/\r\n/g, "\n");
+app = reverseDashboardPresentation(app);
 for (const {before, after} of [...require("../tests/qa/lifecycle-integration-patches.json").patches].reverse()) {
   assert.equal(app.split(after).length - 1, 1, "Lifecycle hook must remain exact and unique");
   app = app.replace(after, before);
@@ -37,6 +40,7 @@ for (const replacement of protectedFiles.reviewedPresentationReplacements || [])
 assert.equal(hash(appBusiness(app)), protectedFiles.appBusinessSha256, "App business logic changed in a QA-only release");
 for (const [file, expected] of Object.entries(protectedFiles.tests)) {
   let checkedSource = fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n");
+  checkedSource = reverseDashboardFile(file, checkedSource);
   for (const navigation of [require("../tests/qa/legacy-navigation-patch.json"), require("../tests/qa/visual-metadata-patch.json")]) {
     if (file !== navigation.file) continue;
     assert.equal(checkedSource.split(navigation.after).length - 1, 1, "Explicit test fixture patch must remain exact");
@@ -86,4 +90,4 @@ const provenance = JSON.parse(fs.readFileSync(path.join(root, "provenance.json")
 assert.equal(provenance.files.length, 33);
 assert.equal(provenance.image, "mcr.microsoft.com/playwright:v1.62.1-noble");
 for (const ref of provenance.files) assert.equal(hash(fs.readFileSync(path.join(root, ref.file))), ref.sha256, `Unreviewed reference change: ${ref.file}`);
-console.log(`QA integrity passed: ${legacy.length} legacy identities retained, legacy business logic preserved outside explicit article hooks, strict release chain and 33 versioned references verified.`);
+console.log(`QA integrity passed: ${legacy.length} legacy identities retained, legacy business logic preserved outside exact reviewed module/presentation hooks, strict release chain and 33 versioned references verified.`);

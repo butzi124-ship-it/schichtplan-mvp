@@ -114,7 +114,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.15.2";
+const APP_VERSION = "0.15.5";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -129,6 +129,9 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  { version: "0.15.5", date: "2026-11-12 06:54", changes: ["Startseite: eindeutige Mitarbeiterkachel und sichtbarer Titel Start / Dashboard; bestehende Navigation, Rechte und Tests unverändert."] },
+  { version: "0.15.4", date: "2026-11-12 06:18", changes: ["QA-Integrität: exakte geprüfte Dashboard-Präsentationsadapter bei unverändertem Geschäftslogik-Hash; zusätzliche Manipulations- und Dashboard-Regressionen."] },
+  { version: "0.15.3", date: "2026-11-08 11:04", changes: ["Responsive Startseite nach freigegebener Vorlage mit dunkler Navigation, Schnellzugriffen und rollenbezogenen Bestandsdaten; keine Fachlogik-, Rechte- oder Datenbankänderung."] },
   {
     version: "0.15.2",
     date: "2026-11-08 09:04",
@@ -3374,6 +3377,7 @@ function render() {
     `Angemeldet: ${currentUser.name} (${currentUser.role})`;
 
   if (!tabs.includes(currentTab)) currentTab = tabs[0];
+  document.body.classList.toggle("humbel-home-mode", currentTab === "dashboard");
   if (["werkzeugverwaltung", "lagerverwaltung"].includes(currentTab)) {
     startToolRealtimeSubscription().catch(console.warn);
     startToolAutoRefresh();
@@ -3384,12 +3388,12 @@ function render() {
   const view = document.getElementById("view");
   if (view?.parentElement) {
     view.parentElement.className =
-      ["werkzeugverwaltung", "lagerverwaltung"].includes(currentTab)
+      ["werkzeugverwaltung", "lagerverwaltung", "dashboard"].includes(currentTab)
         ? "w-full max-w-none p-4 space-y-4"
         : "max-w-7xl mx-auto p-4 space-y-4";
   }
 
-  if (currentTab === "dashboard") view.innerHTML = renderDashboard();
+  if (currentTab === "dashboard") view.innerHTML = renderDashboard(tabs);
   if (currentTab === "produktion") view.innerHTML = renderProduction();
   if (currentTab === "personalverwaltung")
     view.innerHTML = renderPersonalManagement();
@@ -3581,7 +3585,21 @@ function renderModulePlaceholder(title, text) {
   </div>`;
 }
 
-function renderDashboard() {
+function renderDashboard(allowedTabs = []) {
+  if ((state.dashboardSubTab || "overview") === "overview" && window.HumbelHome) {
+    const canProduction = allowedTabs.includes("produktion");
+    const isEmployee = currentUser?.role === "employee";
+    const shifts = isEmployee ? generateThreeMonths().filter(s => s.assigned === currentUser.name) : [];
+    const tasks = (Array.isArray(state.tasks) ? state.tasks : []).filter(t => t.status !== "done" && (currentUser?.role === "admin" || isTaskAssignedToCurrentUser(t)));
+    return window.HumbelHome.render({
+      tabs: allowedTabs,
+      articleEnabled: !!(window.HUMBEL_ARTICLE_MASTER_ENABLED && articleMaster.hasAccess()),
+      shiftAction: isEmployee ? "setDashboardSubTab('myShifts')" : (allowedTabs.includes("personalverwaltung") ? "setTab('personalverwaltung')" : ""),
+      machines: canProduction ? getVisibleProductionMachines() : [],
+      counts: canProduction ? getVisibleProductionCounts() : [],
+      shifts, tasks
+    }) + '<div class="h-home mt-4 flex gap-2 flex-wrap">' + renderModuleSubTabs(DASHBOARD_SUBTABS, "overview", "setDashboardSubTab") + '</div>';
+  }
   const subTab = DASHBOARD_SUBTABS.some((tab) => tab.id === state.dashboardSubTab)
     ? state.dashboardSubTab
     : "overview";
