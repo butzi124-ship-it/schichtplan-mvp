@@ -25,7 +25,8 @@
     "test:setup": "node --test tests/setup/*.test.js",
     "test:quantity": "node --test tests/quantity/*.test.js",
     "test:lifecycle": "node --test tests/lifecycle/*.test.js",
-    "test:integration": "node --test tests/db-integration/integration.test.js"
+    "test:integration": "node --test tests/db-integration/integration.test.js",
+    "test:security": "node --test tests/security/*.test.js"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.15",
