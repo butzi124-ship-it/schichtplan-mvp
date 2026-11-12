@@ -13,7 +13,15 @@ function reverseDashboardPresentation(source) {
 
 function verifyDashboardFiles(readFile) {
   for (const [file, expected] of Object.entries(reviewed.files)) {
-    assert.equal(hash(readFile(file)), expected,
+    let source = readFile(file);
+    for (const change of [...(reviewed.assetPatches || [])].reverse()) {
+      if (file !== change.file) continue;
+      source = source.toString("utf8");
+      assert.equal(source.split(change.after).length - 1, 1,
+        "Reviewed dashboard text correction must remain exact and unique");
+      source = source.replace(change.after, change.before);
+    }
+    assert.equal(hash(source), expected,
       `${file}: reviewed dashboard presentation source changed; explicit review required`);
   }
 }

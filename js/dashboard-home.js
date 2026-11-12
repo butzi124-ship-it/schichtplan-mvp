@@ -16,7 +16,7 @@ window.HumbelHome = Object.freeze({ render(model) {
   const tiles = [
     tile("Fertigung", "Abteilungen · Maschinen · Aufträge", "▥", can("produktion") ? "setTab('produktion')" : "", true),
     tile("Schichtplan", "Schichten · Planung", "▦", model.shiftAction, false),
-    tile("Mitarbeiter", "Personalverwaltung", "♙", can("personalverwaltung") ? "setTab('personalverwaltung')" : "", false),
+    tile("Mitarbeiter", "Stammdaten · Team", "♙", can("personalverwaltung") ? "setTab('personalverwaltung')" : "", false),
     tile("Werkzeuge", "Bestand · Journal", "⚒", can("werkzeugverwaltung") ? "setTab('werkzeugverwaltung')" : "", false),
     tile("Artikel", "Stammdaten", "▤", model.articleEnabled && can("produktion") ? "setTab('produktion')" : "", false)
   ].join("");
@@ -27,7 +27,7 @@ window.HumbelHome = Object.freeze({ render(model) {
   const tasks = (model.tasks || []).slice(0, 4);
   const taskBody = tasks.length ? '<div class="h-home-list">' + tasks.map(t => '<div><strong>' + esc(t.title || "Aufgabe") + '</strong><span>' + esc(t.status || "Offen") + '</span></div>').join("") + '</div>' : empty("Keine offenen Aufgaben vorhanden.");
   const countBody = (model.counts || []).length ? '<div class="h-home-list"><div><strong>Sichtbare Stückzahleinträge</strong><span>' + model.counts.length + '</span></div></div>' : empty("Keine verfügbaren Fertigungskennzahlen.");
-  return '<main class="h-home"><header class="h-home-hero"><h1>Willkommen in der Humbel-App</h1><p>Fertigung, Planung und Team – alles in einer Anwendung.</p></header><div class="h-home-tiles">' + tiles + '</div><div class="h-home-panels">' +
+  return '<main class="h-home"><header class="h-home-hero"><h1>Start / Dashboard</h1><p>Fertigung, Planung und Team – alles in einer Anwendung.</p></header><div class="h-home-tiles">' + tiles + '</div><div class="h-home-panels">' +
     box("Heute im Überblick", "▦", countBody) +
     box("Maschinenübersicht", "⚙", machineBody) +
     box("Fertigungsinformationen", "▥", empty(can("produktion") ? "Auftragsdetails sind in der Fertigung verfügbar." : "Keine Fertigungsinformationen für diese Rolle verfügbar.")) +
