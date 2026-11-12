@@ -1,0 +1,64 @@
+{
+  "baseline": "1238bf0c9467f1d6bf5e83dd8e0aa8520ef4b7c7",
+  "project": "itntnpzqzyjfdnjdshvm",
+  "scope": "Original metadata via connector; READ ONLY catalog queries only; no business/Auth/session rows or secrets/keys fetched",
+  "connection": {
+    "database": "postgres",
+    "executor": "postgres",
+    "postgresVersion": "PostgreSQL 17.11 on aarch64-unknown-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit",
+    "succeeded": true
+  },
+  "catalogSnapshot": "2026-11-12T12:36:34.766069+00:00",
+  "sourceQuery": "supabase/review/security-step6-metadata-readonly.sql",
+  "sourceQuerySha256": "d507aef40f741f7d1b0e427f10342f06b94a3acab85135b9f0223a55e4557f7a",
+  "sourceCatalog": "docs/qa/security-step7-original-catalog.json.gz",
+  "compressedSha256": "02548deefc8b46d6b3d05b1ea36484da62bc7a6576b139cb4ae1f95219ec20c2",
+  "jsonSha256": "4f9c361c7f5c995696871544da2f5c387787dcb69ef3258d2d2cb9022d7c28a6",
+  "singleAggregateRow": true,
+  "countCheck": {
+    "publicTables": 31,
+    "publicColumns": 308,
+    "publicPolicies": 127,
+    "publicConstraints": 134,
+    "publicUserTriggers": 11,
+    "publicFunctions": 6,
+    "publicIndexes": 76,
+    "matched": true,
+    "method": "Independent catalog count SELECT in separate READ ONLY transaction; does not prove no DDL occurred between calls"
+  },
+  "effectiveRights": {
+    "records": 496,
+    "roles": [
+      "anon",
+      "authenticated"
+    ],
+    "tables": 31,
+    "privilegesPerRoleTable": 8,
+    "allAllowed": true,
+    "grantOptions": false
+  },
+  "apiProbe": {
+    "method": "HEAD",
+    "endpoint": "https://itntnpzqzyjfdnjdshvm.supabase.co/rest/v1/employees?select=id&limit=0",
+    "credentialsUsed": false,
+    "responseBodyRead": false,
+    "status": 401,
+    "interpretation": "Gateway rejects keyless request. Not an authenticated/anon-JWT or row-level Data API acceptance test."
+  },
+  "browserFallback": "NOT_NEEDED: SQL succeeded; no browser session or login inspected",
+  "redactions": [
+    {
+      "schema": "storage",
+      "function": "list_objects_with_delimiter",
+      "reason": "Conservative literal scan: full body withheld from repository, not classified as an actual secret"
+    }
+  ],
+  "notProven": [
+    "Authoritative full pg_dump schema-only and independent restore",
+    "Runtime API exposed schemas/Auth/session/revocation configuration (reported pgrst.db_schemas null)",
+    "Effective external API access under actual app identities",
+    "Production data invariants, identity provisioning, private workflow rules, native full migration acceptance"
+  ],
+  "productionWrites": false,
+  "businessRowsRead": false
+}
