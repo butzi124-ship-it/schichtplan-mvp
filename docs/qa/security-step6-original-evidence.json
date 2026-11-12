@@ -1,0 +1,198 @@
+{
+  "status": "CONFIRMED_ORIGINAL_FINDING_USER_SUPPLIED_MANUAL_OBSERVATION",
+  "source": "User Step6 instruction: manual read-only Supabase Dashboard SQL Editor on 2026-11-12; not independently reexecuted by agent",
+  "observedDate": "2026-11-12",
+  "exactObservationTime": "UNVERIFIED_NOT_SUPPLIED",
+  "project": "Schichtplan",
+  "dashboardBranch": "main",
+  "projectRefLink": "itntnpzqzyjfdnjdshvm matches earlier project evidence; identifier inferred from established project, not re-read from screenshot",
+  "connection": {
+    "database": "postgres",
+    "user": "postgres",
+    "postgresVersion": "17.11",
+    "querySucceeded": true
+  },
+  "publicTables": 31,
+  "rlsEnabledCount": 21,
+  "rlsDisabledCount": 10,
+  "rlsDisabledTables": [
+    "planner_absence_replacements",
+    "planner_absences",
+    "planner_assignments",
+    "planner_availability",
+    "planner_saturday_requests",
+    "planner_shift_cancellations",
+    "planner_sick_leaves",
+    "planner_swaps",
+    "planner_vacations",
+    "tool_materials"
+  ],
+  "effectivePrivileges": [
+    {
+      "table": "public.planner_absence_replacements",
+      "role": "anon",
+      "SELECT": true,
+      "INSERT": true,
+      "UPDATE": true,
+      "DELETE": true
+    },
+    {
+      "table": "public.planner_absence_replacements",
+      "role": "authenticated",
+      "SELECT": true,
+      "INSERT": true,
+      "UPDATE": true,
+      "DELETE": true
+    },
+    {
+      "table": "public.planner_absences",
+      "role": "anon",
+      "SELECT": true,
+      "INSERT": true,
+      "UPDATE": true,
+      "DELETE": true
+    },
+    {
+      "table": "public.planner_absences",
+      "role": "authenticated",
+      "SELECT": true,
+      "INSERT": true,
+      "UPDATE": true,
+      "DELETE": true
+    },
+    {
+      "table": "public.planner_assignments",
+      "role": "anon",
+      "SELECT": true,
+      "INSERT": true,
+      "UPDATE": true,
+      "DELETE": true
+    },
+    {
+      "table": "public.planner_assignments",
+      "role": "authenticated",
+      "SELECT": true,
+      "INSERT": true,
+      "UPDATE": true,
+      "DELETE": true
+    },
+    {
+      "table": "public.planner_availability",
+      "role": "anon",
+      "SELECT": true,
+      "INSERT": true,
+      "UPDATE": true,
+      "DELETE": true
+    },
+    {
+      "table": "public.planner_availability",
+      "role": "authenticated",
+      "SELECT": true,
+      "INSERT": true,
+      "UPDATE": true,
+      "DELETE": true
+    },
+    {
+      "table": "public.planner_saturday_requests",
+      "role": "anon",
+      "SELECT": true,
+      "INSERT": true,
+      "UPDATE": true,
+      "DELETE": true
+    },
+    {
+      "table": "public.planner_saturday_requests",
+      "role": "authenticated",
+      "SELECT": true,
+      "INSERT": true,
+      "UPDATE": true,
+      "DELETE": true
+    },
+    {
+      "table": "public.planner_shift_cancellations",
+      "role": "anon",
+      "SELECT": true,
+      "INSERT": true,
+      "UPDATE": true,
+      "DELETE": true
+    },
+    {
+      "table": "public.planner_shift_cancellations",
+      "role": "authenticated",
+      "SELECT": true,
+      "INSERT": true,
+      "UPDATE": true,
+      "DELETE": true
+    },
+    {
+      "table": "public.planner_sick_leaves",
+      "role": "anon",
+      "SELECT": true,
+      "INSERT": true,
+      "UPDATE": true,
+      "DELETE": true
+    },
+    {
+      "table": "public.planner_sick_leaves",
+      "role": "authenticated",
+      "SELECT": true,
+      "INSERT": true,
+      "UPDATE": true,
+      "DELETE": true
+    },
+    {
+      "table": "public.planner_swaps",
+      "role": "anon",
+      "SELECT": true,
+      "INSERT": true,
+      "UPDATE": true,
+      "DELETE": true
+    },
+    {
+      "table": "public.planner_swaps",
+      "role": "authenticated",
+      "SELECT": true,
+      "INSERT": true,
+      "UPDATE": true,
+      "DELETE": true
+    },
+    {
+      "table": "public.planner_vacations",
+      "role": "anon",
+      "SELECT": true,
+      "INSERT": true,
+      "UPDATE": true,
+      "DELETE": true
+    },
+    {
+      "table": "public.planner_vacations",
+      "role": "authenticated",
+      "SELECT": true,
+      "INSERT": true,
+      "UPDATE": true,
+      "DELETE": true
+    },
+    {
+      "table": "public.tool_materials",
+      "role": "anon",
+      "SELECT": true,
+      "INSERT": true,
+      "UPDATE": true,
+      "DELETE": true
+    },
+    {
+      "table": "public.tool_materials",
+      "role": "authenticated",
+      "SELECT": true,
+      "INSERT": true,
+      "UPDATE": true,
+      "DELETE": true
+    }
+  ],
+  "meaning": "Effective table privileges plus disabled RLS confirmed directly in original DB by operator. Not an independent external Data API reachability test, no column ACL provenance/owner/default grant proof. SQL Editor as postgres does not test application-role RLS.",
+  "originalSchemaComplete": false,
+  "externalDataApiReachability": "UNVERIFIED",
+  "policiesColumnRightsOwnersFunctionsViewsTriggersDefaultAcl": "UNVERIFIED",
+  "rawMachineExportOrScreenshotInRepo": false,
+  "productionChangesByAgent": false
+}

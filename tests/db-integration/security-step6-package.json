@@ -1,0 +1,13 @@
+{
+  "status": "ISOLATED_REVIEW_ONLY_NOT_PRODUCTION_READY",
+  "baseline": "35a56bb07e58b7c1a12fbc0654af064740dd292e",
+  "originalSchemaComplete": false,
+  "inputs": {
+    "supabase/review/security-step3-isolated.sql": "e9fab9f8d32debf1643c8c30d525a67c6b22cc9ae7a6fabaa5bf3e7a5b3fb252",
+    "supabase/review/security-step4-integration-isolated.sql": "050074da22d74d7e52fb40c0dc9cdf0fb6d01345b23c088ba556179a3973f331",
+    "supabase/review/security-step6-isolated.sql": "044de1854e36416b672c43a04e7bde685176fe0926836184be160aa1434a9bb8"
+  },
+  "entrypoint": "tests/db-integration/security-step6-review.js apply(db)",
+  "activation": "No application import, registered migration, deployment hook or live connection",
+  "requires": "Fresh approved isolated structural baseline, synthetic identities, sentinel. Existing Step3/4 installation is rejected unless exact Step6 history and fingerprint match. Original definitions remain UNVERIFIED."
+}

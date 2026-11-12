@@ -114,7 +114,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.16.2";
+const APP_VERSION = "0.16.3";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -129,6 +129,7 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  { version: "0.16.3", date: "2026-11-12 12:22", changes: ["Sicherheitsvorbereitung Schritt 6: manuell bestätigte Originalrechte dokumentiert; atomar geprüfter isolierter RLS-Reviewkandidat mit engeren Material-Spaltenrechten, Wiederholungs- und Rollbackprüfungen. Keine Produktivaktivierung."] },
   { version: "0.16.2", date: "2026-11-12 10:39", changes: ["Sicherheitsvorbereitung Schritt 5: aktuellen Metadatenzugriff und Authentifizierungsblocker dokumentiert, bestehendes Zugriffsinventar um Kompatibilitäts- und Migrationsplan ergänzt; keine produktive oder isolierte Rechteaktivierung."] },
   { version: "0.16.1", date: "2026-11-12 09:13", changes: ["QA: belegten Job-Zeitlimitabbruch mit begrenztem Laufzeitbudget und Fortschrittsartefakt adressiert; isolierter sicherer RPC-Adapter mit serverseitiger Identität und Session-/Offline-Datenlöschung vorbereitet, ohne Produktivaktivierung."] },
   { version: "0.16.0", date: "2026-11-12 07:42", changes: ["Isolierter Sicherheitskandidat Schritt 3: RLS-/Rechtebegrenzung, unabhängige Identitätsbindung, abteilungsbezogene Planung, getrennte Veröffentlichung und konfigurierter eigener Kontakt-Selbstservice; keine Produktivaktivierung."] },
