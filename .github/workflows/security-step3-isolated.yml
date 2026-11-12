@@ -1,0 +1,82 @@
+name: Security Step 3 Isolated Candidate
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: security-step3-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  security-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run test:security
+  security-step3-native:
+    needs: security-contract
+    name: Security candidate after unchanged baseline and BA/OP chain
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: implementation
+          persist-credentials: false
+      - name: Reuse reviewed isolated infrastructure without modifying PR 15 or 16
+        uses: actions/checkout@v4
+        with:
+          ref: 25e9a6914e38fc791d9ecad13d92a45e30d19bb3
+          path: isolated
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: isolated/package-lock.json
+      - name: Assemble and verify all SQL and application inputs from this checkout
+        run: |
+          node implementation/tests/db-integration/integration-source.js assemble implementation isolated
+          echo "Integration checkout: $(git -C implementation rev-parse HEAD); harness only: 25e9a6914e38fc791d9ecad13d92a45e30d19bb3; mode: ba-op" >> "$GITHUB_STEP_SUMMARY"
+      - name: Apply exact clock-only adapters to pinned native test sources
+        run: node tests/db-integration/forecast-clock.js prepare
+        working-directory: isolated
+      - name: Separate mandatory native extension points and verify provenance before connection
+        run: node tests/db-integration/integration-source.js prepare-runner
+        working-directory: isolated
+      - name: Add exact isolated security continuation without replacing baseline assertions
+        run: node tests/db-integration/security-step3-runner.js
+        working-directory: isolated
+      - run: npm ci --ignore-scripts
+        working-directory: isolated
+      - run: npm run test:db:guard
+        working-directory: isolated
+      - name: Start only ephemeral internal containers
+        run: node scripts/db-integration/runtime.js start
+        working-directory: isolated
+      - name: Real baseline and explicit isolated acceptance mode
+        run: docker exec humbel-gateway node scripts/db-integration/run.js ba-op
+        working-directory: isolated
+      - name: Record actual coverage and remaining security blockers
+        if: always()
+        run: node scripts/db-integration/summary.js
+        working-directory: isolated
+      - name: Destroy isolated containers, network, volumes and temporary keys
+        if: always()
+        run: node scripts/db-integration/runtime.js stop
+        working-directory: isolated
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-step3-isolated-${{ github.sha }}
+          path: isolated/artifacts/db-integration/
+          retention-days: 14
