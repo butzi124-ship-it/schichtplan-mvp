@@ -77,3 +77,7 @@ Während der Entwicklung wurden ein Syntaxfehler im **neuen** Zielguard und der 
 Bestanden: npm ci --ignore-scripts; Pflicht-/neue JS-Syntax; test:ci 2/2, test:qa 20/20, qa:check, test:integration 5/5, **test:security 64/64** (55 bestehende + 9 neue). Danach wurde die zusätzliche Step7-Pakethashprüfung ergänzt und die **finale neue Suite 9/9** vollständig erneut bestanden; die 55 Bestandsfälle/Quellen blieben unverändert. Neun Fachmodulsuiten **168/168**, qa:agent-server, Dokument-/Manifest-/Änderungsscopeprüfung und git diff --check ebenfalls bestanden. Keine Skips/Assertion-/Referenzlockerung.
 
 **BLOCKED_NOT_TESTED:** E2E vollständig gestartet, nach **94 Browserstartfehlern** und Nachweis fehlender Chromium-/Firefox-/WebKit-Binaries beendet (Exit130); Restfälle nicht ausgeführt, keine 773 bestandenen oder vollständig abgearbeiteten Fälle behauptet. Agentenseed am fehlenden Browser blockiert; Visual-Guard Exit2, DB-Preflight Exit2. Neue echte native Rollen-/JWT-/API-/Mehrverbindungs-/Restoreabnahme nicht verfügbar. Aktuelle Einzelwerte/Loghashes und Quellenhashes im Prüfprotokoll. **NEIN: keine Freigabe für Produktivmigration oder Aktivierung.**
+
+## Fortsetzung: Schritt 8B Phase 2
+
+Der historische Phase1-Nachweis bleibt erhalten. Der [Phase2-Kandidat](permissions-8b2.md) ergänzt ab Version0.17.1 ausschließlich isolierte, deaktivierte Verwaltungsoperationen und technischen Audit. Echte Auth-/JWT-/API-/Parallelabnahme und produktive Aktivierung werden dadurch nicht als erledigt ausgegeben.

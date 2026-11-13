@@ -1,0 +1,5 @@
+{
+  "version": "8b2-v1",
+  "inputSha256": "3d3fb01d5b7d8f66221a99df0ba6a33390f27b0b02b896842ba78f67dcfd1182",
+  "purpose": "Isolated technical candidate only; no operator enrollment, JWT verifier or production activation"
+}

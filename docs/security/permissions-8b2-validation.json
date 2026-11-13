@@ -1,0 +1,293 @@
+{
+  "capturedAt": "2026-11-13T13:26:47.962052+00:00",
+  "basePR": 35,
+  "baseSha": "c5384669a17b11d7d97e42f3bd9dafd27df5fe16",
+  "version": "0.17.1",
+  "versionLogBerlin": "2026-11-13 14:43",
+  "branch": "security/identity-sessions-8b2",
+  "productionAccess": false,
+  "productionWrites": false,
+  "productionActivation": false,
+  "defaultManagementEnabled": false,
+  "defaultLegacyContextEnabled": false,
+  "defaultOperatorRows": 0,
+  "realJWTVerifierImplemented": false,
+  "authoritativeRestore": false,
+  "checks": [
+    {
+      "command": "syntax schichtplan_mvp.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.11,
+      "tests": null,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "syntax tests/smoke.spec.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.06,
+      "tests": null,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "syntax tests/db-integration/permissions-8b2-review.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.11,
+      "tests": null,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "syntax tests/security/permissions-8b2-fixture.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.11,
+      "tests": null,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "syntax tests/security/permissions-8b2.test.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.06,
+      "tests": null,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "npm run check:syntax",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 120,
+      "seconds": 3.14,
+      "tests": null,
+      "logSha256": "b1281a5b1384edd0b110d31560168afa6965cfa2be9e8786b6d0db097fdcb390"
+    },
+    {
+      "command": "npm run test:ci",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 60,
+      "seconds": 0.26,
+      "tests": 2,
+      "logSha256": "117d599126356236c338a6bfe17aa3eca51a3a60588f3691809d0ebc18cfbc3c"
+    },
+    {
+      "command": "npm run test:qa",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 120,
+      "seconds": 0.87,
+      "tests": 20,
+      "logSha256": "e95721c6b2048b31dea27b4d09e5411fc83c44afe68e757a7828a53c5d4572bc"
+    },
+    {
+      "command": "npm run qa:check",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 120,
+      "seconds": 2.12,
+      "tests": null,
+      "logSha256": "0530fbcfd505ad271f541db9a2409968450e011c9f67a27b134ad37809f780bb"
+    },
+    {
+      "command": "npm run test:integration",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 3.22,
+      "tests": 5,
+      "logSha256": "7829bde561e49e542231c6c218c16e7259e9beae9b526ae44683d9a865b0f792"
+    },
+    {
+      "command": "npm run test:security",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": 69,
+      "timeoutSeconds": 900,
+      "logSha256": "800d2929f410453206f61792049002b66483742a561ec10ea1db7cfc9861f05a",
+      "previousAttempt": {
+        "command": "npm run test:security",
+        "status": "FAIL",
+        "exitCode": 1,
+        "timeoutSeconds": 900,
+        "seconds": 33.39,
+        "tests": 69,
+        "logSha256": "b284a556ac1680520e5f4b7713ba10fa63ccefbf1541a9c8ae22e8a4c666c2d0"
+      },
+      "reason": "Final complete69/69 rerun after adding mandatory existing-8B1 prerequisite assertion and its negative test; no implicit Phase1 installation.",
+      "previousGreenLogSha256": "cd108ae62de6315cf86891e0c0606c68bbd8d8646e391727e8f3a7f4b51b321f"
+    },
+    {
+      "command": "npm run test:article-db",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 2.43,
+      "tests": 8,
+      "logSha256": "0ce3847e8b16ec6d619eb2d7b99930c76b353e76e27340169644f18ef11e8c34"
+    },
+    {
+      "command": "npm run test:operations",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 2.38,
+      "tests": 15,
+      "logSha256": "1b5ce97568f521483ef5e068a7fc50f03760ed35e9899793c8901e643d90ff2a"
+    },
+    {
+      "command": "npm run test:readiness",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 6.56,
+      "tests": 17,
+      "logSha256": "fadcb57da706c693f69549fbd62b074e68f93ef0debd5c44297d63c9d854c35a"
+    },
+    {
+      "command": "npm run test:forecast",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 8.29,
+      "tests": 41,
+      "logSha256": "38d2d9fed4a1818635bfc8a2afbfaf8410c1fe1cb48b872ddee58562dca10e3c"
+    },
+    {
+      "command": "npm run test:ba-entry",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 2.08,
+      "tests": 9,
+      "logSha256": "eba32b7263ffde5d5a98af9f6b9c7957c2d5919b5d70584d31dd88026ffb22bd"
+    },
+    {
+      "command": "npm run test:routing",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 2.32,
+      "tests": 10,
+      "logSha256": "b4d6123d4375bed66b44a0cc812afee5c47ccab1086748a6fe9df408f9baa033"
+    },
+    {
+      "command": "npm run test:setup",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 2.94,
+      "tests": 17,
+      "logSha256": "d428dc5815af5b462a5ef743289ef4ae1805979b13d6b2b27c731897e86605bc"
+    },
+    {
+      "command": "npm run test:quantity",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 3.29,
+      "tests": 14,
+      "logSha256": "41080e88d58be2cb60219f6ca9d1ebdb75c215455759fafbfacc75468f72865d"
+    },
+    {
+      "command": "npm run test:lifecycle",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 12.59,
+      "tests": 37,
+      "logSha256": "aae50b83ae52062783dbb6ec73e9ec008d2ef105d450245654cf113c10d6a611"
+    },
+    {
+      "command": "npm run qa:agent-server",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 60,
+      "seconds": 0.72,
+      "tests": null,
+      "logSha256": "f3a365145b195cc178a6765a046d6f07a7495fa87f7093752ce3631662018319"
+    },
+    {
+      "command": "npm run test:e2e",
+      "status": "BLOCKED_NOT_TESTED",
+      "reason": "Browser prerequisite absent: {'chromium': False, 'firefox': False, 'webkit': False}; not launched, no application assertions passed",
+      "started": false
+    },
+    {
+      "command": "npm run test:agents",
+      "status": "BLOCKED_NOT_TESTED",
+      "reason": "Browser prerequisite absent: {'chromium': False, 'firefox': False, 'webkit': False}; not launched, no application assertions passed",
+      "started": false
+    },
+    {
+      "command": "npm run test:visual",
+      "status": "BLOCKED_NOT_TESTED",
+      "reason": "Required pinned Playwright container/environment unavailable; not launched, no references changed",
+      "started": false
+    },
+    {
+      "command": "npm run test:db:preflight",
+      "status": "BLOCKED_NOT_TESTED",
+      "exitCode": 2,
+      "timeoutSeconds": 30,
+      "seconds": 0.37,
+      "reason": "Existing DB prerequisite guard rejected unavailable approved local runtime/auth/REST fixtures",
+      "tests": null,
+      "logSha256": "e227e6565c945320197589370aeebbc4c53501d8046558895f8762e2bb24ea95"
+    },
+    {
+      "command": "native 8B2 PostgreSQL/GoTrue/PostgREST/JWT/concurrency",
+      "status": "BLOCKED_NOT_TESTED",
+      "reason": "No approved original-restore native target/adapters supplied; no production target probed. docker=False, psql=False",
+      "started": false
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.02,
+      "tests": null,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "domainRegressionTests": 168,
+  "supervisor": {
+    "overallLimitSeconds": 1800,
+    "initialExitCode": 1,
+    "explanation": "Initial run completed with one real new-test fixture failure. Final separate full-security rerun passed69/69; no failing result was reclassified as environment-blocked."
+  },
+  "inputsSha256": {
+    "supabase/review/permissions-8b2-isolated.sql": "3d3fb01d5b7d8f66221a99df0ba6a33390f27b0b02b896842ba78f67dcfd1182",
+    "tests/db-integration/permissions-8b2-review.js": "d726a85f4a335abe5c949db59c65c77aec983b7c1270d93e175d6f9b40e2a7f3",
+    "tests/db-integration/permissions-8b2-package.json": "e368f258ab7455c818f905081a164b9e75d31d931aa2bfb1a290283d21a6aa6c",
+    "tests/db-integration/permissions-8b2-verify.py": "b8ee65c08e2bee69262be489466e176b7cfca1363351f33d308e2dc9ee17624a",
+    "tests/security/permissions-8b2-fixture.js": "c8e6812ef4797a0954a67a88aac8f1dc491cf6659ac1264530c23b764f76a6c3",
+    "tests/security/permissions-8b2.test.js": "56a093c85e8a3f72bc0ce35ee2cf32725f760fed6d09c85cb9b3c4f03a3eacf7"
+  },
+  "reviewChecks": [
+    "API/schema/table/column/function privileges remain closed; no operator/scope/session attestation enrollment",
+    "No new function reads auth.uid/auth.jwt or accepts actor/role parameters",
+    "Main business logic byte-identical after only version/log normalization; existing modules/SQL/QA/assertions/references unchanged",
+    "Document links/JSON and git diff --check checked before commit"
+  ],
+  "developmentFindings": [
+    "PGlite RESET SESSION AUTHORIZATION did not restore original synthetic owner; explicit test-owner restoration used, without changing product authorization",
+    "Negative test INSERT corrected for newly added version columns; expected42501 assertion retained",
+    "Versions added to independent operator authority and session attestations; stale unused proofs and replay after withdrawal explicitly denied",
+    "Phase2 installer explicitly rejects a missing Phase1 installation before invoking the unchanged verifier; final69-case suite passed with the added negative case."
+  ],
+  "remainingBlockers": [
+    "O09/O01 and other8A business/enrollment/role-scope decisions; no privileged organization role bootstrap",
+    "Trusted real Auth/JWT/session verifier and protected attestation writer/revoker not implemented",
+    "Native DB login/RLS/PostgREST/GoTrue/parallel/expiry/rollback tests and minimal owner/exposure approval absent",
+    "All existing lifecycle writers must share the new lock/version protocol before app cutover",
+    "Independent denial-audit path, full original restore, backup/PITR/RPO/RTO/recovery and separate operational approvals"
+  ]
+}

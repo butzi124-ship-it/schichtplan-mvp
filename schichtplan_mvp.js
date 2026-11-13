@@ -114,7 +114,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.17.0";
+const APP_VERSION = "0.17.1";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -129,6 +129,7 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  { version: "0.17.1", date: "2026-11-13 14:43", changes: ["Schritt 8B Phase 2: isolierte, deaktivierte Identitäts-/Sitzungsverwaltung mit vertrauenswürdiger technischer Autorität, Versionsprüfung, dauerhaftem Widerruf und atomarem Audit ergänzt. Keine Appanbindung oder produktive Aktivierung."] },
   { version: "0.17.0", date: "2026-11-13 11:10", changes: ["Schritt 8B Phase 1: isolierte, standardmäßig gesperrte Identitäts-/Sessiongrundlage mit getrennten Organisationsrollen, Mehrfachabteilungen und expliziter Berechtigungsprüfung vorbereitet. Keine Appanbindung, Benutzerübernahme oder produktive Aktivierung."] },
   { version: "0.16.6", date: "2026-11-13 10:23", changes: ["Schritt 8A: verbindliche Ernennungs-/Abberufungsrechte, unveränderbare Vertretungsprotokolle sowie konfigurierbare Aufbewahrung dokumentiert. Ausschließlich Konzept und Dokumentation; keine Berechtigungen oder Löschfunktion aktiviert."] },
   { version: "0.16.5", date: "2026-11-13 09:20", changes: ["Schritt 8A: bestehende Rollen, Sicherheitskandidaten und PR-Abhängigkeiten analysiert; modulare Rollen-/Mehrfachabteilungs-Konzeption mit Migrations-, Entscheidungs- und Testplan dokumentiert. Keine Geschäftslogik oder Berechtigung aktiviert."] },
