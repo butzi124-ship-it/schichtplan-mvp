@@ -1,6 +1,6 @@
 # Schritt 8A – Bestandsaufnahme und Konzept für modulare Berechtigungen
 
-**Status: Analyse-/Reviewentwurf, keine Implementierung oder Aktivierungsfreigabe.** Auftrag vom 13.11.2026, Refs [Issue #33](https://github.com/butzi124-ship-it/schichtplan-mvp/issues/33), #17 und PR #15–#32. Basis **PR #32 / 0.16.4 / security/original-audit-step7 / 67ac80ac1b649fbdf975aeb2d005f827cda8a8a1**. Dokumentationsbranch `docs/modular-permissions-step8a`, APP_VERSION **0.16.5**, VERSION_LOG **13.11.2026 09:20 Europe/Berlin** entsprechend AGENTS.md. Haupt-App ausschließlich Version/Log.
+**Status: Analyse-/Reviewentwurf, keine Implementierung oder Aktivierungsfreigabe.** Auftrag vom 13.11.2026, Refs [Issue #33](https://github.com/butzi124-ship-it/schichtplan-mvp/issues/33), #17 und PR #15–#32. Basis **PR #32 / 0.16.4 / security/original-audit-step7 / 67ac80ac1b649fbdf975aeb2d005f827cda8a8a1**. Dokumentationsbranch `docs/modular-permissions-step8a`, APP_VERSION **0.16.6**, VERSION_LOG **2026-11-13 10:23 Europe/Berlin** entsprechend AGENTS.md. Haupt-App ausschließlich Version/Log.
 
 Dieses Arbeitspaket legt keine neuen Rollen in Supabase an, führt kein SQL aus und verändert weder Accounts noch Geschäftsprozesse. Die neuen Rollen-/Tabellennamen in den Konzeptdateien sind **VORSCHLÄGE**, keine vorhandenen Produktionsobjekte. Die neuen fachlichen Vorgaben ersetzen widersprechende alte Konzeptannahmen, aber ändern nicht rückwirkend alte Prüfberichte oder Testidentitäten.
 
@@ -13,13 +13,14 @@ Dieses Arbeitspaket legt keine neuen Rollen in Supabase an, führt kein SQL aus 
 | [Migration, Phasen und Testplan](permissions-8a-rollout-test-plan.md) | Kleine isoliert abnehmbare Implementierungsphasen, Modulbrücken, Regression, spätere Betriebsfreigabe |
 | [Offene Entscheidungen](permissions-8a-decisions.md) | Konkrete Fragen, sichere Zwischenposition und betroffene Phase; bereits entschiedene Regeln nicht erneut öffnen |
 | [GitHub-/Quellenstand](permissions-8a-source-state.json) | Tatsächliche PR-Heads, Branches/Ancestry, CI-Abfrage, Quellblob-IDs und Aussagegrenzen |
-| [Lokale Prüfergebnisse](permissions-8a-validation.json) | Tatsächlich ausgeführte Prüfungen dieses Dokumentationsstands |
+| [Ursprüngliche lokale Prüfergebnisse](permissions-8a-validation.json) | Historische Prüfung von 0.16.5, nicht als neuer Lauf ausgegeben |
+| [Prüfung der fachlichen Ergänzung](permissions-8a-amendment-validation.json) | Tatsächliche Prüfungen von 0.16.6 |
 
 **B** = durch diesen Auftrag/fortgeltende Fachspezifikation bestätigt. **I** = aktuell im Code beobachtet, keine neue fachliche Autorisierung. **P** = technischer Vorschlag, später zu reviewen/implementieren. **O** = offene Entscheidung, keine stillschweigende Freigabe. Historische DB-Metadaten bleiben mit Aufnahmedatum gekennzeichnet.
 
 ## 1. Tatsächlich überprüfter Entwicklungsstand
 
-Am 13.11.2026 Issue #33 vollständig inklusive Kommentarabfrage gelesen (keine Kommentare), aktuelle offene PRs repositoryweit gesucht, PR-Metadaten und Remote-Refs neu abgerufen. **17 offene Draft-PRs: #15, #16, #18–#32; kein neuerer offener Implementierungs-PR gefunden.** 26 Remote-Refs einschließlich origin/HEAD inventarisiert. `main` bleibt **e764cf2e93382e847627d8bc7c802b02ff70c375**. Abweichender Branchname security/rls-migration-step7 aus einer alten Kurzfassung ist **nicht** PR-32-Head. Der richtige Ref ist security/original-audit-step7.
+Historische Erstaufnahme 0.16.5: Am 13.11.2026 Issue #33 vollständig inklusive Kommentarabfrage gelesen (keine Kommentare), aktuelle offene PRs repositoryweit gesucht, PR-Metadaten und Remote-Refs neu abgerufen. **17 offene Draft-PRs: #15, #16, #18–#32; kein neuerer offener Implementierungs-PR gefunden.** 26 Remote-Refs einschließlich origin/HEAD inventarisiert. `main` bleibt **e764cf2e93382e847627d8bc7c802b02ff70c375**. Abweichender Branchname security/rls-migration-step7 aus einer alten Kurzfassung ist **nicht** PR-32-Head. Der richtige Ref ist security/original-audit-step7.
 
 | Entwicklungsbereich | Verifizierter Stand / Bedeutung |
 |---|---|
@@ -66,7 +67,7 @@ Quellreferenzen gelten am Basis-SHA; spätere Versionszeile verschiebt Zeilen ge
 | VALID_EMPLOYEE_ROLES (schichtplan_mvp.js), Navigation, canAccessProduction/canManageProduction/canManagePersonnel | Harte Prüfung admin/employee/tool_scanner/department_admin; Personal-/globale Abteilungsadministration admin, Produktion admin/dept_admin, Mitarbeiter Werkzeugtab | Capabilities pro Aktion/Scope statt neuer globaler Stringhierarchie. HR/Technik dürfen nicht über Alias admin alle Altfunktionen sehen/laden |
 | getManagedDepartmentIds/getVisibleProduction*/canEditProduction* | Berechnet bereits **alle** departments mit leader_employee_id = aktuelle Mitarbeiter-ID; Admin sieht alles | Diesen Mehrfachleitungsansatz erhalten. Keine Abteilungsermittlung über erste passende Zeile oder Stammabteilung als alleinigen Scope |
 | createPersonnelEmployee/savePersonnelEmployee/autosavePersonnelEmployeeDepartment | Direktes employees INSERT/UPDATE; ein department_id/Freitext und UpdatedAt. Stammwechsel derzeit kein transaktionaler Sonderrollenentzug | Später semantisches Stammwechselkommando mit atomarer Suspendierung aller bisherigen Sonderrollen und Audit. Kein unverändertes Autosave als sichere Migration ausgeben |
-| createProductionDepartment/saveProductionDepartment | Direktes departments INSERT/UPDATE, ein Leiterfeld; UI verlangt Admin | Abteilungsstammpflege, Leitungsbestellung durch PL und Mitgliedschaft trennen; UI darf nicht allein Authority herstellen |
+| createProductionDepartment/saveProductionDepartment | Direktes departments INSERT/UPDATE, ein Leiterfeld; UI verlangt Admin | Abteilungsstammpflege, Leitungsbestellung durch GL/PL und Mitgliedschaft trennen; UI darf nicht allein Authority herstellen |
 | getCurrentEmployeeRecord/syncSupabaseSessionToApp/bootSupabase | Eigenes Profil SELECT*, Rolle aus Profil; breite nachfolgende Datenladepfade | Kein sicherer Mehrfachrollen-Boot. Neu versionierter serverseitiger Kontext und minimale Projektionen nötig |
 | persist()/Login-/Tasklogs | Planner-/Abwesenheits-/Taskdaten und breite Logs verbleiben als offene Sicherheitsbefunde | Privatspeicher/DOM/Subscriptions beim Rechteentzug bereinigen. RLS schützt keine bereits gespeicherten Browserdaten |
 | Aktuelle UI-Funktionen und Module | Viele direkte Rollenchecks und geschäftliche Zustandsprüfungen | Je Modul gezielt umstellen und Positivregression erhalten, kein neuer pauschaler Admin-only-Wrapper |
@@ -92,7 +93,7 @@ Die alten Module haben keine einheitliche neue Organisationsrolle. Bestehende un
 | ID | Bestätigte Vorgabe | Konzept-/Testanker |
 |---|---|---|
 | R01 | Sieben getrennte Organisationsrollen; Technik ohne automatische vertrauliche Personal-/Gesundheitsrechte | Matrix M1, Modell Rollen-/Datenprojektionen, Tests T01/T07 |
-| R02 | Nur GL ernennt PL; PL ernennt AL | Matrix M2, semantische Ernennungskommandos, T02 |
+| R02 | Ausschließlich GL ernennt/abberuft PL; GL/PL ernennen/abberufen AL; PL ernennt STV, AL benennt STV nur im eigenen Bereich | Matrix M2, semantische Ernennungskommandos, T02 |
 | R03 | Mehrfachabteilungen bei erhaltener Stammabteilung | Mitgliedschaften/Primärfeld getrennt, T03 |
 | R04 | AL kann mehrere Abteilungen gleichberechtigt leiten | Leitungszuweisungen statt Primärfilter, T04 |
 | R05 | Zusätzliche Mitgliedschaft verlangt ausdrückliche Rechteauswahl | Explizit Keine zusätzlichen Rechte oder konkrete Grants; Mitgliedschaft kein Grant, T03 |
@@ -104,8 +105,11 @@ Die alten Module haben keine einheitliche neue Organisationsrolle. Bestehende un
 | R11 | Eigene Stellvertretung pro Abteilung, operative Übernahme bei Leiterabwesenheit | Bereichsgebundene Vertreterzuweisung + vertrauenswürdige operative Verfügbarkeit, T11 |
 | R12 | Stellvertreter braucht Freigabe für Sonderrollenvergabe | Separater genehmigter Vergabeumfang, T12 |
 | R13 | Sind beide abwesend, übernimmt PL und wird benachrichtigt | Gesicherte Fallbackepisode + transaktionale Outbox, T13 |
-| R14 | Vertretungshandlungen protokollieren | Actor/Vertretener/Bereich/Quelle/Aktion, T11–T14 |
+| R14 | Jede Vertretung mit Person/Funktion/Abteilung/Aktion/Zeitpunkt; Leitung entsprechend Zuständigkeit, HR sämtliche Protokolle lesen | Matrix M6, Modell D6, T23 |
 | R15 | Alle bestehenden Fachprozesse/Identitäten/Tests erhalten | Modulweise Integrationsphasen, T15–T22; kein Implementierungsdiff in 8A |
+| R16 | Nur GL/PL veranlassen fachliche Protokollkorrektur, kurze Pflichtbegründung, Zusatz-/Korrekturaudit, Original/Historie innerhalb geltender Frist unveränderbar | Matrix M6, Modell D6, T24/T26 |
+| R17 | Konfigurierbare Dauer, Ereignisdatum/letzte Änderung, Auto/manuell; Default fünf Jahre ab letzter Änderung, manuelle Freigabe; gesetzlicher Vorrang | Modell D7, Entscheidungen O17, T25/T26 |
+| R18 | Nur GL/TA verwalten globale Aufbewahrungseinstellungen; Änderungen/Löschfreigaben auditieren, keine vertrauliche TA-Lesevollmacht | Matrix M6, Modell D7, T25 |
 
 ## 6. Konflikte mit den offenen Sicherheits-PRs
 
@@ -125,8 +129,26 @@ Die Dokumentation bereitet die Implementierung vor; **keine der neuen Modelltabe
 
 Technische Referenzen, geprüft am 13.11.2026: https://supabase.com/docs/guides/database/postgres/row-level-security ; https://www.postgresql.org/docs/17/ddl-rowsecurity.html . Kein Paket-/CLI-/Engineupdate, kein Deployment und kein produktiver Zugriff in 8A.
 
-## 8. Tatsächliche lokale Prüfung dieses Dokumentationsstands
+## 8. Historische lokale Prüfung des Erststands 0.16.5
 
 `npm ci --ignore-scripts`, beide einzelnen Syntaxprüfungen, `check:syntax`, `test:ci` (2), `test:qa` (20), `qa:check`, `test:integration` (5), `test:security` (55) und `qa:agent-server` sind bestanden. Links, Quellen-/Anforderungsabdeckung und die auf Version/Log begrenzte Appänderung wurden geprüft; `git diff --check` ist sauber.
 
-**BLOCKED_NOT_TESTED:** E2E meldet 773 fehlgeschlagene Browserstarts, Agentenseed einen; installierte Playwright-Browser fehlen. Zusätzlich traten ENOENT-Fehler beim Progress-Reporter auf; deren Ursache ist nicht unabhängig nachgewiesen und wird hier nicht als Anwendungsfehler oder behoben ausgegeben. Visualprüfung blockiert am vorgeschriebenen Container, native Originalrestore-/GoTrue-/PostgREST-Abnahme an fehlender genehmigter Runtime/Restore-/Fixturebasis. Keine Browserassertion und kein neuer Rollenfall wird als bestanden gezählt. Ein voriger unvollständiger Browserversuch ist kein grüner Lauf. Genaue Exitcodes und Log-Hashes stehen im [Prüfprotokoll](permissions-8a-validation.json). Für T01–T22 ist die fehlende Implementierung die bewusste Abnahmegrenze dieses Analyseauftrags.
+**BLOCKED_NOT_TESTED:** E2E meldet 773 fehlgeschlagene Browserstarts, Agentenseed einen; installierte Playwright-Browser fehlen. Zusätzlich traten ENOENT-Fehler beim Progress-Reporter auf; deren Ursache ist nicht unabhängig nachgewiesen und wird hier nicht als Anwendungsfehler oder behoben ausgegeben. Visualprüfung blockiert am vorgeschriebenen Container, native Originalrestore-/GoTrue-/PostgREST-Abnahme an fehlender genehmigter Runtime/Restore-/Fixturebasis. Keine Browserassertion und kein neuer Rollenfall wird als bestanden gezählt. Ein voriger unvollständiger Browserversuch ist kein grüner Lauf. Historische Exitcodes und Log-Hashes stehen im [Prüfprotokoll](permissions-8a-validation.json). Für T01–T26 ist die fehlende Implementierung die bewusste Abnahmegrenze dieses Analyseauftrags.
+
+## 9. Verbindliche fachliche Ergänzung zu PR #34
+
+Aktueller Ausgangspunkt unverändert geprüft: PR **#34**, Branch docs/modular-permissions-step8a, Commit **06b3a9ae41f9b096f0af5930c229242edede82c4**. Bestehenden Draft weiterführen, kein neuer PR. Quellen-/CI-JSON bleibt datierte Erstaufnahme; in dieser Ergänzung keine neue Originaldatenbank- oder CI-Freigabeprüfung.
+
+Am 13.11.2026 verbindlich beschlossen: GL allein ernennt/abberuft PL; GL/PL ernennen/abberufen AL; PL ernennt Abteilungs-STV, AL benennt STV im eigenen Bereich. Keine Selbsternennung, Selbstfreigabe oder indirekte Rechteausweitung. Sondergrantgrenzen und zusätzliche STV-Freigabe bleiben bestehen. GL→AL ist damit **nicht mehr offen**.
+
+Vertretungsprotokolle und append-only-Korrekturen: Leitung zuständigkeitsbezogen, HR gesamte Lesesicht ohne operative Bearbeitung; fachliche Korrektur nur GL/PL mit Pflichtbegründung, zusätzlichem Korrektureintrag und vollständigem Audit. Historie innerhalb geltender Frist unveränderbar. Technische Administration erhält weder fachliche Korrektur- noch Inhaltsvollmacht.
+
+Aufbewahrung für diese Protokolle: Dauer/Beginn/Verfahren konfigurierbar, **fünf Jahre ab letzter Änderung, manuelle Löschfreigabe** als Default. Nur GL/TA verwalten globale Parameter; jede Einstellungsänderung/Löschfreigabe auditiert, gesetzliche Pflichten vorrangig. Keine tatsächliche Löschung/Automatik umgesetzt. Konfigurationsverwaltung erlaubt TA kein Lesen vertraulicher Daten. Offene Löschfreigeber-/Fristdetails O17, STV-Abberufung/historische Lesescopes O18; übrige offene Fach-/Restore-/Betriebsfragen erhalten.
+
+Konzeptabgleich: keine Konflikte mit Audit-Unveränderbarkeit bei additiver Korrektur; keine Übertragung dieser neuen Rechte auf allgemeine Altdaten-/Journal-/Adminpfade. Alte Beschränkung GL→AL auf separate PL-Rolle in der Matrix gezielt durch den Beschluss ersetzt. Kein automatisches Mapping alter admin-Identitäten. Empfohlener erster 8B-Teil: isolierter Identity-/Actor-Vertrag mit synthetischen Positiv-/Negativtests, ohne vorzeitigen Rollenbootstrap oder Freischaltung (Plan P6).
+
+## 10. Lokale Prüfung der Ergänzung 0.16.6
+
+Erneut bestanden: `npm ci --ignore-scripts`, beide Pflicht-Syntaxprüfungen, `check:syntax`, `test:ci` **2/2**, `test:qa` **20/20**, `qa:check`, `test:integration` **5/5**, `test:security` **55/55**, `qa:agent-server`, Dokument-/Tabellen-/Link-/Anforderungskonsistenz, auf Version/Log begrenzter Appvergleich und `git diff --check`. Keine Bestandsassertion, Schutzhashes oder Bilder geändert.
+
+**BLOCKED_NOT_TESTED:** Voller E2E-Lauf meldet **773 fehlgeschlagene Browserstarts, 0 bestanden**, Agentenseed ebenfalls am fehlenden Browser blockiert. Visual-Guard Exit2 wegen fehlendem Pflichtcontainer; DB-Preflight Exit2 wegen fehlender genehmigter nativer Runtime/Restore-/Fixturebasis. Neue Ernennungs-/Protokoll-/Aufbewahrungsfälle sind nur geplante Tests (T01–T26), keine bestandene Implementierungsabnahme. Das [separate Ergänzungsprotokoll](permissions-8a-amendment-validation.json) hält aktuelle Exitcodes und Loghashes fest; die alten Prüfergebnisse bleiben historisch unverändert. Keine Produktivfreigabe.

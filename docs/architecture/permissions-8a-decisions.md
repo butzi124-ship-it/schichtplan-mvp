@@ -4,7 +4,7 @@
 
 ## Bereits verbindlich, nicht erneut zur Disposition gestellt
 
-- Nur GL ernennt PL; PL ernennt AL. Keine höhere Selbstvergabe.
+- Ausschließlich GL ernennt/abberuft PL. GL und PL ernennen/abberufen AL. PL ernennt Abteilungs-STV; AL benennt STV nur für eigene zuständige Abteilungen. Keine Selbsternennung, Selbstfreigabe oder indirekte Rechteausweitung.
 - Mehrfachmitgliedschaft und mehrere gleichberechtigt geleitete Abteilungen sind zulässig; eine organisatorische Stammabteilung bleibt.
 - Zusätzliche Mitgliedschaft braucht ausdrückliche Rechteentscheidung; Mitgliedschaft und Leitung getrennt.
 - Modulare Sonderrollen pro ausgewählten Abteilungen, befristet oder unbefristet; AL nur eigene zulässige Rechte im Zuständigkeitsbereich.
@@ -12,6 +12,8 @@
 - Jede Abteilung hat ihre Stellvertretung; Leiterabwesenheit aktiviert operative Übernahme. Sonderrollenvergabe durch STV braucht Freigabe. Sind beide abwesend, übernimmt PL und wird benachrichtigt. Vertretungshandlungen protokollieren.
 - Ausscheiden/Deaktivierung beendet den Zugriff sofort; kein Vertrauen auf alte Tokens allein.
 - HR erhält keine automatischen Produktions-/Werkzeugrechte; technischer Admin keine automatischen vertraulichen Personal-/Gesundheitsdaten.
+- Vertretungshandlungen mit Person/Funktion/Abteilung/Aktion/Zeitpunkt protokollieren. Leitung liest entsprechend Zuständigkeit, HR sämtliche Vertretungsprotokolle ausschließlich lesend. Nur GL/PL veranlassen fachliche Korrekturen, mit kurzer Pflichtbegründung und zusätzlichem nachvollziehbarem Korrektureintrag; Original/Korrekturhistorie innerhalb geltender Frist unveränderbar. Auch die Korrektur selbst vollständig protokollieren.
+- GL und TA verwalten globale Aufbewahrungseinstellungen; PL/AL/STV/HR/MA nicht. Dauer, Fristbeginn Ereignisdatum/letzte Änderung und automatisch/manuell wählbar. Default **fünf Jahre ab letzter Änderung, manuelle Löschfreigabe**. Einstellungsänderungen und Löschfreigaben protokollieren; gesetzliche Pflichten haben Vorrang. TA gewinnt dadurch keine vertraulichen Leserechte. Keine Löschung/Automatik in 8A.
 - BA-/OP-, Schicht-, Werkzeug-/Scanner- und sonstige bestehende Fachregeln/Tests bleiben erhalten.
 
 ## Entscheidungsregister
@@ -27,16 +29,24 @@
 | O07 GL/Modulowner | Review-SLA nach Handover, Zuständigkeit/Widerrufskompetenz, expliziter Sicherheitswiderruf einer Quellfreigabe und Nachfolgegrants | Normaler Leiterwechsel entzieht gültige Grants **nicht**. Reviewflag ist kein Ablauf. Sicherheitsereignis separat mit nachvollziehbarer Policy behandeln; weder Rechtewäsche noch pauschale Löschung |
 | O08 Produktion/Modulowner | Welche Sonderrechte erfordern Empfängermitgliedschaft? Welche bestehenden Maschinen-/OP-/Artikelautoritäten sind ausdrücklich zulässige Fremdbereichsfälle? | Kein universeller Primär-/Membershipfilter über bestätigte BA-/OP-Regeln. Kein automatischer Scope aus einem Grant; ungeklärte neue Fälle bleiben gesperrt |
 | O09 HR/Betreiber/Security | Wer darf Austritt, temporäre Sperre, technische Kontosperre und Reaktivierung auslösen; Schutz kritischer GL-/PL-Konten? Wie läuft Wiedereintritt? | Sofortiger Entzug ist fest. Keine automatische Wiederbelebung früherer privilegierter Sonderrollen nach Sperre/Austritt, bis Prozess bestätigt; keine alten Authbindungen ungeprüft wiederverwenden |
-| O10 HR/Datenschutz/Planung/GL | Personal-/Gesundheits-/Abwesenheitsfelder pro Aktion und Rolle, Schichtleserkreis/Publish, konkrete eigene Kontaktfelder, Aufbewahrung/Offline | Frühere D1–D4 bleiben insoweit offen. Minimalprojektionen; keine pauschalen medizinischen Detailrechte für GL/PL/AL/TA oder bloß aus HR-Titel |
+| O10 HR/Datenschutz/Planung/GL | Personal-/Gesundheits-/Abwesenheitsfelder pro Aktion und Rolle, Schichtleserkreis/Publish, konkrete eigene Kontaktfelder, Aufbewahrung anderer Datenklassen/Offline | Frühere D1–D4 bleiben insoweit offen; beschlossene Vertretungsprotokollrechte und konfigurierbarer Default sind hiervon ausgenommen. Minimalprojektionen; keine pauschalen medizinischen Detailrechte für GL/PL/AL/TA oder bloß aus HR-Titel |
 | O11 GL/HR/Betreiber | Unabhängige Zuordnung bestehender Accounts, alter admin/dept_admin/employee/scanner und vorhandener Modulauthorities zu Zielrechten | Kein automatisches admin→GL/PL/HR/TA. Bestehende erlaubte Prozesse als explizite Migrationsfälle erhalten; unklare Identitäten quarantinieren statt raten |
 | O12 GL/HR/Security | Zulässige Doppelrollen, Interessenkonflikte, Vieraugenfreigaben und unabhängiger Prüfer sensibler eigener Änderungen | HR/TA allein gibt keine Fachrechte. Separat bestätigte Zusatzrollen sind nicht pauschal verboten, aber keine Selbstfreigabe; Konfliktfälle bis Entscheidung nicht aktivieren |
 | O13 Produktion/Betreiber | Benachrichtigungskanal, verantwortlicher PL bei mehreren Kandidaten, Zustell-SLA/Dead-Letter-/Alarmzuständigkeit | Verpflichtende Benachrichtigung bleibt fest; deduplizierte dauerhafte Outbox vorgeschlagen. Kein Versand in 8A und kein neues Mitteilungszentrum |
 | O14 HR/Produktion | Wer pflegt Mitgliedschaften/Stammabteilung? Wirkung von Stammwechsel auf bereits getrennte Org-/Leitungs-/Vertreterfunktionen und zukünftige Wirksamkeitsdaten | Alle bisherigen Sonderrollen suspendieren ist fest; keine automatische Entfernung/Erzeugung anderer Funktionen und keine stille Rechtewahl |
 | O15 Produktion/Werkzeuge | Exakte Maschinen-/Werkzeug-/Inventur-/Journal-/Undo-/Fertigungszuständigkeiten bei mehreren Abteilungen und Ressourcentransfer | Frühere D7/D8 und bestehende Artikel-/OP-/Teilnehmerregeln erhalten. Kein Betätigungsrecht allein aus Abteilungszugehörigkeit |
 | O16 Betreiber/DBA | Originalrestore, Runtime-/API-/Session-/Ownernachweis, RPO/RTO/Backup/PITR, Wartung, technischer Break-Glass und Produktionsfreigaben | Keine Produktivmigration/Role-Aktivierung ohne eigene belegte Abnahme. TA-Approlle bekommt keine unbeschränkten DB-/Signing-/Backup-Schlüssel |
+| O17 GL/Datenschutz/Betreiber | Wer darf manuelle Löschung freigeben? Geprüfte gesetzliche Pflichtmatrix je Datenklasse, Sperren/Legal Holds, Versionseinfluss auf bestehende Fristen, genaue Bedeutung letzter Änderung und Frist-/Zeitzonengrenze, Backup-/Replikat-/Audit-Nachbehandlung | GL/TA-Konfigurationsrecht, fünf Jahre/letzte Änderung/manuell und gesetzlicher Vorrang **sind entschieden**. Kein automatisches Löschfreigaberecht ableiten. Bis Abnahme kein Löschkommando/Job; keine Fristverkürzung an gesetzlichen Sperren vorbei |
+| O18 GL/Produktion | Wer darf STV abberufen? Welche historische Zuständigkeit gilt beim Protokolllesen nach Handover, welche eigene/vertretende Sicht hat STV? Korrektur-/Konfigurations-/Löschfreigabeverfahren bei Betroffenheit des Actors | Ernennungs-/AL-Benennungsrechte, GL/PL-Abberufung von AL, GL-only-Abberufung von PL und HR-Gesamtsicht **sind entschieden**. Keine zusätzliche GL-STV-Vollmacht oder STV-Korrekturvollmacht erfinden; unklare Zusatzfälle fail-closed |
+
+## Abgleich der Ergänzung mit dem bisherigen Entwurf
+
+Der frühere Entwurf behandelte GL→AL als offen und benannte PL→AL ohne vollständigen Abberufungsvertrag. Dieser Teil ist durch den aktuellen Beschluss ersetzt, ebenso die bislang pauschal offene Vertretungsprotokoll-/Defaultaufbewahrung. O05 (wer die erforderliche STV-Sondergrantfreigabe erteilt) bleibt offen; die STV-Ernennung beantwortet diese Frage nicht. O01–O16 bleiben mit den oben gezielt eingeschränkten Fragestellungen erhalten. Keine Änderung historischer Sicherheitsberichte oder bestehenden Geschäftsrechte aus #28–#32.
 
 ## Priorisierung für die nächste Besprechung
 
 Zuerst O01/O02/O10/O11 (vertrauenswürdige Rollenwurzel, Organisationsscope und Datenschutz), parallel O03/O08/O14 für das Mehrfachabteilungsmodell. Danach O05/O06/O07 für Sonderrollen und O04/O13 für operative Vertretung/Benachrichtigung; O09/O12 als übergreifende Lifecycle-/Konfliktregeln. O15 pro betroffenem Modul vor dessen Adapterfreigabe. O16 blockiert jede spätere Produktivmaßnahme unabhängig von grünen isolierten Tests.
+
+O17/O18 vor späterer Aufbewahrungs-/Protokollaktivierung klären. Für den ersten 8B-Teil sind sie kein Grund, eine isolierte vertrauenswürdige Identitätsprüfung zu verzögern; dieser Teil darf noch keine Ernennungen, Protokollkorrekturen oder Löschungen freischalten.
 
 Entscheidungen erhalten mindestens Datum, Entscheider/Zuständigkeit, Anforderungs-/Aktions- und Scopebezug, Positiv-/Negativbeispiele, Auswirkung auf bestehenden Vertrag und Abnahmetests. Kein Chat-/Profilfeld allein ist ein serverseitiger Grant. Neue Entscheidung dokumentieren und separat implementieren, nicht dieses Konzept als bereits aktive Regel ausgeben.

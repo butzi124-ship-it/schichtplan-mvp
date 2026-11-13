@@ -6,13 +6,13 @@
 
 | Rolle | Bestätigter Kern | Kein automatischer Anspruch |
 |---|---|---|
-| Geschäftsleitung (GL) | Übergeordnete geschäftliche Verwaltung; **nur GL ernennt PL** | Kein implizites medizinisches Vollarchiv, kein SQL-/Service-Role-Zugriff; Detailfelder O10 |
-| Produktionsleiter (PL) | Übergeordnete operative Rechte im bestätigten Verantwortungsbereich; AL ernennen; Übernahme wenn Leitung und Stellvertretung abwesend sind | Kein HR-/Gesundheitsdatenrecht und keine Ernennung weiterer PL aus PL-Rolle allein |
-| Abteilungsleiter (AL) | Operative Leitung aller ausdrücklich zugewiesenen Abteilungen **gleichberechtigt**; nur eigene zulässige Rechte im eigenen Zuständigkeitsbereich weitergeben | Kein pauschaler Admin, keine fremden Abteilungen, keine Personalrollen-/Auth-Zuordnung oder PL-Ernennung |
+| Geschäftsleitung (GL) | Übergeordnete geschäftliche Verwaltung; **nur GL ernennt/abberuft PL**, GL ernennt/abberuft AL | Kein implizites medizinisches Vollarchiv, kein SQL-/Service-Role-Zugriff; Detailfelder O10 |
+| Produktionsleiter (PL) | Übergeordnete operative Rechte im bestätigten Verantwortungsbereich; AL ernennen/abberufen, Abteilungs-STV ernennen; Übernahme wenn Leitung und Stellvertretung abwesend sind | Kein HR-/Gesundheitsdatenrecht und keine Ernennung/Abberufung von PL aus PL-Rolle allein |
+| Abteilungsleiter (AL) | Operative Leitung aller ausdrücklich zugewiesenen Abteilungen **gleichberechtigt**; STV für eigene Abteilungen benennen; nur eigene zulässige Rechte im eigenen Zuständigkeitsbereich weitergeben | Kein pauschaler Admin, keine fremden Abteilungen, keine Personalrollen-/Auth-Zuordnung oder PL-Ernennung |
 | Stellvertreter (STV) | Eigene bestätigte Vertretung je Abteilung; bei Leiterabwesenheit dessen operative Rechte | Keine automatische allgemeine Rechtevergabe; Sonderrollenvergabe nur mit entsprechender Freigabe |
-| HR | Personalverwaltung nach explizitem Feld-/Verfahrensumfang | Keine automatischen Produktions-/Werkzeugrechte; medizinische Detailrechte separat O10 |
+| HR | Personalverwaltung nach explizitem Feld-/Verfahrensumfang; sämtliche Vertretungsprotokolle lesen, nicht operativ bearbeiten | Keine automatischen Produktions-/Werkzeugrechte; medizinische Detailrechte separat O10 |
 | Mitarbeiter (MA) | Normale bestätigte Mitarbeiter-/Selbstservicerechte, freigegebene Schichtansicht; betriebliche Fachaktionen nach E | Keine Sicherheitsfeld-/Fremdplan-/Rechteänderung; Person sein oder Mitgliedschaft haben ist keine universelle Modulrolle |
-| Technischer Administrator (TA) | Technische Systemverwaltung über definierte Systemfunktionen | **Keine automatischen vertraulichen Personal-/Gesundheitsdaten**, keine GL-/HR-/Produktionsvollmacht, kein freies SQL, keine produktiven DB-Credentials/Service-Role-Schlüssel im Appprofil |
+| Technischer Administrator (TA) | Technische Systemverwaltung über definierte Systemfunktionen; wie GL Aufbewahrungseinstellungen verwalten (M6) | **Keine automatischen vertraulichen Personal-/Gesundheitsdaten**, keine GL-/HR-/Produktionsvollmacht, kein freies SQL, keine produktiven DB-Credentials/Service-Role-Schlüssel im Appprofil |
 | Scannerkonto (bestehender technischer Sonderfall) | Nur ausdrücklich beauftragte Scan-/Werkzeugaktionen E | Keine neue achte Organisationshierarchie; keine Personal-/Planungs-/BA-Rechte durch Scannerstatus |
 
 Beschäftigtenstatus, aktiver Login, Organisationsrolle, Mitgliedschaft, Leitung und Modulgrant sind sechs getrennte Dimensionen. Eine HR-Person oder ein TA erhält Werkzeug-/Produktionserlaubnis nur über eine **zusätzlich ausdrücklich freigegebene** Fachzuweisung. Es gibt keine automatische Vererbung eines globalen employee-Werkzeugpakets an alle anderen Rollen. Vorhandene erlaubte Mitarbeiterbuchungen werden in der späteren Migration ausdrücklich erhalten, nicht kommentarlos entzogen. Rollenpakete/Kombinationen benötigen O06/O12.
@@ -23,9 +23,10 @@ TA ist eine **Anwendungsrolle**, nicht der unkontrollierte Infrastruktur-/Datenb
 
 | Aktion | GL | PL | AL | STV | HR | MA | TA |
 |---|---|---|---|---|---|---|---|
-| PL ernennen | **B: ausschließlich GL**, unabhängig bestätigt | – | – | – | – | – | – |
+| PL ernennen oder abberufen | **B: ausschließlich GL**, unabhängig bestätigt | – | – | – | – | – | – |
 | GL erstmals zuordnen/weitere GL ernennen | O01: unabhängiger Bootstrap/Nachfolge | – | – | – | – | – | Keine Selbsternennung |
-| AL für konkrete Abteilung ernennen | O: ggf. separate PL-Rolle | **B**, im bestätigten Organisationsscope | – | – | – | – | – |
+| AL für konkrete Abteilung ernennen oder abberufen | **B**, zuständiger Organisationsscope | **B**, zuständiger Organisationsscope | – | – | – | – | – |
+| STV für konkrete Abteilung ernennen/benennen | – (keine zusätzliche GL-Befugnis aus diesem Beschluss) | **B: ernennen**, zuständiger Bereich | **B: benennen**, nur eigene zuständige Abteilungen | – | – | – | – |
 | Eigene Leitungsabteilungen nutzen | Nur mit eigener Fachauthority | B: operative Oberverantwortung | **B: jede zugewiesene Abteilung gleich**, keine Primärpriorität | B: delegierter Bereich/Abwesenheitskontext | – | – | – |
 | Abteilungsmitgliedschaft ergänzen | O14/gesonderte Verwaltungsfreigabe | O14 | O14 | Nur ausdrücklich genehmigt | P: Personalprozess O14 | – | Keine fachliche Zuordnung aus Technikrolle |
 | Stammabteilung wechseln | O14 | O14 | Nicht aus Leitung allein | – | P: gesicherter Personalprozess O14 | – | – |
@@ -34,7 +35,7 @@ TA ist eine **Anwendungsrolle**, nicht der unkontrollierte Infrastruktur-/Datenb
 | Sonderrollen widerrufen | O07: verantwortlicher Rechteinhaber | O07 | Eigener autorisierter Bereich; Reviewzuständigkeit ist nicht automatisch jedes Widerrufsrecht | Nur ausdrückliche Freigabe | Nur passende HR-Zuständigkeit | Keine eigenen Rechte erhöhen/reaktivieren | Kein pauschaler fachlicher Override |
 | Austritt/Deaktivierung auslösen | Berechtigter Lifecycleprozess O09 | O09 | O09 | O09 | P: Personal-Lifecycleprozess O09 | – | P: getrennte technische Kontosperre, kein Personalstammzugriff O09 |
 
-GL darf PL nicht über ein editierbares employees.role oder einen allgemeinen Modulgrant ernennen. Reservierte Organisationsaktionen sind keine delegierbaren Modulsonderrechte. Mehrere Rollen einer Person bleiben getrennte, bestätigte Zuweisungen; die Aktion wird mit der tatsächlich tragenden Autorität auditiert. PL allein darf weder sich selbst noch andere zu PL ernennen. Keine höhere Selbstvergabe durch ein zweites Menü, eine REST-Payload, Templateänderung oder Multi-Scope-Batch.
+GL darf PL nicht über ein editierbares employees.role oder einen allgemeinen Modulgrant ernennen. Reservierte Organisationsaktionen sind keine delegierbaren Modulsonderrechte. Mehrere Rollen einer Person bleiben getrennte, bestätigte Zuweisungen; die Aktion wird mit der tatsächlich tragenden Autorität auditiert. PL allein darf weder sich selbst noch andere zu PL ernennen. **Keine Selbsternennung oder Selbstfreigabe**, auch nicht über kombinierte Rollen oder eine indirekte Ernennungskette. Die AL-Benennung einer STV ist als bereichsgebundene Zuweisung vorgesehen; keine zusätzliche PL-Bestätigung als angeblich beschlossene Voraussetzung erfinden. STV-Abberufung bleibt O18. Stellvertretung überträgt keine reservierten Ernennungs-/Abberufungsrechte. Keine höhere Selbstvergabe durch ein zweites Menü, eine REST-Payload, Templateänderung oder Multi-Scope-Batch.
 
 ## M3. Domänencapabilities und sensible Felder
 
@@ -53,7 +54,7 @@ GL darf PL nicht über ein editierbares employees.role oder einen allgemeinen Mo
 | production.work / confirm / route / manage | Bestehende Maschinen-/OP-/Abteilungs-/Teilnehmerberechtigungen E; AL/PL-Fachzuständigkeiten | Confirm ≠ Work ≠ Plan. Mitgliedschaft in Abteilung allein ersetzt keine Maschinen-/OP-Autorisierung |
 | setup.own / quantity.book / own_correct / case.resolve / lifecycle.close | Bestehende persönliche Teilnahme, OP- bzw. BA-Hauptauthority E | Betriebs-/Mengen-/Abschlussregeln nicht durch übergeordneten Rollentitel umgehen. BA-Hauptverantwortung ≠ operative OP-Verantwortung |
 | system.configuration / technical_sessions / sanitized_audit | TA nur definierte technische Aktionen P | Keine vertraulichen Profile, privaten Logs/Backups oder beliebige SQL-/RLS-/Grant-/Featureaktivierung aus dieser Approlle |
-| authorization.audit / review | Jeweils zweck- und bereichsbezogene Freigabe | Technischer Fehlercode/ID statt medizinischem Grund oder Vollpayload; niemand erhält Audit-Gesamtdaten allein durch Systemadministration |
+| authorization.audit / review | Jeweils zweck- und bereichsbezogene Freigabe | Technischer Fehlercode/ID statt medizinischem Grund oder Vollpayload; niemand erhält Audit-Gesamtdaten allein durch Systemadministration; Vertretungsprotokolle besitzen die ausdrücklich beschlossene eigene Lesematrix M6 |
 
 ## M4. Effektive Entscheidung und Nichtvererbung
 
@@ -74,3 +75,21 @@ Mitgliedschaft erzeugt keine Leitung, Leitung keine fremde Abteilung, Stammabtei
 - Wechsel Leitung A: gültige Sonderrollen A bleiben gültig. Die neue Leitung erhält Reviewaufgaben; fehlender Review ist ohne separat entschiedene Regel kein automatischer Ablauf.
 - Actor ausgeschieden/deaktiviert: keine neue Serveraktion unter alten JWTs/Grants. Bereits übertragene Daten lassen sich nicht zurückrufen; In-flight-/Cachegrenzen müssen technisch mitgetestet werden.
 - Beide Leitungsfunktionen A abwesend: berechtigter PL übernimmt operativ und erhält eine deduplizierte Benachrichtigung; ausführende Person, vertretene Funktion, A und Autoritätsquelle werden protokolliert.
+
+## M6. Vertretungsprotokolle, Korrektur und Aufbewahrung (B)
+
+Diese Regeln sind **verbindlich beschlossen am 13.11.2026**, keine offenen Rollenentscheidungen. Sie betreffen Vertretungsprotokolle und deren Korrekturhistorie; keine pauschale Änderung der Werkzeug-, BA-/OP-, Personal- oder Gesundheitsdatenaufbewahrung. Technisches Modell/Fristdetails siehe D6/D7 im [Datenmodell](permissions-8a-data-model.md).
+
+| Aktion | GL | PL | AL | STV | HR | MA | TA |
+|---|---|---|---|---|---|---|---|
+| Vertretungsprotokolle lesen | B: entsprechend Zuständigkeit | B: entsprechend Zuständigkeit | B: eigene Zuständigkeit | Keine automatische Leitungsgesamtsicht; gesonderter Scope O18 | **B: sämtliche**, rein lesend | Kein pauschales Recht | Kein Inhaltsleserecht aus Systemadministration |
+| Fachliche Protokollkorrektur veranlassen | **B: ausschließlich GL oder PL**, jeweilige Zuständigkeit | **B**, jeweilige Zuständigkeit | – | – | – | – | – |
+| Originaleintrag überschreiben/stillschweigend löschen | – | – | – | – | – | – | – |
+| Globale Aufbewahrungseinstellungen verwalten | **B** | – | – | – | – | – | **B**, nur Konfiguration |
+| Manuelle Löschfreigabe erteilen | O17: berechtigter Entscheider noch festzulegen, keine automatische Ableitung aus Konfigurationsrecht | Keine neue Berechtigung | Keine neue Berechtigung | Keine neue Berechtigung | Keine neue Berechtigung | Keine neue Berechtigung | Keine automatische Ableitung aus Konfigurationsrecht |
+
+Jede Vertretungshandlung: ausführende Person, vertretene Funktion, betroffene Abteilung, Aktion, Zeitpunkt. Jede fachliche Korrektur braucht eine **verpflichtende kurze Begründung**, einen zusätzlichen referenzierten Korrektureintrag und vollständige Protokollierung der Korrektur selbst. Original und Kette bleiben während der geltenden Aufbewahrungsfrist unveränderbar. Ein fachlicher Korrektureintrag ist keine Änderung einer ausgeführten Schicht-/Werkzeug-/Produktionsbuchung und keine neue operative Berechtigung.
+
+HR liest alle Vertretungsprotokolle einschließlich zugehöriger Korrekturen, ohne sie operativ zu bearbeiten; kein zusätzliches Rohdaten-/Diagnoseleserecht. TA verwaltet Einstellungen, darf daraus weder Protokollinhalte lesen noch fachliche Korrekturen veranlassen. Nur GL/PL dürfen fachliche Korrekturen veranlassen; diese reservierte Aktion darf nicht über Modulgrant oder operative Stellvertretung weitergegeben werden. Technische Wartung ist kein fachlicher Korrekturweg.
+
+Aufbewahrung ist konfigurierbar: Dauer; Beginn **Ereignisdatum oder letzte Änderung**; Verfahren **automatisch nach Fristablauf oder manuelle Freigabe**. **Grundeinstellung: fünf Jahre ab letzter Änderung, manuelle Löschfreigabe.** Jede Einstellungsänderung und Löschfreigabe wird protokolliert. Gesetzliche Aufbewahrungs-/Datenschutzpflichten haben Vorrang, die konkrete geprüfte Pflichtmatrix bleibt O17. Konfigurationsrecht erzeugt kein vertrauliches Leserecht. In 8A weder tatsächliche Löschung noch automatische Löschfunktion implementiert oder aktiviert.
