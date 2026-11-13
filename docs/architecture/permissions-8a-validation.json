@@ -1,0 +1,125 @@
+{
+  "capturedAt": "2026-11-13T08:39:42.393704+00:00",
+  "version": "0.16.5",
+  "baselineSha": "67ac80ac1b649fbdf975aeb2d005f827cda8a8a1",
+  "scope": "Documentation only plus mandatory APP_VERSION/VERSION_LOG",
+  "productionAccess": false,
+  "newAuthorizationActivated": false,
+  "checks": [
+    {
+      "command": "npm ci --ignore-scripts",
+      "status": "PASS",
+      "note": "12 packages installed; lockfile unchanged"
+    },
+    {
+      "command": "npm run check:syntax",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": null,
+      "logSha256": "b1281a5b1384edd0b110d31560168afa6965cfa2be9e8786b6d0db097fdcb390"
+    },
+    {
+      "command": "npm run test:ci",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": 2,
+      "logSha256": "a239d01e31b49e5b3bdca73ecfb33406fd55bd56a95100deac67f3cb0e9d1bca"
+    },
+    {
+      "command": "npm run test:qa",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": 20,
+      "logSha256": "75c1e4a44739ae0e470b2701ba531127dff3f2dda248d1c0c754d8208d4e988f"
+    },
+    {
+      "command": "npm run qa:check",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": null,
+      "logSha256": "0530fbcfd505ad271f541db9a2409968450e011c9f67a27b134ad37809f780bb"
+    },
+    {
+      "command": "npm run test:integration",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": 5,
+      "logSha256": "fbb7618c7e238dbc6942e1e505ad4c028f01edb0af3807dbc746b051d79cd4b4"
+    },
+    {
+      "command": "npm run test:security",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": 55,
+      "logSha256": "09fa29a4ad49a8b91bd25c40e1adc42ce81ce26f968fa42dafef3ac1d92222f5"
+    },
+    {
+      "command": "npm run qa:agent-server",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": null,
+      "logSha256": "f3a365145b195cc178a6765a046d6f07a7495fa87f7093752ce3631662018319"
+    },
+    {
+      "command": "npm run test:e2e",
+      "status": "BLOCKED_NOT_TESTED",
+      "exitCode": 1,
+      "reason": "773 cases reported failed: browserType.launch missing installed Playwright executables; no application assertions could execute. Additional progress.json.tmp rename ENOENT reporter errors observed, cause not independently proven; not repaired in documentation scope. An earlier incomplete attempt is not counted as a passed run.",
+      "logSha256": "ddf03f1a0b0163c72ae3a31534a7c06d5a9397c009191bf49024a2ff0de04977"
+    },
+    {
+      "command": "npm run test:agents",
+      "status": "BLOCKED_NOT_TESTED",
+      "exitCode": 1,
+      "reason": "1 seed test failed at browser launch because Playwright executable is missing.",
+      "logSha256": "893d561167222600256dd1f1f38a916485b44755a6020d53d8d9ff63b7f00f8a"
+    },
+    {
+      "command": "npm run test:visual",
+      "status": "BLOCKED_NOT_TESTED",
+      "exitCode": 2,
+      "reason": "Pinned mcr.microsoft.com/playwright:v1.62.1-noble container unavailable; guard exits 2, no reference images changed.",
+      "logSha256": "b6690e8a6ceef9102355e32da6f958e53d985d1634b1f627e2bf25381140435d"
+    },
+    {
+      "command": "npm run test:db:preflight",
+      "status": "BLOCKED_NOT_TESTED",
+      "exitCode": 2,
+      "reason": "No approved loopback Supabase configuration/runtime, independent authoritative restore and reviewed real-role fixture set. Exit 2 is not a native database acceptance.",
+      "logSha256": "e227e6565c945320197589370aeebbc4c53501d8046558895f8762e2bb24ea95"
+    },
+    {
+      "command": "node --check schichtplan_mvp.js; node --check tests/smoke.spec.js",
+      "status": "PASS"
+    },
+    {
+      "command": "documentation consistency review",
+      "status": "PASS",
+      "note": "5 Markdown documents, local links, R01-R15 / O01-O16 / T01-T22 coverage, baseline SHA, observed existing roles/scalars and future proposal distinction checked."
+    },
+    {
+      "command": "application business logic comparison",
+      "status": "PASS",
+      "note": "Byte-identical to pinned PR32 after removing only new version/log entry; no SQL, tests, snapshots, dependencies, modules or flags changed."
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASS"
+    },
+    {
+      "command": "new modular-role model T01-T22",
+      "status": "BLOCKED_NOT_TESTED",
+      "reason": "Planned only. Not implemented or activated; no new database objects or runtime tests claimed."
+    },
+    {
+      "command": "native original-restore / GoTrue / PostgREST / multiconnection acceptance",
+      "status": "BLOCKED_NOT_TESTED",
+      "reason": "Approved full original restore and matching local native runtime unavailable. Existing 55 PGlite/security tests are a separate evidence level."
+    }
+  ],
+  "limitations": [
+    "Baseline PR32 CI statuses are historical metadata, not acceptance of this PR.",
+    "No live Supabase or production account access performed.",
+    "No current-PR CI polling or dispatch will occur after draft creation."
+  ]
+}

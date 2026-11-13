@@ -1,0 +1,588 @@
+{
+  "capturedAt": "2026-11-13T08:20:30.288Z",
+  "baselinePR": 32,
+  "baselineSha": "67ac80ac1b649fbdf975aeb2d005f827cda8a8a1",
+  "issue": {
+    "number": 33,
+    "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/issues/33",
+    "updatedAt": "2026-11-12T15:41:25Z",
+    "comments": 0,
+    "interpretation": "Handover only; present user Step8A authorizes documentation, not business implementation"
+  },
+  "openPRNumbers": [
+    32,
+    31,
+    30,
+    29,
+    28,
+    27,
+    26,
+    25,
+    24,
+    23,
+    22,
+    21,
+    20,
+    19,
+    18,
+    16,
+    15
+  ],
+  "pullRequests": [
+    {
+      "number": 32,
+      "title": "[Draft] Schritt 7: Originalkatalog bestätigt, Mitarbeiterfix und Rechtehärtung aller31 Tabellen / v0.16.4",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/32",
+      "head": "security/original-audit-step7",
+      "head_sha": "67ac80ac1b649fbdf975aeb2d005f827cda8a8a1",
+      "base": "security/rls-migration-step6",
+      "base_sha": "1238bf0c9467f1d6bf5e83dd8e0aa8520ef4b7c7",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 31,
+      "title": "[Draft] Schritt 6: bestätigte Originalrechte und atomarer isolierter RLS-Reviewkandidat / v0.16.3",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/31",
+      "head": "security/rls-migration-step6",
+      "head_sha": "1238bf0c9467f1d6bf5e83dd8e0aa8520ef4b7c7",
+      "base": "security/original-schema-step5",
+      "base_sha": "35a56bb07e58b7c1a12fbc0654af064740dd292e",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 30,
+      "title": "[Draft] Schritt 5: Originalschema-Nachweis und kontrollierte Sicherheitsmigration / v0.16.2",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/30",
+      "head": "security/original-schema-step5",
+      "head_sha": "35a56bb07e58b7c1a12fbc0654af064740dd292e",
+      "base": "security/permissions-integration-step4",
+      "base_sha": "2e46d3a63c339389f08f16db67d1a9236216e130",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 29,
+      "title": "[Draft] Schritt 4: QA-Zeitbudget und isolierte sichere Berechtigungsintegration / v0.16.1",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/29",
+      "head": "security/permissions-integration-step4",
+      "head_sha": "2e46d3a63c339389f08f16db67d1a9236216e130",
+      "base": "security/rls-permissions-step3",
+      "base_sha": "dd64a8e2e6a5c489cc2c98d0fa7862d59cada340",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 28,
+      "title": "[Draft] Sicherheitsfreigabe Schritt 3: isolierter RLS-/Berechtigungskandidat / v0.16.0",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/28",
+      "head": "security/rls-permissions-step3",
+      "head_sha": "dd64a8e2e6a5c489cc2c98d0fa7862d59cada340",
+      "base": "feat/home-dashboard-v0153",
+      "base_sha": "efeb9f5769056d490737c6d4327bb4ae9bc13e73",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 27,
+      "title": "[Draft] Responsive Humbel-Startseite: Browsernavigation korrigiert / v0.15.5",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/27",
+      "head": "feat/home-dashboard-v0153",
+      "head_sha": "efeb9f5769056d490737c6d4327bb4ae9bc13e73",
+      "base": "fix/production-integration-step2",
+      "base_sha": "cf7d3bf2b06e895e72e698857327e1486cadbf4d",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 26,
+      "title": "[Draft] Technische Integrationskorrekturen: AFTER-Trigger und native Testpfade / v0.15.2",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/26",
+      "head": "fix/production-integration-step2",
+      "head_sha": "cf7d3bf2b06e895e72e698857327e1486cadbf4d",
+      "base": "docs/production-release-step1",
+      "base_sha": "5abcb9265483c5eac275e98a2c80248958e7d88f",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 25,
+      "title": "[Draft] Produktivvorbereitung Schritt 1: Sicherheits- und Datenbankfreigabebericht / v0.15.1",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/25",
+      "head": "docs/production-release-step1",
+      "head_sha": "5abcb9265483c5eac275e98a2c80248958e7d88f",
+      "base": "feature/ba-initial-responsibility",
+      "base_sha": "c4b75295ab4888ac759abaeec844991a30db40db",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 24,
+      "title": "[Draft] Automatische BA-Hauptverantwortung aus OP-1-Abteilung / v0.15.0",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/24",
+      "head": "feature/ba-initial-responsibility",
+      "head_sha": "c4b75295ab4888ac759abaeec844991a30db40db",
+      "base": "feature/ba-op-phase5",
+      "base_sha": "05b57de2f1dfcedf5575a4064d8ff79acafa0d1b",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 23,
+      "title": "[Draft] Phase 5: BA-Mengen, Nachfertigung, Klärfälle und ausdrückliche Abschlüsse / v0.14.2",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/23",
+      "head": "feature/ba-op-phase5",
+      "head_sha": "05b57de2f1dfcedf5575a4064d8ff79acafa0d1b",
+      "base": "feature/ba-op-phase4",
+      "base_sha": "72034961668e32b7503a7980f3382c5deb4a84e6",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 22,
+      "title": "[Draft] Phase 4: bestehenden Stückzahlzähler mit BA-OPs und Maschinenabschnitten verknüpfen / v0.13.2",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/22",
+      "head": "feature/ba-op-phase4",
+      "head_sha": "72034961668e32b7503a7980f3382c5deb4a84e6",
+      "base": "feature/ba-op-phase3",
+      "base_sha": "6e7bd8a85c06b4cf73bb2f94114200b4e3d8dbde",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 21,
+      "title": "[Draft] Phase 3: persönliche und gemeinsame Rüstzeiterfassung / v0.12.4",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/21",
+      "head": "feature/ba-op-phase3",
+      "head_sha": "6e7bd8a85c06b4cf73bb2f94114200b4e3d8dbde",
+      "base": "feature/ba-op-phase2",
+      "base_sha": "e276270adc704fc9033e304ff5ad81db56593ecd",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 20,
+      "title": "[Draft] Phase 2: OP-Maschinenbindung, Abteilungsverantwortung und Rückgabe / v0.11.5",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/20",
+      "head": "feature/ba-op-phase2",
+      "head_sha": "e276270adc704fc9033e304ff5ad81db56593ecd",
+      "base": "feature/ba-op-phase1",
+      "base_sha": "8348fadc7bd1f9042b4147bd47568cb484547e3a",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 19,
+      "title": "[Draft] Phase 1: BA-Anlage an erster OP mit drei Pflichtfeldern / v0.10.1",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/19",
+      "head": "feature/ba-op-phase1",
+      "head_sha": "8348fadc7bd1f9042b4147bd47568cb484547e3a",
+      "base": "docs/ba-op-shopfloor-requirements-20261107",
+      "base_sha": "91d13e4bed23174625a808213f6f0517ea046891",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 18,
+      "title": "[Draft] Fachliche Spezifikation BA/OP, Rüstzeiten und Stückzahllogik (07.11.2026) / v0.9.1",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/18",
+      "head": "docs/ba-op-shopfloor-requirements-20261107",
+      "head_sha": "91d13e4bed23174625a808213f6f0517ea046891",
+      "base": "main",
+      "base_sha": "e764cf2e93382e847627d8bc7c802b02ff70c375",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 16,
+      "title": "[Draft] Legacy-RLS-Sicherheitsreview – isolierter Testkandidat / v0.9.14",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/16",
+      "head": "feature/legacy-security-hardening-review",
+      "head_sha": "bf14f4ed32fd8dc8e4e8374a5faa0c51a29416c7",
+      "base": "feature/isolated-db-acceptance",
+      "base_sha": "25e9a6914e38fc791d9ecad13d92a45e30d19bb3",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 15,
+      "title": "[Draft] Isolierte Supabase-Abnahme #7–#10 – originalgetreuere Metadaten / v0.9.13",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/15",
+      "head": "feature/isolated-db-acceptance",
+      "head_sha": "25e9a6914e38fc791d9ecad13d92a45e30d19bb3",
+      "base": "main",
+      "base_sha": "e764cf2e93382e847627d8bc7c802b02ff70c375",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 14,
+      "title": "[Draft] #10 Fertigstellungs- und Terminprognose – v0.9.0, deaktiviert",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/14",
+      "head": "feature/issue-10-forecast",
+      "head_sha": "470d16b1db9acca4a9e13359011107685ec8f61b",
+      "base": "main",
+      "base_sha": "39de41b3ace3f2207b2d2e66cc119eddfd7175a7",
+      "state": "closed",
+      "draft": false,
+      "merged": true
+    },
+    {
+      "number": 13,
+      "title": "0.8.3: OP-Maschinenübersicht mit physischer Materialfreigabe und Audit (#9)",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/13",
+      "head": "feature/issue-9-machine-readiness",
+      "head_sha": "9199c93e3262e4ac7ad078f771a652c1d8a92e50",
+      "base": "main",
+      "base_sha": "c6f7170ce72462aae47a37a0029f9a863e68ca83",
+      "state": "closed",
+      "draft": false,
+      "merged": true
+    },
+    {
+      "number": 12,
+      "title": "0.7.0: Operationspläne, BA-Snapshots und BA.OP-Barcodes (#8)",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/12",
+      "head": "feature/issue-8-operations",
+      "head_sha": "d8defca58df6e6dbf987ccbf46449bf5b05f9aff",
+      "base": "main",
+      "base_sha": "77c9cc96b75839e59f83d09ad903add4ae2b61e7",
+      "state": "closed",
+      "draft": false,
+      "merged": true
+    },
+    {
+      "number": 11,
+      "title": "0.6.3: Artikelstamm nach PR #2 abschließend gegen main prüfen (#7)",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/11",
+      "head": "feature/issue-7-article-master",
+      "head_sha": "fda77b53a4c2eae48896b9acde5b01e105b5512e",
+      "base": "main",
+      "base_sha": "1997c62329fde2997c73abf13de03a052a3cd0f5",
+      "state": "closed",
+      "draft": false,
+      "merged": true
+    },
+    {
+      "number": 5,
+      "title": "TEST ONLY: verify main's required e2e check blocks a failing PR",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/5",
+      "head": "test/issue-1-required-e2e-gate",
+      "head_sha": "cfe44ae5e6a4377e4cdfe915219a6a2787c24f70",
+      "base": "main",
+      "base_sha": "cb15e8e12279a6def4806da20b062cfc6e04565c",
+      "state": "closed",
+      "draft": false,
+      "merged": false
+    },
+    {
+      "number": 3,
+      "title": "CI und geprüften Issue/PR-Ablauf vorbereiten (#1)",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/3",
+      "head": "chore/issue-1-development-ci",
+      "head_sha": "9075de4ee3dcd43f8e9d187db64ec97d875c94ac",
+      "base": "main",
+      "base_sha": "cb15e8e12279a6def4806da20b062cfc6e04565c",
+      "state": "closed",
+      "draft": false,
+      "merged": true
+    },
+    {
+      "number": 2,
+      "title": "0.5.19: QA mit geschütztem main synchronisieren und Pflichtcheck e2e erhalten",
+      "url": "https://github.com/butzi124-ship-it/schichtplan-mvp/pull/2",
+      "head": "codex/qa-0.5.17",
+      "head_sha": "a46d089546178fd9a5afb8ab913c736e2f8f51dd",
+      "base": "main",
+      "base_sha": "1ac495261bb38912507ef1cdb1205aa0eb07c66b",
+      "state": "closed",
+      "draft": false,
+      "merged": true
+    }
+  ],
+  "baselineWorkflowRuns": [
+    {
+      "id": 43224389227,
+      "name": "Security Step 7 Isolated Original Audit",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 2,
+      "jobs_url": "https://api.github.com/repos/butzi124-ship-it/schichtplan-mvp/actions/runs/43224389227/jobs",
+      "logs_url": "https://api.github.com/repos/butzi124-ship-it/schichtplan-mvp/actions/runs/43224389227/logs",
+      "workflow_id": 416025494
+    },
+    {
+      "id": 43224390230,
+      "name": "Security Step 6 Isolated Review",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 4,
+      "jobs_url": "https://api.github.com/repos/butzi124-ship-it/schichtplan-mvp/actions/runs/43224390230/jobs",
+      "logs_url": "https://api.github.com/repos/butzi124-ship-it/schichtplan-mvp/actions/runs/43224390230/logs",
+      "workflow_id": 415919883
+    },
+    {
+      "id": 43224389142,
+      "name": "BA and OP Isolated Acceptance",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 68,
+      "jobs_url": "https://api.github.com/repos/butzi124-ship-it/schichtplan-mvp/actions/runs/43224389142/jobs",
+      "logs_url": "https://api.github.com/repos/butzi124-ship-it/schichtplan-mvp/actions/runs/43224389142/logs",
+      "workflow_id": 410285670
+    },
+    {
+      "id": 43224389151,
+      "name": "Security Step 4 Isolated Integration",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 8,
+      "jobs_url": "https://api.github.com/repos/butzi124-ship-it/schichtplan-mvp/actions/runs/43224389151/jobs",
+      "logs_url": "https://api.github.com/repos/butzi124-ship-it/schichtplan-mvp/actions/runs/43224389151/logs",
+      "workflow_id": 415736824
+    },
+    {
+      "id": 43224389238,
+      "name": "Security Step 3 Isolated Candidate",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 10,
+      "jobs_url": "https://api.github.com/repos/butzi124-ship-it/schichtplan-mvp/actions/runs/43224389238/jobs",
+      "logs_url": "https://api.github.com/repos/butzi124-ship-it/schichtplan-mvp/actions/runs/43224389238/logs",
+      "workflow_id": 415665734
+    },
+    {
+      "id": 43224389154,
+      "name": "QA and Release",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 187,
+      "jobs_url": "https://api.github.com/repos/butzi124-ship-it/schichtplan-mvp/actions/runs/43224389154/jobs",
+      "logs_url": "https://api.github.com/repos/butzi124-ship-it/schichtplan-mvp/actions/runs/43224389154/logs",
+      "workflow_id": 325419109
+    }
+  ],
+  "baselineQAJobs": [
+    {
+      "id": 131203717326,
+      "name": "QA Integrity",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 131203717649,
+      "name": "Functional Browsers",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 131203717796,
+      "name": "Visual Regression",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 131212288554,
+      "name": "Quality Gate",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 131212335106,
+      "name": "e2e",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 131212391048,
+      "name": "Deploy Tested Main",
+      "status": "completed",
+      "conclusion": "skipped"
+    }
+  ],
+  "baselineStep7Jobs": [
+    {
+      "id": 131203717254,
+      "name": "security-contract",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 131204006538,
+      "name": "Step7 employee and all-table ACL proof after earlier acceptances",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "limitations": [
+    "Workflow API statuses only, no new artifact/test-count audit",
+    "No production DB query or production state revalidation in Step8A; reuse dated original snapshot2026-11-12",
+    "No dispatch, rerun, merge or deployment"
+  ],
+  "newRoleModelImplemented": false,
+  "remoteBranches": [
+    {
+      "name": "origin",
+      "sha": "e764cf2e93382e847627d8bc7c802b02ff70c375",
+      "ancestorOfBase32": true
+    },
+    {
+      "name": "origin/chore/issue-1-development-ci",
+      "sha": "9075de4ee3dcd43f8e9d187db64ec97d875c94ac",
+      "ancestorOfBase32": false
+    },
+    {
+      "name": "origin/codex/qa-0.5.17",
+      "sha": "a46d089546178fd9a5afb8ab913c736e2f8f51dd",
+      "ancestorOfBase32": true
+    },
+    {
+      "name": "origin/docs/ba-op-shopfloor-requirements-20261107",
+      "sha": "91d13e4bed23174625a808213f6f0517ea046891",
+      "ancestorOfBase32": true
+    },
+    {
+      "name": "origin/docs/production-release-step1",
+      "sha": "5abcb9265483c5eac275e98a2c80248958e7d88f",
+      "ancestorOfBase32": true
+    },
+    {
+      "name": "origin/feat/home-dashboard-v0153",
+      "sha": "efeb9f5769056d490737c6d4327bb4ae9bc13e73",
+      "ancestorOfBase32": true
+    },
+    {
+      "name": "origin/feature/ba-initial-responsibility",
+      "sha": "c4b75295ab4888ac759abaeec844991a30db40db",
+      "ancestorOfBase32": true
+    },
+    {
+      "name": "origin/feature/ba-op-phase1",
+      "sha": "8348fadc7bd1f9042b4147bd47568cb484547e3a",
+      "ancestorOfBase32": true
+    },
+    {
+      "name": "origin/feature/ba-op-phase2",
+      "sha": "e276270adc704fc9033e304ff5ad81db56593ecd",
+      "ancestorOfBase32": true
+    },
+    {
+      "name": "origin/feature/ba-op-phase3",
+      "sha": "6e7bd8a85c06b4cf73bb2f94114200b4e3d8dbde",
+      "ancestorOfBase32": true
+    },
+    {
+      "name": "origin/feature/ba-op-phase4",
+      "sha": "72034961668e32b7503a7980f3382c5deb4a84e6",
+      "ancestorOfBase32": true
+    },
+    {
+      "name": "origin/feature/ba-op-phase5",
+      "sha": "05b57de2f1dfcedf5575a4064d8ff79acafa0d1b",
+      "ancestorOfBase32": true
+    },
+    {
+      "name": "origin/feature/isolated-db-acceptance",
+      "sha": "25e9a6914e38fc791d9ecad13d92a45e30d19bb3",
+      "ancestorOfBase32": false
+    },
+    {
+      "name": "origin/feature/issue-10-forecast",
+      "sha": "470d16b1db9acca4a9e13359011107685ec8f61b",
+      "ancestorOfBase32": true
+    },
+    {
+      "name": "origin/feature/issue-7-article-master",
+      "sha": "fda77b53a4c2eae48896b9acde5b01e105b5512e",
+      "ancestorOfBase32": true
+    },
+    {
+      "name": "origin/feature/issue-8-operations",
+      "sha": "d8defca58df6e6dbf987ccbf46449bf5b05f9aff",
+      "ancestorOfBase32": true
+    },
+    {
+      "name": "origin/feature/issue-9-machine-readiness",
+      "sha": "9199c93e3262e4ac7ad078f771a652c1d8a92e50",
+      "ancestorOfBase32": true
+    },
+    {
+      "name": "origin/feature/legacy-security-hardening-review",
+      "sha": "bf14f4ed32fd8dc8e4e8374a5faa0c51a29416c7",
+      "ancestorOfBase32": false
+    },
+    {
+      "name": "origin/fix/production-integration-step2",
+      "sha": "cf7d3bf2b06e895e72e698857327e1486cadbf4d",
+      "ancestorOfBase32": true
+    },
+    {
+      "name": "origin/main",
+      "sha": "e764cf2e93382e847627d8bc7c802b02ff70c375",
+      "ancestorOfBase32": true
+    },
+    {
+      "name": "origin/security/original-audit-step7",
+      "sha": "67ac80ac1b649fbdf975aeb2d005f827cda8a8a1",
+      "ancestorOfBase32": true
+    },
+    {
+      "name": "origin/security/original-schema-step5",
+      "sha": "35a56bb07e58b7c1a12fbc0654af064740dd292e",
+      "ancestorOfBase32": true
+    },
+    {
+      "name": "origin/security/permissions-integration-step4",
+      "sha": "2e46d3a63c339389f08f16db67d1a9236216e130",
+      "ancestorOfBase32": true
+    },
+    {
+      "name": "origin/security/rls-migration-step6",
+      "sha": "1238bf0c9467f1d6bf5e83dd8e0aa8520ef4b7c7",
+      "ancestorOfBase32": true
+    },
+    {
+      "name": "origin/security/rls-permissions-step3",
+      "sha": "dd64a8e2e6a5c489cc2c98d0fa7862d59cada340",
+      "ancestorOfBase32": true
+    },
+    {
+      "name": "origin/test/issue-1-required-e2e-gate",
+      "sha": "cfe44ae5e6a4377e4cdfe915219a6a2787c24f70",
+      "ancestorOfBase32": false
+    }
+  ],
+  "mainSha": "e764cf2e93382e847627d8bc7c802b02ff70c375",
+  "sourceFiles": {
+    "schichtplan_mvp.js": "8573c2a011817c11143816a16836f80d5f53fd80",
+    "js/secure-access.js": "381287f46286cf4a0ad958d42aea745cb082a0f0",
+    "supabase/review/security-step3-isolated.sql": "2248d002369f002c9f5425e3ac2b6936fb698c32",
+    "supabase/review/security-step4-integration-isolated.sql": "f2243a71444b997051c63c8ffb22165f06cf2790",
+    "supabase/review/security-step6-isolated.sql": "bc005e1523915552db18364c0d6977bf6d1f6fd1",
+    "supabase/review/security-step7-isolated.sql": "e34ea26b5879044715a0da5f4171438f624a3740",
+    "supabase/review/ba-initial-responsibility.sql": "ff15fccb2d51eaeadfad8d2787326ed596bfb3fd",
+    "supabase/review/op-routing-phase2.sql": "7374c84e80b3e618eae7a3cca01250e3d90c02a5",
+    "supabase/review/issue-9-machine-readiness.sql": "2b0b8a655fb3944ea1000d9d6ee7c60bcdd39acc",
+    "supabase/migrations/20261106023103_article_master_phase1.sql": "3b06fe617d3f8b86199213d0b6cfdbb54295efb2",
+    "docs/qa/security-step5-access-plan.json": "a857aa4bed9578713eb0ab5978c5e427c38134cf",
+    "docs/qa/security-step7-original-catalog.json.gz": "b9a80d52e9fba69697c8f968a5af73cfcb7c81c4"
+  }
+}
