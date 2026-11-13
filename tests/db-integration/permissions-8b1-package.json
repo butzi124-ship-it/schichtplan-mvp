@@ -1,0 +1,14 @@
+{
+  "version": "8b1-v1",
+  "inputSha256": "28a73b4c096e1ddd9711bd19e0372b19b48a2c8601b0eb8224024fe1b2ad9b39",
+  "roles": [
+    "executive",
+    "production_manager",
+    "department_head",
+    "deputy",
+    "hr",
+    "employee",
+    "technical_admin"
+  ],
+  "scope": "Isolated review only; no original restore or production enrollment"
+}
