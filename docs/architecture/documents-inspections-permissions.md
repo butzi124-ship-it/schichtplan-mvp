@@ -1,5 +1,7 @@
 # Berechtigungen, Prüfentscheidungen und Korrekturen
 
+> **Fortschreibung 14.11.2026:** Für dynamische Fertigungsprüfungen gelten die jüngeren [verbindlichen Qualitätsregeln](../requirements/digital-quality-2026-11-14.md) und die [Änderungs-/Entscheidungsmatrix](digital-quality-acceptance.md). Insbesondere Gelb ohne Vorgesetztenfreigabe, Rotentscheidung AL/berechtigter STV, Qualitäts-Gutteilgate, Nummerierung, Cockpit und Firmenisolation ersetzen abweichende Zielannahmen des Grundentwurfs aus #37. Bestehende Implementierung und historische Nachweise werden dadurch nicht geändert. Das bisherige JSON-Prüfprotokoll bleibt historisch auf #37 bezogen; aktuelle Ergebnisse siehe [neues Prüfprotokoll](digital-quality-validation.json).
+
 Teil des [Konzepts](documents-inspections.md); B/P/O gelten wie dort. **Keine dieser Berechtigungen wird aktiviert.** Grundlage [8A-Matrix](permissions-8a-matrix.md), [8A-Entscheidungen](permissions-8a-decisions.md), [8B2-Grenzen](../security/permissions-8b2.md). QS ist ein explizites Modulprofil, keine neue Organisationsrangstufe. Mitarbeiter mit mehreren Rollen handeln unter konkret nachgewiesener Authority; keine Selbstfreigabe oder indirekte Rechteausweitung.
 
 ## 1. Verbindliche neue QS-Regeln (B)
@@ -28,7 +30,7 @@ QS-weites BA-/OP-Lesen wird als explizites Produktionsabteilungen umfassendes Le
 | QS-Ergebnis kommentieren/ändern | Kein allgemeines Kommentar-/UPDATE-Recht; Korrekturvertrag D07 | Kein pauschales Override | **B Q04: verboten** | Kein Eingriff aus Leitungstitel allein | – | – |
 | Korrektur/Neumessung | P: additive eigene Anfrage; Ausführung/Fremdkorrektur D07 | O D07 | – an QS-Ergebnissen | O D07 | – aus technischer/HR-Rolle | – |
 | Vorlage/Zeichnung hochladen, ändern, veröffentlichen | O D05, separat getrennte Aktionen | Kein automatisches Vorlagenfreigaberecht | – ohne bestätigtes Autorenprofil | O, explizite Dokumentverantwortung | – aus Technikrolle | – |
-| Normale Prüf-/Ausnahmefreigabe | **O D04**, kein Automatismus aus Erfassen | **O D04**, nicht automatisch Freigeber | – | **O D04**, Vorgesetztenhinweis ist keine freigegebene Rollenzuordnung | – | – |
+| Qualitätsentscheidung im neuen digitalen Ablauf | Keine rote Entscheidung aus QS-Erfassung allein | Nur bei passender zuständiger AL-Authority | Eigene Fertigungsprüfung/Maßnahme nach F02/F05; keine Änderung fremder QS-Ergebnisse | **B F06:** zuständiger AL/berechtigter STV entscheidet Rot; PL/GL nicht aus Titel allein. **F05:** Gelb nur Kenntnisnahme, keine Freigabe | – | – |
 | QS-Aufgabenberechtigung erteilen | – | **B Q05** plus 8A-Delegationsgrenzen | – | Nur separat bestätigte Vergabeauthority, keine neue Regel hier | – | – |
 | Download/Druck/Massenexport | O D10, zusätzlich zur Sicht | O D10 | O D10, Lesen ist kein ungeprüfter Massenexport | O D10 | Kein Inhalt aus Systemkonfiguration | – |
 | Retention/Löschfreigabe/physisch löschen | O D11, nichts implementiert | O D11 | – | O D11 | Kein QS-Inhalts-/Löschrecht aus 8A-Konfiguration | – |
@@ -59,12 +61,12 @@ flowchart TD
     B --> E["Außerhalb Grün oder Zeichnungstoleranz"]
     C --> F["Klärung oder neue Messung"]
     D --> G["Entscheidung nach freigegebenem Vertrag"]
-    E --> H["Gesperrte Ausnahmeentscheidung bis D04"]
+    E --> H["Gelb: Maßnahme / Rot: AL oder STV"]
 ```
 
-Außerhalb Grün, aber innerhalb Zeichnungstoleranz: papierseitig ausdrücklich Vorgesetztenfreigabe erforderlich, digitaler Entscheider/Umfang D04. Außerhalb Zeichnungstoleranz: eindeutig Abweichung, keine grüne Umdeutung durch Farbe oder normalen Freigabebutton. Nachmessung, Nacharbeit, Ausschuss oder begrenzte Sonderfreigabe nur nach separat beschlossenem Verfahren; keine solche Vollmacht wird erfunden. Bereits erfasste Abweichung bleibt sichtbar. Pflichtgrund, Entscheidungsevidenz, betroffene Stücke/Menge/Gültigkeit und ggf. zusätzliche Zustimmung nach D04.
+Historische Papierregel außerhalb Grün bleibt als Fotoquelle erhalten. **Aktueller digitaler Zielvertrag F05/F06:** Gelb verlangt tatsächliche Korrektur, Dokumentation und Prüfung des nächsten Teils; OP bis Dokumentation gesperrt. AL bestätigt nur Kenntnisnahme, keine zusätzliche Freigabe. Rot führt zu In Abklärung; zuständiger AL oder berechtigter STV entscheidet Ausschuss, Nacharbeit oder zulässige Sonderfreigabe. Ursprungsmessung bleibt unverändert; Zulässigkeits-/Detailgrenzen nach O05, nicht erneut die grundsätzliche AL-/STV-Zuständigkeit öffnen.
 
-BA-/OP-Abschlussregeln bleiben exakt unverändert. Ob zukünftige QS-Sperre den Abschluss, Weitertransport oder Versand blockiert, ist **D13**, nicht bereits implementiert oder genehmigt. Auch QS-Leserechte erlauben keine Stückzahl-/Rüst-/Maschinen-/Lifecyclekommandos.
+Bestehender Code bleibt unverändert. Zukünftiges Gutteilgate, Gelb-OP-Sperre und automatische Abklärung→Ausschussumbuchung sind nach F02/F05–F07 fachlich beschlossen, aber nicht implementiert. Letztstück-/Spannungs-/Folge-OP-/Versanddetails bleiben O02/O04/O08. QS-Leserechte erlauben keine allgemeine Stückzahl-/Rüst-/Maschinen-/Lifecycleverwaltung.
 
 ## 5. Freigabe und Korrektur
 

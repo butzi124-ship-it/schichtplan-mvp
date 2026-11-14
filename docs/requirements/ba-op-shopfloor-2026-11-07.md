@@ -1,5 +1,7 @@
 # Humbel-App: fachliche Spezifikation BA / OP / Fertigungsrückmeldung (Stand 07.11.2026)
 
+> **Ergänzung 14.11.2026:** Die [digitale Qualitätsprüfung](digital-quality-2026-11-14.md) spezifiziert als zukünftige gezielte Erweiterung qualitätsabhängige Gutteilgates, Gelb-Korrektursperre/Nachprüfung und atomare Abklärung→Ausschussumbuchung. Der vorhandene Zähler bleibt erhalten, keine zweite Mengenwahrheit; Produzent, Spannungs-/OP- und Maschinenhistorie bleiben bestehen. Alle sonstigen Regeln gelten fort. Ausschließlich Dokumentation, keine Umstellung durch diesen Stand.
+
 > **Status: beschlossene fachliche Zielregeln, NICHT implementiert oder produktiv freigegeben.**
 > Dokumentations-PR zu [Issue #17](https://github.com/butzi124-ship-it/schichtplan-mvp/issues/17), im Kontext von Epic #6 sowie #7, #8, #9, #4. Vor Entwicklung vorhandene App-/DB-Logik prüfen.
 > Die jüngeren expliziten Entscheidungen in diesem Dokument haben Vorrang vor Widersprüchen in älteren Planungs-Issues. Keine Datenbankmigration, kein RLS-/Auth-Eingriff, kein Deployment oder Feature-Schalter durch diesen PR.
