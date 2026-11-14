@@ -1,0 +1,298 @@
+{
+  "version": "0.18.0",
+  "recordedAt": "2026-11-14T07:01:16.991577+00:00",
+  "baseCommit": "e57035398870b74d128ea56c080d7c2769fced04",
+  "basePR": 38,
+  "issue": 39,
+  "branch": "feature/adaptive-learning-issue39",
+  "productionAccess": false,
+  "rolloutEnabled": false,
+  "baselineRegression": [
+    {
+      "command": "npm ci --ignore-scripts",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 9.45,
+      "logSha256": "bad56b3cf3b07d69c18fa807572ab22870d216153b1ff90f4aa9ccb5d1ffedfb"
+    },
+    {
+      "command": "node --check schichtplan_mvp.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.16,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "node --check tests/smoke.spec.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.11,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "npm run check:syntax",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 120,
+      "seconds": 4.04,
+      "logSha256": "b1495063216c71e718fad7dae44eed4f388265f2458da28ef494cbd8e7916e7f"
+    },
+    {
+      "command": "npm run test:ci",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 60,
+      "seconds": 0.47,
+      "logSha256": "314bfc6e6252c563768b41bfded1797d1afd9a2a1410faf159167b6d2b08e684"
+    },
+    {
+      "command": "npm run test:qa",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 120,
+      "seconds": 1.28,
+      "logSha256": "9ca451ed38011194f44b9bb3665e77ba8e6297bb03f71e0f417b768c05a46486"
+    },
+    {
+      "command": "npm run qa:check",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 120,
+      "seconds": 2.08,
+      "logSha256": "0530fbcfd505ad271f541db9a2409968450e011c9f67a27b134ad37809f780bb"
+    },
+    {
+      "command": "npm run test:integration",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 3.5,
+      "logSha256": "2391348a3e8f88b269b3536fad4a41bc86862a2747d402289b691e382ef2ca45"
+    },
+    {
+      "command": "npm run test:security",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 300,
+      "seconds": 40.05,
+      "logSha256": "89fef24a32a8032e8044ad5bf78aa387170d93836a4335612ad5f56e16e9edaf"
+    },
+    {
+      "command": "npm run test:learning",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 300,
+      "seconds": 14.85,
+      "logSha256": "a1bebe8211a06c59669b709b52490ec9a427c73e5eb60742af021edfcd9b99e7"
+    },
+    {
+      "command": "npm run test:article-db",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 3.44,
+      "logSha256": "3da8a44eda443500442da31a0b629732b2a696475a776e02f1bc2d17c0580967"
+    },
+    {
+      "command": "npm run test:operations",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 2.74,
+      "logSha256": "fb6891f85aad1992bca1658682b8e4eb883433206f27e4fa26b21234eb04c74f"
+    },
+    {
+      "command": "npm run test:readiness",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 9.73,
+      "logSha256": "0153f71d554cd863e09111eb36748e9089ac847d26958ea91f4096d7f94f957e"
+    },
+    {
+      "command": "npm run test:forecast",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 10.52,
+      "logSha256": "12ecca49240f7ced07ea8d34fa0be9fcd1cdab299ee3cab872b3b9dee0d3bc89"
+    },
+    {
+      "command": "npm run test:ba-entry",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 3.35,
+      "logSha256": "6da78917ca860a0e11746f417ea65dbbe0fdb44b0e9725123a6fd79d625bcf25"
+    },
+    {
+      "command": "npm run test:routing",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 3.19,
+      "logSha256": "7704547150afc1d6a1051ce79deaac07cc9b421895c5833cea4d557784490c00"
+    },
+    {
+      "command": "npm run test:setup",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 3.6,
+      "logSha256": "3e7a0221699c51582aaff77daacad721323d0d6c28864567d886df7df0515b92"
+    },
+    {
+      "command": "npm run test:quantity",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 4.76,
+      "logSha256": "3edec53be760a8454e2b66156d3cd8ebb4cb465a9266a7cadd43df2b14b34133"
+    },
+    {
+      "command": "npm run test:lifecycle",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 19.06,
+      "logSha256": "a12293fd9587209883e27ea9ec17f69b018dd6fcc85db401ce1d4aee79d4d1cc"
+    },
+    {
+      "command": "npm run qa:agent-server",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 60,
+      "seconds": 0.97,
+      "logSha256": "f3a365145b195cc178a6765a046d6f07a7495fa87f7093752ce3631662018319"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.06,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "node -e \"const fs=require('fs'),p=require('@playwright/test');console.log(JSON.stringify(Object.fromEntries(['chromium','firefox','webkit'].map(k=>[k,fs.existsSync(p[k].executablePath())]))))\"",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.78,
+      "logSha256": "dde116af913e6a71fd2a381b83ca774186bed8a466931a22dcc4d07f11191b6f"
+    },
+    {
+      "command": "npm run test:e2e",
+      "status": "BLOCKED_NOT_TESTED",
+      "started": false,
+      "reason": "Required browser binaries missing or preflight unavailable: {'chromium': False, 'firefox': False, 'webkit': False}"
+    },
+    {
+      "command": "npm run test:agents",
+      "status": "BLOCKED_NOT_TESTED",
+      "started": false,
+      "reason": "Required browser binaries missing or preflight unavailable: {'chromium': False, 'firefox': False, 'webkit': False}"
+    },
+    {
+      "command": "native learning PostgreSQL/GoTrue/JWT/PostgREST/session/concurrency acceptance",
+      "status": "BLOCKED_NOT_TESTED",
+      "started": false,
+      "reason": "No approved native PostgreSQL/GoTrue/JWT/PostgREST/multiple-connection environment or authoritative restore. PGlite implementation tests do not replace native acceptance."
+    },
+    {
+      "command": "npm run test:visual",
+      "status": "BLOCKED_NOT_TESTED",
+      "started": false,
+      "reason": "Pinned Playwright 1.62.1-noble container unavailable; new learning UI has not received visual acceptance. Existing 33 references unchanged."
+    }
+  ],
+  "finalChecks": [
+    {
+      "command": "npm run test:learning",
+      "status": "PASS",
+      "timeoutSeconds": 300,
+      "passedTests": 16,
+      "logSha256": "28ec157b0df88969884357150dffb27b829bf7c4f6cc8358dc611cc76f7d1b3e"
+    },
+    {
+      "command": "npm run qa:check",
+      "status": "PASS",
+      "timeoutSeconds": 120,
+      "passedTests": null,
+      "logSha256": "0530fbcfd505ad271f541db9a2409968450e011c9f67a27b134ad37809f780bb"
+    },
+    {
+      "command": "npm run test:qa",
+      "status": "PASS",
+      "timeoutSeconds": 120,
+      "passedTests": 22,
+      "logSha256": "89374d766aaf18eb28ea63faa733fcc388789b6ecb57d0856df25ab105344288"
+    },
+    {
+      "command": "npm run check:syntax",
+      "status": "PASS",
+      "timeoutSeconds": 120,
+      "passedTests": null,
+      "logSha256": "b1495063216c71e718fad7dae44eed4f388265f2458da28ef494cbd8e7916e7f"
+    }
+  ],
+  "passedNodeTests": 282,
+  "learningTests": 16,
+  "qaTests": 22,
+  "legacyChromiumIdentities": 251,
+  "unchangedVisualReferences": 33,
+  "browserRegistration": {
+    "status": "PASS_LIST_ONLY",
+    "newCases": 15,
+    "profiles": [
+      "chromium",
+      "mobile-chromium",
+      "tablet-chromium",
+      "firefox",
+      "webkit"
+    ],
+    "execution": "BLOCKED_NOT_TESTED"
+  },
+  "nativePreflight": {
+    "status": "BLOCKED_NOT_TESTED",
+    "exitCode": 2,
+    "reason": "Missing loopback SUPABASE_TEST_URL, reviewed Docker configuration, isolated real-auth/RLS/session/realtime/concurrency fixtures",
+    "logSha256": "e227e6565c945320197589370aeebbc4c53501d8046558895f8762e2bb24ea95"
+  },
+  "developmentFailuresCorrected": [
+    "SQL isolated guard parenthesis",
+    "PL/pgSQL ambiguous variable alias",
+    "Dashboard protected HTML block split by new assets; new assets relocated before original block"
+  ],
+  "limits": [
+    "No native JWT/session/API/concurrency proof",
+    "No browser or pinned visual execution",
+    "No 30-day delivery worker/month quota",
+    "No trusted live calendar/absence/machine adapter",
+    "No reviewed production questions or complete taught-topic catalog",
+    "No final scope issuer/underwriter/minimal owner policy",
+    "No quality workflow connection or external notification delivery"
+  ],
+  "changedFiles": [
+    " M .github/workflows/e2e.yml",
+    " M package.json",
+    " M playwright.config.js",
+    " M schichtplan_mvp.html",
+    " M schichtplan_mvp.js",
+    " M scripts/dashboard-presentation-policy.js",
+    " M scripts/qa-check.js",
+    "?? css/learning.css",
+    "?? docs/learning/",
+    "?? js/learning.js",
+    "?? scripts/learning-integration-policy.js",
+    "?? supabase/review/learning-issue39.sql",
+    "?? tests/helpers/learning-db.js",
+    "?? tests/learning.spec.js",
+    "?? tests/learning/",
+    "?? tests/qa/learning-integration-patches.json",
+    "?? tests/qa/learning-policy.test.js"
+  ]
+}

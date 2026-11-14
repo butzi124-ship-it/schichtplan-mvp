@@ -2,7 +2,7 @@ const { defineConfig, devices } = require("@playwright/test");
 
 module.exports = defineConfig({
   testDir: "./tests",
-  testMatch: ["smoke.spec.js", "dashboard-home.spec.js", "secure-access.spec.js", "articles.spec.js", "operations.spec.js", "ba-entry.spec.js", "routing.spec.js", "setup.spec.js", "quantity.spec.js", "lifecycle.spec.js", "initial-responsibility.spec.js", "readiness.spec.js", "forecast.spec.js"],
+  testMatch: ["smoke.spec.js", "dashboard-home.spec.js", "secure-access.spec.js", "articles.spec.js", "operations.spec.js", "ba-entry.spec.js", "routing.spec.js", "setup.spec.js", "quantity.spec.js", "lifecycle.spec.js", "initial-responsibility.spec.js", "readiness.spec.js", "forecast.spec.js", "learning.spec.js"],
   grepInvert: /@visual/,
   forbidOnly: !!process.env.CI,
   failOnFlakyTests: !!process.env.CI,
@@ -28,22 +28,22 @@ module.exports = defineConfig({
     },
     {
       name: "mobile-chromium",
-      grep: /Dashboard home|Production counter feedback|Production order navigation|Production touch view|Sequential production stations|Article master|Operations plan|Machine readiness|Production forecast/,
+      grep: /Dashboard home|Production counter feedback|Production order navigation|Production touch view|Sequential production stations|Article master|Operations plan|Machine readiness|Production forecast|Gamification/,
       use: { ...devices["Pixel 5"], viewport: { width: 390, height: 844 } },
     },
     {
       name: "tablet-chromium",
-      grep: /Dashboard home|Production order navigation|Production touch view|Sequential production stations|Article master|Operations plan|Machine readiness|Production forecast/,
+      grep: /Dashboard home|Production order navigation|Production touch view|Sequential production stations|Article master|Operations plan|Machine readiness|Production forecast|Gamification/,
       use: { ...devices["Desktop Chrome"], viewport: { width: 1024, height: 768 }, hasTouch: true },
     },
     {
       name: "firefox",
-      grep: /Dashboard home|Production order navigation|Production touch view|Sequential production stations|Article master|Operations plan|Machine readiness|Production forecast/,
+      grep: /Dashboard home|Production order navigation|Production touch view|Sequential production stations|Article master|Operations plan|Machine readiness|Production forecast|Gamification/,
       use: { ...devices["Desktop Firefox"] },
     },
     {
       name: "webkit",
-      grep: /Dashboard home|Production order navigation|Production touch view|Sequential production stations|Article master|Operations plan|Machine readiness|Production forecast/,
+      grep: /Dashboard home|Production order navigation|Production touch view|Sequential production stations|Article master|Operations plan|Machine readiness|Production forecast|Gamification/,
       use: { ...devices["Desktop Safari"] },
     },
   ],

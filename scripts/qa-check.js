@@ -9,6 +9,11 @@ const { reverseDashboardPresentation, verifyDashboardFiles, reverseDashboardFile
 verifyDashboardFiles(file => fs.readFileSync(file));
 let app = fs.readFileSync("schichtplan_mvp.js", "utf8").replace(/\r\n/g, "\n");
 app = reverseDashboardPresentation(app);
+for (const {before, after} of [...require("../tests/qa/learning-integration-patches.json").patches].reverse()) {
+  assert.equal(app.split(after).length - 1, 1, "Learning integration hook must remain exact and unique");
+  app = app.replace(after, before);
+}
+
 for (const {before, after} of [...require("../tests/qa/lifecycle-integration-patches.json").patches].reverse()) {
   assert.equal(app.split(after).length - 1, 1, "Lifecycle hook must remain exact and unique");
   app = app.replace(after, before);

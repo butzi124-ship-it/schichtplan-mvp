@@ -1,0 +1,66 @@
+{
+  "issue": 39,
+  "reason": "Exact additive RPC learning/navigation/reset hooks; reversing must preserve every existing business hash and assertion. Global UI rollout remains off until isolated/native acceptance.",
+  "patches": [
+    {
+      "before": "let supabaseReady = false;",
+      "after": "const learning = window.HumbelLearning.create({\n  client: supabaseClient, actor: () => currentSupabaseUser?.id || null,\n  redraw: () => { if (currentUser) render(); },\n});\nlearning.bind(document);\n\nlet supabaseReady = false;"
+    },
+    {
+      "before": "  articleMaster.reset();\n  currentSupabaseUser = null;",
+      "after": "  articleMaster.reset();\n  learning.reset();\n  currentSupabaseUser = null;"
+    },
+    {
+      "before": "function render() {\n  void opQuantities.ensureSession();",
+      "after": "function render() {\n  learning.ensureSession();\n  void opQuantities.ensureSession();"
+    },
+    {
+      "before": "  const tabsEl = document.getElementById(\"tabs\");",
+      "after": "  if (learning.enabled() && currentUser.role !== \"tool_scanner\") tabs.push(\"gamification\", \"safety-learning\");\n  const tabsEl = document.getElementById(\"tabs\");"
+    },
+    {
+      "before": "  ensureVersionFooter();\n  if (currentUser.role === \"tool_scanner\") return;",
+      "after": "  if (currentTab === \"gamification\") view.innerHTML = learning.render();\n  if (currentTab === \"safety-learning\") view.innerHTML = learning.render(true);\n  ensureVersionFooter();\n  if (currentUser.role === \"tool_scanner\") return;"
+    },
+    {
+      "before": "    dashboard: \"Start / Dashboard\",",
+      "after": "    dashboard: \"Start / Dashboard\",\n    gamification: \"Gamification\",\n    \"safety-learning\": \"Sicherheitsunterweisungen\","
+    },
+    {
+      "before": "function setTab(tab) {\n  const legacyTabMap = {",
+      "after": "function setTab(tab) {\n  if (learning.enabled() && [\"gamification\", \"safety-learning\"].includes(tab)) {\n    currentTab = tab;\n    render();\n    void learning.refresh();\n    return;\n  }\n  const legacyTabMap = {"
+    }
+  ],
+  "filePatches": [
+    {
+      "file": "schichtplan_mvp.html",
+      "before": "",
+      "after": "    <script>window.HUMBEL_LEARNING_UI_ENABLED = false;</script>\n    <link rel=\"stylesheet\" href=\"./css/learning.css\" />\n    <script src=\"./js/learning.js\"></script>\n"
+    },
+    {
+      "file": "playwright.config.js",
+      "before": "\"forecast.spec.js\"]",
+      "after": "\"forecast.spec.js\", \"learning.spec.js\"]"
+    },
+    {
+      "file": "playwright.config.js",
+      "before": "name: \"mobile-chromium\",\n      grep: /Dashboard home|Production counter feedback|Production order navigation|Production touch view|Sequential production stations|Article master|Operations plan|Machine readiness|Production forecast/,",
+      "after": "name: \"mobile-chromium\",\n      grep: /Dashboard home|Production counter feedback|Production order navigation|Production touch view|Sequential production stations|Article master|Operations plan|Machine readiness|Production forecast|Gamification/,"
+    },
+    {
+      "file": "playwright.config.js",
+      "before": "name: \"tablet-chromium\",\n      grep: /Dashboard home|Production order navigation|Production touch view|Sequential production stations|Article master|Operations plan|Machine readiness|Production forecast/,",
+      "after": "name: \"tablet-chromium\",\n      grep: /Dashboard home|Production order navigation|Production touch view|Sequential production stations|Article master|Operations plan|Machine readiness|Production forecast|Gamification/,"
+    },
+    {
+      "file": "playwright.config.js",
+      "before": "name: \"firefox\",\n      grep: /Dashboard home|Production order navigation|Production touch view|Sequential production stations|Article master|Operations plan|Machine readiness|Production forecast/,",
+      "after": "name: \"firefox\",\n      grep: /Dashboard home|Production order navigation|Production touch view|Sequential production stations|Article master|Operations plan|Machine readiness|Production forecast|Gamification/,"
+    },
+    {
+      "file": "playwright.config.js",
+      "before": "name: \"webkit\",\n      grep: /Dashboard home|Production order navigation|Production touch view|Sequential production stations|Article master|Operations plan|Machine readiness|Production forecast/,",
+      "after": "name: \"webkit\",\n      grep: /Dashboard home|Production order navigation|Production touch view|Sequential production stations|Article master|Operations plan|Machine readiness|Production forecast|Gamification/,"
+    }
+  ]
+}
