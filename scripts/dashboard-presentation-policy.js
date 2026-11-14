@@ -13,7 +13,7 @@ function reverseDashboardPresentation(source) {
 
 function verifyDashboardFiles(readFile) {
   for (const [file, expected] of Object.entries(reviewed.files)) {
-    let source = readFile(file);
+    let source = require("./learning-integration-policy").reverseFile(file, readFile(file).toString("utf8"));
     for (const change of [...(reviewed.assetPatches || [])].reverse()) {
       if (file !== change.file) continue;
       source = source.toString("utf8");
@@ -27,6 +27,7 @@ function verifyDashboardFiles(readFile) {
 }
 
 function reverseDashboardFile(file, source) {
+  source = require("./learning-integration-policy").reverseFile(file, source);
   for (const change of [...reviewed.filePatches].reverse()) {
     if (file !== change.file) continue;
     assert.equal(source.split(change.after).length - 1, 1,

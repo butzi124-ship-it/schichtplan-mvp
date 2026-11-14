@@ -63,6 +63,12 @@ const articleMaster = window.HumbelArticleMaster.create({
 });
 articleMaster.bind(document);
 
+const learning = window.HumbelLearning.create({
+  client: supabaseClient, actor: () => currentSupabaseUser?.id || null,
+  redraw: () => { if (currentUser) render(); },
+});
+learning.bind(document);
+
 let supabaseReady = false;
 let currentSupabaseUser = null;
 let currentEmployeeRecord = null;
@@ -114,7 +120,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.17.3";
+const APP_VERSION = "0.18.0";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -129,6 +135,7 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  { version: "0.18.0", date: "2026-11-14 07:49", changes: ["Gamification und getrennte Sicherheitsunterweisungen mit RPC-Oberflächen, adaptiven Multiple-Choice-Fragen, getrennten Punktekonten, Auszeichnungen, Privatsphäre und Abteilungsverwaltung implementiert. Isolierter SQL-Kandidat; produktive Installation und UI-Aktivierung bleiben gesperrt."] },
   { version: "0.17.3", date: "2026-11-14 06:18", changes: ["Fach- und Technikspezifikation zur digitalen Qualitätsprüfung ergänzt: dynamische Merkmalsintervalle, Gelb-/Rotmaßnahmen, sichere Zähleranbindung, OP-Teilenummern, Qualitätscockpit und Mandantentrennung. Ausschließlich Dokumentation, keine Implementierung oder Aktivierung."] },
   { version: "0.17.2", date: "2026-11-13 16:43", changes: ["Fach- und Technikkonzept für Dokumentenverwaltung und digitale Prüfprotokolle dokumentiert: Referenz 52978, Varianten, Datenmodell, QS-Rechte, Freigaben und Sicherheits-/Testplan. Keine Implementierung oder Aktivierung."] },
   { version: "0.17.1", date: "2026-11-13 14:43", changes: ["Schritt 8B Phase 2: isolierte, deaktivierte Identitäts-/Sitzungsverwaltung mit vertrauenswürdiger technischer Autorität, Versionsprüfung, dauerhaftem Widerruf und atomarem Audit ergänzt. Keine Appanbindung oder produktive Aktivierung."] },
@@ -2791,6 +2798,7 @@ async function logoutSupabase() {
   productionForecast.reset();
   machineReadiness.reset();
   articleMaster.reset();
+  learning.reset();
   currentSupabaseUser = null;
   currentEmployeeRecord = null;
   currentUser = null;
@@ -3340,6 +3348,7 @@ function logout() {
 }
 
 function render() {
+  learning.ensureSession();
   void opQuantities.ensureSession();
   void baLifecycle.ensureSession();
   void setupTimes.ensureSession();
@@ -3367,6 +3376,7 @@ function render() {
   if (articleMaster.hasAccess() && !tabs.includes("produktion")) tabs.push("produktion");
   if (machineReadiness.hasAccess() && !tabs.includes("produktion")) tabs.push("produktion");
 
+  if (learning.enabled() && currentUser.role !== "tool_scanner") tabs.push("gamification", "safety-learning");
   const tabsEl = document.getElementById("tabs");
   tabsEl.className = "humbel-main-nav flex gap-2 flex-wrap";
   tabsEl.innerHTML =
@@ -3413,6 +3423,8 @@ function render() {
   if (currentTab === "scanner") view.innerHTML = renderScannerModule();
   if (currentTab === "auswertung") view.innerHTML = renderAnalyticsModule();
   if (currentTab === "adminsystem") view.innerHTML = renderAdminSystemModule();
+  if (currentTab === "gamification") view.innerHTML = learning.render();
+  if (currentTab === "safety-learning") view.innerHTML = learning.render(true);
   ensureVersionFooter();
   if (currentUser.role === "tool_scanner") return;
   maybeShowMachinePrompt();
@@ -3472,6 +3484,8 @@ function renderPreservingScroll(anchorKey = "", anchorTopOverride = null) {
 function labelTab(tab) {
   return {
     dashboard: "Start / Dashboard",
+    gamification: "Gamification",
+    "safety-learning": "Sicherheitsunterweisungen",
     produktion: "Produktion",
     personalverwaltung: "Personalverwaltung",
     werkzeugverwaltung: "Werkzeugverwaltung",
@@ -3483,6 +3497,12 @@ function labelTab(tab) {
 }
 
 function setTab(tab) {
+  if (learning.enabled() && ["gamification", "safety-learning"].includes(tab)) {
+    currentTab = tab;
+    render();
+    void learning.refresh();
+    return;
+  }
   const legacyTabMap = {
     schichtplan: "dashboard",
     meine: "dashboard",
