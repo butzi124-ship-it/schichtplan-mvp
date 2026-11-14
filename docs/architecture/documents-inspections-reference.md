@@ -1,5 +1,7 @@
 # Analyse der Referenz 52978 – kein freigegebener digitaler Prüfplan
 
+> **Fortschreibung 14.11.2026:** Für dynamische Fertigungsprüfungen gelten die jüngeren [verbindlichen Qualitätsregeln](../requirements/digital-quality-2026-11-14.md) und die [Änderungs-/Entscheidungsmatrix](digital-quality-acceptance.md). Insbesondere Gelb ohne Vorgesetztenfreigabe, Rotentscheidung AL/berechtigter STV, Qualitäts-Gutteilgate, Nummerierung, Cockpit und Firmenisolation ersetzen abweichende Zielannahmen des Grundentwurfs aus #37. Bestehende Implementierung und historische Nachweise werden dadurch nicht geändert. Das bisherige JSON-Prüfprotokoll bleibt historisch auf #37 bezogen; aktuelle Ergebnisse siehe [neues Prüfprotokoll](digital-quality-validation.json).
+
 Teil des [Gesamtkonzepts](documents-inspections.md). Quelle: im Chat referenziertes Foto `73930.jpg`, visuell am 13.11.2026 vollständig und im Messbereich vergrößert betrachtet. Bild 1157×1536, SHA-256 `15c9129e4ff61784212a082660fbb0309ad46ff8b1ebb80e2778d21919dd3780`. Das Original enthält betriebliche Angaben und Mitarbeiterkennzeichen; **weder Bild noch Ausschnitt oder persönliche Kennzeichen werden ins Git-Repository kopiert**. Nachstehende formularbezogene Angaben sind Referenzbeobachtungen, kein Produktionsdatensatz oder verifizierter Messauftrag in der App.
 
 ## 1. Sicher sichtbare Struktur

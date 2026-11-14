@@ -1,5 +1,7 @@
 # Vorgeschlagenes Datenmodell und sichere Dateiverwaltung
 
+> **Fortschreibung 14.11.2026:** Für dynamische Fertigungsprüfungen gelten die jüngeren [verbindlichen Qualitätsregeln](../requirements/digital-quality-2026-11-14.md) und die [Änderungs-/Entscheidungsmatrix](digital-quality-acceptance.md). Insbesondere Gelb ohne Vorgesetztenfreigabe, Rotentscheidung AL/berechtigter STV, Qualitäts-Gutteilgate, Nummerierung, Cockpit und Firmenisolation ersetzen abweichende Zielannahmen des Grundentwurfs aus #37. Bestehende Implementierung und historische Nachweise werden dadurch nicht geändert. Das bisherige JSON-Prüfprotokoll bleibt historisch auf #37 bezogen; aktuelle Ergebnisse siehe [neues Prüfprotokoll](digital-quality-validation.json).
+
 Teil des [Konzepts](documents-inspections.md). **Sämtliche neuen Objekte sind P, nicht implementiert und im Originalschema UNVERIFIED.** Kein SQL oder Bucket wird angelegt. Logische UUIDs, exakte Dezimalwerte, UTC-timestamptz und positive bigint-Versionen; spätere SQL-Definitionen erst nach isoliertem Schema-/Owner-/RLS-Review. Bestehende Originalobjekte und Reviewobjekte nicht vermischen.
 
 ## 1. Dokumente und Bindungen
@@ -33,7 +35,7 @@ Eine fachübergreifend gültige Zeichnung kann von mehreren Bereichen verlinkt w
 | inspection_subjects | Run/Teil-/Baugruppen-/Loskennung mit Namensraum und Beleg | Eindeutigkeitsvertrag D08; ohne bestätigte Identität keine fingierte Serialisierung |
 | measurement_events | UUID, Run/Subject/Merkmal, Iteration, typed value/Einheit/Rohangabe, Prüfer-ID aus Serverkontext, Messzeit + Serverzeit, Methode/Messmittelbeleg, Vorgänger/Grund | Nur passende Merkmale der eingefrorenen Vorlage; Wiederholungsmessung eigenständig, keine Ersetzung ursprünglicher Ereignisse |
 | inspection_evidence | Run, genaue document_version/Asset, Seitenfolge, original/transcription, Uploader, dokumentierter Prüfer-/Herkunftsnachweis | Uploader ≠ automatisch Prüfer. OCR ist unbestätigter Vorschlag; Bestätigung separat auditiert |
-| inspection_decisions | Run-/Ergebnissatzversion/-Hash, Entscheidungstyp, Scope, Begründung, zuständige bestätigte Authority/Person/Serverzeit, Bedingungen/Frist | Keine Entscheidung für inzwischen geänderte Ergebnisse. Ausnahmefreigabe erst nach D04, kein Grenzwerte-Edit als Ersatz |
+| inspection_decisions | Run-/Ergebnissatzversion/-Hash, Entscheidungstyp, Scope, Begründung, zuständige bestätigte Authority/Person/Serverzeit, Bedingungen/Frist | Keine Entscheidung für inzwischen geänderte Ergebnisse. Rotentscheidung gemäß F06 durch zuständigen AL/berechtigten STV, Detailgrenzen O05; kein Grenzwerte-Edit als Ersatz |
 | inspection_corrections | Originalereignis, neuer ergänzender Stand, Grund, Beantragender, ggf. unabhängiger Bestätigender | Original und Entscheidungen bleiben lesbar, Korrekturkette nicht zyklisch; resultierender Freigabestand neu zu bewerten |
 | inspection_events / outbox | Statusübergang/Version/Actor, optional deduplizierter Benachrichtigungsauftrag | Erfolgsaudit atomar; keine Namen/Messdaten in ungeprüften Nachrichtenkanälen |
 
@@ -58,7 +60,7 @@ Vorlagenfreigabe, Ergebniseinreichung, Korrektur, Entscheidung und Linkänderung
 
 Ein Kommando: Request-ID und erwartete Objekt-/Identitäts-/Authorityversion → einheitliche Sperrreihenfolge (Identität, Freigaben, fachliches Elternobjekt, Prüflauf/Version, Kindereignisse) → aktuelle Autorisierung nach Sperrwartezeit erneut prüfen → Fach-/Ziel-/Grenz-/Statusbedingungen → Zustand, Erfolgsaudit, Receipt und ggf. Outbox gemeinsam committen. Idempotente Wiederholung nur bei exakt gleichem Inhalt und aktuell gültigen Leserechten; keine Wiederverwendung eines alten Allow nach Widerruf. Konflikt verlangt erneute bewusste Prüfung, kein ungeprüfter Retry eines Schreibbefehls.
 
-Vorlagenrevision ändert keine alten Prüfungen oder BA-Dokumentmanifeste. Eine später als fehlerhaft erkannte Vorlage wird zurückgezogen und eine betroffene-Prüfungen-Liste zur Fachprüfung erzeugt; alte Belege nicht umrechnen/überschreiben. Verlinkte und freigegebene Daten bleiben erhalten. Datensätze ohne sichere Artikel-/BA-/OP-Zuordnung in gekennzeichnete Klärung, kein unsicherer Legacyfallback. Eine Dokumentenentscheidung ist keine automatische BA-/OP-Lifecyclemutation.
+Vorlagenrevision ändert keine alten Prüfungen oder BA-Dokumentmanifeste. Eine später als fehlerhaft erkannte Vorlage wird zurückgezogen und eine betroffene-Prüfungen-Liste zur Fachprüfung erzeugt; alte Belege nicht umrechnen/überschreiben. Verlinkte und freigegebene Daten bleiben erhalten. Datensätze ohne sichere Artikel-/BA-/OP-Zuordnung in gekennzeichnete Klärung, kein unsicherer Legacyfallback. Ein allgemeiner Dokumentenstatus ist keine BA-/OP-Lifecyclemutation. Für den neuen digitalen Qualitätsablauf sind F02/F05–F07 als eigene zukünftige atomare Zähler-/Sperrkommandos beschlossen; konkrete Integration im [Technikentwurf](digital-quality-model.md).
 
 ## 4. Supabase Storage – vorgeschlagene geschlossene Architektur
 
