@@ -120,7 +120,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.18.0";
+const APP_VERSION = "0.18.1";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -135,6 +135,7 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  { version: "0.18.1", date: "2026-11-14 08:15", changes: ["Isolierten synthetischen Teststand, zentrale kontextbezogene Hilfe und reproduzierbare Screenshot-/Handbuch-/Präsentationsautomatik für Issue #40 vorbereitet. Keine produktive Aktivierung und kein Deployment."] },
   { version: "0.18.0", date: "2026-11-14 07:49", changes: ["Gamification und getrennte Sicherheitsunterweisungen mit RPC-Oberflächen, adaptiven Multiple-Choice-Fragen, getrennten Punktekonten, Auszeichnungen, Privatsphäre und Abteilungsverwaltung implementiert. Isolierter SQL-Kandidat; produktive Installation und UI-Aktivierung bleiben gesperrt."] },
   { version: "0.17.3", date: "2026-11-14 06:18", changes: ["Fach- und Technikspezifikation zur digitalen Qualitätsprüfung ergänzt: dynamische Merkmalsintervalle, Gelb-/Rotmaßnahmen, sichere Zähleranbindung, OP-Teilenummern, Qualitätscockpit und Mandantentrennung. Ausschließlich Dokumentation, keine Implementierung oder Aktivierung."] },
   { version: "0.17.2", date: "2026-11-13 16:43", changes: ["Fach- und Technikkonzept für Dokumentenverwaltung und digitale Prüfprotokolle dokumentiert: Referenz 52978, Varianten, Datenmodell, QS-Rechte, Freigaben und Sicherheits-/Testplan. Keine Implementierung oder Aktivierung."] },

@@ -1,0 +1,65 @@
+name: Documentation artifacts
+on:
+  pull_request:
+    paths: ['schichtplan_mvp.*', 'js/**', 'css/**', 'scripts/documentation/**', 'scripts/preview/**', 'docs/**', 'tests/documentation/**', '.github/workflows/documentation.yml']
+  push:
+    branches: ['feature/test-preview-documentation-issue40']
+permissions:
+  contents: read
+concurrency:
+  group: documentation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  capture:
+    runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.62.1-noble
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+        timeout-minutes: 3
+      - run: npm run test:documentation
+        timeout-minutes: 2
+      - run: npm run docs:check
+        timeout-minutes: 1
+      - run: npm run docs:capture
+        timeout-minutes: 8
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: documentation-inputs-${{ github.sha }}
+          path: artifacts/documentation/
+          retention-days: 14
+  office:
+    # Explicit opt-in: approved licensed runtime/self-hosted runner required.
+    # No secrets or self-hosted execution for fork PRs. Missing runner is not PASS.
+    if: ${{ vars.HUMBEL_DOCS_OFFICE_ENABLED == 'true' && github.event.pull_request.head.repo.full_name == github.repository }}
+    needs: capture
+    runs-on: [self-hosted, humbel-documentation]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: documentation-inputs-${{ github.sha }}
+          path: artifacts/documentation
+      - run: npm ci --ignore-scripts
+        timeout-minutes: 3
+      - run: npm run docs:build -- --release
+        timeout-minutes: 6
+      - name: Render manual and PDF with approved runtime
+        run: '"$CODEX_PRIMARY_RUNTIME_PYTHON" "$HUMBEL_DOCX_RENDERER" artifacts/documentation/Humbel_Benutzerhandbuch_$(node -p "require(''./artifacts/documentation/build-input.json'').version").docx --output_dir artifacts/documentation/manual-render --emit_pdf'
+        timeout-minutes: 4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: humbel-office-${{ github.sha }}
+          path: artifacts/documentation/
+          retention-days: 14

@@ -1,0 +1,907 @@
+{
+  "version": "0.18.1",
+  "screenshots": [
+    {
+      "topic": "employees",
+      "profile": "desktop",
+      "image": "screenshots/employees-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [
+        {
+          "name": "Vorname",
+          "type": "text"
+        },
+        {
+          "name": "Nachname",
+          "type": "text"
+        },
+        {
+          "name": "Personalnummer",
+          "type": "text"
+        },
+        {
+          "name": "pmNewDepartmentId",
+          "type": "select-one"
+        },
+        {
+          "name": "pm-employee-first-employee-admin",
+          "type": "text"
+        },
+        {
+          "name": "pm-employee-last-employee-admin",
+          "type": "text"
+        },
+        {
+          "name": "pm-employee-no-employee-admin",
+          "type": "text"
+        },
+        {
+          "name": "pm-employee-department-employee-admin",
+          "type": "select-one"
+        },
+        {
+          "name": "pm-employee-first-employee-one",
+          "type": "text"
+        },
+        {
+          "name": "pm-employee-last-employee-one",
+          "type": "text"
+        },
+        {
+          "name": "pm-employee-no-employee-one",
+          "type": "text"
+        },
+        {
+          "name": "pm-employee-department-employee-one",
+          "type": "select-one"
+        }
+      ],
+      "textExcerpt": "Personalverwaltung\n\nNeue Verwaltung für Mitarbeiter und Schichtmodell. Der alte Schichtplan wird hier fachlich nicht verwendet.\n\nMitarbeiter\nSchichtmodell\nSchichtplanung\nEinstellungen\nMitarbeiter anlegen\nKeine Abteilung\nFertigung\nAnlegen\nVorname\tNachname\tPersonalnummer\tAbteilung\tStatus\tAktion\n\nAdmin\nLogin-Konto\nAbteilungsleiter\nGeschützt\n\t\t\t\nKeine Abteilung\nFertigung\nFertigung\nAbteilungsleiter: Fertigung\n\tAktiv\nAdmin\nLogin-Konto\nAbteilungsleiter\nGeschützt\n\tSpeichern Geschützt\n\t\t\t\nKeine Abteilung",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "ebb21e6aa351bc2e5989e73c9806517cd22e1b00331c32c1efb6bdc9b91c4b3f",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1363,
+      "height": 936
+    },
+    {
+      "topic": "shifts",
+      "profile": "desktop",
+      "image": "screenshots/shifts-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [
+        {
+          "name": "Aktiv",
+          "type": "checkbox"
+        },
+        {
+          "name": "Zeit von ",
+          "type": "time"
+        },
+        {
+          "name": "Zeit bis ",
+          "type": "time"
+        },
+        {
+          "name": "Aktiv",
+          "type": "checkbox"
+        },
+        {
+          "name": "Zeit von ",
+          "type": "time"
+        },
+        {
+          "name": "Zeit bis ",
+          "type": "time"
+        },
+        {
+          "name": "Aktiv",
+          "type": "checkbox"
+        },
+        {
+          "name": "Zeit von ",
+          "type": "time"
+        },
+        {
+          "name": "Zeit bis ",
+          "type": "time"
+        },
+        {
+          "name": "Aktiv",
+          "type": "checkbox"
+        },
+        {
+          "name": "Zeit von ",
+          "type": "time"
+        },
+        {
+          "name": "Zeit bis ",
+          "type": "time"
+        }
+      ],
+      "textExcerpt": "Personalverwaltung\n\nNeue Verwaltung für Mitarbeiter und Schichtmodell. Der alte Schichtplan wird hier fachlich nicht verwendet.\n\nMitarbeiter\nSchichtmodell\nSchichtplanung\nEinstellungen\nFrühschicht\n\nZeitangaben erforderlich\n\nAktiv\nZeit von \nZeit bis \nSpeichern\nSpätschicht\n\nZeitangaben erforderlich\n\nAktiv\nZeit von \nZeit bis \nSpeichern\nNachtschicht\n\nZeitangaben erforderlich\n\nAktiv\nZeit von \nZeit bis \nSpeichern\nTagschicht\n\nOhne Zeitangaben\n\nAktiv\nZeit von \nZeit bis \nSpeichern",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "918090a90961bb543a74a776c6a5770249eb2f8dc50e38c578d9926d477435db",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1348,
+      "height": 940
+    },
+    {
+      "topic": "planning",
+      "profile": "desktop",
+      "image": "screenshots/planning-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [],
+      "textExcerpt": "Personalverwaltung\n\nNeue Verwaltung für Mitarbeiter und Schichtmodell. Der alte Schichtplan wird hier fachlich nicht verwendet.\n\nMitarbeiter\nSchichtmodell\nSchichtplanung\nEinstellungen\nSchichtplanung\n\nAlter Schichtplan bleibt Alt / deaktiviert. Neue Schichtplanung wird später aufgebaut.",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "03f184c88dc0129b3c7fc87725bd2a4588ca80847db3670bc015e58d85837f53",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1363,
+      "height": 936
+    },
+    {
+      "topic": "personnel-settings",
+      "profile": "desktop",
+      "image": "screenshots/personnel-settings-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [],
+      "textExcerpt": "Personalverwaltung\n\nNeue Verwaltung für Mitarbeiter und Schichtmodell. Der alte Schichtplan wird hier fachlich nicht verwendet.\n\nMitarbeiter\nSchichtmodell\nSchichtplanung\nEinstellungen\nEinstellungen\n\nFür die Personalverwaltung sind hier später weitere Einstellungen vorgesehen.",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "cd23588596786c9f8f02ef42743bda36bc216e268bb4e4522eee510dfcd7def1",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1363,
+      "height": 936
+    },
+    {
+      "topic": "departments",
+      "profile": "desktop",
+      "image": "screenshots/departments-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [
+        {
+          "name": "Name",
+          "type": "text"
+        },
+        {
+          "name": "Code",
+          "type": "text"
+        },
+        {
+          "name": "productionNewDepartmentLeader",
+          "type": "select-one"
+        },
+        {
+          "name": "Aktiv",
+          "type": "checkbox"
+        },
+        {
+          "name": "production-department-name-department-one",
+          "type": "text"
+        },
+        {
+          "name": "production-department-code-department-one",
+          "type": "text"
+        },
+        {
+          "name": "production-department-leader-department-one",
+          "type": "select-one"
+        }
+      ],
+      "textExcerpt": "Produktion\n\nGrundstruktur für Abteilungen und spätere Maschinenverwaltung.\n\nAbteilungen\nMaschinen\nAufträge / BA\nStückzahl\nSpannungen\nAusschuss / Abklärung\nProtokoll\nEinstellungen\nArtikelstamm\nOP-Maschinenübersicht\nAbteilung anlegen\nKein Abteilungsleiter\nTest Administration\nTest Mitarbeiter\nAktiv\nAnlegen\nName\tCode\tAbteilungsleiter\tStatus\tAktion\n\t\t\nKein Abteilungsleiter\nTest Administration\nTest Mitarbeiter\n\tAktiv\tSpeichern Deaktivieren Löschen",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "d7f62d270a5ceafe27a7a00f4dfcf18c501bff63970d14922304b549eacb7603",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1363,
+      "height": 936
+    },
+    {
+      "topic": "machines",
+      "profile": "desktop",
+      "image": "screenshots/machines-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [
+        {
+          "name": "Name",
+          "type": "text"
+        },
+        {
+          "name": "Maschinencode",
+          "type": "text"
+        },
+        {
+          "name": "productionNewMachineDepartment",
+          "type": "select-one"
+        },
+        {
+          "name": "Aktiv",
+          "type": "checkbox"
+        },
+        {
+          "name": "production-machine-name-machine-one",
+          "type": "text"
+        },
+        {
+          "name": "production-machine-code-machine-one",
+          "type": "text"
+        },
+        {
+          "name": "production-machine-department-machine-one",
+          "type": "select-one"
+        },
+        {
+          "name": "production-machine-name-machine-two",
+          "type": "text"
+        },
+        {
+          "name": "production-machine-code-machine-two",
+          "type": "text"
+        },
+        {
+          "name": "production-machine-department-machine-two",
+          "type": "select-one"
+        },
+        {
+          "name": "production-machine-name-machine-over",
+          "type": "text"
+        },
+        {
+          "name": "production-machine-code-machine-over",
+          "type": "text"
+        },
+        {
+          "name": "production-machine-department-machine-over",
+          "type": "select-one"
+        },
+        {
+          "name": "production-machine-name-machine-chain",
+          "type": "text"
+        },
+        {
+          "name": "production-machine-code-machine-chain",
+          "type": "text"
+        },
+        {
+          "name": "production-machine-department-machine-chain",
+          "type": "select-one"
+        }
+      ],
+      "textExcerpt": "Produktion\n\nGrundstruktur für Abteilungen und spätere Maschinenverwaltung.\n\nAbteilungen\nMaschinen\nAufträge / BA\nStückzahl\nSpannungen\nAusschuss / Abklärung\nProtokoll\nEinstellungen\nArtikelstamm\nOP-Maschinenübersicht\nMaschine anlegen\nKeine Abteilung\nFertigung\nAktiv\nAnlegen\nName\tMaschinencode\tAbteilung\tStatus\tAktion\n\t\t\nKeine Abteilung\nFertigung\n\tAktiv\tSpeichern Deaktivieren Löschen\n\t\t\nKeine Abteilung\nFertigung\n\tAktiv\tSpeichern Deaktivieren Löschen\n\t\t\nKeine Abteilung\nFertigung\n\tAktiv\tSpeichern Deakti",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "4f48ca89258d2a9ae385e06eeaae5a80c07d55ad7cff7003321c45696a92e871",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1348,
+      "height": 991
+    },
+    {
+      "topic": "orders",
+      "profile": "desktop",
+      "image": "screenshots/orders-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [
+        {
+          "name": "BA-Nummer",
+          "type": "text"
+        },
+        {
+          "name": "Artikelnummer",
+          "type": "text"
+        },
+        {
+          "name": "Stückzahl",
+          "type": "number"
+        },
+        {
+          "name": "BA-/OP-Barcode",
+          "type": "text"
+        },
+        {
+          "name": "BA für Suche",
+          "type": "text"
+        },
+        {
+          "name": "OP-Nummer (optional)",
+          "type": "number"
+        },
+        {
+          "name": "Maschine \nMaschine auswählen\nMaschine 50 - Fertigung\nMaschine 51 - Fertigung\nMaschine 52 - Fertigung\nMaschine 53 - Fertigung",
+          "type": "select-one"
+        },
+        {
+          "name": "BA-Nummer",
+          "type": "text"
+        },
+        {
+          "name": "Artikelnummer",
+          "type": "text"
+        },
+        {
+          "name": "BA-Stückzahl",
+          "type": "number"
+        },
+        {
+          "name": "Zielstückzahl",
+          "type": "number"
+        },
+        {
+          "name": "Palettenanzahl",
+          "type": "number"
+        },
+        {
+          "name": "Stück pro Palette",
+          "type": "number"
+        },
+        {
+          "name": "Kettenlogik aktiv",
+          "type": "checkbox"
+        }
+      ],
+      "textExcerpt": "Produktion\n\nGrundstruktur für Abteilungen und spätere Maschinenverwaltung.\n\nAbteilungen\nMaschinen\nAufträge / BA\nStückzahl\nSpannungen\nAusschuss / Abklärung\nProtokoll\nEinstellungen\nArtikelstamm\nOP-Maschinenübersicht\nBA an der ersten OP anlegen\n\nHumbel-BA-Nummer, Artikelnummer und Stückzahl eingeben. Die aktuelle freigegebene Revision und ihre OPs werden übernommen. Termin und Maschinenwahl sind hier nicht erforderlich.\n\nNeuer BA\nBA-Nummer\nArtikelnummer\nStückzahl\nBA anlegen / vorhandenen öffnen\nBar",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "2fccb284ef9ec826b05856b01d8489d55bad9d13c0652734cea78fb8fd1f0a13",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1348,
+      "height": 2456
+    },
+    {
+      "topic": "counts",
+      "profile": "desktop",
+      "image": "screenshots/counts-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [
+        {
+          "name": "BA und OP",
+          "type": "select-one"
+        },
+        {
+          "name": "Vorhandene Spannungen in Reihenfolge (IDs, kommagetrennt)",
+          "type": "text"
+        },
+        {
+          "name": "Zusätzliche neue Spannungen",
+          "type": "number"
+        },
+        {
+          "name": "Begründung",
+          "type": "textarea"
+        },
+        {
+          "name": "BA auswählen\nBA 800001",
+          "type": "select-one"
+        },
+        {
+          "name": "Neue Sollstückzahl",
+          "type": "number"
+        },
+        {
+          "name": "Warnung zur Mengenreduzierung bestätigen",
+          "type": "checkbox"
+        },
+        {
+          "name": "Begründung / Erläuterung",
+          "type": "textarea"
+        },
+        {
+          "name": "station_id",
+          "type": "select-one"
+        },
+        {
+          "name": "person_id",
+          "type": "select-one"
+        },
+        {
+          "name": "section_id",
+          "type": "select-one"
+        },
+        {
+          "name": "kind",
+          "type": "select-one"
+        },
+        {
+          "name": "delta",
+          "type": "number"
+        },
+        {
+          "name": "cause_id",
+          "type": "select-one"
+        },
+        {
+          "name": "reason",
+          "type": "textarea"
+        },
+        {
+          "name": "Begründung / Erläuterung",
+          "type": "textarea"
+        },
+        {
+          "name": "Gesamtabschluss ausdrücklich bestätigen",
+          "type": "checkbox"
+        },
+        {
+          "name": "Neuen AL auswählen\nBitte wählen\nFertigung · Abteilungsleitung\nAndere Abteilung · Abteilungsleitung",
+          "type": "select-one"
+        },
+        {
+          "name": "Administrativ konfigurierter Grund\nBitte wählen",
+          "type": "select-one"
+        },
+        {
+          "name": "Begründung / Erläuterung",
+          "type": "textarea"
+        },
+        {
+          "name": "Code",
+          "type": "text"
+        },
+        {
+          "name": "Bezeichnung",
+          "type": "text"
+        },
+        {
+          "name": "Freitext verpflichtend",
+          "type": "checkbox"
+        },
+        {
+          "name": "Grund aktiv",
+          "type": "checkbox"
+        }
+      ],
+      "textExcerpt": "Produktion\n\nGrundstruktur für Abteilungen und spätere Maschinenverwaltung.\n\nAbteilungen\nMaschinen\nAufträge / BA\nStückzahl\nSpannungen\nAusschuss / Abklärung\nProtokoll\nEinstellungen\nArtikelstamm\nOP-Maschinenübersicht\nBA / OP · Bestehender Stückzahlzähler\nOP-Mengen neu laden BA und OP\nBA 800001 · OP 10\nBA 800001 · OP 10\n\nBA-Soll ursprünglich: 48 · aktuell: 48 · Fertige OP-Gutteile: 0\n\nRechnerisch verfügbar aus BA-Vorgabe: 48. Keine Bestätigung einer physischen Materialübergabe.\n\nErforderliche Spannu",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "03dc8493c7368cd68f0f07eb2f38197ca34c6a2e73aa5d7367975b96e84cdf0f",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1348,
+      "height": 2849
+    },
+    {
+      "topic": "setups",
+      "profile": "desktop",
+      "image": "screenshots/setups-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [],
+      "textExcerpt": "Produktion\n\nGrundstruktur für Abteilungen und spätere Maschinenverwaltung.\n\nAbteilungen\nMaschinen\nAufträge / BA\nStückzahl\nSpannungen\nAusschuss / Abklärung\nProtokoll\nEinstellungen\nArtikelstamm\nOP-Maschinenübersicht\nSpannungen\n\nSpannungen werden später Maschinen und Aufträgen zugeordnet.",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "833166662a3af81aefcbb59423b3369b865375f7bbfea4f0d06226385410f965",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1363,
+      "height": 936
+    },
+    {
+      "topic": "clarification",
+      "profile": "desktop",
+      "image": "screenshots/clarification-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [],
+      "textExcerpt": "Produktion\n\nGrundstruktur für Abteilungen und spätere Maschinenverwaltung.\n\nAbteilungen\nMaschinen\nAufträge / BA\nStückzahl\nSpannungen\nAusschuss / Abklärung\nProtokoll\nEinstellungen\nArtikelstamm\nOP-Maschinenübersicht\nAusschuss / Abklärung\n\nAusschuss-Abklärung wird später mit Stückzahl und Protokoll verbunden.",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "a4297e7e2a646b80b7aa2d454826ffa652c4bbcc757d4226847d5113deab2d32",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1363,
+      "height": 936
+    },
+    {
+      "topic": "protocol",
+      "profile": "desktop",
+      "image": "screenshots/protocol-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [
+        {
+          "name": "Auftrag / BA \nBA-100 · Maschine 50 · Laufend\nBA-200 · Maschine 51 · Laufend\nBA-300 · Maschine 52 · Laufend\nBA-400 · Maschine 53 · Laufend",
+          "type": "select-one"
+        }
+      ],
+      "textExcerpt": "Produktion\n\nGrundstruktur für Abteilungen und spätere Maschinenverwaltung.\n\nAbteilungen\nMaschinen\nAufträge / BA\nStückzahl\nSpannungen\nAusschuss / Abklärung\nProtokoll\nEinstellungen\nArtikelstamm\nOP-Maschinenübersicht\nProduktionsprotokoll\n\nEreignisse und Auftragshistorie je BA.\n\nAuftrag / BA \nBA-100 · Maschine 50 · Laufend\nBA-200 · Maschine 51 · Laufend\nBA-300 · Maschine 52 · Laufend\nBA-400 · Maschine 53 · Laufend\nNeueste zuerst\nBA BA-100 · Laufend\nAuftrag abgeschlossen\n1.1.2026, 01:04:00 · Auftrags",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "eb9e156aa3f80f5118a3165363c6a63812bc65fbfb1bbdce5f01c348f91fb4d1",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1348,
+      "height": 1400
+    },
+    {
+      "topic": "production-settings",
+      "profile": "desktop",
+      "image": "screenshots/production-settings-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [],
+      "textExcerpt": "Produktion\n\nGrundstruktur für Abteilungen und spätere Maschinenverwaltung.\n\nAbteilungen\nMaschinen\nAufträge / BA\nStückzahl\nSpannungen\nAusschuss / Abklärung\nProtokoll\nEinstellungen\nArtikelstamm\nOP-Maschinenübersicht\nEinstellungen\n\nProduktionseinstellungen folgen später.",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "d7f24784d0a35b4b448015a481a6a3309e6e13102560b38216ad4d3ae9fb3b2c",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1363,
+      "height": 936
+    },
+    {
+      "topic": "articles",
+      "profile": "desktop",
+      "image": "screenshots/articles-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [
+        {
+          "name": "Artikelnummer suchen",
+          "type": "text"
+        }
+      ],
+      "textExcerpt": "Produktion\nArtikelstamm Abteilungen Aufträge / BA\nArtikelstamm\n\nVersionierte Stammdaten · Entwurf → Freigegeben → Archiviert\n\nArtikelnummer suchen\nSuchen / Neu laden\nNeuer Artikel\n\nBis zu 200 Revisionen. Suche nach Artikelnummer eingrenzen. Änderungen an freigegebenen Inhalten erfolgen ausschließlich als neue Revision.\n\n32505 · Synthetic routing article · Revision 1 · Freigegeben",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "74a3f3b81aea54ff17ccdc264c5a13a16cb33ea2f43ed541f7e6530fdd306fa1",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1363,
+      "height": 936
+    },
+    {
+      "topic": "readiness",
+      "profile": "desktop",
+      "image": "screenshots/readiness-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [
+        {
+          "name": "Zielmaschine",
+          "type": "select-one"
+        },
+        {
+          "name": "Begründung",
+          "type": "textarea"
+        },
+        {
+          "name": "Maschine filtern",
+          "type": "select-one"
+        },
+        {
+          "name": "Bestätigte Gutmenge (Freigabeprotokoll)",
+          "type": "number"
+        },
+        {
+          "name": "Übergabenachweis / Begründung",
+          "type": "textarea"
+        },
+        {
+          "name": "Zielmaschine",
+          "type": "select-one"
+        },
+        {
+          "name": "Geplanter Start (Gerätezeit)",
+          "type": "datetime-local"
+        }
+      ],
+      "textExcerpt": "Produktion\nOP-Maschinenübersicht Artikelstamm Abteilungen OP-Stückzahlzähler\nOP-Maschinenzuordnung\n\nZuordnung gilt für diese BA-OP. Artikel und BA-Hauptverantwortung bleiben erhalten. Ein Wechsel ist keine Arbeits- oder Materialfreigabe.\n\nZuordnungen neu ladenAlle berechtigten OPs\nBenachrichtigungen\nKeine Benachrichtigungen.\nBA 800001 · OP 010 · Synthetic routing OP\n\nUrsprüngliche Abteilung: Fertigung · Ausführende Abteilung: Fertigung\n\nAktuelle Maschine: Testmaschine\n\nBA-Hauptverantwortung blei",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "f666197064ed29089524cfddb7a705abdbac4524cf6643dce00a23f180b4842d",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1348,
+      "height": 2425
+    },
+    {
+      "topic": "learning",
+      "profile": "desktop",
+      "image": "screenshots/learning-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [
+        {
+          "name": " Meine Punkte, Level und Auszeichnungen für Kollegen freigeben",
+          "type": "checkbox"
+        },
+        {
+          "name": "Zuständige Abteilung\nBitte wählen\nSynthetic A",
+          "type": "select-one"
+        }
+      ],
+      "textExcerpt": "Gamification · Wissen entwickeln\n\nPrivater Lernfortschritt · keine öffentliche Fehlerbewertung\n\nFachkompetenzpunkte\n0\nTeilnahmepunkte\n0\nLevel\n1\nHistorische Erfahrung: 0\nWiederholungsbedarf\n0\nFachbezogene Auszeichnungen\n\nBearbeitete Lerneinheiten: 0 · Erlernte Wissenskonzepte: 0\n\nVorläufige Stufengrenzen und Levelparameter – noch keine Produktionsfreigabe.\n\nFräsen\nNoch keine · 0 Punkte\nDrehen\nNoch keine · 0 Punkte\nSchleifen\nNoch keine · 0 Punkte\nVerzahnen\nNoch keine · 0 Punkte\nMesstechnik\nNoch ke",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "9bd7e2dd70774fc28a4630c968600b7e3e358bc52936a70d6e0ae50016eac876",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1348,
+      "height": 1990
+    },
+    {
+      "topic": "safety",
+      "profile": "desktop",
+      "image": "screenshots/safety-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [
+        {
+          "name": "Zuständige Abteilung\nBitte wählen\nSynthetic A",
+          "type": "select-one"
+        }
+      ],
+      "textExcerpt": "Sicherheitsunterweisungen\n\nPflichtnachweise sind unabhängig von Gamification. Ein Theoriequiz ersetzt keine praktische Unterweisung.\n\nKeine zugewiesene Unterweisung. Das ist kein Nachweis einer Tätigkeitsfreigabe.\n\nAbteilungsverwaltung\nZuständige Abteilung\nBitte wählen\nSynthetic A",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "2fb79a3b755eead814258824434d716458063588933192a2831875445c21777b",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1363,
+      "height": 936
+    },
+    {
+      "topic": "tools",
+      "profile": "desktop",
+      "image": "screenshots/tools-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [
+        {
+          "name": "Suche nach T, Bezeichnung, Artikel, Aufnahme, Hersteller...",
+          "type": "text"
+        },
+        {
+          "name": "toolFilterLabel",
+          "type": "select-one"
+        },
+        {
+          "name": "T-Nummer",
+          "type": "text"
+        },
+        {
+          "name": "Durchmesser",
+          "type": "text"
+        },
+        {
+          "name": "toolFilterHolder",
+          "type": "select-one"
+        },
+        {
+          "name": "toolFilterImageStatus",
+          "type": "select-one"
+        }
+      ],
+      "textExcerpt": "Werkzeugverwaltung\n\nBestehende Werkzeugfunktionen bleiben erhalten und sind hier einsortiert.\n\nWerkzeugliste\nBestand\nEntnahme / Einlagerung\nNachbestellen\nJournal\nQR-Etiketten\nEinstellungen\nWerkzeugverwaltung\n?\nAuto-Aktualisierung alle 15 Sekunden aktiv\nWerkzeuge aktualisieren\n\nWerkzeugbestand, Stammdaten, Bestellungen und Journal sind getrennt untereinander dargestellt.\n\nWerkzeugbestand\n1 von 1 Werkzeugen angezeigt\nNeues Werkzeug erfassen\nAlle Bezeichnungen\nSchaftfräser\nTrochodialfräser\nRadiusfr",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "5bca29918662273328317ad432a1648886cb5954b4f4e00e169dae3ba48aeb42",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1348,
+      "height": 1076
+    },
+    {
+      "topic": "tool-stock",
+      "profile": "desktop",
+      "image": "screenshots/tool-stock-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [
+        {
+          "name": "Suche nach T, Bezeichnung, Artikel, Aufnahme, Hersteller...",
+          "type": "text"
+        },
+        {
+          "name": "toolFilterLabel",
+          "type": "select-one"
+        },
+        {
+          "name": "T-Nummer",
+          "type": "text"
+        },
+        {
+          "name": "Durchmesser",
+          "type": "text"
+        },
+        {
+          "name": "toolFilterHolder",
+          "type": "select-one"
+        },
+        {
+          "name": "toolFilterImageStatus",
+          "type": "select-one"
+        }
+      ],
+      "textExcerpt": "Werkzeugverwaltung\n\nBestehende Werkzeugfunktionen bleiben erhalten und sind hier einsortiert.\n\nWerkzeugliste\nBestand\nEntnahme / Einlagerung\nNachbestellen\nJournal\nQR-Etiketten\nEinstellungen\nBestand: Vorhandene Bestands-, Lager- und Mindestbestandsansicht.\nWerkzeugverwaltung\n?\nAuto-Aktualisierung alle 15 Sekunden aktiv\nWerkzeuge aktualisieren\n\nWerkzeugbestand, Stammdaten, Bestellungen und Journal sind getrennt untereinander dargestellt.\n\nWerkzeugbestand\n1 von 1 Werkzeugen angezeigt\nNeues Werkzeug ",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "7d81bb3bf6b41c8e7fa2c7236a203b63a27c995fbe2f4e399f26b734b9142dc2",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1348,
+      "height": 1138
+    },
+    {
+      "topic": "tool-movement",
+      "profile": "desktop",
+      "image": "screenshots/tool-movement-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [],
+      "textExcerpt": "Werkzeugverwaltung\n\nBestehende Werkzeugfunktionen bleiben erhalten und sind hier einsortiert.\n\nWerkzeugliste\nBestand\nEntnahme / Einlagerung\nNachbestellen\nJournal\nQR-Etiketten\nEinstellungen\nWerkzeug-Scanner\n\nFür Werkzeugbereich / Handy-Terminal\n\nWerkzeug entnehmen\n\nWerkzeugbestand um 1 reduzieren.\n\nManuell entnehmen\nQR-Code scannen\nWerkzeug einlagern\n\nWerkzeugbestand um eine gewählte Menge erhöhen.\n\nManuell einlagern\nQR-Code scannen",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "0983457c592cd96ce831079c379b887b4f2e8ef91a7a76b6cd825a13bb2005a9",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1363,
+      "height": 936
+    },
+    {
+      "topic": "tool-journal",
+      "profile": "desktop",
+      "image": "screenshots/tool-journal-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [
+        {
+          "name": "Suche ",
+          "type": "text"
+        },
+        {
+          "name": "Aktion \nAlle\nEntnahme\nEinlagerung\nWechsel",
+          "type": "select-one"
+        },
+        {
+          "name": "Zeitraum \nAlle\nHeute\n7 Tage\n30 Tage",
+          "type": "select-one"
+        }
+      ],
+      "textExcerpt": "Werkzeugverwaltung\n\nBestehende Werkzeugfunktionen bleiben erhalten und sind hier einsortiert.\n\nWerkzeugliste\nBestand\nEntnahme / Einlagerung\nNachbestellen\nJournal\nQR-Etiketten\nEinstellungen\nJournal: Vorhandenes Werkzeugjournal mit Filterleiste.\nWerkzeugverwaltung\n?\nAuto-Aktualisierung alle 15 Sekunden aktiv\nWerkzeuge aktualisieren\n\nWerkzeugbestand, Stammdaten, Bestellungen und Journal sind getrennt untereinander dargestellt.\n\nAdmin-Bestandsaktionen\nSchichtjournal – Werkzeugwechsel\nSuche \nAktion \n",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "34aac5242bc926bf0262d04341e6513da687b83a464724b479145945f1036d3c",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1348,
+      "height": 1066
+    },
+    {
+      "topic": "tool-qr",
+      "profile": "desktop",
+      "image": "screenshots/tool-qr-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [],
+      "textExcerpt": "Werkzeugverwaltung\n\nBestehende Werkzeugfunktionen bleiben erhalten und sind hier einsortiert.\n\nWerkzeugliste\nBestand\nEntnahme / Einlagerung\nNachbestellen\nJournal\nQR-Etiketten\nEinstellungen\nQR-Etiketten\n\nVorhandene Werkzeug-QR-Funktionen pro Werkzeug öffnen.\n\nWerkzeug\tBezeichnung\tArtikel\tAktion\nT 133\tSchaftfräser · ⌀ 10 · HSK 63\tART-133\tQR anzeigen",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "eed934c8af2df37f4176a68002eedfb60fa38f94923349a9aba14ef7644715ad",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1363,
+      "height": 936
+    },
+    {
+      "topic": "storage",
+      "profile": "desktop",
+      "image": "screenshots/storage-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [],
+      "textExcerpt": "Lagerverwaltung\n\nBestehende Lagerbezüge bleiben erhalten und bekommen feste Unterbereiche.\n\nLagerübersicht\nFachsuche\nUmlagern\nLagerfach-QR\nInventur\nEinstellungen\nLagerübersicht: Regal-/Fachstruktur mit belegten Fächern und Fach-Popup. Für gezielte Suche bitte den Untertab Fachsuche verwenden.\nWerkzeugverwaltung\n?\nAuto-Aktualisierung alle 15 Sekunden aktiv\nWerkzeuge aktualisieren\n\nWerkzeugbestand, Stammdaten, Bestellungen und Journal sind getrennt untereinander dargestellt.\n\nLageransicht\nLagerfac",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "daeeb5b2166d21bd75895cd3c3a3dc0b78d5e0f43f43c863f4214ec7fe4aef0a",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1348,
+      "height": 1724
+    },
+    {
+      "topic": "scanner",
+      "profile": "desktop",
+      "image": "screenshots/scanner-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [],
+      "textExcerpt": "Scanner\n\nScanner-Flows für Werkzeug, Lager und Produktion.\n\nWerkzeug scannen\nLagerfach scannen\nEntnahme\nEinlagerung\nRückgabe\nStückzahl-Scan\nWerkzeug-Scanner\n\nFür Werkzeugbereich / Handy-Terminal\n\nWerkzeug entnehmen\n\nWerkzeugbestand um 1 reduzieren.\n\nManuell entnehmen\nQR-Code scannen\nWerkzeug einlagern\n\nWerkzeugbestand um eine gewählte Menge erhöhen.\n\nManuell einlagern\nQR-Code scannen",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "c920c49ee33735bb266712355e13a1bef0fa3bae65c2bb8f454a2d02f9a16eae",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1363,
+      "height": 936
+    },
+    {
+      "topic": "analytics",
+      "profile": "desktop",
+      "image": "screenshots/analytics-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [],
+      "textExcerpt": "Auswertung\n\nStatistiken, Protokolle und spätere Exporte.\n\nWerkzeugstatistik\nBestellstatistik\nProduktionszahlen\nMitarbeiter / Abteilung\nProtokolle\nExport\nLaufzeitstatistik (Woche)\nWoche\nMonat\nJahr\n?\nMarker\n154 h\nGeplante Stunden\n36 h\n19.5% vom Marker\nIst-Stunden (bis jetzt)\n30 h\nStillstand 0%\nAbweichung Plan/Ist\n0%\nBemannt / Mannlos\nBemannt (Plan): 36 h\nMannlos (Plan): 0 h\nMannlos (eingetragen): 0 h\nGrafik (h / Marker 154h)\nPlan: 36 h\nIst: 30 h\nStillstand: 0 h",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "5199d850b05a14177524db76cf8e23b0bd5bd9790c55e79d8a94f65ef977a9d4",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1348,
+      "height": 953
+    },
+    {
+      "topic": "settings",
+      "profile": "desktop",
+      "image": "screenshots/settings-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [],
+      "textExcerpt": "Admin / System\n\nSystembereiche als feste Funktionslandkarte.\n\nRollen\nBenutzer / Login-Konten\nFirmen-Einstellungen\nVersion / Logs\nBackup\nSetup-Assistent\nRollen\n\nRollenverwaltung bleibt vorbereitet und wird später ausgebaut.",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "1461a6ec0676b37d161eb065d563c4b8fb08fc8e41517e3bc308eb0968f61ab5",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1363,
+      "height": 936
+    },
+    {
+      "topic": "context-help",
+      "profile": "desktop",
+      "image": "screenshots/context-help-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [],
+      "textExcerpt": "Admin / System\n\nSystembereiche als feste Funktionslandkarte.\n\nRollen\nBenutzer / Login-Konten\nFirmen-Einstellungen\nVersion / Logs\nBackup\nSetup-Assistent\nRollen\n\nRollenverwaltung bleibt vorbereitet und wird später ausgebaut.",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "a4e48b678a485b280693d1d9703ec37ac7b859f3673754cdbd538d6a304aea89",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1363,
+      "height": 936
+    },
+    {
+      "topic": "home",
+      "profile": "desktop",
+      "image": "screenshots/home-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [],
+      "textExcerpt": "Start / Dashboard\n\nFertigung, Planung und Team – alles in einer Anwendung.\n\n▥\nFertigung\nAbteilungen · Maschinen · Aufträge\n▦\nSchichtplan\nSchichten · Planung\n♙\nMitarbeiter\nStammdaten · Team\n⚒\nWerkzeuge\nBestand · Journal\n▤\nArtikel\nStammdaten\n▦ Heute im Überblick\n\nKeine verfügbaren Fertigungskennzahlen.\n\n⚙ Maschinenübersicht\nMaschine 50\nStatus nicht verfügbar\nMaschine 51\nStatus nicht verfügbar\nMaschine 52\nStatus nicht verfügbar\nMaschine 53\nStatus nicht verfügbar\n▥ Fertigungsinformationen\n\nAuftragsd",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "ad49892b095ba2116bb5a55a77cd49a83bd6c2292fe53b522f20a72b7dec470f",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1348,
+      "height": 1324
+    },
+    {
+      "topic": "my-shifts",
+      "profile": "desktop",
+      "image": "screenshots/my-shifts-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [],
+      "textExcerpt": "Start / Dashboard\n\nModulstruktur der Humbel Schichtplan- und Werkzeug-App.\n\nÜbersicht\nMeine Schichten\nTo-Do\nAlt-Schichtplan\nMeine Schichten\n\nMeine Schichten ist für Mitarbeiter vorgesehen.\n\nAlter Schichtplan bleibt Alt / deaktiviert und wird nicht als neue Struktur weiterverwendet.",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "51c5cb26bbf44008e1c3151cf289146f678174dda49131211e1f8102dd5ef721",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1363,
+      "height": 936
+    },
+    {
+      "topic": "tasks",
+      "profile": "desktop",
+      "image": "screenshots/tasks-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [
+        {
+          "name": "Aufgabe",
+          "type": "text"
+        },
+        {
+          "name": "taskAssignee",
+          "type": "select-one"
+        },
+        {
+          "name": "taskDeadline",
+          "type": "date"
+        }
+      ],
+      "textExcerpt": "Start / Dashboard\n\nModulstruktur der Humbel Schichtplan- und Werkzeug-App.\n\nÜbersicht\nMeine Schichten\nTo-Do\nAlt-Schichtplan\nTo-Do\nNeue Aufgabe erstellen\nTest Administration\nTest Mitarbeiter\nSpeichern\nOffene Aufgaben\nAufgabe\tMitarbeiter\tFrist\tStatus\t\nKeine offenen Aufgaben.\nErledigte Aufgaben\nAufgabe\tMitarbeiter\tFrist\tErledigt am\t\nNoch keine erledigten Aufgaben.\nAlter Schichtplan bleibt Alt / deaktiviert und wird nicht als neue Struktur weiterverwendet.",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "959f1a2cd1e2b10af27b253c3f293cd436c23e43b7c33b541473caa1829af228",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1363,
+      "height": 936
+    },
+    {
+      "topic": "schedule",
+      "profile": "desktop",
+      "image": "screenshots/schedule-desktop.jpg",
+      "version": "0.18.1",
+      "fields": [],
+      "textExcerpt": "Start / Dashboard\n\nModulstruktur der Humbel Schichtplan- und Werkzeug-App.\n\nÜbersicht\nMeine Schichten\nTo-Do\nAlt-Schichtplan\nAlt-Schichtplan\n\nAlter Schichtplan bleibt Alt / deaktiviert und wird nicht als neue Struktur weiterverwendet.\n\nAlter Schichtplan bleibt Alt / deaktiviert und wird nicht als neue Struktur weiterverwendet.",
+      "source": "Cloud browser; real running synthetic read-only documentation view; native Supabase not tested",
+      "sha256": "c03c4552138620e7acf6821451be66b488a4aac77d19e33c7e48023c4e576423",
+      "role": "admin",
+      "nativeAuth": false,
+      "width": 1363,
+      "height": 936
+    }
+  ],
+  "failures": [
+    {
+      "status": "BLOCKED_NOT_TESTED",
+      "reason": "Local Chromium cannot create process singleton socket (EPERM); automatic Playwright capture not completed. 30 supplementary desktop screenshots captured through supported Cloud Browser. Phone/tablet and authenticated browser flows untested."
+    }
+  ],
+  "externalRequestsBlocked": "Cloud Browser CSP limited connect-src to self; no production requests observed, not an independent egress audit"
+}

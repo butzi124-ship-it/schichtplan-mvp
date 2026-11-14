@@ -1,0 +1,357 @@
+{
+  "version": "0.18.1",
+  "basePR": 41,
+  "baseCommit": "5a1e32018a9b66fe6c32f1be3f8256234686a4a6",
+  "branch": "feature/test-preview-documentation-issue40",
+  "productionAccess": false,
+  "deployed": false,
+  "passedNodeTests": 287,
+  "regression": [
+    {
+      "command": "npm ci --ignore-scripts",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 2.67,
+      "logSha256": "48efda7c6271774392c61e7a064ec4f58bd66fe7d3ba9d11855dce24fd602eed"
+    },
+    {
+      "command": "node --check schichtplan_mvp.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.11,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "node --check tests/smoke.spec.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.11,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "npm run check:syntax",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 120,
+      "seconds": 5.19,
+      "logSha256": "cafdcdc1678207fde09e2d1486e00a1c903bd237357df5ad4bc113324d2c4338"
+    },
+    {
+      "command": "npm run test:ci",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 60,
+      "seconds": 0.42,
+      "logSha256": "0aed4e713d2835536e455892a0517cb4f4ea2bf841608ca3ea8de2c2b6ef4b38"
+    },
+    {
+      "command": "npm run test:qa",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 120,
+      "seconds": 1.22,
+      "logSha256": "f52cfe03783c876be99a8f24c2f47374886b0fe4f918cf8ec2322c467158c54f"
+    },
+    {
+      "command": "npm run qa:check",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 120,
+      "seconds": 1.88,
+      "logSha256": "0530fbcfd505ad271f541db9a2409968450e011c9f67a27b134ad37809f780bb"
+    },
+    {
+      "command": "npm run test:integration",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 3.48,
+      "logSha256": "ae04905bbb6f7976eb9c9358a26b1ab678745e3d036f463848929805f13b6795"
+    },
+    {
+      "command": "npm run test:security",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 300,
+      "seconds": 48.72,
+      "logSha256": "19a6ad20fc612e3afade16069cf3e0f455edac0d95061ca06e205078c5b0a693"
+    },
+    {
+      "command": "npm run test:learning",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 300,
+      "seconds": 15.68,
+      "logSha256": "eaf3722c7cc96cd574939a22657da8698fa9d13179dc15bdb3a7eb68efd0fd5a"
+    },
+    {
+      "command": "npm run test:documentation",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 60,
+      "seconds": 0.93,
+      "logSha256": "35676bf4cf98dea18d2aac00b42b2111a716a88234181e9e479bd8ec8ce3650e"
+    },
+    {
+      "command": "npm run docs:check",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.37,
+      "logSha256": "d02bc8e882acab7e51e29effaecb2c0f96d028cb4ae46ff5170dae21c9ada1dc"
+    },
+    {
+      "command": "npm run test:article-db",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 3.65,
+      "logSha256": "e6984c51c7ceed4b1cb4e695dea24efe8c913ebd708c2f3d04d5cfc63b96a2e5"
+    },
+    {
+      "command": "npm run test:operations",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 3.39,
+      "logSha256": "5caa8c26d915c670318ca5f5924366ce3b68fc9be6f33e67d0854a3b3bd105a4"
+    },
+    {
+      "command": "npm run test:readiness",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 11.61,
+      "logSha256": "b92568d9457c1f57fec3b3f1790c4ac59859faad09fc48114d910b1fde8db970"
+    },
+    {
+      "command": "npm run test:forecast",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 11.34,
+      "logSha256": "b1bff1291b52fe21a6175f25c967a204aebbe20de551ff31fdf234fa1790f5f3"
+    },
+    {
+      "command": "npm run test:ba-entry",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 3.51,
+      "logSha256": "5f16b3e87a6e81338f211e193312aeaf75a764b298e3b8fffb226ab09f4b522b"
+    },
+    {
+      "command": "npm run test:routing",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 3.23,
+      "logSha256": "9b6d0f7ab8cecfc481734b20c27bc08693f8b5db5d793b65dc13082f1bbdb21b"
+    },
+    {
+      "command": "npm run test:setup",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 3.95,
+      "logSha256": "6c91b65253ccffa093060e7fb7e743e246cd7616d675f3768c16c9f097180081"
+    },
+    {
+      "command": "npm run test:quantity",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 5.15,
+      "logSha256": "d15c19cb9e63e77f7cb5e53422ef5219beb640291aab086b78c2109c9eb47251"
+    },
+    {
+      "command": "npm run test:lifecycle",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 22.53,
+      "logSha256": "4ce6b62dd695b3398c7495ab3f579b421c9d402ee3dc252ea95bd56e707d4b82"
+    },
+    {
+      "command": "npm run qa:agent-server",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 60,
+      "seconds": 1.23,
+      "logSha256": "f3a365145b195cc178a6765a046d6f07a7495fa87f7093752ce3631662018319"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.03,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "node -e \"const fs=require('fs'),p=require('@playwright/test');console.log(JSON.stringify(Object.fromEntries(['chromium','firefox','webkit'].map(k=>[k,fs.existsSync(p[k].executablePath())]))))\"",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.47,
+      "logSha256": "dde116af913e6a71fd2a381b83ca774186bed8a466931a22dcc4d07f11191b6f"
+    },
+    {
+      "command": "npm run test:e2e",
+      "status": "BLOCKED_NOT_TESTED",
+      "started": false,
+      "reason": "Required browser binaries missing or preflight unavailable: {'chromium': False, 'firefox': False, 'webkit': False}"
+    },
+    {
+      "command": "npm run test:agents",
+      "status": "BLOCKED_NOT_TESTED",
+      "started": false,
+      "reason": "Required browser binaries missing or preflight unavailable: {'chromium': False, 'firefox': False, 'webkit': False}"
+    },
+    {
+      "command": "native learning PostgreSQL/GoTrue/JWT/PostgREST/session/concurrency acceptance",
+      "status": "BLOCKED_NOT_TESTED",
+      "started": false,
+      "reason": "No approved native PostgreSQL/GoTrue/JWT/PostgREST/multiple-connection environment supplied. Existing PGlite candidates do not replace native acceptance."
+    },
+    {
+      "command": "npm run test:visual",
+      "status": "BLOCKED_NOT_TESTED",
+      "started": false,
+      "reason": "Pinned Playwright container unavailable. Existing visual references unchanged; new help and preview not visually regression-tested."
+    }
+  ],
+  "finalChecks": [
+    {
+      "command": "test:documentation",
+      "status": "PASS",
+      "logSha256": "241e5af660c229a41b1ca365d0c1bf1b499bc6e6a5da017ed737d2c1ea332d64"
+    },
+    {
+      "command": "check:syntax",
+      "status": "PASS",
+      "logSha256": "cafdcdc1678207fde09e2d1486e00a1c903bd237357df5ad4bc113324d2c4338"
+    },
+    {
+      "command": "test:qa",
+      "status": "PASS",
+      "logSha256": "8970a552e8146ea6a163844f215f678bb2ccdcf610a61ab1dafaccc9ecd88b7d"
+    },
+    {
+      "command": "qa:check",
+      "status": "PASS",
+      "logSha256": "0530fbcfd505ad271f541db9a2409968450e011c9f67a27b134ad37809f780bb"
+    },
+    {
+      "command": "docs:check",
+      "status": "PASS",
+      "logSha256": "d02bc8e882acab7e51e29effaecb2c0f96d028cb4ae46ff5170dae21c9ada1dc"
+    },
+    {
+      "command": "docs:build",
+      "status": "PASS",
+      "logSha256": "f9680ee46f56caa72aade374d192c4b57a673da465c515a19ad8ffd3f66e868b"
+    },
+    {
+      "command": "test:documentation final source/identity checks",
+      "status": "PASS",
+      "passedTests": 5,
+      "logSha256": "65ee6a1ba68b6818fd2589327cbdd1b8573413494be23f0ebfa6c04654479603"
+    },
+    {
+      "command": "test:documentation final independent principals",
+      "status": "PASS",
+      "passedTests": 5,
+      "logSha256": "352c8913104c450a07a4af8bd6d96388cd13ac40448fea0d089d3341f93bea7b"
+    }
+  ],
+  "supplementalDesktopScreenshots": 30,
+  "manualPages": 33,
+  "slides": 12,
+  "helpTopics": 31,
+  "mainRendererFunctions": 86,
+  "artifacts": [
+    {
+      "path": "artifacts/documentation/Humbel_Benutzerhandbuch_0.18.1.docx",
+      "sha256": "e5f87da72f0488e3bfa4ba9bc000fb6194994ac812e63d113fd44b1d4aab3701",
+      "bytes": 3450590,
+      "repositoryCopy": "docs/generated/0.18.1/Humbel_Benutzerhandbuch_0.18.1.docx"
+    },
+    {
+      "path": "artifacts/documentation/Humbel_Benutzerhandbuch_0.18.1.pdf",
+      "sha256": "979c6dfd518110748a7cdc102c4cfc934c2839a0ed4f80c22c3f691bf71d6bd8",
+      "bytes": 5438419,
+      "repositoryCopy": "docs/generated/0.18.1/Humbel_Benutzerhandbuch_0.18.1.pdf"
+    },
+    {
+      "path": "artifacts/documentation/Humbel_GL_0.18.1.pptx",
+      "sha256": "6462111210d049e4a2e3d5a8addb8372cc518468f9fa494b1846f07ca34338f9",
+      "bytes": 1502482,
+      "repositoryCopy": "docs/generated/0.18.1/Humbel_GL_0.18.1.pptx"
+    },
+    {
+      "path": "artifacts/documentation/Humbel_Screenshots_0.18.1.zip",
+      "sha256": "1908298cd0e4564aeb155c3bafc730d8d06ce25e47f5b93daaa2143ac807202c",
+      "bytes": 3538139,
+      "repositoryCopy": "docs/generated/0.18.1/Humbel_Screenshots_0.18.1.zip"
+    }
+  ],
+  "blockers": [
+    {
+      "status": "BLOCKED_NOT_TESTED",
+      "reason": "Automatic Playwright capture: Chromium process singleton socket EPERM; supplemental Cloud Browser desktop capture is not equivalent"
+    },
+    {
+      "status": "BLOCKED_NOT_TESTED",
+      "reason": "test:e2e, test:agents: required Playwright browser binaries unavailable; system browser launch blocked"
+    },
+    {
+      "status": "BLOCKED_NOT_TESTED",
+      "reason": "test:visual: pinned Playwright 1.62.1-noble container unavailable; 33 old references unchanged"
+    },
+    {
+      "status": "BLOCKED_NOT_TESTED",
+      "reason": "Native PostgreSQL/GoTrue/PostgREST/JWT/RLS/session/concurrency acceptance: no approved complete local runtime or original restore"
+    },
+    {
+      "status": "BLOCKED_NOT_TESTED",
+      "reason": "Phone/tablet/real authenticated browser flows untested"
+    },
+    {
+      "status": "BLOCKED_NOT_TESTED",
+      "reason": "Full field/modal help audit for 86 renderer functions incomplete; 7 existing help sections not centralized"
+    },
+    {
+      "status": "BLOCKED_NOT_TESTED",
+      "reason": "Office CI job not enabled; approved runtime/runner required"
+    },
+    {
+      "status": "BLOCKED_NOT_TESTED",
+      "reason": "No online deployment authorization or approved target/TLS/SSO/native synthetic shared database"
+    },
+    {
+      "status": "BLOCKED_NOT_TESTED",
+      "reason": "Gamification calendar/30-day delivery/content and legacy RLS blockers from PR41/32 remain"
+    }
+  ],
+  "nativePreflight": {
+    "status": "BLOCKED_NOT_TESTED",
+    "expectedExitCode": 2,
+    "logSha256": "e227e6565c945320197589370aeebbc4c53501d8046558895f8762e2bb24ea95"
+  },
+  "knownDevelopmentFailures": [
+    "Backend seed used invalid alphanumeric BA; corrected to synthetic numeric BA without changing existing validation",
+    "New negative test initially used nonexistent department_enable action; corrected to actual department_enabled, preserving 42501 expectation",
+    "Office font property, validation receipt location and receipt filename collision corrected",
+    "Local browser process startup EPERM; no OS/network bypass attempted"
+  ],
+  "supplementalCaptureCaveat": "Development screenshots captured before final documentation review; not final-commit-bound automatic evidence. Context-help example predates final placeholder text corrections. Release builder refuses incomplete device/fingerprint evidence.",
+  "releaseDocumentationGate": {
+    "status": "PASS_EXPECTED_REJECTION",
+    "reason": "Missing automatic fingerprints and phone/tablet proof prevent release artifacts",
+    "logSha256": "91dbdf232adffc80bd0f5ceaa5cc469fb1facd9f27d2a273923a75a4fb273944"
+  }
+}
