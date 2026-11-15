@@ -120,7 +120,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.20.7";
+const APP_VERSION = "0.20.9";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -135,6 +135,8 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {"version": "0.20.9", "date": "2026-11-15 18:30", "changes": ["CSS-Kaskade der Touch-Abschluss-Schaltfläche korrigiert: Die bestehende Mindesthöhe von 52 px hat auf Desktop, Tablet und Smartphone Vorrang vor der allgemeinen Touch-Regel. Keine Geschäftslogik-, Pointer-, Scroll-, Berechtigungs-, Test- oder Referenzbildänderung."]},
+  {"version": "0.20.8", "date": "2026-11-15 17:50", "changes": ["Touch-Produktionsbedienung mit vorhandenen Tokens als Kontext- und Zählerkarten harmonisiert; bestehende 60-px-Zählflächen erhalten und Abschlussaktionen auf mindestens 52 px vereinheitlicht. 6M- und Abschlussdialoge mit gemeinsamen Abständen und viewportbegrenzter Scrollfläche gestaltet. Nur CSS und Darstellungsklassen, keine Geschäftslogik-, Statusfarben-, Berechtigungs- oder Referenzbildänderung."]},
   {"version": "0.20.7", "date": "2026-11-15 17:04", "changes": ["Gemeinsame CSS-Designwerte gemäß Designpaket PR #46 zentralisiert: Navy-Navigation, Oberflächen, Primärblau, Abstände, Kartenradien, Schatten und Bedienelemente. Primärtexte kontraststärker gestaltet; Statusfarben, Geschäftslogik, Branding und visuelle Referenzen unverändert."]},
   {"version": "0.20.6", "date": "2026-11-15 15:45", "changes": ["Skip-Link außerhalb des Fokus zusätzlich geclippt, ohne Tab-Erreichbarkeit oder Fokusdarstellung zu entfernen. Tablet-6M-Aufnahmeposition auf den erreichbaren Scrollbereich begrenzt; strikte Positions- und Bildprüfungen unverändert. Dokumentationsfingerabdrücke nach Prüfung aktualisiert; keine Geschäftslogik oder Referenzbilder geändert."]},
   {"version": "0.20.5", "date": "2026-11-15 14:39", "changes": ["Maschinenkarten vertikal und innerhalb ihrer verfügbaren Breite angeordnet; kompakte Bereichsnavigation und mobile Menütexte umbrechbar gemacht. Stationsmetriken und Zählbedienelemente explizit kompakt angeordnet, damit Ausschusskorrekturen keinen vorgeschalteten Scrollsprung benötigen. Geschäftslogik, Barcode- und Abschlusskorrekturen sowie Test-Assertions unverändert."]},
@@ -7358,8 +7360,8 @@ function renderProductionOrderChecklistSection(order, expanded = false) {
   const completeButton =
     ["running", "paused"].includes(order.status)
       ? expanded
-        ? `<button type='button' class='px-3 py-2 rounded bg-emerald-700 text-white text-sm disabled:opacity-50' onclick="completeProductionOrderWithChecklist('${order.id}')" ${canEdit && !completing && !blockers.length ? "" : "disabled"}>${completing ? "Fertigmeldung läuft..." : "Endgültig fertig melden"}</button>`
-        : `<button type='button' class='px-3 py-2 rounded bg-emerald-700 text-white text-sm' onclick="openProductionCompletionDialog('${order.id}')">Auftrag fertig melden</button>`
+        ? `<button type='button' class='production-complete-action px-3 py-2 rounded bg-emerald-700 text-white text-sm disabled:opacity-50' onclick="completeProductionOrderWithChecklist('${order.id}')" ${canEdit && !completing && !blockers.length ? "" : "disabled"}>${completing ? "Fertigmeldung läuft..." : "Endgültig fertig melden"}</button>`
+        : `<button type='button' class='production-complete-action px-3 py-2 rounded bg-emerald-700 text-white text-sm' onclick="openProductionCompletionDialog('${order.id}')">Auftrag fertig melden</button>`
       : "";
   const completedNotice =
     ["completed", "cancelled"].includes(order.status)
@@ -8531,9 +8533,9 @@ function renderProductionQaCauseModal() {
   const error = state.ui?.productionQaCauseModalError
     ? `<div class='rounded border border-rose-200 bg-rose-50 p-2 text-sm text-rose-700'>${escapeHtml(state.ui.productionQaCauseModalError)}</div>`
     : "";
-  return `<div class='fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4'>
-    <div class='bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-auto p-4 space-y-4'>
-      <div class='flex items-start justify-between gap-3'>
+  return `<div class='h-production-modal h-production-qa-modal fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4'>
+    <div class='h-production-modal-panel bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-auto p-4 space-y-4'>
+      <div class='h-production-modal-heading flex items-start justify-between gap-3'>
         <div>
           <h3 class='text-lg font-semibold'>6M-Ursache für ${escapeHtml(label)}</h3>
           <p class='text-sm text-slate-500 mt-1'>Spannung ${escapeHtml(station.station_no)} · Ursache wählen und optional Notiz ergänzen.</p>
@@ -8546,7 +8548,7 @@ function renderProductionQaCauseModal() {
         Notiz
         <textarea id='productionQaCauseNote' class='border rounded p-2 w-full mt-1 bg-white' rows='3' placeholder='Optional'></textarea>
       </label>
-      <div class='flex justify-end gap-2'>
+      <div class='h-production-modal-actions flex justify-end gap-2'>
         <button type='button' class='px-3 py-2 rounded bg-slate-200 text-slate-800' onclick='closeProductionQaCauseModal("Ursachenerfassung abgebrochen.")'>Abbrechen</button>
         <button type='button' class='px-3 py-2 rounded bg-slate-900 text-white' onclick='confirmProductionQaCauseModal()'>Ursache speichern</button>
       </div>
@@ -10011,9 +10013,9 @@ function renderProductionCompletionDialog() {
   const order = getProductionOrderById(orderId);
   if (!order) return "";
   const remaining = calculatePreparedRemainingQuantity(order);
-  return `<div class='fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4'>
-    <div class='bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-auto p-4 space-y-4'>
-      <div class='flex items-start justify-between gap-3'>
+  return `<div class='h-production-modal h-production-completion-modal fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4'>
+    <div class='h-production-modal-panel bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-auto p-4 space-y-4'>
+      <div class='h-production-modal-heading flex items-start justify-between gap-3'>
         <div>
           <h3 class='text-lg font-semibold'>Auftrag fertig melden</h3>
           <p class='text-sm text-slate-500 mt-1'>BA ${escapeHtml(order.ba_number || "-")} · Restmenge ${escapeHtml(remaining)}</p>

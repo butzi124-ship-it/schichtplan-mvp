@@ -73,7 +73,7 @@
 .h-production :is(#ba-entry,#operations-orders,[aria-label="BA-Operationssnapshot"],[aria-label^="BA OP"],#op-routing,#setup-times,#op-quantities,#ba-lifecycle) { border:1px solid var(--h-border)!important;background:var(--h-surface)!important;border-radius:var(--h-radius)!important;padding:20px!important;box-shadow:var(--h-shadow); }
 .h-production :is(input:not([type=checkbox]):not([type=radio]),select,textarea),.h-production-dialog :is(input,select,textarea) { border:1px solid var(--h-border)!important;border-radius:var(--h-radius-control)!important;padding:10px 12px!important;min-height:var(--h-target);max-width:100%;background:var(--h-surface); }
 .h-production :is(form,fieldset) { min-width:0;border-color:var(--h-border)!important;border-radius:10px; }.h-production fieldset { background:#f9fbfe; }.h-production legend { color:#254a73;font-weight:650;padding:0 8px; }.h-production label { color:#35506d;font-size:var(--h-font-small); }.h-production button { min-height:var(--h-target);border-radius:var(--h-radius-control); }
-.h-production .production-touch-complete { min-height:52px; margin-top:1px; }.h-production button:is(.bg-slate-900,.bg-emerald-700),.h-production form button:not([type=button]):not([disabled]) { background:var(--h-primary)!important;color:white!important; }
+.h-production .production-touch-view .production-touch-complete { min-height:52px; margin-top:1px; }.h-production button:is(.bg-slate-900,.bg-emerald-700),.h-production form button:not([type=button]):not([disabled]) { background:var(--h-primary)!important;color:white!important; }
 .h-production table { border-collapse:collapse; }.h-production :is(td,th) { border-color:#e5ecf5; }.h-production th { background:#f4f7fc;color:#29425f; }.h-production :is(h3,h4,h5) { line-height:1.35; }.h-production [aria-label="BA-Operationssnapshot"] > section { margin-top:16px; }.h-production :is(#ba-entry,#operations-orders) h3 { font-size:var(--h-font-section);font-weight:750; }.h-production :is(#ba-entry,#operations-orders) form { padding:12px 0; }
 .h-production [data-production-machine-id] > div,.h-production #productionActiveOrderPanel > div { border-radius:var(--h-radius); }.h-production [data-counter-value] { font-variant-numeric:tabular-nums; }.h-production .production-order-tabs { border-bottom:1px solid var(--h-border);padding-bottom:12px; }
 .h-production-dialog > div { border:1px solid var(--h-border);border-radius:var(--h-radius-dialog)!important;box-shadow:0 15px 65px #061d3940; }.h-production-dialog button { min-height:var(--h-target);border-radius:var(--h-radius-control); }
@@ -113,4 +113,78 @@
 @media(max-width:480px) {
   .h-production article[data-scroll-anchor^="station:"]:not(.production-touch-station) .h-amount-controls { grid-template-columns:minmax(0,1fr); }
   .h-production article[data-scroll-anchor^="station:"]:not(.production-touch-station) [data-scroll-anchor^="good:"] > .grid { grid-template-columns:minmax(0,1fr); }
+}
+
+/* Phase 2: reuse the shared tokens around the existing touch workflow and anchors. */
+.h-production :is(.production-touch-view,.h-production-modal),
+.h-production :is(.production-touch-view,.h-production-modal) * { box-sizing:border-box; }
+.h-production .production-touch-view,
+.h-production .production-touch-view #productionActiveOrderPanel { display:grid;gap:var(--h-space-md);min-width:0; }
+.h-production .production-touch-heading,
+.h-production .production-touch-view .production-order-tabs,
+.h-production .production-touch-employees,
+.h-production .production-touch-view [aria-label="Auftragsfortschritt"],
+.h-production .production-touch-station {
+  min-width:0;max-width:100%;margin:0;padding:var(--h-space-lg);
+  border:1px solid var(--h-border);border-radius:var(--h-radius);
+  background:var(--h-surface);box-shadow:var(--h-shadow);
+}
+.h-production .production-touch-heading { flex-wrap:wrap;gap:var(--h-space-md); }
+.h-production .production-touch-heading h3 { min-width:0;overflow-wrap:anywhere;font-size:var(--h-font-section); }
+.h-production .production-touch-view .production-order-tabs { gap:var(--h-space-sm);padding:var(--h-space-md); }
+.h-production .production-touch-view :is(button,summary) { min-width:var(--h-target);min-height:var(--h-target);border-radius:var(--h-radius-control); }
+.h-production .production-touch-view .production-view-toggle { justify-self:start;flex-wrap:wrap;gap:var(--h-space-xs);border-radius:var(--h-radius-control); }
+.h-production .production-touch-employees summary { border-radius:var(--h-radius-control); }
+.h-production .production-touch-station { display:grid;gap:var(--h-space-md); }
+.h-production .production-touch-station > header { flex-wrap:wrap;gap:var(--h-space-sm);margin:0; }
+.h-production .production-touch-station > .grid { display:grid;gap:var(--h-space-md);min-width:0; }
+.h-production .production-touch-view div[data-scroll-anchor^="good:"],
+.h-production .production-touch-view div[data-scroll-anchor^="amount:"] {
+  min-width:0;padding:var(--h-space-md);border:1px solid var(--h-border);
+  border-radius:var(--h-radius-control);background:var(--h-surface-muted);
+}
+.h-production .production-touch-view div[data-scroll-anchor^="good:"] > div:first-child {
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--h-space-md);
+}
+.h-production .production-touch-view div[data-scroll-anchor^="amount:"] > div:first-child {
+  display:grid;grid-template-columns:minmax(0,1fr);gap:var(--h-space-sm);
+}
+.h-production .production-touch-view .h-amount-controls {
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))!important;gap:var(--h-space-md);
+}
+.h-production .production-touch-view div[data-scroll-anchor] button[aria-label*="1"] { min-width:60px;min-height:60px;flex-shrink:0; }
+.h-production .production-touch-view [data-counter-value] { border-radius:var(--h-radius-control);font-variant-numeric:tabular-nums; }
+.h-production .production-complete-action { min-height:52px;min-width:var(--h-target); }
+/* One panel scrolls, including its actions: no fixed footer covering form fields. */
+.h-production .h-production-modal { position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgb(0 0 0 / 40%);padding:var(--h-space-lg);overflow-y:auto;overscroll-behavior:contain; }
+.h-production .h-production-modal-panel {
+  width:100%;min-width:0;max-width:56rem;
+  max-height:calc(100vh - var(--h-space-lg) - var(--h-space-lg));
+  max-height:calc(100dvh - var(--h-space-lg) - var(--h-space-lg));
+  overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;
+  display:flex;flex-direction:column;gap:var(--h-space-lg);padding:var(--h-space-lg);
+  border-radius:var(--h-radius-dialog);
+}
+.h-production .h-production-qa-modal .h-production-modal-panel { max-width:48rem; }
+.h-production .h-production-modal-panel > * { flex-shrink:0;min-width:0; }
+.h-production .h-production-modal-panel > * + * { margin-top:0; }
+.h-production .h-production-modal-heading { display:flex;flex-wrap:wrap;gap:var(--h-space-md);align-items:start; }
+.h-production .h-production-modal-heading > div { flex:1;min-width:0;overflow-wrap:anywhere; }
+.h-production .h-production-modal-heading h3 { font-size:var(--h-font-section); }
+.h-production .h-production-modal :is(button,select,textarea) { min-width:var(--h-target);min-height:var(--h-target);max-width:100%; }
+.h-production .h-production-modal button { white-space:normal;overflow-wrap:anywhere; }
+.h-production .h-production-modal textarea { width:100%; }
+.h-production .h-production-modal-actions { display:flex;flex-wrap:wrap;justify-content:flex-end;gap:var(--h-space-sm); }
+.h-production .h-production-completion-modal label:has(input[type="checkbox"]) { min-height:var(--h-target); }
+.h-production .h-production-completion-modal .production-complete-action { min-height:52px; }
+@media(max-width:700px) {
+  .h-production .production-touch-view div[data-scroll-anchor^="good:"] > div:first-child { grid-template-columns:minmax(0,1fr); }
+}
+@media(max-width:440px) {
+  .h-production .production-touch-heading,
+  .h-production .production-touch-employees,
+  .h-production .production-touch-view [aria-label="Auftragsfortschritt"],
+  .h-production .production-touch-station { padding:var(--h-space-md); }
+  .h-production .production-touch-view div[data-scroll-anchor^="good:"] > div:first-child > div:last-child,
+  .h-production .production-touch-view div[data-scroll-anchor^="amount:"] > div:first-child > div:last-child { gap:var(--h-space-sm); }
 }
