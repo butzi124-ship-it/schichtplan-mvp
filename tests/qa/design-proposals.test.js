@@ -71,6 +71,8 @@ test('missing or ambiguous screenshots and missing comparison evidence fail clos
     const duplicate = path.join(f.cwd, 'test-results/visual/duplicate-visual-desktop');fs.mkdirSync(duplicate);
     fs.writeFileSync(path.join(duplicate, 'login-actual.png'), f.bytes);
     fs.rmSync(path.join(f.cwd, 'test-results/visual/good-counter-visual-tablet/good-counter-actual.png'));
+    const different = PNG.sync.read(f.bytes);different.data[0] = 0;
+    fs.writeFileSync(path.join(f.cwd, 'test-results/visual/station-tabs-visual-mobile/station-tabs-actual.png'), PNG.sync.write(different));
     fs.rmSync(path.join(f.cwd, 'test-results/visual/station-tabs-visual-mobile/station-tabs-diff.png'));
     fs.rmSync(path.join(f.cwd, 'tests/visual-snapshots/visual-mobile/article-tabs.png'));
     assert.equal(collect(f, 'first').status, 1);
@@ -78,5 +80,29 @@ test('missing or ambiguous screenshots and missing comparison evidence fail clos
     assert(m.missing.includes('visual-desktop/login.png'));
     assert(m.missing.includes('visual-mobile/article-tabs-reference.png'));
     assert.equal(collect(f, 'second').status, 1);assert.equal(json(f, 'stability.json').status, 'UNSTABLE_OR_INCOMPLETE');
+  } finally { f.cleanup(); }
+});
+test('successful real captures need no diff only when their decoded pixels equal the reference', () => {
+  const f = fixture();
+  try {
+    for (const project of projects) for (const scene of scenes) fs.rmSync(path.join(f.cwd, 'test-results/visual', scene + '-' + project, scene + '-diff.png'));
+    assert.equal(collect(f, 'first').status, 0);assert.equal(collect(f, 'second').status, 0);
+    const m = json(f, 'second/manifest.json');assert.equal(m.proposals.length, 33);assert.deepEqual(m.missing, []);
+    assert(m.proposals.every(p => p.identicalToReference === true && p.diff === null));
+    assert.equal(json(f, 'stability.json').status, 'STABLE_33_OF_33');
+    const html = fs.readFileSync(path.join(f.cwd, output, 'index.html'), 'utf8');
+    assert(!html.includes('second/null'));assert(!html.includes('second/undefined'));
+    assert.deepEqual(f.baseline(), f.original);
+  } finally { f.cleanup(); }
+});
+test('missing diff for a genuine pixel mismatch remains an error even with a current capture', () => {
+  const f = fixture();
+  try {
+    const png = PNG.sync.read(f.bytes);png.data[0] = 0;
+    fs.writeFileSync(path.join(f.cwd, 'test-results/visual/login-visual-desktop/login-actual.png'), PNG.sync.write(png));
+    fs.rmSync(path.join(f.cwd, 'test-results/visual/login-visual-desktop/login-diff.png'));
+    assert.equal(collect(f, 'first').status, 1);
+    assert(json(f, 'first/manifest.json').missing.includes('visual-desktop/login-diff.png'));
+    assert.deepEqual(f.baseline(), f.original);
   } finally { f.cleanup(); }
 });

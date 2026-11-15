@@ -25,11 +25,18 @@ for (const project of projects) {
     const reference = path.join('tests/visual-snapshots', key);
     const diff = path.join(root, directories[0], scene + '-diff.png');
     for (const [kind, from] of [['reference', reference], ['diff', diff]]) {
-      if (!fs.existsSync(from)) { manifest.missing.push(project + '/' + scene + '-' + kind + '.png'); continue; }
+      if (!fs.existsSync(from)) {
+        if (kind === 'diff' && proposal.identicalToReference === true) { proposal.diff = null; continue; }
+        manifest.missing.push(project + '/' + scene + '-' + kind + '.png'); continue;
+      }
       const to = path.join(runOut, project, scene + '-' + kind + '.png');
       fs.copyFileSync(from, to);
       proposal[kind] = path.relative(runOut, to);
       proposal[kind + 'Sha256'] = digest(fs.readFileSync(to));
+      if (kind === 'reference') {
+        const expected = require('pngjs').PNG.sync.read(fs.readFileSync(from));
+        proposal.identicalToReference = png.width === expected.width && png.height === expected.height && png.data.equals(expected.data);
+      }
     }
     manifest.proposals.push(proposal);
   }
@@ -53,8 +60,8 @@ if (run === 'second') {
   const sections = manifest.proposals.map(p => {
     const scene = p.file.replace(/\.png$/, '');
     const compare = comparisons.find(c => c.file === p.file);
-    const images = [['Bisherige Referenz', 'second/' + p.reference], ['Aktuell – Lauf 1', 'first/' + p.file], ['Aktuell – Lauf 2', 'second/' + p.file], ['Differenz zur Referenz', 'second/' + p.diff]];
-    return `<section><h2>${scene}</h2><p>Pixel zwischen Lauf 1 und 2: ${compare.identicalPixels ? 'identisch' : 'ABWEICHEND / FEHLEND'}</p><div class="images">${images.map(([label,src]) => `<figure><figcaption>${label}</figcaption><a href="${src}"><img loading="lazy" src="${src}" alt="${scene}: ${label}"></a></figure>`).join('')}</div></section>`;
+    const images = [['Bisherige Referenz', 'second/' + p.reference], ['Aktuell – Lauf 1', 'first/' + p.file], ['Aktuell – Lauf 2', 'second/' + p.file], ['Differenz zur Referenz', p.diff ? 'second/' + p.diff : null]];
+    return `<section><h2>${scene}</h2><p>Pixel zwischen Lauf 1 und 2: ${compare.identicalPixels ? 'identisch' : 'ABWEICHEND / FEHLEND'}</p><div class="images">${images.map(([label,src]) => `<figure><figcaption>${label}</figcaption>${src ? `<a href="${src}"><img loading="lazy" src="${src}" alt="${scene}: ${label}"></a>` : '<p>Nachgewiesen pixelidentisch – kein Differenzbild erforderlich.</p>'}</figure>`).join('')}</div></section>`;
   });
   fs.writeFileSync(path.join(out, 'index.html'), `<!doctype html><html lang="de"><meta charset="utf-8"><title>FABOS – nicht freigegebene Bildprüfung</title><style>body{font:16px system-ui;margin:24px;background:#f3f7fc;color:#102033}section{background:white;padding:16px;margin:24px 0;border:1px solid #dce5f1}.images{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}figure{margin:0}img{max-width:100%;height:auto;border:1px solid #aaa}figcaption{font-weight:bold;margin:8px 0}@media(max-width:900px){.images{grid-template-columns:repeat(2,minmax(0,1fr))}}</style><h1>Bildprüfung – keine Referenzfreigabe</h1><p>Version ${manifest.version}; Checkout ${manifest.testedSha}; ${stability.status}.</p><p>33 Szenenbilder pro Lauf. Alte Referenzen sind unverändert. Einzelbilder zum Vergrößern anklicken. Die Bildabweichungen sind nicht automatisch genehmigt.</p>${sections.join('\n')}</html>\n`);
   console.log(`Capture stability: ${stability.status}; ${comparisons.filter(c => c.identicalPixels).length}/33 identical pixel images.`);

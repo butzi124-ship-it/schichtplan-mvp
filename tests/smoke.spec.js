@@ -169,6 +169,9 @@ test.describe("Humbel app smoke", () => {
         await page.evaluate(() => document.fonts.ready);
         if (target === page) await expect(page).toHaveScreenshot(`${scene}.png`, { fullPage: true });
         else await expect(target).toHaveScreenshot(`${scene}.png`);
+        // Playwright writes -actual only on a mismatch. Preserve a real capture on success too.
+        await target.screenshot({ path: testInfo.outputPath(`${scene}-actual.png`),
+          animations: "disabled", caret: "hide", scale: "css", ...(target === page ? { fullPage: true } : {}) });
         expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);
         expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(testInfo.project.use.viewport.width);
       });
