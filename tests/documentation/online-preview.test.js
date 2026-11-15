@@ -49,3 +49,25 @@ test('online preview restricts host and proxy protocol, authenticates protected 
   for(const [key,val] of Object.entries(old)){const env={online:'HUMBEL_PREVIEW_ONLINE',origin:'HUMBEL_PREVIEW_ORIGIN',demo:'HUMBEL_PREVIEW_DEMO'}[key];if(val===undefined)delete process.env[env];else process.env[env]=val;}
  }
 });
+
+
+test('online demo starts without heavyweight PGlite and exposes only synthetic read-only RPC facade',{timeout:10000},async()=>{
+ const old={online:process.env.HUMBEL_PREVIEW_ONLINE,origin:process.env.HUMBEL_PREVIEW_ORIGIN,demo:process.env.HUMBEL_PREVIEW_DEMO};
+ let preview;
+ try{
+  process.env.HUMBEL_PREVIEW_ONLINE='1';process.env.HUMBEL_PREVIEW_ORIGIN='https://fabos.example.test';process.env.HUMBEL_PREVIEW_DEMO='1';
+  const password=crypto.randomBytes(32).toString('hex');
+  preview=await createPreview({passwords:{employee:password}});
+  const url='http://127.0.0.1:'+preview.server.address().port,headers={Host:'fabos.example.test','X-Forwarded-Proto':'https'};
+  let res=await request(url+'/healthz');assert.equal(res.status,200);
+  res=await request(url+'/login',{method:'POST',headers:{...headers,Origin:'https://fabos.example.test','Content-Type':'application/json'},body:JSON.stringify({account:'employee',password})});assert.equal(res.status,200);
+  const cookie=res.headers.get('set-cookie').split(';')[0];
+  res=await request(url+'/preview-bootstrap.js',{headers:{...headers,Cookie:cookie}});assert.equal(res.status,200);
+  assert.match(await res.text(),/window.__PREVIEW_ONLINE=true/);
+  res=await request(url+'/rpc',{method:'POST',headers:{...headers,Cookie:cookie,Origin:'https://fabos.example.test','Content-Type':'application/json'},body:JSON.stringify({name:'ba_lifecycle_view',params:{}})});
+  assert.equal(res.status,200);assert.equal(JSON.parse(await res.text()).error.code,'42501');
+ }finally{
+  if(preview)await preview.close();
+  for(const [key,val] of Object.entries(old)){const env={online:'HUMBEL_PREVIEW_ONLINE',origin:'HUMBEL_PREVIEW_ORIGIN',demo:'HUMBEL_PREVIEW_DEMO'}[key];if(val===undefined)delete process.env[env];else process.env[env]=val;}
+ }
+});
