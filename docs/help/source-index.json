@@ -1,5 +1,5 @@
 {
-  "schichtplan_mvp.js": "0c56a36e198e461cb2fceb168cf01d9294d757d9d6becb83841ffbb2fca39109",
+  "schichtplan_mvp.js": "470f3cf9d9eb8493fc295cf5a52c24ad5db9bfb75ff2974233f54fcb9ac74342",
   "schichtplan_mvp.html": "84d434f997b9b349ceb9b85f06d453d1e908bcc778a6cd88d9a8545110386f57",
   "js/app-shell.js": "0b82bccaec5a938ad7e8363da012097507e9f3e232c59960f98f23ff62ba0e76",
   "js/article-master.js": "db5e1bfcd4130dd8ee19bb9402455069f1af50b73c573aa0f965a1d20af742b7",
@@ -22,7 +22,7 @@
   "css/app-shell.css": "fb00ed74254e66ab16fac9bf6af02e8aa49990fa943a8947ad704d0562251956",
   "css/home-dashboard.css": "fd9d4c62cdfa0997b579028b299c4efa024e47c55baecb479c360e28481430ed",
   "css/learning.css": "bb7e1f07a1bc84b250d27e97f713a8d15ca2d68fabf4d93a3511977f34ffbe35",
-  "css/production-design.css": "463256a3f02a1a3cefdcd889abbffaa89a13cc0231cdf1ff2c3cb64e9fcb2caf",
+  "css/production-design.css": "b48e77671d25b22af7e909da00915e5b9147d3e9bf58429670780a06fa7ba124",
   "scripts/preview/server.js": "0f52c5865d346e55e77b4730602afb45e87676b8676fe365d50092e64be530e5",
   "scripts/preview/backend.js": "6197d8ed0cf79d8a9b4d60c1995bb9defab15cb606af65922e2325e983ef2cb1",
   "scripts/preview/client.js": "c49e9065fc9fc2b4f7f31b19b36a0989a19997b2c211896a47d3b5fd2fd5bea0",
