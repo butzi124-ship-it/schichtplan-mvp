@@ -32,6 +32,10 @@ test('legacy preview maps only current and finished OPs; future queues remain re
  assert.equal(rows.departments.length,8);
  assert.equal(rows.employees.length,41); // separate isolated admin plus 40 invented personnel
  assert.equal(rows.production_machines.length,19);
+ assert.equal(rows.tools.length,20);
+ assert(rows.tools.some(t=>t.label==='Schaftfräser'));
+ assert(rows.tools.some(t=>t.label==='Drehmeißel Schruppen'));
+ assert(rows.tools.every(t=>t.t_number.startsWith('DEMO-')));
  assert.equal(rows.production_orders.length,data.orders.filter(o=>o.status!=='queued').length);
  assert(rows.production_orders.every(o=>['running','completed'].includes(o.status)));
  assert(rows.production_order_stations.every(s=>data.operations.some(o=>o.id===s.id)));
