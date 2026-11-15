@@ -30,10 +30,10 @@ body.h-app-signed-in #app-shell { margin-left: var(--h-sidebar); }
 .h-app .h-skip-link { position: fixed; top: .5rem; left: 1rem; z-index: 100; transform: translateY(-200%); background: white; color: var(--h-blue); padding: .75rem 1rem; border-radius: .5rem; }
 .h-app .h-skip-link:focus { transform: none; }
 .h-app :is(button, input, select, textarea, a):focus-visible { outline: 3px solid var(--h-accent) !important; outline-offset: 3px; }
-#tabs.humbel-main-nav { position: fixed; inset: 0 auto 0 0; width: var(--h-sidebar); z-index: 45; margin: 0; padding: 84px 12px 20px; display: flex; flex-direction: column; flex-wrap: nowrap; gap: 6px; overflow-y: auto; background: linear-gradient(160deg, var(--h-navy), #0b2a4b); border: 0; border-radius: 0; box-shadow: 4px 0 18px #061e351a; }
+#tabs.humbel-main-nav { position: fixed; inset: var(--h-preview-offset, 0px) auto 0 0; width: var(--h-sidebar); z-index: 45; margin: 0; padding: 84px 12px 20px; display: flex; flex-direction: column; flex-wrap: nowrap; gap: 6px; overflow-y: auto; background: linear-gradient(160deg, var(--h-navy), #0b2a4b); border: 0; border-radius: 0; box-shadow: 4px 0 18px #061e351a; }
 #tabs.humbel-main-nav::before { content: 'Humbel-App'; position: absolute; top: 24px; left: 24px; color: white; font-size: 1.25rem; font-weight: 750; }
-#tabs.hidden { display: none; }
-#tabs.humbel-main-nav button { width: 100%; min-height: 48px; padding: 12px 14px; text-align: left; font-size: .9375rem; font-weight: 600; line-height: 1.3; border: 1px solid transparent !important; border-radius: 10px; background: transparent !important; color: #f1f6ff !important; box-shadow: none; overflow-wrap: anywhere; }
+#tabs.hidden { display: none !important; }
+#tabs.humbel-main-nav button { width: 100%; min-height: 48px; padding: 12px 14px; text-align: left; font-size: .9375rem; font-weight: 600; line-height: 1.3; border: 1px solid transparent !important; border-radius: 10px; background: transparent !important; color: #f1f6ff !important; box-shadow: none; overflow-wrap: normal; word-break: normal; hyphens: manual; }
 #tabs.humbel-main-nav button:hover { background: #24415c !important; }
 #tabs.humbel-main-nav .humbel-main-tab-active { background: #095ba6 !important; border-color: #6bb0ee !important; }
 #tabs.humbel-main-nav .humbel-tab-attention { border-color: #fb7185 !important; }
@@ -100,3 +100,19 @@ body.h-app-signed-in #app-shell { margin-left: var(--h-sidebar); }
   .h-app-header > div:first-child { gap: .75rem; }
 }
 @media (prefers-reduced-motion: reduce) { .h-home-tile:hover { transform: none; } }
+
+/* Shared correction: controls use their available card width, not viewport width. */
+.h-amount-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)) !important; gap: .5rem; min-width: 0; }
+.h-amount-controls > div { min-width: 0; }
+.h-amount-controls button { min-width: 44px; min-height: 44px; }
+/* Utilities remain in normal flow so neither content nor table actions can be covered. */
+#app-utilities { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .75rem; padding: 1rem; border: 1px solid var(--h-border); border-radius: var(--h-radius); background: white; }
+#app-utilities:empty { display: none; }
+#app-utilities[hidden] { display: none; }
+#app-utilities #versionFooter, #app-utilities #context-help-launcher { position: static !important; inset: auto !important; margin: 0; max-width: 100%; }
+#app-utilities #versionFooter[hidden] { display: none !important; }
+#app-utilities button { min-height: 44px; white-space: normal; }
+.h-app-header #downtimeWidget { position: static !important; inset: auto !important; flex-basis: 100%; margin: 0; }
+.h-app-header #downtimeWidget:empty { display: none; }
+.h-app-header #downtimeWidget button { min-height: 44px; max-width: 100%; white-space: normal; }
+@media (max-width: 800px) { #app-utilities { justify-content: flex-start; } }

@@ -120,7 +120,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.19.0";
+const APP_VERSION = "0.19.3";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -135,6 +135,9 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  { version: "0.19.3", date: "2026-11-15 07:24", changes: ["Bestehenden Stillstand-Timer ohne Funktionsänderung im Kopfbereich angeordnet, damit keine Schicht- oder Tabellenaktion durch schwebende Elemente verdeckt wird. Zusätzliche Bedienungsprüfung; keine Referenzbildänderung."] },
+  { version: "0.19.2", date: "2026-11-15 07:17", changes: ["Mobile Navigation nach Abmelden zuverlässig ausgeblendet. Ergänzende Klicktest-Fixture mit vorhandener Auftragscheckliste initialisiert, ohne bestehende Assertions zu ändern. Referenzbilder bleiben unverändert."] },
+  { version: "0.19.1", date: "2026-11-15 07:07", changes: ["Darstellungsfehler aus PR #43 behoben: responsive Ausschuss-/Klärfallzähler, kollisionsfreie Hilfe/Versionsinformationen, Vorschaukopf und lesbare Navigation. Statussemantik, Aufgabenbeschriftungen und Fokus nach asynchronem Rendern korrigiert. Keine Geschäftslogikänderung; Referenzbilder unverändert."] },
   { version: "0.19.0", date: "2026-11-15 06:21", changes: ["Gemeinsames responsives Humbel-Layout mit dunkelblauer Navigation sowie vereinheitlichte Anmeldung, Startseite, Meine Schichten und Aufgaben. Keine Geschäftsprozess-, Rechte- oder Datenbankänderung; kein Deployment."] },
   { version: "0.18.1", date: "2026-11-14 08:15", changes: ["Isolierten synthetischen Teststand, zentrale kontextbezogene Hilfe und reproduzierbare Screenshot-/Handbuch-/Präsentationsautomatik für Issue #40 vorbereitet. Keine produktive Aktivierung und kein Deployment."] },
   { version: "0.18.0", date: "2026-11-14 07:49", changes: ["Gamification und getrennte Sicherheitsunterweisungen mit RPC-Oberflächen, adaptiven Multiple-Choice-Fragen, getrennten Punktekonten, Auszeichnungen, Privatsphäre und Abteilungsverwaltung implementiert. Isolierter SQL-Kandidat; produktive Installation und UI-Aktivierung bleiben gesperrt."] },
@@ -7621,7 +7624,7 @@ function renderProductionStationChip(label, value) {
 }
 
 function renderProductionStationScrapClarifyControls(station, canEdit) {
-  return `<div class='grid sm:grid-cols-2 gap-2'>
+  return `<div class='h-amount-controls grid sm:grid-cols-2 gap-2'>
       ${renderProductionStationAmountControl(station, "scrap", "Ausschuss", station.scrap_total, canEdit)}
       ${renderProductionStationAmountControl(station, "clarify", "In Abklärung", station.clarify_total, canEdit)}
   </div>`;
