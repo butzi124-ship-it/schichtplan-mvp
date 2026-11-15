@@ -60,6 +60,11 @@
       "file": "schichtplan_mvp.js",
       "before": "<button type='button' class='px-3 py-2 rounded bg-emerald-700 text-white text-sm' onclick=\"openProductionCompletionDialog('${order.id}')\"",
       "after": "<button type='button' class='production-complete-action px-3 py-2 rounded bg-emerald-700 text-white text-sm' onclick=\"openProductionCompletionDialog('${order.id}')\""
+    },
+    {
+      "file": "tests/smoke.spec.js",
+      "before": "            target = page.locator(\"#view\");\n          } else {\n            await clickMain(page, \"Produktion\");",
+      "after": "            target = page.locator(\"#view\");\n          } else if (scene === \"production-overview\") {\n            // The design map means the factory overview, not an individual BA preview.\n            await clickMain(page, \"Produktion\");\n            await clickSubtab(page, \"Stückzahl\");\n            await expectViewHeading(page, \"Fertigung – Produktionsübersicht\");\n            target = page.locator(\"#view\");\n            const overview = target.getByRole(\"region\", { name: \"Fertigungsübersicht\", exact: true });\n            await expect(overview.locator(\".h-kpi\")).toHaveCount(5);\n            await expect(overview.locator(\".h-kpi h4\")).toHaveText([\n              \"Aktive BA\", \"Laufend\", \"Pausiert\", \"Maschinen\", \"BA mit Abklärung\",\n            ]);\n            for (const card of await overview.locator(\".h-kpi\").all()) {\n              await expect(card).toBeVisible();\n              await expect(card.locator(\"strong\")).toHaveText(/^\\d+$/);\n            }\n            await expect(overview.getByRole(\"form\", { name: \"Fertigung filtern\", exact: true })).toBeVisible();\n            await expect(overview.getByRole(\"complementary\", { name: \"Auftragsvorschau\", exact: true })).toBeVisible();\n          } else {\n            await clickMain(page, \"Produktion\");"
     }
   ],
   "baseHashes": {

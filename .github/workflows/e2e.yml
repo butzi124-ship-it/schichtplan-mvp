@@ -118,6 +118,11 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run test:visual
+      - name: Preserve first unapproved capture set before the repeat replaces its output
+        if: always()
+        run: node scripts/collect-design-proposals.js
+        env:
+          DESIGN_CAPTURE_RUN: first
       - name: Repeat strict visual comparison to detect unstable fixtures
         if: always()
         run: npm run test:visual
@@ -129,6 +134,8 @@ jobs:
       - name: Collect unapproved reference proposals without replacing references
         if: always()
         run: node scripts/collect-design-proposals.js
+        env:
+          DESIGN_CAPTURE_RUN: second
       - uses: actions/upload-artifact@v4
         if: always()
         with:
