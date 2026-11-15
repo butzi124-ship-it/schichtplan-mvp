@@ -1,13 +1,4 @@
-/* Dashboard-only visual design; other modules remain unchanged. */
-body.humbel-home-mode{background:#f3f6fb;color:#102033}
-body.humbel-home-mode #tabs{position:fixed;top:0;bottom:0;left:0;width:238px;z-index:45;background:linear-gradient(160deg,#071d35,#0b2a4b);display:flex!important;flex-direction:column;flex-wrap:nowrap;gap:7px;padding:85px 10px 22px;overflow-y:auto;box-shadow:4px 0 18px #061e351a}
-body.humbel-home-mode #tabs:before{content:"⚙  Humbel-App";position:absolute;top:20px;left:18px;color:white;font-size:21px;font-weight:800}
-body.humbel-home-mode #tabs button{width:100%;text-align:left;color:#f1f6ff;background:transparent;border:0;border-radius:10px;min-height:48px;padding:12px 14px;font-weight:600}
-body.humbel-home-mode #tabs button:hover,body.humbel-home-mode #tabs .humbel-main-tab-active{background:#095ba6;color:white}
-body.humbel-home-mode #tabs button:last-child{margin-top:auto;background:#24415c}
-body.humbel-home-mode #tabs + #personal-production-times{margin-left:238px}
-body.humbel-home-mode #view{margin-left:238px}
-body.humbel-home-mode #view>div{max-width:none}
+/* Dashboard components. Shared shell and navigation: app-shell.css. */
 .h-home{padding:0 8px 24px}
 .h-home-hero{border-radius:16px;padding:34px 30px;margin-bottom:22px;background:linear-gradient(100deg,#f0f6ff,#fff);border:1px solid #e0e8f4;border-left:6px solid #0872c6}
 .h-home-hero h1{font-size:clamp(23px,2.5vw,34px);line-height:1.15;font-weight:800;letter-spacing:-.035em}
@@ -34,5 +25,5 @@ button.h-home-tile:hover{border-color:#1576c4;transform:translateY(-1px)}
 .h-home-list{display:flex;flex-direction:column;gap:9px}
 .h-home-list>div{padding:10px 12px;background:#f7f9fd;border-radius:9px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 @media(max-width:1150px){.h-home-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.h-home-panels{grid-template-columns:1fr}}
-@media(max-width:800px){body.humbel-home-mode #tabs{position:relative;top:auto;bottom:auto;width:auto;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;padding:10px;gap:6px}body.humbel-home-mode #tabs:before{display:none}body.humbel-home-mode #tabs button{width:auto;min-width:max-content;min-height:44px}body.humbel-home-mode #tabs button:last-child{margin-top:0}body.humbel-home-mode #view,body.humbel-home-mode #tabs + #personal-production-times{margin-left:0}.h-home-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.h-home-hero{padding:24px 18px}}
+@media(max-width:800px){.h-home-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.h-home-hero{padding:24px 18px}}
 @media(max-width:440px){.h-home-tiles{gap:8px}.h-home-tile{padding:12px;min-height:115px}.h-home-tile strong{font-size:15px}.h-home-panel{padding:14px}}

@@ -1,0 +1,47 @@
+{
+  "version": "0.19.0",
+  "baseCommit": "dc6a286add800d782da2bdaf65dd5dd0c19b9bb0",
+  "checkedAt": "2026-11-15T06:28:12.659501+01:00",
+  "passed": {
+    "npm-ci": true,
+    "syntax": true,
+    "test:ci": 2,
+    "test:qa": 27,
+    "qa:check": "251 identities and 33 reference hashes retained",
+    "test:integration": 5,
+    "test:documentation": 5,
+    "docs:check": true,
+    "qa:agent-server": true
+  },
+  "browser": {
+    "status": "BLOCKED_NOT_TESTED",
+    "registered": 813,
+    "passed": 0,
+    "skipped": 0,
+    "reason": "Pinned browser executables absent; system Chromium process singleton socket EPERM before page load.",
+    "secondaryArtifactErrors": 4,
+    "newDesignCases": 25
+  },
+  "visual": {
+    "status": "BLOCKED_NOT_TESTED",
+    "reason": "Pinned Playwright 1.62.1-noble container unavailable; existing references deliberately unchanged. New design requires inspected CI images before reference update."
+  },
+  "cloudBrowser": {
+    "status": "BLOCKED_NOT_TESTED",
+    "reason": "Local loopback preview not reachable from cloud browser."
+  },
+  "deployment": false,
+  "businessLogic": "Exact reversible presentation deltas restore base source excluding version/log; original QA hash guards pass.",
+  "logs": {
+    "visual.log": "b6690e8a6ceef9102355e32da6f958e53d985d1634b1f627e2bf25381140435d",
+    "e2e.log": "5fc3a7f442faf7cc536fe7058dbeaa75358fd259e8e45cf328500f74ba051b1f",
+    "agent-server.log": "f3a365145b195cc178a6765a046d6f07a7495fa87f7093752ce3631662018319",
+    "qa.log": "4da8c0200d67284f2ec9d31a5fde276402db1fb6485d3ca041d96930e8d567e0",
+    "documentation.log": "6cf4fc7ff3c5fe3cbe734109c005f759c032b5d2b539af885c46382d378451d5",
+    "agents.log": "677f44244897875741f091b7d0dc180ba5043485d364dd9ff7ba344b6da022ef",
+    "integrity.log": "0530fbcfd505ad271f541db9a2409968450e011c9f67a27b134ad37809f780bb",
+    "docs-check-final.log": "03c08d84619ead013013ae012b1ae26360025bcf9532c605c5c8c1c3cb22edfb",
+    "docs-check.log": "03c08d84619ead013013ae012b1ae26360025bcf9532c605c5c8c1c3cb22edfb",
+    "integration.log": "52d79a324a7fb2815659264b2d4b0a92fa02712a621984607a3ef477bb4ca657"
+  }
+}

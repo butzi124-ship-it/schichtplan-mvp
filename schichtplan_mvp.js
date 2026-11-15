@@ -120,7 +120,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.18.1";
+const APP_VERSION = "0.19.0";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -135,6 +135,7 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  { version: "0.19.0", date: "2026-11-15 06:21", changes: ["Gemeinsames responsives Humbel-Layout mit dunkelblauer Navigation sowie vereinheitlichte Anmeldung, Startseite, Meine Schichten und Aufgaben. Keine Geschäftsprozess-, Rechte- oder Datenbankänderung; kein Deployment."] },
   { version: "0.18.1", date: "2026-11-14 08:15", changes: ["Isolierten synthetischen Teststand, zentrale kontextbezogene Hilfe und reproduzierbare Screenshot-/Handbuch-/Präsentationsautomatik für Issue #40 vorbereitet. Keine produktive Aktivierung und kein Deployment."] },
   { version: "0.18.0", date: "2026-11-14 07:49", changes: ["Gamification und getrennte Sicherheitsunterweisungen mit RPC-Oberflächen, adaptiven Multiple-Choice-Fragen, getrennten Punktekonten, Auszeichnungen, Privatsphäre und Abteilungsverwaltung implementiert. Isolierter SQL-Kandidat; produktive Installation und UI-Aktivierung bleiben gesperrt."] },
   { version: "0.17.3", date: "2026-11-14 06:18", changes: ["Fach- und Technikspezifikation zur digitalen Qualitätsprüfung ergänzt: dynamische Merkmalsintervalle, Gelb-/Rotmaßnahmen, sichere Zähleranbindung, OP-Teilenummern, Qualitätscockpit und Mandantentrennung. Ausschließlich Dokumentation, keine Implementierung oder Aktivierung."] },
@@ -1181,40 +1182,7 @@ function injectHumbelDesignStyles() {
       background-color: rgba(13, 70, 130, 0.04);
     }
 
-    .humbel-main-nav {
-      background: rgba(255, 255, 255, 0.78);
-      border: 1px solid var(--humbel-border);
-      border-radius: 12px;
-      padding: 8px;
-      box-shadow: 0 10px 26px rgba(13, 70, 130, 0.06);
-    }
-
-    .humbel-main-tab,
-    .humbel-subtab {
-      background: #ffffff !important;
-      color: var(--humbel-blue-dark) !important;
-      border-color: var(--humbel-border) !important;
-      font-weight: 600;
-      box-shadow: 0 1px 2px rgba(16, 32, 51, 0.04);
-    }
-
-    .humbel-main-tab:hover,
-    .humbel-subtab:hover {
-      background: #eef5fb !important;
-      border-color: rgba(13, 70, 130, 0.34) !important;
-    }
-
-    .humbel-main-tab-active,
-    .humbel-subtab-active {
-      background: var(--humbel-blue) !important;
-      color: #ffffff !important;
-      border-color: var(--humbel-blue) !important;
-      box-shadow: 0 8px 20px rgba(13, 70, 130, 0.22);
-    }
-
-    .humbel-tab-attention {
-      border-color: #fb7185 !important;
-    }
+    /* Shared navigation styles live in css/app-shell.css. */
 
     button.bg-slate-900,
     button.bg-blue-600,
@@ -3666,10 +3634,10 @@ function renderDashboard(allowedTabs = []) {
       "Alter Schichtplan bleibt Alt / deaktiviert und wird nicht als neue Struktur weiterverwendet.",
     );
   }
-  return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
-    <div>
-      <h2 class='text-lg font-semibold'>Start / Dashboard</h2>
-      <p class='text-sm text-slate-500 mt-1'>Modulstruktur der Humbel Schichtplan- und Werkzeug-App.</p>
+  return `<div class='h-dashboard-subpage'>
+    <div class='h-page-header'>
+      <h2 class='h-page-title'>Start / Dashboard</h2>
+      <p class='h-page-description'>Schichten, Aufgaben und Arbeitsbereiche.</p>
     </div>
     <div class='flex gap-2 flex-wrap'>${renderModuleSubTabs(DASHBOARD_SUBTABS, subTab, "setDashboardSubTab")}</div>
     ${content}
@@ -5489,7 +5457,7 @@ function renderMyShifts() {
             <td class='p-2'>${s.label}</td>
             <td class='p-2'>${s.start}–${s.end}</td>
             <td class='p-2'>
-              <select class='border rounded p-1' onchange="setWeekendAvailability('${s.id}', '${currentUser.name}', '${s.date}', this.value)">
+              <select aria-label='Wochenend-Verfügbarkeit am ${s.date}' class='border rounded p-1' onchange="setWeekendAvailability('${s.id}', '${currentUser.name}', '${s.date}', this.value)">
                 <option value='' ${val === "" ? "selected" : ""}>-</option>
                 <option value='yes' ${val === "yes" ? "selected" : ""}>Kann</option>
                 <option value='no' ${val === "no" ? "selected" : ""}>Kann nicht</option>
@@ -5500,10 +5468,11 @@ function renderMyShifts() {
         .join("")
     : "";
 
-  return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
+  return `<div class='h-page h-card'>
     <div>
-      <h2 class='text-lg font-semibold mb-3'>Meine Schichten (90 Tage)</h2>
-      <div class='overflow-auto border rounded-lg'>
+      <h2 class='h-page-title mb-3'>Meine Schichten (90 Tage)</h2>
+      <p class='h-page-description mb-3'>Deine eingeplanten Schichten und Verfügbarkeiten im Überblick.</p>
+      <div class='h-table-scroll overflow-auto border rounded-lg' data-table-label='Meine Schichten'>
         <table class='w-full text-sm'>
           <thead class='bg-slate-100'>
             <tr>
@@ -5523,7 +5492,7 @@ function renderMyShifts() {
       isSpringerUser
         ? `<div>
             <h3 class='text-lg font-semibold mb-3'>Wochenend-Verfügbarkeit</h3>
-            <div class='overflow-auto border rounded-lg'>
+            <div class='h-table-scroll overflow-auto border rounded-lg' data-table-label='Wochenend-Verfügbarkeit'>
               <table class='w-full text-sm'>
                 <thead class='bg-slate-100'>
                   <tr>
@@ -17165,15 +17134,15 @@ function renderTodo() {
     })
     .join("");
 
-  return `<div class='bg-white rounded-xl shadow p-4'>
-    <h2 class='text-lg font-semibold mb-3'>To-Do</h2>
+  return `<div class='h-page h-card'>
+    <div><h2 class='h-page-title'>To-Do</h2><p class='h-page-description'>Meine Aufgaben · Offene und erledigte Aufgaben im Überblick.</p></div>
     ${isAdmin ? renderTaskCreateBox() : ""}
     <h3 class='font-semibold mt-3 mb-2'>Offene Aufgaben</h3>
-    <div class='overflow-auto max-h-[45vh] border rounded-lg'>
+    <div class='h-table-scroll overflow-auto max-h-[45vh] border rounded-lg' data-table-label='Offene Aufgaben'>
       <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Aufgabe</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Frist</th><th class='p-2 text-left'>Status</th><th class='p-2'></th></tr></thead><tbody>${openRows || '<tr><td class="p-2" colspan="5">Keine offenen Aufgaben.</td></tr>'}</tbody></table>
     </div>
     <h3 class='font-semibold mt-4 mb-2'>Erledigte Aufgaben</h3>
-    <div class='overflow-auto max-h-[25vh] border rounded-lg'>
+    <div class='h-table-scroll overflow-auto max-h-[25vh] border rounded-lg' data-table-label='Erledigte Aufgaben'>
       <table class='w-full text-sm'><thead class='bg-slate-100 sticky top-0'><tr><th class='p-2 text-left'>Aufgabe</th><th class='p-2 text-left'>Mitarbeiter</th><th class='p-2 text-left'>Frist</th><th class='p-2 text-left'>Erledigt am</th><th class='p-2'></th></tr></thead><tbody>${doneRows || '<tr><td class="p-2" colspan="5">Noch keine erledigten Aufgaben.</td></tr>'}</tbody></table>
     </div>
   </div>`;
@@ -17183,12 +17152,12 @@ function renderTaskCreateBox() {
   const options = activeUsers()
     .map((u) => `<option value='${u.name}'>${u.name}</option>`)
     .join("");
-  return `<div class='border rounded-lg p-3 bg-slate-50 mb-3'>
+  return `<div class='h-field-panel mb-3'>
     <h3 class='font-semibold mb-2'>Neue Aufgabe erstellen</h3>
     <div class='grid md:grid-cols-4 gap-2'>
-      <input id='taskTitle' class='border rounded p-2' placeholder='Aufgabe'/>
-      <select id='taskAssignee' class='border rounded p-2'>${options}</select>
-      <input id='taskDeadline' type='date' class='border rounded p-2'/>
+      <label class='h-field-label' for='taskTitle'>Aufgabe<input id='taskTitle' class='border rounded p-2' placeholder='Aufgabe'/></label>
+      <label class='h-field-label' for='taskAssignee'>Mitarbeiter<select id='taskAssignee' class='border rounded p-2'>${options}</select></label>
+      <label class='h-field-label' for='taskDeadline'>Frist<input id='taskDeadline' type='date' class='border rounded p-2'/></label>
       <button class='px-2 py-1 rounded bg-slate-900 text-white' onclick='createTask()'>Speichern</button>
     </div>
   </div>`;

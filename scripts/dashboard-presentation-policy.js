@@ -3,6 +3,7 @@ const { hash } = require("./qa-policy");
 const reviewed = require("../tests/qa/dashboard-presentation-patches.json");
 
 function reverseDashboardPresentation(source) {
+  source = require('./design-foundation-policy').reverseDesignFile('schichtplan_mvp.js', source);
   for (const { before, after } of [...reviewed.patches].reverse()) {
     assert.equal(source.split(after).length - 1, 1,
       "Reviewed dashboard presentation hook must remain exact and unique");
@@ -12,8 +13,10 @@ function reverseDashboardPresentation(source) {
 }
 
 function verifyDashboardFiles(readFile) {
+  require('./design-foundation-policy').verifyDesignFiles(readFile);
   for (const [file, expected] of Object.entries(reviewed.files)) {
-    let source = require("./documentation-integration-policy").reverseFile(file, readFile(file).toString("utf8"));
+    let source = require('./design-foundation-policy').reverseDesignFile(file, readFile(file).toString('utf8'));
+    source = require("./documentation-integration-policy").reverseFile(file, source);
     source = require("./learning-integration-policy").reverseFile(file, source);
     for (const change of [...(reviewed.assetPatches || [])].reverse()) {
       if (file !== change.file) continue;
@@ -28,6 +31,7 @@ function verifyDashboardFiles(readFile) {
 }
 
 function reverseDashboardFile(file, source) {
+  source = require('./design-foundation-policy').reverseDesignFile(file, source);
   source = require("./documentation-integration-policy").reverseFile(file, source);
   source = require("./learning-integration-policy").reverseFile(file, source);
   for (const change of [...reviewed.filePatches].reverse()) {
