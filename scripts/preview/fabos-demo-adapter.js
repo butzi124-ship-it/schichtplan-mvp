@@ -7,6 +7,38 @@ function buildDemoPreview(baseRows) {
   rows.departments = data.departments.map(d => ({ ...d }));
   rows.employees = [rows.employees[0], ...data.employees];
   rows.production_machines = data.machines.map(({origin, ...m}) => m);
+  // Demo inventory is independently fictitious. No real manufacturer/tool IDs.
+  const toolSpec=[
+    ['Schaftfräser','10','HSK 63','F01','SixSigma',5],
+    ['Schaftfräser','16','HSK 63','F02','SixSigma',3],
+    ['Kugelfräser','8','HSK 63','F03','THAA',4],
+    ['Radiusfräser','12','HSK 63','F04','THAA',3],
+    ['Trochodialfräser','12','HSK 63','F05','SFS',3],
+    ['NC Anbohrer','6','HSK 63','F06','SFS',6],
+    ['Bohrer','8.5','HSK 63','F07','SFS',6],
+    ['Bohrer','10.2','HSK 63','F08','THAA',4],
+    ['Gewindebohrer M5','5','HSK 63','F09','SFS',4],
+    ['Gewindebohrer M8','8','HSK 63','F10','SFS',3],
+    ['Gewindefräser M12','12','HSK 63','F11','THAA',2],
+    ['Ausdrehkopf','32','HSK 100','F12','SixSigma',2],
+    ['Drehmeißel Schruppen','25','VDI 40','D01','SFS',5],
+    ['Drehmeißel Schlichten','16','VDI 40','D02','SFS',4],
+    ['Stechhalter','3','VDI 40','D03','THAA',3],
+    ['Verzahnungsfräser Modul 2','55','Hob','V01','SixSigma',2],
+    ['Entgratbürste','20','Hand','E01','THAA',7],
+    ['Messuhr','0.01','Messraum','Q01','SFS',3],
+    ['Grenzlehrdorn','12','Messraum','Q02','SFS',2],
+    ['Schleifscheibe','200','Schleifspindel','S01','SixSigma',2]
+  ];
+  const toolBase=rows.tools[0]||{};
+  rows.tools=toolSpec.map(([label,diameter,holder,shelf,manufacturer,stock],i)=>({
+    ...toolBase,id:'demo-tool-'+String(i+1).padStart(3,'0'),
+    t_number:'DEMO-T'+String(i+1).padStart(3,'0'),
+    label,diameter,holder,shelf,manufacturer,stock,
+    article_no:'DEMO-WZ-'+String(51001+i),min_stock:Math.max(1,Math.floor(stock/3)),
+    optimal_stock:stock+2,ordered:false,ordered_qty:0,is_borrowed:false
+  }));
+
   const current = new Map();
   for (const order of data.orders) {
     const ops = data.operations.filter(op => op.order_id === order.id);
