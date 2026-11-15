@@ -22,7 +22,7 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - name: Additional display and original design acceptance on all five projects
-        run: npx playwright test tests/design-foundation.spec.js tests/design-display.spec.js --workers=2
+        run: npx playwright test tests/design-foundation.spec.js tests/design-display.spec.js tests/design-reference.spec.js --workers=2
       - uses: actions/upload-artifact@v4
         if: always()
         with:
