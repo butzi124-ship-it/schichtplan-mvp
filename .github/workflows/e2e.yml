@@ -125,6 +125,9 @@ jobs:
       - name: Summarize actual visual results
         if: always()
         run: cat artifacts/visual/summary.md artifacts/visual-repeat/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Collect unapproved reference proposals without replacing references
+        if: always()
+        run: node scripts/collect-design-proposals.js
       - uses: actions/upload-artifact@v4
         if: always()
         with:

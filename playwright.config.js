@@ -2,7 +2,7 @@ const { defineConfig, devices } = require("@playwright/test");
 
 module.exports = defineConfig({
   testDir: "./tests",
-  testMatch: ["design-foundation.spec.js", "smoke.spec.js", "dashboard-home.spec.js", "secure-access.spec.js", "articles.spec.js", "operations.spec.js", "ba-entry.spec.js", "routing.spec.js", "setup.spec.js", "quantity.spec.js", "lifecycle.spec.js", "initial-responsibility.spec.js", "readiness.spec.js", "forecast.spec.js", "learning.spec.js"],
+  testMatch: ["design-display.spec.js", "design-foundation.spec.js", "smoke.spec.js", "dashboard-home.spec.js", "secure-access.spec.js", "articles.spec.js", "operations.spec.js", "ba-entry.spec.js", "routing.spec.js", "setup.spec.js", "quantity.spec.js", "lifecycle.spec.js", "initial-responsibility.spec.js", "readiness.spec.js", "forecast.spec.js", "learning.spec.js"],
   grepInvert: /@visual/,
   forbidOnly: !!process.env.CI,
   failOnFlakyTests: !!process.env.CI,
