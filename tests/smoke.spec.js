@@ -107,6 +107,23 @@ test.describe("Humbel app smoke", () => {
             await clickSubtab(page, "Werkzeugliste");
             await expectViewHeading(page, "Werkzeugbestand");
             target = page.locator("#view");
+          } else if (scene === "production-overview") {
+            // The design map means the factory overview, not an individual BA preview.
+            await clickMain(page, "Produktion");
+            await clickSubtab(page, "Stückzahl");
+            await expectViewHeading(page, "Fertigung – Produktionsübersicht");
+            target = page.locator("#view");
+            const overview = target.getByRole("region", { name: "Fertigungsübersicht", exact: true });
+            await expect(overview.locator(".h-kpi")).toHaveCount(5);
+            await expect(overview.locator(".h-kpi h4")).toHaveText([
+              "Aktive BA", "Laufend", "Pausiert", "Maschinen", "BA mit Abklärung",
+            ]);
+            for (const card of await overview.locator(".h-kpi").all()) {
+              await expect(card).toBeVisible();
+              await expect(card.locator("strong")).toHaveText(/^\d+$/);
+            }
+            await expect(overview.getByRole("form", { name: "Fertigung filtern", exact: true })).toBeVisible();
+            await expect(overview.getByRole("complementary", { name: "Auftragsvorschau", exact: true })).toBeVisible();
           } else {
             await clickMain(page, "Produktion");
             await clickSubtab(page, "Aufträge / BA");
