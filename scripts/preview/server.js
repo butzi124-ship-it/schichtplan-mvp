@@ -37,7 +37,7 @@ async function createPreview({passwords,backend,port=0}={}){
   if(documentation)url.pathname=url.pathname.slice('/documentation'.length);
   if(!s&&!documentation){if(req.method==='GET'&&url.pathname==='/')return send(res,200,fs.readFileSync(path.join(__dirname,'login.html')));return send(res,401,'Test sign-in required');}
   if(demo&&url.pathname==='/demo-plan'&&req.method==='GET')return send(res,200,renderDemoPlan(demo.data));
-  if(url.pathname==='/logout'&&req.method==='POST'){sessions.delete(sid);res.setHeader('Set-Cookie','humbel_preview=; HttpOnly; SameSite=Strict; ${online?'Secure; ':''}Path=/; Max-Age=0');return send(res,200,'{}','application/json');}
+  if(url.pathname==='/logout'&&req.method==='POST'){sessions.delete(sid);res.setHeader('Set-Cookie',`humbel_preview=; HttpOnly; SameSite=Strict; ${online?'Secure; ':''}Path=/; Max-Age=0`);return send(res,200,'{}','application/json');}
   if(url.pathname==='/rpc'&&req.method==='POST'){
    const readKeys={article_master_capabilities:[],article_master_list:['p_query'],article_master_get:['p_revision_id'],operation_plan:['p_revision_id'],operation_order_read:['p_order_id'],machine_readiness_view:[],op_routing_view:[],setup_time_view:[],op_quantity_view:[],ba_lifecycle_view:[],learning_view:[],learning_admin_view:['p_department']};
    if(documentation&&(!Object.hasOwn(readKeys,body.name)||!body.params||Object.keys(body.params).some(k=>!readKeys[body.name].includes(k))))return send(res,200,JSON.stringify({data:null,error:{code:'42501'}}),'application/json');
