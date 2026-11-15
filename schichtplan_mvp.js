@@ -11,7 +11,35 @@ const productionForecast = window.HumbelForecastUI.create({
   changed: () => machineReadiness.refresh(),
 });
 productionForecast.bind(document);
+const opQuantities = window.HumbelQuantities.create({
+  client: supabaseClient, actor: () => currentSupabaseUser?.id || null,
+  role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },
+  renderEmployee: (station, entry, editable) => renderProductionStationEmployeeCounter(station, entry, editable),
+  renderAmounts: (station, editable) => renderProductionStationScrapClarifyControls(station, editable),
+});
+opQuantities.bind(document);
+const baLifecycle = window.HumbelBALifecycle.create({
+  client: supabaseClient, actor: () => currentSupabaseUser?.id || null,
+  role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },
+  changed: () => Promise.all([opQuantities.refresh(), machineReadiness.refresh(), setupTimes.refresh()]),
+  causes: () => state.productionQaCauses || [],
+});
+baLifecycle.bind(document);
+const setupTimes = window.HumbelSetupTimes.create({
+  client: supabaseClient, actor: () => currentSupabaseUser?.id || null,
+  role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },
+  changed: () => machineReadiness.refresh(),
+  shiftEnd: () => {
+    if (!currentUser) return null;
+    const now = Date.now();
+    return generateThreeMonths().filter(s => s.assigned === currentUser.name)
+      .map(s => shiftDateRange(s)).filter(s => s.start.getTime() <= now && s.end.getTime() + 12 * 3600000 >= now)
+      .sort((a, b) => b.end - a.end)[0]?.end || null;
+  },
+});
+setupTimes.bind(document);
 const machineReadiness = window.HumbelMachineReadiness.create({
+  setup: setupTimes,
   forecast: productionForecast,
   client: supabaseClient, actor: () => currentSupabaseUser?.id || null,
   role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },
@@ -22,6 +50,7 @@ const operations = window.HumbelOperations.create({
   client: supabaseClient, actor: () => currentSupabaseUser?.id || null,
   role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },
   canCreate: () => canAccessProduction() && articleMaster.hasAccess(),
+  canEnter: () => articleMaster.hasAccess(),
   machines: () => getActiveProductionOrderMachines(),
   refreshOrders: () => refreshProductionOrdersFromSupabase(),
 });
@@ -33,6 +62,12 @@ const articleMaster = window.HumbelArticleMaster.create({
   operations,
 });
 articleMaster.bind(document);
+
+const learning = window.HumbelLearning.create({
+  client: supabaseClient, actor: () => currentSupabaseUser?.id || null,
+  redraw: () => { if (currentUser) render(); },
+});
+learning.bind(document);
 
 let supabaseReady = false;
 let currentSupabaseUser = null;
@@ -85,7 +120,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.9.0";
+const APP_VERSION = "0.18.1";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -100,6 +135,147 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  { version: "0.18.1", date: "2026-11-14 08:15", changes: ["Isolierten synthetischen Teststand, zentrale kontextbezogene Hilfe und reproduzierbare Screenshot-/Handbuch-/Präsentationsautomatik für Issue #40 vorbereitet. Keine produktive Aktivierung und kein Deployment."] },
+  { version: "0.18.0", date: "2026-11-14 07:49", changes: ["Gamification und getrennte Sicherheitsunterweisungen mit RPC-Oberflächen, adaptiven Multiple-Choice-Fragen, getrennten Punktekonten, Auszeichnungen, Privatsphäre und Abteilungsverwaltung implementiert. Isolierter SQL-Kandidat; produktive Installation und UI-Aktivierung bleiben gesperrt."] },
+  { version: "0.17.3", date: "2026-11-14 06:18", changes: ["Fach- und Technikspezifikation zur digitalen Qualitätsprüfung ergänzt: dynamische Merkmalsintervalle, Gelb-/Rotmaßnahmen, sichere Zähleranbindung, OP-Teilenummern, Qualitätscockpit und Mandantentrennung. Ausschließlich Dokumentation, keine Implementierung oder Aktivierung."] },
+  { version: "0.17.2", date: "2026-11-13 16:43", changes: ["Fach- und Technikkonzept für Dokumentenverwaltung und digitale Prüfprotokolle dokumentiert: Referenz 52978, Varianten, Datenmodell, QS-Rechte, Freigaben und Sicherheits-/Testplan. Keine Implementierung oder Aktivierung."] },
+  { version: "0.17.1", date: "2026-11-13 14:43", changes: ["Schritt 8B Phase 2: isolierte, deaktivierte Identitäts-/Sitzungsverwaltung mit vertrauenswürdiger technischer Autorität, Versionsprüfung, dauerhaftem Widerruf und atomarem Audit ergänzt. Keine Appanbindung oder produktive Aktivierung."] },
+  { version: "0.17.0", date: "2026-11-13 11:10", changes: ["Schritt 8B Phase 1: isolierte, standardmäßig gesperrte Identitäts-/Sessiongrundlage mit getrennten Organisationsrollen, Mehrfachabteilungen und expliziter Berechtigungsprüfung vorbereitet. Keine Appanbindung, Benutzerübernahme oder produktive Aktivierung."] },
+  { version: "0.16.6", date: "2026-11-13 10:23", changes: ["Schritt 8A: verbindliche Ernennungs-/Abberufungsrechte, unveränderbare Vertretungsprotokolle sowie konfigurierbare Aufbewahrung dokumentiert. Ausschließlich Konzept und Dokumentation; keine Berechtigungen oder Löschfunktion aktiviert."] },
+  { version: "0.16.5", date: "2026-11-13 09:20", changes: ["Schritt 8A: bestehende Rollen, Sicherheitskandidaten und PR-Abhängigkeiten analysiert; modulare Rollen-/Mehrfachabteilungs-Konzeption mit Migrations-, Entscheidungs- und Testplan dokumentiert. Keine Geschäftslogik oder Berechtigung aktiviert."] },
+  { version: "0.16.4", date: "2026-11-12 13:44", changes: ["Sicherheitsprüfung Schritt 7: Originalkatalog read-only erfasst, kritische Mitarbeiterrechte und breite Wartungsrechte bestätigt; isolierten Kandidaten um Rechteentzug für alle 31 Tabellen und geprüften AL-Rollenübergang ergänzt. Keine Produktivaktivierung."] },
+  { version: "0.16.3", date: "2026-11-12 12:22", changes: ["Sicherheitsvorbereitung Schritt 6: manuell bestätigte Originalrechte dokumentiert; atomar geprüfter isolierter RLS-Reviewkandidat mit engeren Material-Spaltenrechten, Wiederholungs- und Rollbackprüfungen. Keine Produktivaktivierung."] },
+  { version: "0.16.2", date: "2026-11-12 10:39", changes: ["Sicherheitsvorbereitung Schritt 5: aktuellen Metadatenzugriff und Authentifizierungsblocker dokumentiert, bestehendes Zugriffsinventar um Kompatibilitäts- und Migrationsplan ergänzt; keine produktive oder isolierte Rechteaktivierung."] },
+  { version: "0.16.1", date: "2026-11-12 09:13", changes: ["QA: belegten Job-Zeitlimitabbruch mit begrenztem Laufzeitbudget und Fortschrittsartefakt adressiert; isolierter sicherer RPC-Adapter mit serverseitiger Identität und Session-/Offline-Datenlöschung vorbereitet, ohne Produktivaktivierung."] },
+  { version: "0.16.0", date: "2026-11-12 07:42", changes: ["Isolierter Sicherheitskandidat Schritt 3: RLS-/Rechtebegrenzung, unabhängige Identitätsbindung, abteilungsbezogene Planung, getrennte Veröffentlichung und konfigurierter eigener Kontakt-Selbstservice; keine Produktivaktivierung."] },
+  { version: "0.15.5", date: "2026-11-12 06:54", changes: ["Startseite: eindeutige Mitarbeiterkachel und sichtbarer Titel Start / Dashboard; bestehende Navigation, Rechte und Tests unverändert."] },
+  { version: "0.15.4", date: "2026-11-12 06:18", changes: ["QA-Integrität: exakte geprüfte Dashboard-Präsentationsadapter bei unverändertem Geschäftslogik-Hash; zusätzliche Manipulations- und Dashboard-Regressionen."] },
+  { version: "0.15.3", date: "2026-11-08 11:04", changes: ["Responsive Startseite nach freigegebener Vorlage mit dunkler Navigation, Schnellzugriffen und rollenbezogenen Bestandsdaten; keine Fachlogik-, Rechte- oder Datenbankänderung."] },
+  {
+    version: "0.15.2",
+    date: "2026-11-08 09:04",
+    changes: ["Technische Integrationskorrektur: Forecast-Trigger AFTER STATEMENT aus PR #15, getrennte native Diagnose-/Härtungskandidaten-/BA-OP-Testpfade und SHA-geprüfte SQL-/Codequellen des tatsächlichen Integrationscheckouts. Keine produktive Sicherheitsänderung oder Aktivierung."],
+  },
+  {
+    version: "0.15.1",
+    date: "2026-11-08 07:48",
+    changes: ["Technischer Freigabebericht zur Produktivvorbereitung: lesender technischer Metadatenabgleich, offene RLS-/Rollenbefunde, ausdrücklich unbestätigte Berechtigungsmatrix und priorisierter Integrations-, Backup-, Rückfall- und Pilotplan. Keine Fachlogik-, SQL-, Auth-/RLS-Änderung oder Aktivierung."],
+  },
+  {
+    version: "0.15.0",
+    date: "2026-11-08 07:13",
+    changes: ["Automatische BA-Hauptverantwortung bei OP-1-Anlage: eindeutige aktive Abteilungsleitung aus vertrauenswürdigen serverseitigen Zuordnungen; andernfalls Hauptverantwortung offen. Atomarer Audit, unveränderte Drei-Felder-Anlage, bestehende begründete Verantwortungsübertragung und unabhängige OP-Zuständigkeiten. Separater Serverschalter standardmäßig aus; SQL ausschließlich Reviewentwurf."],
+  },
+  {
+    version: "0.14.2",
+    date: "2026-11-08 06:28",
+    changes: ["Native Phase-5-Abnahme liest die eigene Mitarbeiterzuordnung für historische Zählerkorrekturen unter der Identität des tatsächlich buchenden Mitarbeiters. Unveränderte SQL-Rechteprüfung; zusätzliche Regression reproduziert den bisherigen 42501 und prüft getrennte Zuständigkeiten für OP-Klärfälle und BA-Nachfertigung nach Abschluss."],
+  },
+  {
+    version: "0.14.1",
+    date: "2026-11-08 06:20",
+    changes: ["Phase-5-Installation übernimmt vorhandene Phase-4-Klärfälle erst nach vollständiger DDL-/RLS-/Trigger-Konfiguration. Verhindert PostgreSQL 55006 durch ausstehende aufgeschobene Fremdschlüsselprüfungen; atomare Transaktion, Integritätsprüfungen und sämtliche Fachfunktionen bleiben erhalten. Regression prüft befüllten Phase-4-Bestand sowie Ablehnung ungültiger Fremdschlüssel am Commit."],
+  },
+  {
+    version: "0.14.0",
+    date: "2026-11-08 05:26",
+    changes: ["Phase 5 ergänzt BA-Mengenänderungen, Nachfertigungsabschnitte, Mengenklärhistorie, ausdrückliche OP-/BA-Abschlüsse und Übertragung der Hauptverantwortung. Bestehende Zähler und Rüstzeithistorien bleiben erhalten. Server-/Frontend-Schalter bleiben aus; SQL ausschließlich Reviewentwurf, automatische AL-Erstzuordnung weiterhin offen."],
+  },
+  {
+    version: "0.13.2",
+    date: "2026-11-08 00:22",
+    changes: ["Gemeinsame Prognose-Testzeit für Node/PGlite und Browser; explizite Berliner Datenbankzeitzone und gemeinsamer Zeitfortschritt einschließlich Cacheablauf. Native isolierte SQL-/Edge-Abnahme verwendet dieselbe Basiszeit über reine Testuhr-Adapter mit unveränderten Assertions, Statusregeln und Phase-4-Funktionen."],
+  },
+  {
+    version: "0.13.1",
+    date: "2026-11-07 23:49",
+    changes: ["Prognose-Datenbanktests verwenden eine gemeinsame deterministische JavaScript-/SQL-Zeit mit geordneter Fortschreibung. Regressionen prüfen späte Schicht, Berliner Tageswechsel und beide Sommerzeitwechsel; bestehende Veröffentlichungs-/Rollback-Assertions und Phase-4-Funktionen bleiben erhalten."],
+  },
+  {
+    version: "0.13.0",
+    date: "2026-11-07 23:30",
+    changes: ["Phase 4 verknüpft den bestehenden Spannungs-/Mitarbeiterzähler eindeutig mit BA-OP und Maschinenabschnitten. Nur letzte Spannung liefert OP-Gutteile; Teilmengen laufen ohne Vorgängerabschluss weiter. Atomare idempotente Buchungen erhalten Ausschuss/6M und markieren Mengenwidersprüche. SQL ausschließlich Reviewentwurf, alle Schalter deaktiviert; keine Phase-5-Aktivierung."],
+  },
+  {
+    version: "0.12.4",
+    date: "2026-11-07 18:13",
+    changes: ["Rüstkorrektur verknüpft die Modusbeschriftung eindeutig mit dem Auswahlfeld. Pausen-Browserregression nutzt den vorhandenen Navigationsnamen Start / Dashboard; fachliche Assertions unverändert."],
+  },
+  {
+    version: "0.12.3",
+    date: "2026-11-07 18:04",
+    changes: ["Nachfolgende Mitarbeiter erhalten beim Öffnen einer OP mit offener Rüstung eine ausdrückliche Fortsetzungsfrage. Nein startet keine Zeit; Ja verlangt eine Moduswahl. Arbeitsplatzübernahme und neue Mitarbeiterbeteiligung nutzen dieselbe geschützte Fortsetzung."],
+  },
+  {
+    version: "0.12.2",
+    date: "2026-11-07 18:01",
+    changes: ["Eigene historische Rüstbuchungen bleiben nach Abteilungswechsel zur Korrektur erreichbar. AL-Korrekturrechte folgen der aktuellen ausführenden Abteilung, ursprüngliche AL behalten nur die vorgesehene Übersicht. Zusätzliche SQL-, JWT- und Browserregressionen."],
+  },
+  {
+    version: "0.12.1",
+    date: "2026-11-07 17:59",
+    changes: ["Rüstintegration prüft auch Produktionsfortsetzung gegen interne Maschinenbelegung. Veraltete Arbeitsplatzübernahme wird abgewiesen; persönliche Abschlüsse bleiben bei nachträglich terminalem BA sicher möglich."],
+  },
+  {
+    version: "0.12.0",
+    date: "2026-11-07 17:48",
+    changes: ["Phase 3: gemeinsame Rüstvorgänge, persönliche interne/externe Segmente, allgemeine Pause, Abmeldung/Übernahme, Korrekturaudit und getrennte Zeitkennzahlen. Deaktivierter Reviewentwurf; keine produktive Migration oder Aktivierung."],
+  },
+
+  {
+    version: "0.11.5",
+    date: "2026-11-07 14:03",
+    changes: ["Rückgabe-Regressionsprüfung kontrolliert den Zugriffsentzug beim abgebenden AL sowie OP und Benachrichtigung beim ursprünglichen AL. Datenmodell bestätigt Rechteübergang; Produktlogik und bestehende Assertions bleiben erhalten."],
+  },
+  {
+    version: "0.11.4",
+    date: "2026-11-07 14:01",
+    changes: ["AL-Browserregression öffnet nach dem Produktionsbereich ausdrücklich die vorhandene OP-Maschinenübersicht. Der reguläre AL-Einstieg über die Abteilungsansicht bleibt erhalten; alle fachlichen Assertions bleiben unverändert."],
+  },
+  {
+    version: "0.11.3",
+    date: "2026-11-07 13:39",
+    changes: ["Maschinen-, Begründungs- und Rüstabbruchfelder erhalten eindeutige Label-Verknüpfungen für barrierefreie Bedienung. Native Routing-Abnahme inklusive JWT, Parallelbuchung und HTTP-409-Konflikt besteht 27/27; Browserregression bleibt unverändert."],
+  },
+  {
+    version: "0.11.2",
+    date: "2026-11-07 13:37",
+    changes: ["Maschinenabschnitte zeigen lesbare Maschinennamen; Abschnittsidentität und Ist-Historie bleiben erhalten. Neue Routing-Versionskonflikte liefern HTTP 409 statt wiederholbarer Serialisierungsfehler; native HTTP-Regression prüft die unveränderte Konfliktablehnung."],
+  },
+  {
+    version: "0.11.1",
+    date: "2026-11-07 13:26",
+    changes: ["OP-Barcode und Drei-Felder-Anlage öffnen bei aktiviertem Routing direkt die bereits ausgewählte OP-Maschinenzuordnung; keine zweite OP-Auswahl und keine Zählerbuchung. Sitzungs-/Berechtigungsprüfung bleibt serverseitig erhalten.", "Bekannten Legacy-Rollenconstraint ausschließlich im SQL-Reviewentwurf um die bereits von App und Originalfunktion verwendete AL-Rolle ergänzt; keine produktive Rollen-/Auth-Änderung."],
+  },
+  {
+    version: "0.11.0",
+    date: "2026-11-07 13:17",
+    changes: [
+      "Deaktivierte OP-Maschinenzuordnung um Abteilungsleiter-Festlegung, aktive Stellvertretung, abteilungsübergreifende operative Verantwortung und direkte Rückgabe mit persistenten App-Benachrichtigungen ergänzt.",
+      "Maschinenabschnitte und atomare Unterbrechung persönlicher Zeitsegmente bei Maschinenwechsel vorbereitet; Pflicht-Abbruchgrund bei aktiver Rüstung. Bestehende OP, BA-Snapshots, Stückzahlzähler und Ist-Daten bleiben erhalten. Nur SQL-Reviewentwurf und isolierte Tests, keine produktive Migration oder Aktivierung."
+    ],
+  },
+  {
+    version: "0.10.1",
+    date: "2026-11-07 12:37",
+    changes: ["Bereits vorhandene BA auch bei inzwischen archivierter Artikelquelle direkt aus dem Drei-Felder-Einstieg öffnen; keine Neuanlage oder Datenänderung. Serverseitigen Aktivierungsschalter während der Anlage sperren; Regression ergänzt."],
+  },
+  {
+    version: "0.10.0",
+    date: "2026-11-07 12:33",
+    changes: [
+      "Deaktivierten Drei-Felder-BA-Einstieg für berechtigte Mitarbeiter der ersten OP ergänzt; vorhandene Barcode-/Snapshot-Anzeige wiederverwendet. Doppelte BA werden geöffnet, Ist-/Zählerdaten nicht kopiert.",
+      "Separater SQL-Reviewentwurf mit unabhängigen Erst-OP-Berechtigungen, atomarer BA-Anlage und Audit; Termin/Maschine optional. AL-Regel bleibt offen. Keine produktive Migration, Aktivierung oder Veröffentlichung."
+    ],
+  },
+  {
+    "version": "0.9.1",
+    "date": "2026-11-07 10:35",
+    "changes": [
+      "Dokumentation: verbindliche BA-/OP-Anforderungen zu eigenständiger BA-Verwaltung, Maschinenwahl, Rüstzeiten, Spannungszählung, Teilmengen, Nachfertigung, Klärfällen und Freigaben in docs/requirements/ba-op-shopfloor-2026-11-07.md; keine Funktionsaktivierung.",
+      "Alte widersprüchliche Planungsvorgaben ausdrücklich als überholt gekennzeichnet; keine produktive Datenbank-, Rollen-, Auth- oder Business-Logik-Änderung."
+    ]
+  },
   {
     "version": "0.9.0",
     "date": "2026-11-06 11:36",
@@ -2610,7 +2786,11 @@ async function loginWithSupabase() {
 }
 
 async function logoutSupabase() {
+  if (!(await setupTimes.beforeLogout())) return;
   await supabaseClient.auth.signOut();
+  setupTimes.reset();
+  opQuantities.reset();
+  baLifecycle.reset();
   stopToolAutoRefresh();
   stopToolRealtimeSubscription();
   state.ui = state.ui || {};
@@ -2619,6 +2799,7 @@ async function logoutSupabase() {
   productionForecast.reset();
   machineReadiness.reset();
   articleMaster.reset();
+  learning.reset();
   currentSupabaseUser = null;
   currentEmployeeRecord = null;
   currentUser = null;
@@ -2628,6 +2809,7 @@ async function logoutSupabase() {
   document.getElementById("tabs")?.classList.add("hidden");
   document.getElementById("sessionInfo").textContent = "";
   document.getElementById("view").innerHTML = "";
+  document.getElementById("personal-production-times")?.remove();
   setLoginStatus("Supabase-Session gelöscht.");
 }
 
@@ -3167,6 +3349,10 @@ function logout() {
 }
 
 function render() {
+  learning.ensureSession();
+  void opQuantities.ensureSession();
+  void baLifecycle.ensureSession();
+  void setupTimes.ensureSession();
   void machineReadiness.ensureSession();
   void articleMaster.ensureSession();
   if (!currentUser) return;
@@ -3185,11 +3371,13 @@ function render() {
       "adminsystem",
     );
   }
+  if ((opQuantities.hasAccess() || baLifecycle.hasAccess()) && !tabs.includes("produktion")) tabs.push("produktion");
   if (currentUser.role === "department_admin") tabs.push("produktion");
   if (currentUser.role === "employee") tabs.push("werkzeugverwaltung");
   if (articleMaster.hasAccess() && !tabs.includes("produktion")) tabs.push("produktion");
   if (machineReadiness.hasAccess() && !tabs.includes("produktion")) tabs.push("produktion");
 
+  if (learning.enabled() && currentUser.role !== "tool_scanner") tabs.push("gamification", "safety-learning");
   const tabsEl = document.getElementById("tabs");
   tabsEl.className = "humbel-main-nav flex gap-2 flex-wrap";
   tabsEl.innerHTML =
@@ -3203,12 +3391,15 @@ function render() {
       .join("") +
     `<button class="px-3 py-2 rounded bg-red-700 text-white" onclick="logout()">Abmelden</button>`;
 
+  document.getElementById("personal-production-times")?.remove();
+  tabsEl.insertAdjacentHTML("afterend", `<div id="personal-production-times">${setupTimes.renderGeneral()}</div>`);
   tabsEl.classList.remove("hidden");
 
   document.getElementById("sessionInfo").textContent =
     `Angemeldet: ${currentUser.name} (${currentUser.role})`;
 
   if (!tabs.includes(currentTab)) currentTab = tabs[0];
+  document.body.classList.toggle("humbel-home-mode", currentTab === "dashboard");
   if (["werkzeugverwaltung", "lagerverwaltung"].includes(currentTab)) {
     startToolRealtimeSubscription().catch(console.warn);
     startToolAutoRefresh();
@@ -3219,12 +3410,12 @@ function render() {
   const view = document.getElementById("view");
   if (view?.parentElement) {
     view.parentElement.className =
-      ["werkzeugverwaltung", "lagerverwaltung"].includes(currentTab)
+      ["werkzeugverwaltung", "lagerverwaltung", "dashboard"].includes(currentTab)
         ? "w-full max-w-none p-4 space-y-4"
         : "max-w-7xl mx-auto p-4 space-y-4";
   }
 
-  if (currentTab === "dashboard") view.innerHTML = renderDashboard();
+  if (currentTab === "dashboard") view.innerHTML = renderDashboard(tabs);
   if (currentTab === "produktion") view.innerHTML = renderProduction();
   if (currentTab === "personalverwaltung")
     view.innerHTML = renderPersonalManagement();
@@ -3233,6 +3424,8 @@ function render() {
   if (currentTab === "scanner") view.innerHTML = renderScannerModule();
   if (currentTab === "auswertung") view.innerHTML = renderAnalyticsModule();
   if (currentTab === "adminsystem") view.innerHTML = renderAdminSystemModule();
+  if (currentTab === "gamification") view.innerHTML = learning.render();
+  if (currentTab === "safety-learning") view.innerHTML = learning.render(true);
   ensureVersionFooter();
   if (currentUser.role === "tool_scanner") return;
   maybeShowMachinePrompt();
@@ -3292,6 +3485,8 @@ function renderPreservingScroll(anchorKey = "", anchorTopOverride = null) {
 function labelTab(tab) {
   return {
     dashboard: "Start / Dashboard",
+    gamification: "Gamification",
+    "safety-learning": "Sicherheitsunterweisungen",
     produktion: "Produktion",
     personalverwaltung: "Personalverwaltung",
     werkzeugverwaltung: "Werkzeugverwaltung",
@@ -3303,6 +3498,12 @@ function labelTab(tab) {
 }
 
 function setTab(tab) {
+  if (learning.enabled() && ["gamification", "safety-learning"].includes(tab)) {
+    currentTab = tab;
+    render();
+    void learning.refresh();
+    return;
+  }
   const legacyTabMap = {
     schichtplan: "dashboard",
     meine: "dashboard",
@@ -3416,7 +3617,21 @@ function renderModulePlaceholder(title, text) {
   </div>`;
 }
 
-function renderDashboard() {
+function renderDashboard(allowedTabs = []) {
+  if ((state.dashboardSubTab || "overview") === "overview" && window.HumbelHome) {
+    const canProduction = allowedTabs.includes("produktion");
+    const isEmployee = currentUser?.role === "employee";
+    const shifts = isEmployee ? generateThreeMonths().filter(s => s.assigned === currentUser.name) : [];
+    const tasks = (Array.isArray(state.tasks) ? state.tasks : []).filter(t => t.status !== "done" && (currentUser?.role === "admin" || isTaskAssignedToCurrentUser(t)));
+    return window.HumbelHome.render({
+      tabs: allowedTabs,
+      articleEnabled: !!(window.HUMBEL_ARTICLE_MASTER_ENABLED && articleMaster.hasAccess()),
+      shiftAction: isEmployee ? "setDashboardSubTab('myShifts')" : (allowedTabs.includes("personalverwaltung") ? "setTab('personalverwaltung')" : ""),
+      machines: canProduction ? getVisibleProductionMachines() : [],
+      counts: canProduction ? getVisibleProductionCounts() : [],
+      shifts, tasks
+    }) + '<div class="h-home mt-4 flex gap-2 flex-wrap">' + renderModuleSubTabs(DASHBOARD_SUBTABS, "overview", "setDashboardSubTab") + '</div>';
+  }
   const subTab = DASHBOARD_SUBTABS.some((tab) => tab.id === state.dashboardSubTab)
     ? state.dashboardSubTab
     : "overview";
@@ -6050,18 +6265,33 @@ function getDepartmentLeaderHint(employee) {
 }
 
 function renderProduction() {
+  if ((opQuantities.hasAccess() || baLifecycle.hasAccess()) && state.productionSubTab === "counts" && !canAccessProduction()) {
+    return `<div class='bg-white rounded-xl shadow p-4'><h2>Produktion</h2><button onclick="setProductionSubTab('readiness')">OP-Maschinenübersicht</button>${opQuantities.render()}${baLifecycle.render()}${renderProductionQaCauseModal()}</div>`;
+  }
+  if (operations.hasEntryAccess() && !canAccessProduction() && state.productionSubTab === "orders") {
+    return `<div class='bg-white rounded-xl shadow p-4'><h2>Produktion</h2>
+      <button onclick="setProductionSubTab('articles')">Artikelstamm</button>
+      <button onclick="setProductionSubTab('orders')">Aufträge / BA</button>
+      ${operations.orderPanel()}</div>`;
+  }
   if (machineReadiness.hasAccess() && (state.productionSubTab === "readiness" || (!canAccessProduction() && state.productionSubTab !== "articles"))) {
     return `<div class='bg-white rounded-xl shadow p-4'><h2>Produktion</h2>
       <button onclick="setProductionSubTab('readiness')">OP-Maschinenübersicht</button>
       ${articleMaster.hasAccess() ? `<button onclick="setProductionSubTab('articles')">Artikelstamm</button>` : ""}
       ${canAccessProduction() ? `<button onclick="setProductionSubTab('departments')">Abteilungen</button>` : ""}
+      ${opQuantities.hasAccess() ? `<button onclick="setProductionSubTab('counts')">OP-Stückzahlzähler</button>` : ""}
+      ${baLifecycle.hasAccess() && !opQuantities.hasAccess() ? `<button onclick="setProductionSubTab('counts')">BA-Mengen und Abschlüsse</button>` : ""}
       ${machineReadiness.render()}</div>`;
   }
   if (articleMaster.hasAccess() && (!canAccessProduction() || state.productionSubTab === "articles")) {
     return `<div class='bg-white rounded-xl shadow p-4'><h2>Produktion</h2>
       <button class='px-3 py-2 rounded border humbel-subtab-active' onclick="setProductionSubTab('articles')">Artikelstamm</button>
       ${canAccessProduction() ? `<button class='px-3 py-2 rounded border' onclick="setProductionSubTab('departments')">Abteilungen</button>` : ""}
+      ${operations.hasEntryAccess() ? `<button onclick="setProductionSubTab('orders')">Aufträge / BA</button>` : ""}
       ${articleMaster.render()}</div>`;
+  }
+  if (baLifecycle.hasAccess() && !canAccessProduction()) {
+    return `<div class='bg-white rounded-xl shadow p-4'>${baLifecycle.render()}</div>`;
   }
   if (!canAccessProduction()) {
     return `<div class='bg-white rounded-xl shadow p-4'>
@@ -6482,6 +6712,8 @@ function getProductionOrderStations(orderId) {
 }
 
 function getProductionOrderStationById(stationId) {
+  const linked = opQuantities.station(stationId);
+  if (linked) return linked;
   if (!stationId) return null;
   return (state.productionOrderStations || []).find((station) => station.id === stationId) || null;
 }
@@ -6500,6 +6732,7 @@ function getProductionOrderEmployeeById(entryId) {
 }
 
 function getProductionStationCount(stationId, orderEmployeeId) {
+  if (opQuantities.station(stationId)) return opQuantities.count(stationId, orderEmployeeId);
   if (!stationId || !orderEmployeeId) return null;
   return (state.productionStationCounts || []).find(
     (count) => count.station_id === stationId && count.order_employee_id === orderEmployeeId,
@@ -6511,6 +6744,7 @@ function getProductionStationGoodQty(stationId, orderEmployeeId) {
 }
 
 function getProductionStationGoodTotal(stationId) {
+  if (opQuantities.station(stationId)) return opQuantities.goodTotal(stationId);
   if (!stationId) return 0;
   return (state.productionStationCounts || [])
     .filter((count) => count.station_id === stationId)
@@ -6539,6 +6773,8 @@ function getProductionOrderClarifyTotal(orderId) {
 }
 
 function getProductionOrderCompletedGoodTotal(orderId) {
+  const linked = opQuantities.finished(orderId);
+  if (linked !== null) return linked;
   const stations = getProductionOrderStations(orderId);
   if (!stations.length) return 0;
   const lastStation = stations[stations.length - 1];
@@ -6608,6 +6844,11 @@ function calculatePreparedRemainingQuantity(order) {
 }
 
 function getProductionQuantityLimitInfo(order, station) {
+  if (station && opQuantities.station(station.id)) {
+    const linked = opQuantities.station(station.id);
+    const totalCounted = Number(linked.good) + linked.scrap_total + linked.clarify_total;
+    return { blockPlus: false, overTarget: totalCounted > linked.available, targetQuantity: opQuantities.operation(station.id).target, totalCounted, limitQuantity: linked.available, remainingAllowed: Math.max(0, linked.available - totalCounted), message: "Mengenwidersprüche werden nachvollziehbar erfasst; Buchungen bleiben erhalten." };
+  }
   const targetQuantity = Math.max(0, Math.trunc(Number(order?.target_quantity || 0)));
   if (!order || !station || station.order_id !== order.id) {
     return { blockPlus: false, overTarget: false, targetQuantity, totalCounted: 0 };
@@ -6641,6 +6882,7 @@ function getProductionQuantityLimitInfo(order, station) {
 }
 
 function getProductionGoodCorrectionBlocker(station) {
+  if (opQuantities.station(station.id)) return "";
   const stations = getProductionOrderStations(station.order_id);
   const nextStation = stations[stations.findIndex(entry => entry.id === station.id) + 1];
   if (!nextStation) return "";
@@ -6798,6 +7040,11 @@ async function ensureActiveProductionCounterSelection() {
 }
 
 function renderProductionCountsTab() {
+  if (opQuantities.enabled()) return opQuantities.render() + baLifecycle.render() + `<details><summary>Bisherige Aufträge / Zähler</summary>${renderPhase3ProductionCountsTab()}</details>`;
+  return renderPhase3ProductionCountsTab();
+}
+
+function renderPhase3ProductionCountsTab() {
   const machines = getVisibleProductionMachines().filter(
     (machine) => machine.active !== false,
   );
@@ -8239,7 +8486,7 @@ function openProductionQaCauseModal(stationId, type) {
   const order = getProductionOrderById(station?.order_id);
   const anchorKey = `amount:${stationId}:${type}`;
   const anchorTop = getScrollAnchorElement(anchorKey)?.getBoundingClientRect().top ?? null;
-  if (!station || !["scrap", "clarify"].includes(type) || !canEditProductionOrder(order)) {
+  if (!station || !["scrap", "clarify"].includes(type) || !(opQuantities.operation(stationId)?.can_work || canEditProductionOrder(order))) {
     setProductionStatus("Du darfst diese Menge nicht ändern.", true);
     renderPreservingScroll(anchorKey);
     return;
@@ -8358,6 +8605,10 @@ async function confirmProductionQaCauseModal() {
 }
 
 async function adjustProductionStationAmount(stationId, type, delta, options = {}) {
+  if (opQuantities.station(stationId)) {
+    if (delta > 0 && !options.qaCauseId) return openProductionQaCauseModal(stationId, type);
+    return opQuantities.adjust(stationId, null, type, delta, options);
+  }
   const station = getProductionOrderStationById(stationId);
   const order = getProductionOrderById(station?.order_id);
   const anchorKey = `amount:${stationId}:${type}`;
@@ -8487,6 +8738,7 @@ async function adjustProductionStationAmount(stationId, type, delta, options = {
 }
 
 async function adjustProductionStationGoodQty(stationId, orderEmployeeId, delta, retried = false) {
+  if (opQuantities.station(stationId)) return opQuantities.adjust(stationId, orderEmployeeId, "good", delta);
   const station = getProductionOrderStationById(stationId);
   const order = getProductionOrderById(station?.order_id);
   const orderEmployee = getProductionOrderEmployeeById(orderEmployeeId);

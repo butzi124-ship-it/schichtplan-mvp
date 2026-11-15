@@ -1,5 +1,7 @@
 # Automated QA and Release Safeguards (0.5.17)
 
+Aktuelle Produktivvorbereitung: [Sicherheits- und Datenbankfreigabe, Schritt 1 (08.11.2026)](production-release-step1-2026-11-08.md). Status: gesperrt; technische Metadaten und offene Fachentscheidungen getrennt dokumentiert.
+
 ## Coverage and architecture
 
 - All 251 legacy Chromium identities are versioned in tests/qa/legacy-tests.json: desktop 91, phone 89, tablet 71. No business assertion was removed or weakened.
@@ -79,3 +81,7 @@ Before an actual merge, an administrator must verify the Pages source. A legacy 
 This substantially reduces routine regression work; it cannot guarantee zero manual validation. Live DB/RLS, real multi-device concurrency, external CDN failures, physical camera/scanner hardware, print devices and actual mobile Safari remain outside demonstrated coverage. Existing historical rows are not modified. App business logic is unchanged; version/log and the reviewed filter-width/header-selector CSS are the only app edits.
 
 Sources: https://playwright.dev/docs/test-agents ; https://playwright.dev/docs/test-snapshots ; https://playwright.dev/docs/docker ; https://learn.chatgpt.com/docs/agent-configuration/subagents ; https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages
+
+## Produktivvorbereitung Schritt 2
+
+[Technische Integrationskorrekturen auf PR #25, Version 0.15.2](production-integration-step2-2026-11-08.md): geprüfter AFTER-STATEMENT-Trigger, getrennte native Diagnose-/Härtungs-/BA-OP-Modi und SQL-/Codequellen mit SHA-Manifest des konkreten Integrationscheckouts. Lokale Prüfungen und blockierte native/Browserprüfungen sind getrennt dokumentiert. Keine Produktivfreigabe.

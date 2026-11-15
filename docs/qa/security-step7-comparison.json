@@ -1,0 +1,46 @@
+{
+  "historicalInventory": "docs/qa/schema-inventory.json",
+  "currentCapture": "2026-11-12T12:36:34.766069+00:00",
+  "publicTableCount": 31,
+  "publicColumnCount": 308,
+  "publicConstraintCount": 134,
+  "columnAndConstraintDrift": [],
+  "roleCheck": "Current original has three roles; PR31 synthetic fixture had explicit four-role phase2 transition. Step7 proposes checked transition, not original fact.",
+  "originalVsCandidate": "No humbel_security schema and no security_* RPCs in original. Only6 public functions. All isolated trust structures and BA/OP migration objects remain proposals, not deployed objects.",
+  "newlyVerified": "Current table/column ACLs, policies, owners, public helper bodies/ACLs, defaults, memberships and dependencies now captured; full pg_dump restore/API/Auth runtime remain open",
+  "fullOriginalRestore": false,
+  "publicFunctionComparison": [
+    {
+      "name": "can_access_production_department",
+      "exactBytes": true,
+      "newlineNormalized": true
+    },
+    {
+      "name": "current_app_employee_id",
+      "exactBytes": true,
+      "newlineNormalized": true
+    },
+    {
+      "name": "current_app_employee_role",
+      "exactBytes": true,
+      "newlineNormalized": true
+    },
+    {
+      "name": "current_employee_id",
+      "exactBytes": true,
+      "newlineNormalized": true
+    },
+    {
+      "name": "is_admin",
+      "exactBytes": true,
+      "newlineNormalized": true
+    },
+    {
+      "name": "set_updated_at",
+      "exactBytes": true,
+      "newlineNormalized": true
+    }
+  ],
+  "policyDefinitionDrift": [],
+  "policiesCompared": 127
+}

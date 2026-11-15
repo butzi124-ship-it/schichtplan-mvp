@@ -1,0 +1,53 @@
+{
+  "reason": "Reviewed PR #27 presentation integration only. Four exact reversible app edits; original business hash, permissions, calculations and write paths retained. See docs/qa/home-dashboard-v0154.md.",
+  "baseCommit": "cf7d3bf2b06e895e72e698857327e1486cadbf4d",
+  "reviewedCommit": "7dc05acd4d60dea62331a268438df6d7f744a5fa",
+  "patches": [
+    {
+      "before": "  if (!tabs.includes(currentTab)) currentTab = tabs[0];\n",
+      "after": "  if (!tabs.includes(currentTab)) currentTab = tabs[0];\n  document.body.classList.toggle(\"humbel-home-mode\", currentTab === \"dashboard\");\n"
+    },
+    {
+      "before": "      [\"werkzeugverwaltung\", \"lagerverwaltung\"].includes(currentTab)",
+      "after": "      [\"werkzeugverwaltung\", \"lagerverwaltung\", \"dashboard\"].includes(currentTab)"
+    },
+    {
+      "before": "  if (currentTab === \"dashboard\") view.innerHTML = renderDashboard();",
+      "after": "  if (currentTab === \"dashboard\") view.innerHTML = renderDashboard(tabs);"
+    },
+    {
+      "before": "function renderDashboard() {\n",
+      "after": "function renderDashboard(allowedTabs = []) {\n  if ((state.dashboardSubTab || \"overview\") === \"overview\" && window.HumbelHome) {\n    const canProduction = allowedTabs.includes(\"produktion\");\n    const isEmployee = currentUser?.role === \"employee\";\n    const shifts = isEmployee ? generateThreeMonths().filter(s => s.assigned === currentUser.name) : [];\n    const tasks = (Array.isArray(state.tasks) ? state.tasks : []).filter(t => t.status !== \"done\" && (currentUser?.role === \"admin\" || isTaskAssignedToCurrentUser(t)));\n    return window.HumbelHome.render({\n      tabs: allowedTabs,\n      articleEnabled: !!(window.HUMBEL_ARTICLE_MASTER_ENABLED && articleMaster.hasAccess()),\n      shiftAction: isEmployee ? \"setDashboardSubTab('myShifts')\" : (allowedTabs.includes(\"personalverwaltung\") ? \"setTab('personalverwaltung')\" : \"\"),\n      machines: canProduction ? getVisibleProductionMachines() : [],\n      counts: canProduction ? getVisibleProductionCounts() : [],\n      shifts, tasks\n    }) + '<div class=\"h-home mt-4 flex gap-2 flex-wrap\">' + renderModuleSubTabs(DASHBOARD_SUBTABS, \"overview\", \"setDashboardSubTab\") + '</div>';\n  }\n"
+    }
+  ],
+  "files": {
+    "js/dashboard-home.js": "48cc78191e0866a279826f168bebe26b54081b8f681d5a2f372a2136d9ba93e2",
+    "css/home-dashboard.css": "36ff2ef1deeffb9bc1abda9541b606c263e33132b6d458b09bb1a96fc9b3daaf",
+    "schichtplan_mvp.html": "84c71e48a92f8a0da862b1bd381255676fad066388846435040b8dcfd6bd7c69"
+  },
+  "filePatches": [
+    {
+      "file": "schichtplan_mvp.html",
+      "before": "    <script src=\"https://cdn.tailwindcss.com\"></script>\n",
+      "after": "    <script src=\"https://cdn.tailwindcss.com\"></script>\n    <link rel=\"stylesheet\" href=\"./css/home-dashboard.css\" />\n"
+    },
+    {
+      "file": "schichtplan_mvp.html",
+      "before": "    <script src=\"./schichtplan_mvp.js\"></script>",
+      "after": "    <script src=\"./js/dashboard-home.js\"></script>\n    <script src=\"./schichtplan_mvp.js\"></script>"
+    }
+  ],
+  "assetPatches": [
+    {
+      "file": "js/dashboard-home.js",
+      "before": "\"Mitarbeiter\", \"Personalverwaltung\"",
+      "after": "\"Mitarbeiter\", \"Stammdaten · Team\""
+    },
+    {
+      "file": "js/dashboard-home.js",
+      "before": "<h1>Willkommen in der Humbel-App</h1>",
+      "after": "<h1>Start / Dashboard</h1>"
+    }
+  ],
+  "assetPatchReview": "0.15.5: two exact visible UI text corrections for Actions 43161217288. Original renderer hash retained. See docs/qa/home-dashboard-v0155.md."
+}

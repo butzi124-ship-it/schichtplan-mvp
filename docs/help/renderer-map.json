@@ -1,0 +1,346 @@
+{
+  "renderPreservingScroll": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderModuleSubTabs": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderModulePlaceholder": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderDashboard": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderToolManagement": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderToolManagementSubtabHint": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderToolQrLabelsTab": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderStorageManagement": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderStorageManagementSubtabHint": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderStorageMoveTab": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderStorageQrTab": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderScannerModule": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderAnalyticsModule": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderAdminSystemModule": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderReplacementCalendar": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderOverviewPlan": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderSchedule": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderMyShifts": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderPlanning": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderPlanningPersonal": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionMachineOptions": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionOrderMachineOptions": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionCountEmployeeOptions": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionDepartmentAdminNotice": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderDepartmentOptions": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProduction": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionDepartmentsTab": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionMachinesTab": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionOrdersTab": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionOrderTable": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionOrderRow": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionCountsTab": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderPhase3ProductionCountsTab": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionCounterMachineCard": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionCounterOrderSummary": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionCounterViewToggle": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionTouchPreview": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionMachineOrderPreview": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionOrderStationsSection": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionOrderChecklistSection": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionOrderChecklistItem": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionOrderEmployeesSection": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionOrderEmployeePill": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionOrderStationCard": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionStationChip": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionStationScrapClarifyControls": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionStationAmountControl": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionStationEmployeeCounter": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionPreviewMetric": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionCounterMachineDetail": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionCounterNoOrderNotice": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderLegacyProductionCountsTab": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionCountStepper": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionCountRow": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionCountInlineStepper": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionProtocolTab": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionProtocolEntry": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionSettingsTab": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionQaCauseModal": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderProductionCompletionDialog": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderPersonnelEmployeeBadges": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderPersonalManagement": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderPersonnelEmployeesTab": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderShiftDefinitionsTab": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderPersonnelSettingsTab": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderPlanningAbstinenz": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderPlanningWochenende": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderPlanningSchichttausch": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderToolMaterialsAdmin": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderToolMasterDataAdmin": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderToolSizeCell": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderToolOverhangDetailLine": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderToolBorrowedBadge": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderToolBorrowedDetailLine": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderToolCreateForm": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderSimpleQrSvg": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderToolScanner": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderOrderStats": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderTools": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderTodo": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderTaskCreateBox": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderConflicts": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderStats": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderAvailability": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderClosure": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  },
+  "renderDowntimeWidget": {
+    "status": "BLOCKED_NOT_TESTED_FIELD_AUDIT",
+    "reason": "Module help exists; complete field/modal behavior needs browser and role acceptance."
+  }
+}

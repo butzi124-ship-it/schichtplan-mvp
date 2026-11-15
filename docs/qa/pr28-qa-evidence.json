@@ -1,0 +1,82 @@
+{
+  "run": 43171988032,
+  "prHead": "dd64a8e2e6a5c489cc2c98d0fa7862d59cada340",
+  "testedCheckout": "87b9080e893f7af7ad33c13c00f430b0727e18e9",
+  "functionalJob": 131027242245,
+  "runnerStart": "2026-11-12T06:59:43.6293008Z",
+  "cancelAt": "2026-11-12T07:19:42.7877192Z",
+  "elapsedSeconds": 1199.158,
+  "configuredJobTimeoutMinutes": 20,
+  "planned": 758,
+  "loggedPassed": 726,
+  "loggedFailed": 0,
+  "remainingWithoutFinalResult": 32,
+  "finalJsonPresent": false,
+  "classification": "Job time budget exhausted at the configured 20-minute boundary; no functional failure evidenced in available logs",
+  "otherCauses": {
+    "runnerOrContainerFailure": "No crash/OOM/start failure evidenced; subsequent reports/upload/cleanup succeed",
+    "workflowDependencies": "Gates correctly reject functional=cancelled",
+    "concurrentCancellation": "No replacement/manual/concurrency-cancel evidence in logs; existing concurrency groups separate workflows and refs",
+    "artifactCorruption": "Both ZIP digests match API metadata and CRC checks pass; final functional JSON absent, not a damaged ZIP"
+  },
+  "artifacts": [
+    {
+      "id": 13922879669,
+      "sha256": "cdfa59c8f7660f16c9189d0d58924ec8fcf2a79677423366267df6e8c8293a54",
+      "files": 6,
+      "crc": "PASS",
+      "contents": "Five dashboard PNGs plus ci-summary.md; no final results.json or QA summary"
+    },
+    {
+      "id": 13922507021,
+      "sha256": "360b82fd223527de96320d4783f28c365013489f0c721793cdd5c0f06fc30d2c",
+      "files": 5,
+      "crc": "PASS",
+      "visualPasses": [
+        33,
+        33
+      ]
+    },
+    {
+      "id": 13922053348,
+      "sha256": "38197d088746aead5a9a3cdea19f66daedef10cb5e07a24cbc89337458bef326",
+      "crc": "PASS",
+      "run": 43171988044,
+      "nativePassed": 70,
+      "nativeFailed": 0,
+      "authoritativeRestore": false
+    }
+  ],
+  "jobs": [
+    {
+      "id": 131027242104,
+      "name": "Visual Regression",
+      "conclusion": "success"
+    },
+    {
+      "id": 131027242245,
+      "name": "Functional Browsers",
+      "conclusion": "cancelled"
+    },
+    {
+      "id": 131027242277,
+      "name": "QA Integrity",
+      "conclusion": "success"
+    },
+    {
+      "id": 131035187896,
+      "name": "Quality Gate",
+      "conclusion": "failure"
+    },
+    {
+      "id": 131035214324,
+      "name": "e2e",
+      "conclusion": "failure"
+    },
+    {
+      "id": 131035244979,
+      "name": "Deploy Tested Main",
+      "conclusion": "skipped"
+    }
+  ]
+}

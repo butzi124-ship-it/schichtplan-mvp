@@ -1,0 +1,22 @@
+{
+  "status": "ISOLATED_CANDIDATE_NOT_PRODUCTION_APPROVED",
+  "sources": ["User instruction 2026-11-12 Security step 3", "docs/qa/production-release-step1-2026-11-08.md", "docs/qa/schema-inventory.json", "docs/requirements/ba-op-shopfloor-2026-11-07.md"],
+  "bootstrap": "Independent, manually verified principal enrollment with evidence and expiry; no employee-role/JWT-metadata backfill",
+  "confirmed_rules": {
+    "employee_security_fields": "Only verified administrators may change employee rows; role changes do not automatically change independent authority",
+    "department_planning": "Verified actual department leader or explicit current deputy; no foreign-department inference",
+    "schedule": "Explicit department read/publish grants and released current assignment version; no medical columns",
+    "selfservice": "Own identity only, separate proposed contact store, empty approved-field list by default",
+    "materials": "Verified active staff including scanner can read; verified administrator can write",
+    "ba_op": "Existing independent first-OP/routing/lifecycle authorities preserved; planning delegation grants no production authority"
+  },
+  "unresolved": [
+    {"id":"D1", "decision":"Exact schedule audience and display fields", "candidate":"No read grant by default; proposed projection: assignment_id, shift_id, shift_date, employee_id"},
+    {"id":"D2", "decision":"Cancellation, swap, replacement, availability/request approval workflows and frontend adaptation", "candidate":"Raw planner writes revoked; only audited assignment command implemented"},
+    {"id":"D3", "decision":"Medical/vacation/private task readership, field minimization and retention", "candidate":"Unknown rows denied; no default private-data grants, no new private write RPC"},
+    {"id":"D4", "decision":"Actual permitted own contact fields and storage/migration/UI integration", "candidate":"No contact columns in captured employees schema; proposed separate store has empty allowlist, synthetic_contact is test-only"},
+    {"id":"D5", "decision":"Independent identity and stable person/department binding of historical name keys", "candidate":"No automatic backfill; unbound/ambiguous data quarantined"},
+    {"id":"D6", "decision":"Authority issuer, revocation/session handling, approval process and delegation limits", "candidate":"New trust tables writable only by privileged isolated fixture operator; no client enrollment/provisioning API"}
+  ],
+  "production_prerequisites": ["Complete current authoritative schema-only restore with owners/ACL/default grants/functions/views/triggers", "Reviewed matrix and identity reconciliation without production data in test artifacts", "Native JWT/REST/parallel and full hardened UI/tool/Realtime/session acceptance", "Backup/restore drill, RPO/RTO, maintenance owner and data-preserving fallback", "Separate authorized production migration and activation"]
+}

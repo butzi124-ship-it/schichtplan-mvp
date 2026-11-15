@@ -1,0 +1,384 @@
+{
+  "sourcePRs": [
+    {
+      "number": 36,
+      "title": "security: Schritt 8B Phase 2 – isolierte Identitäts- und Sitzungsverwaltung (0.17.1)",
+      "head": "security/identity-sessions-8b2",
+      "sha": "c44824a8386f764ae966dd62541d76b75da1861a",
+      "base": "security/identity-foundation-8b1",
+      "draft": true
+    },
+    {
+      "number": 35,
+      "title": "[Draft] Schritt 8B Phase 1: isolierte Identitäts- und Berechtigungsgrundlage / v0.17.0",
+      "head": "security/identity-foundation-8b1",
+      "sha": "c5384669a17b11d7d97e42f3bd9dafd27df5fe16",
+      "base": "docs/modular-permissions-step8a",
+      "draft": true
+    },
+    {
+      "number": 34,
+      "title": "[Draft] Schritt 8A: Rollen, Ernennungen, Vertretungsprotokolle und Aufbewahrung / v0.16.6",
+      "head": "docs/modular-permissions-step8a",
+      "sha": "66795417d3a940bcb1273b46113f7f45b5b3a8e6",
+      "base": "security/original-audit-step7",
+      "draft": true
+    },
+    {
+      "number": 32,
+      "title": "[Draft] Schritt 7: Originalkatalog bestätigt, Mitarbeiterfix und Rechtehärtung aller31 Tabellen / v0.16.4",
+      "head": "security/original-audit-step7",
+      "sha": "67ac80ac1b649fbdf975aeb2d005f827cda8a8a1",
+      "base": "security/rls-migration-step6",
+      "draft": true
+    },
+    {
+      "number": 31,
+      "title": "[Draft] Schritt 6: bestätigte Originalrechte und atomarer isolierter RLS-Reviewkandidat / v0.16.3",
+      "head": "security/rls-migration-step6",
+      "sha": "1238bf0c9467f1d6bf5e83dd8e0aa8520ef4b7c7",
+      "base": "security/original-schema-step5",
+      "draft": true
+    },
+    {
+      "number": 30,
+      "title": "[Draft] Schritt 5: Originalschema-Nachweis und kontrollierte Sicherheitsmigration / v0.16.2",
+      "head": "security/original-schema-step5",
+      "sha": "35a56bb07e58b7c1a12fbc0654af064740dd292e",
+      "base": "security/permissions-integration-step4",
+      "draft": true
+    },
+    {
+      "number": 29,
+      "title": "[Draft] Schritt 4: QA-Zeitbudget und isolierte sichere Berechtigungsintegration / v0.16.1",
+      "head": "security/permissions-integration-step4",
+      "sha": "2e46d3a63c339389f08f16db67d1a9236216e130",
+      "base": "security/rls-permissions-step3",
+      "draft": true
+    },
+    {
+      "number": 28,
+      "title": "[Draft] Sicherheitsfreigabe Schritt 3: isolierter RLS-/Berechtigungskandidat / v0.16.0",
+      "head": "security/rls-permissions-step3",
+      "sha": "dd64a8e2e6a5c489cc2c98d0fa7862d59cada340",
+      "base": "feat/home-dashboard-v0153",
+      "draft": true
+    },
+    {
+      "number": 27,
+      "title": "[Draft] Responsive Humbel-Startseite: Browsernavigation korrigiert / v0.15.5",
+      "head": "feat/home-dashboard-v0153",
+      "sha": "efeb9f5769056d490737c6d4327bb4ae9bc13e73",
+      "base": "fix/production-integration-step2",
+      "draft": true
+    },
+    {
+      "number": 26,
+      "title": "[Draft] Technische Integrationskorrekturen: AFTER-Trigger und native Testpfade / v0.15.2",
+      "head": "fix/production-integration-step2",
+      "sha": "cf7d3bf2b06e895e72e698857327e1486cadbf4d",
+      "base": "docs/production-release-step1",
+      "draft": true
+    },
+    {
+      "number": 25,
+      "title": "[Draft] Produktivvorbereitung Schritt 1: Sicherheits- und Datenbankfreigabebericht / v0.15.1",
+      "head": "docs/production-release-step1",
+      "sha": "5abcb9265483c5eac275e98a2c80248958e7d88f",
+      "base": "feature/ba-initial-responsibility",
+      "draft": true
+    },
+    {
+      "number": 24,
+      "title": "[Draft] Automatische BA-Hauptverantwortung aus OP-1-Abteilung / v0.15.0",
+      "head": "feature/ba-initial-responsibility",
+      "sha": "c4b75295ab4888ac759abaeec844991a30db40db",
+      "base": "feature/ba-op-phase5",
+      "draft": true
+    },
+    {
+      "number": 23,
+      "title": "[Draft] Phase 5: BA-Mengen, Nachfertigung, Klärfälle und ausdrückliche Abschlüsse / v0.14.2",
+      "head": "feature/ba-op-phase5",
+      "sha": "05b57de2f1dfcedf5575a4064d8ff79acafa0d1b",
+      "base": "feature/ba-op-phase4",
+      "draft": true
+    },
+    {
+      "number": 22,
+      "title": "[Draft] Phase 4: bestehenden Stückzahlzähler mit BA-OPs und Maschinenabschnitten verknüpfen / v0.13.2",
+      "head": "feature/ba-op-phase4",
+      "sha": "72034961668e32b7503a7980f3382c5deb4a84e6",
+      "base": "feature/ba-op-phase3",
+      "draft": true
+    },
+    {
+      "number": 21,
+      "title": "[Draft] Phase 3: persönliche und gemeinsame Rüstzeiterfassung / v0.12.4",
+      "head": "feature/ba-op-phase3",
+      "sha": "6e7bd8a85c06b4cf73bb2f94114200b4e3d8dbde",
+      "base": "feature/ba-op-phase2",
+      "draft": true
+    },
+    {
+      "number": 20,
+      "title": "[Draft] Phase 2: OP-Maschinenbindung, Abteilungsverantwortung und Rückgabe / v0.11.5",
+      "head": "feature/ba-op-phase2",
+      "sha": "e276270adc704fc9033e304ff5ad81db56593ecd",
+      "base": "feature/ba-op-phase1",
+      "draft": true
+    },
+    {
+      "number": 19,
+      "title": "[Draft] Phase 1: BA-Anlage an erster OP mit drei Pflichtfeldern / v0.10.1",
+      "head": "feature/ba-op-phase1",
+      "sha": "8348fadc7bd1f9042b4147bd47568cb484547e3a",
+      "base": "docs/ba-op-shopfloor-requirements-20261107",
+      "draft": true
+    },
+    {
+      "number": 18,
+      "title": "[Draft] Fachliche Spezifikation BA/OP, Rüstzeiten und Stückzahllogik (07.11.2026) / v0.9.1",
+      "head": "docs/ba-op-shopfloor-requirements-20261107",
+      "sha": "91d13e4bed23174625a808213f6f0517ea046891",
+      "base": "main",
+      "draft": true
+    },
+    {
+      "number": 16,
+      "title": "[Draft] Legacy-RLS-Sicherheitsreview – isolierter Testkandidat / v0.9.14",
+      "head": "feature/legacy-security-hardening-review",
+      "sha": "bf14f4ed32fd8dc8e4e8374a5faa0c51a29416c7",
+      "base": "feature/isolated-db-acceptance",
+      "draft": true
+    },
+    {
+      "number": 15,
+      "title": "[Draft] Isolierte Supabase-Abnahme #7–#10 – originalgetreuere Metadaten / v0.9.13",
+      "head": "feature/isolated-db-acceptance",
+      "sha": "25e9a6914e38fc791d9ecad13d92a45e30d19bb3",
+      "base": "main",
+      "draft": true
+    }
+  ],
+  "capturedAt": "2026-11-13T16:46:06.025883+01:00",
+  "version": "0.17.2",
+  "versionLogBerlin": "2026-11-13 16:43",
+  "branch": "docs/documents-inspections-concept",
+  "basePR": 36,
+  "baseSha": "c44824a8386f764ae966dd62541d76b75da1861a",
+  "mainSha": "e764cf2e93382e847627d8bc7c802b02ff70c375",
+  "scope": "Documentation/concept only; application diff restricted to APP_VERSION/VERSION_LOG",
+  "productionAccess": false,
+  "productionWrites": false,
+  "productionActivation": false,
+  "newSQLObjects": [],
+  "implementedBusinessLogic": false,
+  "checks": [
+    {
+      "command": "npm ci --ignore-scripts",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 9.61,
+      "logSha256": "331813377e930224e6354198b575a269e037f1386238c0dd33b23b0ff254a2e6"
+    },
+    {
+      "command": "node --check schichtplan_mvp.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.12,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "node --check tests/smoke.spec.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.17,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "npm run check:syntax",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 120,
+      "seconds": 4.36,
+      "logSha256": "b1281a5b1384edd0b110d31560168afa6965cfa2be9e8786b6d0db097fdcb390"
+    },
+    {
+      "command": "npm run test:ci",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 60,
+      "seconds": 0.47,
+      "logSha256": "da4e2271d8c7bb565040b5b8254bd0936cfdd89115bdaf7b9d7b1c9234d1c448",
+      "tests": 2
+    },
+    {
+      "command": "npm run test:qa",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 120,
+      "seconds": 1.07,
+      "logSha256": "0e70b084afdec5a20ba652a6d2e92dbc772c69edd5320cef5c652be5ecf8d448",
+      "tests": 20
+    },
+    {
+      "command": "npm run qa:check",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 120,
+      "seconds": 2.68,
+      "logSha256": "0530fbcfd505ad271f541db9a2409968450e011c9f67a27b134ad37809f780bb"
+    },
+    {
+      "command": "npm run test:integration",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 6.25,
+      "logSha256": "1f44f69f9f5099378923fbed9510d3a1aa5e76ac461d71d7b41365a72a0993de",
+      "tests": 5
+    },
+    {
+      "command": "npm run test:security",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 67.39,
+      "logSha256": "3f0b427c5cb21f49017e15893163159504cce47b1f5ff936f46dcbc3f1c5d4a8",
+      "tests": 69
+    },
+    {
+      "command": "npm run qa:agent-server",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 60,
+      "seconds": 1.51,
+      "logSha256": "f3a365145b195cc178a6765a046d6f07a7495fa87f7093752ce3631662018319"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.03,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "node -e \"const fs=require('fs'),p=require('@playwright/test');console.log(JSON.stringify(Object.fromEntries(['chromium','firefox','webkit'].map(k=>[k,fs.existsSync(p[k].executablePath())]))))\"",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.57,
+      "logSha256": "dde116af913e6a71fd2a381b83ca774186bed8a466931a22dcc4d07f11191b6f",
+      "meaning": "Prerequisite inspection only; not an E2E test pass"
+    },
+    {
+      "command": "npm run test:e2e",
+      "status": "BLOCKED_NOT_TESTED",
+      "started": false,
+      "reason": "Required browser binaries missing or preflight unavailable: {'chromium': False, 'firefox': False, 'webkit': False}"
+    },
+    {
+      "command": "npm run test:agents",
+      "status": "BLOCKED_NOT_TESTED",
+      "started": false,
+      "reason": "Required browser binaries missing or preflight unavailable: {'chromium': False, 'firefox': False, 'webkit': False}"
+    },
+    {
+      "command": "new documents/inspection native Storage/Auth/RLS/API/concurrency/restore tests",
+      "status": "BLOCKED_NOT_TESTED",
+      "started": false,
+      "reason": "Concept-only: new module unimplemented; no authorized native environment supplied"
+    },
+    {
+      "command": "npm run test:visual",
+      "status": "BLOCKED_NOT_TESTED",
+      "started": false,
+      "reason": "Pinned Playwright container unavailable; no UI changes or reference changes"
+    }
+  ],
+  "photo": {
+    "filename": "73930.jpg",
+    "sha256": "15c9129e4ff61784212a082660fbb0309ad46ff8b1ebb80e2778d21919dd3780",
+    "visuallyInspected": true,
+    "measurementAreaEnlarged": true,
+    "originalCommitted": false,
+    "personalIdentifierTranscribed": false,
+    "formIsApprovedTemplate": false,
+    "uncertainties": "D02/D03/D06/D08/D14; handwriting and derived bounds not imported as verified production data"
+  },
+  "consistencyChecks": {
+    "localLinks": "PASS",
+    "Q01_Q06_bindingRules": "PASS",
+    "D01_D14_openDecisions": "PASS",
+    "A_B_choiceStillOpen": "PASS",
+    "noPermissionActivation": "PASS",
+    "retentionNotInheritedFromActingLogs": "PASS",
+    "businessLogicByteIdenticalAfterVersionNormalization": "PASS",
+    "noExistingTestsAssertionsSQLFlagsOrImagesChanged": "PASS",
+    "futureTestsNotClaimedPassed": "PASS"
+  },
+  "notRunByScope": [
+    {
+      "command": "nine domain suites (168 prior cases)",
+      "status": "NOT_RUN_DOCUMENTATION_ONLY",
+      "reason": "All domain source/tests unchanged; no claim of a new domain-suite run. Integration/security/QA performed separately."
+    }
+  ],
+  "plannedModuleTests": {
+    "groups": "N01–N15",
+    "status": "BLOCKED_NOT_TESTED",
+    "reason": "New module, adapters, SQL, Storage and UI not implemented in this concept-only task"
+  },
+  "runtimePrerequisites": {
+    "chromium": false,
+    "firefox": false,
+    "webkit": false,
+    "docker": false,
+    "podman": false,
+    "psql": false
+  },
+  "remainingBlockers": [
+    "D01–D14 as applicable: capture variant, original form/units/zones, approval/correction roles, QS assignment, sampling/metrology, subject identity, read scopes, export, retention, formats, lifecycle coupling and signature level",
+    "8A/8B independent authority/enrollment, real trusted Auth/JWT/session integration, minimally privileged owners and native approval",
+    "Full authoritative original/Storage schema and runtime verification, isolated native/API/concurrency and DB+file restore proof",
+    "Existing critical legacy permissions and confidential-cache/API/production-safety issues remain unresolved",
+    "Operator backup/PITR/RPO/RTO, retention/holds, maintenance/recovery and separate migration/merge/deployment/activation approvals"
+  ],
+  "sourceBlobsAtBase": {
+    "AGENTS.md": "1b099cb33c7590bbe20c0de873de60e87f8e7233",
+    "docs/DEVELOPMENT.md": "355ce21391cf7b97abd9fe342613b969aea1227c",
+    "docs/architecture/modular-permissions-8a.md": "f549351d5c2e44b63f832c90e006fed755f6990b",
+    "docs/architecture/permissions-8a-matrix.md": "e442f83fccec787d075d24520338839e91c94059",
+    "docs/architecture/permissions-8a-decisions.md": "3765dfc7fa83cd6c173cc4c2ff6647535ba25c7e",
+    "docs/architecture/permissions-8a-data-model.md": "39387507dd0dcc166a677892c8f930299682305d",
+    "docs/architecture/permissions-8a-rollout-test-plan.md": "fa4f18079a788b1142b0ac8feeb4084655693636",
+    "docs/security/permissions-8b1.md": "6667a3e32208bf2c41ffa094671f86ec74145e50",
+    "docs/security/permissions-8b2.md": "642302a8aaaf8a238ae37cda98928006aaab21a1",
+    "docs/qa/security-step7-2026-11-12.md": "59a344a9ae341b895efa6269fd6e0a3b1326b56a",
+    "docs/qa/production-release-step1-2026-11-08.md": "0bec98073288ae6c7c91e4dffcbbc41a81fd17a2",
+    "docs/articles/OPERATIONS.md": "f4db5aa73adba458a366e4f4da8d4369046368d4",
+    "docs/articles/SECURITY.md": "fd3a87b99c1807a4bfea8ea715f69bd9ba52169c",
+    "docs/requirements/ba-op-shopfloor-2026-11-07.md": "9b1629807206cef10bc985d827c51eef66d493f4",
+    "js/article-master.js": "299a438485ecdc33e822d979b78196ac623a4507",
+    "js/operations.js": "e63ff8985cf824bfcdc0c1695acd941962d25f3f",
+    "js/ba-entry.js": "79d636d245b135fe5588e5d6b7a44e62799cff24",
+    "js/op-routing.js": "6232455c4e3adb89fd5e724508a6c877b5ef80e8",
+    "js/setup-times.js": "ef93c281a83da47ce4bcd8d78e2de8aabd790903",
+    "js/op-quantities.js": "1f42f692fc69260bd5cfd5761430e538ae8513a9",
+    "js/ba-lifecycle.js": "af94e98861e1f7a29b7ffc86752174ac472d4fdb",
+    "package.json": "ff5f836afcd437b6656f07d8f8406912b35cfd85"
+  },
+  "documentSha256": {
+    "docs/architecture/documents-inspections-model.md": "5e7e7338508d633162ee4573b03c71401755db869465f5607c07c40e84ff8901",
+    "docs/architecture/documents-inspections-permissions.md": "0ebd82fc8aafaa0729e603f10aba3f96d5912b1bbbc05cdca898c4ceea8237e3",
+    "docs/architecture/documents-inspections-reference.md": "9baaa7b9d1ef2b3d4ad69a1eb389c1a953f85d6f3e9c090a03653e0614f1354f",
+    "docs/architecture/documents-inspections-rollout.md": "705b5f5c20a06769d4e020ae966369c37c4857428f66c20528b36564ee182188",
+    "docs/architecture/documents-inspections.md": "4f13eac68cebaa7629351de30891e53dcd8f403c626b2f9fba8024514c6481a2"
+  },
+  "testTimeouts": "Every launched test has 30–180s fixed timeout, outer supervisor 1200s; TERM then KILL after 5s. No timeout occurred."
+}

@@ -1,5 +1,5 @@
 const fs=require('node:fs');const {readinessDatabase,...ids}=require('./readiness-db');
-async function forecastDatabase(){const api=await readinessDatabase();await api.db.exec(`
+async function forecastDatabase(){const api=await readinessDatabase();await api.db.query("select set_config('TimeZone',$1,false)",[require('../fixtures/forecast-clock.json').zone]);await api.db.exec(`
  create table public.employees(id uuid primary key,auth_user_id uuid,display_name text,is_active boolean,department_id uuid);
  create table public.shift_definitions(id uuid primary key,name text,shift_key text,start_time time,end_time time,requires_time boolean,active boolean);
  create table public.planner_assignments(id uuid primary key default gen_random_uuid(),shift_id text,shift_date date,assigned_user text);

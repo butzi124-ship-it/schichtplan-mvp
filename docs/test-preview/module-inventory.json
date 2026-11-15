@@ -1,0 +1,312 @@
+[
+  {
+    "id": "home",
+    "title": "Startseite",
+    "status": "implemented_not_deployed",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "dashboard",
+    "subtab": "overview"
+  },
+  {
+    "id": "my-shifts",
+    "title": "Meine Schichten",
+    "status": "implemented_not_deployed",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "dashboard",
+    "subtab": "myShifts"
+  },
+  {
+    "id": "tasks",
+    "title": "Aufgaben",
+    "status": "implemented_not_deployed",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "dashboard",
+    "subtab": "todo"
+  },
+  {
+    "id": "schedule",
+    "title": "Schichtplan",
+    "status": "visible_placeholder",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "dashboard",
+    "subtab": "oldSchedule"
+  },
+  {
+    "id": "employees",
+    "title": "Mitarbeiterverwaltung",
+    "status": "implemented_not_deployed",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "personalverwaltung",
+    "subtab": "employees"
+  },
+  {
+    "id": "shifts",
+    "title": "Schichtmodell",
+    "status": "implemented_not_deployed",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "personalverwaltung",
+    "subtab": "shiftModel"
+  },
+  {
+    "id": "planning",
+    "title": "Schichtplanung",
+    "status": "visible_placeholder",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "personalverwaltung",
+    "subtab": "shiftPlanning"
+  },
+  {
+    "id": "personnel-settings",
+    "title": "Personaleinstellungen",
+    "status": "visible_placeholder",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "personalverwaltung",
+    "subtab": "settings"
+  },
+  {
+    "id": "departments",
+    "title": "Abteilungen",
+    "status": "implemented_not_deployed",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "produktion",
+    "subtab": "departments"
+  },
+  {
+    "id": "machines",
+    "title": "Maschinenverwaltung",
+    "status": "implemented_not_deployed",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "produktion",
+    "subtab": "machines"
+  },
+  {
+    "id": "orders",
+    "title": "Betriebsaufträge und Operationen",
+    "status": "implemented_not_deployed",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "produktion",
+    "subtab": "orders"
+  },
+  {
+    "id": "counts",
+    "title": "Mengen und Rüstzeiten",
+    "status": "implemented_not_deployed",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "produktion",
+    "subtab": "counts"
+  },
+  {
+    "id": "setups",
+    "title": "Spannungen",
+    "status": "visible_placeholder",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "produktion",
+    "subtab": "setups"
+  },
+  {
+    "id": "clarification",
+    "title": "Ausschuss und Abklärung",
+    "status": "visible_placeholder",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "produktion",
+    "subtab": "scrap"
+  },
+  {
+    "id": "protocol",
+    "title": "Fertigungsprotokoll",
+    "status": "implemented_not_deployed",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "produktion",
+    "subtab": "protocol"
+  },
+  {
+    "id": "production-settings",
+    "title": "Produktionseinstellungen",
+    "status": "visible_placeholder",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "produktion",
+    "subtab": "settings"
+  },
+  {
+    "id": "articles",
+    "title": "Artikelstamm",
+    "status": "implemented_not_deployed",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "produktion",
+    "subtab": "articles"
+  },
+  {
+    "id": "readiness",
+    "title": "OP und Maschinenbereitschaft",
+    "status": "implemented_not_deployed",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "produktion",
+    "subtab": "readiness"
+  },
+  {
+    "id": "tools",
+    "title": "Werkzeugliste",
+    "status": "implemented_not_deployed",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "werkzeugverwaltung",
+    "subtab": "list"
+  },
+  {
+    "id": "tool-stock",
+    "title": "Werkzeugbestand",
+    "status": "implemented_not_deployed",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "werkzeugverwaltung",
+    "subtab": "stock"
+  },
+  {
+    "id": "tool-movement",
+    "title": "Werkzeugbuchungen",
+    "status": "implemented_not_deployed",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "werkzeugverwaltung",
+    "subtab": "movement"
+  },
+  {
+    "id": "tool-journal",
+    "title": "Werkzeugjournal",
+    "status": "implemented_not_deployed",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "werkzeugverwaltung",
+    "subtab": "journal"
+  },
+  {
+    "id": "tool-qr",
+    "title": "Werkzeug QR Etiketten",
+    "status": "implemented_not_deployed",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "werkzeugverwaltung",
+    "subtab": "qrLabels"
+  },
+  {
+    "id": "storage",
+    "title": "Lagerverwaltung",
+    "status": "implemented_not_deployed",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "lagerverwaltung",
+    "subtab": "overview"
+  },
+  {
+    "id": "scanner",
+    "title": "Scanner",
+    "status": "implemented_not_deployed",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "scanner",
+    "subtab": "toolScan"
+  },
+  {
+    "id": "analytics",
+    "title": "Auswertungen",
+    "status": "implemented_not_deployed",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "auswertung",
+    "subtab": "toolStats"
+  },
+  {
+    "id": "settings",
+    "title": "System und Berechtigungen",
+    "status": "visible_placeholder",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "adminsystem",
+    "subtab": "system"
+  },
+  {
+    "id": "learning",
+    "title": "Gamification",
+    "status": "implemented_not_deployed",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "gamification",
+    "subtab": null
+  },
+  {
+    "id": "safety",
+    "title": "Sicherheitsunterweisungen",
+    "status": "implemented_not_deployed",
+    "demonstratedDesktop": true,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": "safety-learning",
+    "subtab": null
+  },
+  {
+    "id": "quality",
+    "title": "Digitale Qualitätsprüfung",
+    "status": "planned",
+    "demonstratedDesktop": false,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": null,
+    "subtab": null
+  },
+  {
+    "id": "documents",
+    "title": "Dokumentenverwaltung",
+    "status": "planned",
+    "demonstratedDesktop": false,
+    "nativeTested": false,
+    "productionEnabled": false,
+    "screen": null,
+    "subtab": null
+  }
+]

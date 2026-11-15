@@ -1,0 +1,249 @@
+{
+  "capturedAt": "2026-11-14T06:21:20.765838+01:00",
+  "version": "0.17.3",
+  "versionLogBerlin": "2026-11-14 06:18",
+  "branch": "docs/digital-quality-specification",
+  "basePR": 37,
+  "baseSha": "a5c08a4f1cf72c544a12e59da4528bf30c9dd154",
+  "baseDraftConfirmed": true,
+  "openPRCountAtInspection": 21,
+  "scope": "Documentation only; application file changed exclusively APP_VERSION/VERSION_LOG as required by AGENTS.md",
+  "productionAccess": false,
+  "productionWrites": false,
+  "productionActivation": false,
+  "newSQLObjects": [],
+  "businessLogicImplemented": false,
+  "checks": [
+    {
+      "command": "npm ci --ignore-scripts",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 6.69,
+      "logSha256": "6eaeec923a29b836d26d6379847e5c83468fdd7d6f8cc2a9b1e681897bd9cc49"
+    },
+    {
+      "command": "node --check schichtplan_mvp.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.11,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "node --check tests/smoke.spec.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.06,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "npm run check:syntax",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 120,
+      "seconds": 2.68,
+      "logSha256": "b1281a5b1384edd0b110d31560168afa6965cfa2be9e8786b6d0db097fdcb390"
+    },
+    {
+      "command": "npm run test:ci",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 60,
+      "seconds": 0.31,
+      "logSha256": "f4a9bbdcc366f0afae49aa23a099a7b338a3a2f556c5e35940f269d9041d833a",
+      "tests": 2
+    },
+    {
+      "command": "npm run test:qa",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 120,
+      "seconds": 0.67,
+      "logSha256": "442be3eb2c63ae68d7c76b5ec0cab05df439f1259d9ab7dd0eb625b3266f587d",
+      "tests": 20
+    },
+    {
+      "command": "npm run qa:check",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 120,
+      "seconds": 1.67,
+      "logSha256": "0530fbcfd505ad271f541db9a2409968450e011c9f67a27b134ad37809f780bb"
+    },
+    {
+      "command": "npm run test:integration",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 2.23,
+      "logSha256": "1477a12f12e90f4b1eee1e673f022f758066fe41ce020fa92d006f88d0aa9fff",
+      "tests": 5
+    },
+    {
+      "command": "npm run test:security",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 27.3,
+      "logSha256": "ee21f4b6acc8d9c90000e49805d8aeb05abdbed4f4188513aca7eeae7bae799c",
+      "tests": 69
+    },
+    {
+      "command": "npm run test:quantity",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 3.65,
+      "logSha256": "7ece44e59bb98105738e628b31099f5edade05e3fb6a73ef4c918aaf4fd8465f",
+      "tests": 14
+    },
+    {
+      "command": "npm run test:lifecycle",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 180,
+      "seconds": 12.43,
+      "logSha256": "b09e9696a1c545e7b5ac4f28606ef3d81e7b77c10bca42f65abc9074d214ba70",
+      "tests": 37
+    },
+    {
+      "command": "npm run qa:agent-server",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 60,
+      "seconds": 0.72,
+      "logSha256": "f3a365145b195cc178a6765a046d6f07a7495fa87f7093752ce3631662018319"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.02,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "node -e \"const fs=require('fs'),p=require('@playwright/test');console.log(JSON.stringify(Object.fromEntries(['chromium','firefox','webkit'].map(k=>[k,fs.existsSync(p[k].executablePath())]))))\"",
+      "status": "PASS",
+      "exitCode": 0,
+      "timeoutSeconds": 30,
+      "seconds": 0.37,
+      "logSha256": "dde116af913e6a71fd2a381b83ca774186bed8a466931a22dcc4d07f11191b6f",
+      "meaning": "Prerequisite probe only, not a passed browser test"
+    },
+    {
+      "command": "npm run test:e2e",
+      "status": "BLOCKED_NOT_TESTED",
+      "started": false,
+      "reason": "Required browser binaries missing or preflight unavailable: {'chromium': False, 'firefox': False, 'webkit': False}"
+    },
+    {
+      "command": "npm run test:agents",
+      "status": "BLOCKED_NOT_TESTED",
+      "started": false,
+      "reason": "Required browser binaries missing or preflight unavailable: {'chromium': False, 'firefox': False, 'webkit': False}"
+    },
+    {
+      "command": "new digital quality native tenant/Storage/Auth/RLS/API/concurrency/restore tests",
+      "status": "BLOCKED_NOT_TESTED",
+      "started": false,
+      "reason": "Concept-only: new module unimplemented; no authorized native environment supplied"
+    },
+    {
+      "command": "npm run test:visual",
+      "status": "BLOCKED_NOT_TESTED",
+      "started": false,
+      "reason": "Pinned Playwright container unavailable; no UI changes or reference changes"
+    }
+  ],
+  "existingPassedTestCount": 147,
+  "futureQualityTests": {
+    "groups": "A01–A15",
+    "status": "BLOCKED_NOT_TESTED",
+    "reason": "New workflows/model/UI/tenant integration intentionally not implemented; no native runtime supplied"
+  },
+  "notRerun": "Other unchanged domain suites; no claim of a new complete nine-suite or full browser/visual/native acceptance",
+  "runtimePrerequisites": {
+    "chromium": false,
+    "firefox": false,
+    "webkit": false,
+    "docker": false,
+    "podman": false,
+    "psql": false
+  },
+  "sources": {
+    "74271.png": {
+      "role": "binding visual layout; example numbers overridden by specification",
+      "sha256": "ec0b5071706592f8bd56cf7f1834a837c519d9fccc69d3fdb9530988ae04483e",
+      "visuallyInspected": true,
+      "committed": false
+    },
+    "74270.jpg": {
+      "role": "Humbel turning instruction reference only; threshold/exception ambiguities retained",
+      "sha256": "639ca332db84ce9e5499be673acbf9b1a557f63669e9f8138247e59a00966c82",
+      "visuallyInspected": true,
+      "enlarged": true,
+      "committed": false
+    }
+  },
+  "consistencyChecks": {
+    "F01_F12_bindingRequirements": "PASS",
+    "Q01_Q06_preserved": "PASS",
+    "D01_D14_explicitPartialSupersession": "PASS",
+    "O01_O11_openDetails": "PASS",
+    "A01_A15_futureTestsNotClaimedPassed": "PASS",
+    "yellowAcknowledgementIsNotApproval": "PASS",
+    "redALOrAuthorizedDeputyNotGlobalRole": "PASS",
+    "singleExistingCounterAndProducerRetention": "PASS",
+    "noInventedPhysicalTraceability": "PASS",
+    "tenantAndCompanyTemplateSeparation": "PASS",
+    "documentLinksAndJSON": "PASS",
+    "originalMeasurementValuesNotOverwritten": "PASS",
+    "businessByteIdenticalAfterVersionNormalization": "PASS",
+    "noExistingTestsAssertionsSQLFlagsOrImagesChanged": "PASS"
+  },
+  "documentSha256": {
+    "docs/architecture/digital-quality-acceptance.md": "8d4251c9321d0b9e7433377d1369b4c972760d9053a64b1eb752a89e7c9e89a7",
+    "docs/architecture/digital-quality-model.md": "6c90e3071f93f9ed0920b3085476c375dec75d04aa25880cca9475792f8d4910",
+    "docs/architecture/digital-quality-ui.md": "d89a9bbfbf382b1a5d38718a8eb23c41721a291526672fa2de281599c1f64d73",
+    "docs/requirements/digital-quality-2026-11-14.md": "ca62e6692cdb5af395392d449baedcf256ff203bf4e2a8eb105ad6be66942e79",
+    "docs/architecture/documents-inspections-rollout.md": "fee95b6ae4a0a9edad1687945ba2901fb15f276a7261c96821b1c50c94bcc431",
+    "docs/architecture/documents-inspections-model.md": "be652b90efcee122e535a853ce265d418f2597436b1624ac33f254d2b0b5c407",
+    "docs/architecture/documents-inspections-permissions.md": "f6a78c0bd6c60973f4a1f3dc21b547af65c9acc6c9da6a066b511539e42ec992",
+    "docs/architecture/documents-inspections-reference.md": "e73df849ba50b0ea3ca7f9a4f082d00d072c39763134bb28c8d288553d165855",
+    "docs/architecture/documents-inspections.md": "e5f810857ea2b09eac6f6e35f81c7059f69d920620105e06e46530bf7c760ef8",
+    "docs/requirements/ba-op-shopfloor-2026-11-07.md": "74e102ad9080fd0a8fd62f81dcc6509b64f32681ee11bf5578e92f72e5a01ea4"
+  },
+  "sourceBlobsAtBase": {
+    "AGENTS.md": "1b099cb33c7590bbe20c0de873de60e87f8e7233",
+    "docs/DEVELOPMENT.md": "355ce21391cf7b97abd9fe342613b969aea1227c",
+    "package.json": "ff5f836afcd437b6656f07d8f8406912b35cfd85",
+    "docs/architecture/documents-inspections.md": "d6ce471606b0fca582187fc8723f2f1c75368a30",
+    "docs/architecture/documents-inspections-model.md": "03ce01a99e679ab011e372c30a9f8078c9113a47",
+    "docs/architecture/documents-inspections-permissions.md": "12a5497c1dc677e3f0336c06794f4081288e63fe",
+    "docs/architecture/documents-inspections-reference.md": "f6a6c694c395b3a3e51aa49f7f830b577e4e030a",
+    "docs/architecture/documents-inspections-rollout.md": "f8eeedbc1614b105800158289256438c9442eba8",
+    "docs/architecture/modular-permissions-8a.md": "f549351d5c2e44b63f832c90e006fed755f6990b",
+    "docs/architecture/permissions-8a-matrix.md": "e442f83fccec787d075d24520338839e91c94059",
+    "docs/architecture/permissions-8a-decisions.md": "3765dfc7fa83cd6c173cc4c2ff6647535ba25c7e",
+    "docs/security/permissions-8b1.md": "6667a3e32208bf2c41ffa094671f86ec74145e50",
+    "docs/security/permissions-8b2.md": "642302a8aaaf8a238ae37cda98928006aaab21a1",
+    "docs/requirements/ba-op-shopfloor-2026-11-07.md": "9b1629807206cef10bc985d827c51eef66d493f4",
+    "js/op-quantities.js": "1f42f692fc69260bd5cfd5761430e538ae8513a9",
+    "supabase/review/quantity-phase4.sql": "2a30829d32bbb86c91531b94d5be96bda087fd1e",
+    "supabase/review/lifecycle-phase5.sql": "92bbe30757af337d46139b10936ca499c900006e"
+  },
+  "historicalValidationUnchanged": {
+    "path": "docs/architecture/documents-inspections-validation.json",
+    "sha256": "72f9677b002468cac398a147eedc7dec76c02bb90827709e1ca55e0137adb091"
+  },
+  "remainingBlockers": [
+    "O01–O11 as explicitly scoped in acceptance register; resolved yellow/red authority and layout rules are not reopened",
+    "Existing critical legacy permissions and absent trusted real Auth/session/authority integration remain production blockers",
+    "Whole application/company isolation, native Auth/API/RLS/Storage/parallelism and authoritative restore untested",
+    "Independent DB+Storage backup/restore, RPO/RTO/PITR, retention/export and separate operational approvals required"
+  ],
+  "timeouts": "Every launched test bounded30–180s; supervisor1200s; no timeout occurred; no retry loops or assertion changes"
+}

@@ -1,0 +1,10 @@
+{
+  "reason": "Explicitly authorized automatic first-OP BA responsibility presentation. Preserve original protected hashes and disabled fallback.",
+  "filePatches": [
+    {
+      "file": "js/ba-entry.js",
+      "before": "<p>BA-Hauptverantwortung: Zuordnungsregel noch offen. Keine automatische AL-Zuordnung.</p>",
+      "after": "<p>${snapshot.responsibility_status==='assigned'?`BA-Hauptverantwortlicher AL: ${html(snapshot.principal_label||'Zugeordnete Abteilungsleitung')}`:snapshot.responsibility_status==='open'?'Hauptverantwortung offen. Ein Administrator kann die Erstzuordnung nachholen.':'BA-Hauptverantwortung: Zuordnungsregel noch offen. Keine automatische AL-Zuordnung.'}</p>"
+    }
+  ]
+}

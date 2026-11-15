@@ -12,16 +12,16 @@
     ".codex/config.toml": "8c91972f392226685f869ff23f39e9dc47c75dff2158d33b6e576c615471a581",
     "js/article-master.js": "db5e1bfcd4130dd8ee19bb9402455069f1af50b73c573aa0f965a1d20af742b7",
     "tests/qa/article-integration-patches.json": "d236acb26bdfe537171b9e1274120af0f2fbc4122e56977eb91470135702ea45",
-    "tests/articles.spec.js": "224afe98404df306c39f2c895a872ccbee0065bb2aa4c563b52f70288a7938b9",
+    "tests/articles.spec.js": "d40cee8c7b51df69265b0ef16e2e51240bcfadc479695999ab82fbabdf8416ac",
     "tests/helpers/article-db.js": "f132d7df34c369e8a5cb1dc27eb13f206c1fabc82a4dd483ae39dbdd231134e6",
     "tests/articles/database.test.js": "49c296da971117d6c881f168e46204868072b571d14d70b1ceaa21ba64042afc",
     "tests/fixtures/article-reference.json": "c2fcfa95b974465ecd0db2321000b4bfea47c0e9ee0d521c6de3e005a435705c",
-    "schichtplan_mvp.html": "c735025e711ee3f2523dc2fd9c8eadef373a543c8912ee45066c1ccae06342bf",
+    "schichtplan_mvp.html": "207b1b97dbab24b8d9ae150ca287c4f5616b5b6485615476faa77092cb6f4352",
     "supabase/migrations/20261106023103_article_master_phase1.sql": "f771e994df6161ed97dd163514dc2449697770bb2c4771a580e03928580460c4",
     "tests/qa/legacy-navigation-patch.json": "422d6644fb3258e4dcc37482eaaee60b8670bb566a5abfe873d44fe338e1f109",
     "tests/qa/visual-metadata-patch.json": "31116f2631bcdd20b5f571d7f181fddc488e734a6f0891e7aef070dde0282d69",
     "tests/qa/release-gate.test.js": "9ff5aab758b14b9b24261c32c7fca6fff0e3e04acb81ea866febd951b3fbec87",
-    "js/operations.js": "0bdcc6382c039b1ecf3f1b757f17ec06f2302276406d4cbfc612b8edb4ec8aff",
+    "js/operations.js": "afe493ae7fdb15802883c52125a8563b133483171b15a4fb919bc95b4d03b2b5",
     "js/vendor/JsBarcode.code128.min.js": "7525fc29d3597337d8366b15414871f63b70b967c94fa0c4edb135efe1d6709d",
     "tests/qa/operations-integration-patches.json": "b6aee0071e0e463454829ddb11c8f569e549ad70cced7e6ddd72401b16d7adf4",
     "tests/helpers/operations-db.js": "db1418b414db6a13cf5c54e86620bf0fb93104e4bc05461f5a064bdf86657ff9",
@@ -30,7 +30,7 @@
     "tests/operations.spec.js": "0b514a7630b395690b457b945cbf7ba3308dd5d9d28ac50e5929bbb866cab263",
     "tests/fixtures/operations-reference.json": "a4acacd93cc0ba00a61aa89390777fec3773aff92fe63f5d4c649cc107918712",
     "supabase/migrations/20261106053328_operations_phase2_review.sql": "93f04bb7a7fa1d7c211560ae4973646a9e2de26ba4237ed2d02a0354d5c6dde8",
-    "js/machine-readiness.js": "e86e01eaf16286db3a714e1cb02d96890806d626ee0e71d436945a393552abc1",
+    "js/machine-readiness.js": "8f36268fdd93cdd3df6dce63785ec12b219eb4af11c15d813627f9d8a82dfc4d",
     "tests/qa/readiness-integration-patches.json": "929a20f3007fe4f419395e0e2689ed913e26c2bdadb8989d5830f6e3f0364f9c",
     "tests/helpers/readiness-db.js": "471904f3c566378621d447d3abf26373ec78135b511770480ef34b1908dd485c",
     "tests/readiness.spec.js": "1d860a03f2c8c44c597cec84cc37213d7ac3633f2939da8c0fa8ce1635b7a792",
@@ -41,7 +41,7 @@
     "js/production-forecast.js": "5e105f324c2360b371ae772bd390ffc116eb9cf0e17ab18c9a34bafa724326d7",
     "js/forecast-ui.js": "ae009cd2db53d0d2e3799affeac025dc971e464802d88f15707459d9d5a78421",
     "js/forecast-service.js": "e56aac92c7ddf9e9475081c822c0136327e37849b03aa87c7fec5722cb121abc",
-    "supabase/review/issue-10-production-forecast.sql": "8c1a74ff591d091c8649b815da0ac54c7584fd2b48e17eff20a8e040a20419bc",
+    "supabase/review/issue-10-production-forecast.sql": "fff6eed3f17d52877ff923ba8e0ae57997248b1767f76977d516ca0bd851db21",
     "tests/helpers/forecast-db.js": "7ac53842ececdac461f4111b4bf92813d611b35983ae7cbd12319b17a61a2fbb",
     "tests/helpers/forecast-fixture.js": "c2e1b469315405110df81d1dc5fbff2ad8c947d1b0809a3f1ba8d58c3f239835",
     "tests/forecast.spec.js": "61878d1024ed4bab02181b19e8c123f8a1c4948123e4c0d2bb77f595aa034463",
@@ -51,7 +51,35 @@
     "tests/forecast/database.test.js": "c1fe3f0c3a77cbcdc3cab33dc89b44adb2cc970702b689215ccc3d0db0f81c5f",
     "supabase/functions/production-forecast/index.ts": "2398396806a505810bf64f120dfe52019a85d809709896d9350f6bcee09f9725",
     "supabase/functions/_shared/forecast-runtime.ts": "3808489a7f8c2cc8d4dcd0aa4cf3eda1d67a5a106c01d530c2406173a65956a6",
-    "supabase/functions/production-forecast-worker/index.ts": "866c57b9d593c85e04424dd9d8b4bc94fc615e29940b6aeaf87ffae426f668af"
+    "supabase/functions/production-forecast-worker/index.ts": "866c57b9d593c85e04424dd9d8b4bc94fc615e29940b6aeaf87ffae426f668af",
+    "js/ba-entry.js": "52e446d455e370eb88092e9cf04082d4bfbb114463bd86ad368e0094fa0b0c9f",
+    "tests/qa/ba-entry-integration-patches.json": "2199936890f815ad88191b0d1f8e1999e33ab59a76d787b681c1b4d05ebaa814",
+    "supabase/review/ba-entry-phase1.sql": "16a2173efb2e2b10dd0b866a7b3e90893d5b6e1c6db83a3c4522a41acf040ca3",
+    "tests/ba-entry.spec.js": "117605bf69417e11e9f04197dd28edb7e02202a778fd194e3b5d5da8f0f67a17",
+    "tests/helpers/ba-entry-db.js": "1757ba07920568a97d98058509d4b5344a8b3332d5aedba01af62ce4e668d314",
+    "tests/ba-entry/database.test.js": "e7c20b97c976ddf34c2d9e1807c7620631b4689decc67a2f5bf23e08456a843d",
+    "js/op-routing.js": "f507e78e63e291be2b56293c5cc93172f716e012134503a75c035812ba507881",
+    "supabase/review/op-routing-phase2.sql": "27878083e07e9ca8301601072726c38ea7d981923e4b44d4983e5cc0cba0660a",
+    "tests/routing.spec.js": "c0c018e450de028d2969906d3e71a4384fcbeb851aa3715462b10642090e621a",
+    "tests/routing/database.test.js": "e3e0db5c9cdefc29f5ed19c36a41bd12c31d578e8e418cc86e1124a94baa7727",
+    "tests/helpers/routing-db.js": "62812d6aa1a121d1a3eaf2ca44eea7d31b78706a856099bf246e29804bbcf0f9",
+    "tests/db-integration/routing-extension.js": "345c5feba959804d71827b960de23616cc0d3fd61a31780bbf6b164e7a1cbe02",
+    "js/setup-times.js": "85919baf2972223bcb7e02636cf7d51cba6e0cfbf27a4fe014ba8638a5b4d7b2",
+    "supabase/review/setup-phase3.sql": "4bbb977f7d80753f0a3c1acd4285b0d8bc225f17add244cc487cd82fa09dbc00",
+    "tests/setup.spec.js": "644563213b5814d1ee499b58a7dada028cc67afcf46ceecb5516f6e9a2abae63",
+    "tests/setup/database.test.js": "c167af347c65110c17fa69321036f937bdc77a9f5e032ac0684fb04937894240",
+    "tests/helpers/setup-db.js": "7aa4915f1653f3e8b9c0122beb842d677701febec4b300d68baf39a1568fb9fc",
+    "tests/db-integration/setup-extension.js": "24976ab54241a2f24c2e9d5d1177a8b2d38e53547e92150015da8290ee8c8d69",
+    "tests/qa/setup-integration-patches.json": "c03985196b492b70003a5dbde778aa14b8de0792409a2560f49f32177291ecdb",
+    "tests/setup/unit.test.js": "34ae329f6506cc9efced88e876653db2e730d424bb09a0ab640c80573c26120a",
+    "js/op-quantities.js": "ce490cee30b2b838a348c8034d476dcb02ae279ce2d827c1e35756a5c10ff756",
+    "supabase/review/quantity-phase4.sql": "339df1f388d03b5fa8e08682c968b0b0e6d0285044b32fee229c159610d5a8af",
+    "tests/helpers/quantity-db.js": "adbb5d0d975e9d51d3bf5fcf7f182154be001287567f92ce539655b17c68d95c",
+    "tests/quantity/database.test.js": "a9bf9b8180b51d5d2c8dd8e8dce160d9028bb1a2e9d6c79abf5f65387b45a3dd",
+    "tests/quantity/unit.test.js": "586a78ba8dd206e3ecba2c6799d5ec560586c850bdf8a615cfe2f0e3aaabe878",
+    "tests/quantity.spec.js": "62d94b539e8118b0a2f56a44a18b18ea3357d8dfc70a0de175fe165f559264d9",
+    "tests/db-integration/quantity-extension.js": "c0a6b93d503465154bdd157d2d36a8d9933133e7a3a23c5a83cd67c4f46a1ed1",
+    "tests/qa/quantity-integration-patches.json": "c663cd4ddf45f4508faa93f43644fb74f5c5d208bc2c2b4da601d9b4a1706b64"
   },
   "reviewedPresentationPatch": "\n    #toolSearch,\n    #toolFilterLabel,\n    #toolFilterT,\n    #toolFilterD,\n    #toolFilterHolder,\n    #toolFilterImageStatus {\n      min-width: 0;\n      width: 100%;\n      max-width: 100%;\n    }\n",
   "reviewedPresentationReplacements": [
@@ -64,5 +92,47 @@
       "after": "body > :is(.max-w-7xl, .max-w-none) > header > .flex > div {"
     }
   ],
-  "reviewReason": "Initial Linux visual tests exposed intrinsic tool-filter widths and a mobile header rule no longer matching when tools/storage switch the wrapper to max-w-none. Only six control widths and the two existing header selectors change; no app logic or business assertion changed."
+  "reviewReason": "Initial Linux visual tests exposed intrinsic tool-filter widths and a mobile header rule no longer matching when tools/storage switch the wrapper to max-w-none. Only six control widths and the two existing header selectors change; no app logic or business assertion changed.",
+  "reviewedTestClockPatches": [
+    {
+      "file": "tests/forecast/database.test.js",
+      "before": "const {test,before,after}=require('node:test');const a=require('node:assert/strict');const {randomUUID}=require('node:crypto');const {forecastDatabase,seedForecast,manager,worker,outsider,department,machine,order}=require('../helpers/forecast-db');const {calculate}=require('../../js/production-forecast');",
+      "after": "const {test,before,beforeEach,after,mock}=require('node:test');const a=require('node:assert/strict');const {randomUUID}=require('node:crypto');const {forecastDatabase,seedForecast,manager,worker,outsider,department,machine,order}=require('../helpers/forecast-db');const {calculate}=require('../../js/production-forecast');"
+    },
+    {
+      "file": "tests/forecast/database.test.js",
+      "before": "let api,seed,last;before(async()=>{api=await forecastDatabase();seed=await seedForecast(api);});after(async()=>api?.db.close());",
+      "after": "// PGlite's WASM wall clock uses Date too: freeze JS observations and SQL now()/clock_timestamp()\n// together. A morning leaves room for same-day arrivals; real late-night runs must not\n// change the publication/rollback scenarios. Advance between tests for run ordering.\nlet api,seed,last;before(async()=>{mock.timers.enable({apis:['Date'],now:new Date(require('../fixtures/forecast-clock.json').instant)});api=await forecastDatabase();seed=await seedForecast(api);});\nbeforeEach(()=>mock.timers.tick(1000));\nafter(async()=>{try{await api?.db.close();}finally{mock.timers.reset();}});"
+    },
+    {
+      "file": "tests/forecast.spec.js",
+      "before": "const {test,expect}=require('@playwright/test');const {prepareMockPage,appUrl}=require('./helpers/mock-page');const {forecastDatabase,seedForecast,manager,worker,department,order}=require('./helpers/forecast-db');const {create}=require('../js/forecast-service');const {calculate}=require('../js/production-forecast');\n",
+      "after": "const {test,expect}=require('@playwright/test');const {prepareMockPage,appUrl}=require('./helpers/mock-page');const {forecastDatabase,seedForecast,manager,worker,department,order}=require('./helpers/forecast-db');const {create}=require('../js/forecast-service');const {calculate}=require('../js/production-forecast');\nconst {mock}=require('node:test');const forecastClock=require('./fixtures/forecast-clock.json');\n"
+    },
+    {
+      "file": "tests/forecast.spec.js",
+      "before": " test.beforeEach(async({page})=>{api=await forecastDatabase();await seedForecast(api);uid=manager;calls=[];fail=false;\n",
+      "after": " test.beforeEach(async({page})=>{mock.timers.enable({apis:['Date'],now:Date.parse(forecastClock.instant)});await page.clock.setFixedTime(Date.now());api=await forecastDatabase();await seedForecast(api);uid=manager;calls=[];fail=false;\n"
+    },
+    {
+      "file": "tests/forecast.spec.js",
+      "before": " await page.exposeFunction('__forecastInvoke',async body=>{if(fail)return{data:null,error:{message:'Synthetic transport failure'}};const r=await handler(new Request('https://isolated.test',{method:'POST',headers:{authorization:'Bearer synthetic'},body:JSON.stringify(body)}));return{data:await r.json(),error:r.ok?null:{message:'Synthetic error'}};});\n",
+      "after": " await page.exposeFunction('__forecastInvoke',async body=>{mock.timers.tick(1000);await page.clock.setFixedTime(Date.now());if(fail)return{data:null,error:{message:'Synthetic transport failure'}};const r=await handler(new Request('https://isolated.test',{method:'POST',headers:{authorization:'Bearer synthetic'},body:JSON.stringify(body)}));return{data:await r.json(),error:r.ok?null:{message:'Synthetic error'}};});\n"
+    },
+    {
+      "file": "tests/forecast.spec.js",
+      "before": " });test.afterEach(async()=>api?.db.close());\n",
+      "after": " });test.afterEach(async()=>{try{await api?.db.close();}finally{mock.timers.reset();}});\n"
+    },
+    {
+      "file": "tests/forecast.spec.js",
+      "before": " test('expired cache loses green automatically; fresh source required and material never released',async({page})=>{await api.db.exec('update public.production_forecast_settings set max_age_seconds=2');await open(page);await recalc(page);await expect(card(page).locator('.forecast-panel')).toHaveAttribute('data-forecast-color','green');await expect(card(page).locator('.forecast-panel')).toHaveAttribute('data-forecast-color','unknown');await expect(card(page).locator('[data-material]')).toHaveAttribute('data-material','planned');});\n",
+      "after": " test('expired cache loses green automatically; fresh source required and material never released',async({page})=>{await api.db.exec('update public.production_forecast_settings set max_age_seconds=2');await open(page);await recalc(page);await expect(card(page).locator('.forecast-panel')).toHaveAttribute('data-forecast-color','green');mock.timers.tick(3000);await page.clock.setFixedTime(Date.now());await expect(card(page).locator('.forecast-panel')).toHaveAttribute('data-forecast-color','unknown');await expect(card(page).locator('[data-material]')).toHaveAttribute('data-material','planned');});\n"
+    },
+    {
+      "file": "tests/helpers/forecast-db.js",
+      "before": "async function forecastDatabase(){const api=await readinessDatabase();await api.db.exec(`\n",
+      "after": "async function forecastDatabase(){const api=await readinessDatabase();await api.db.query(\"select set_config('TimeZone',$1,false)\",[require('../fixtures/forecast-clock.json').zone]);await api.db.exec(`\n"
+    }
+  ]
 }

@@ -5,7 +5,31 @@ const YAML = require("yaml");
 const { listTests } = require("./list-tests");
 const { hash, appBusiness, sourceViolations } = require("./qa-policy");
 const protectedFiles = require("../tests/qa/protected-files.json");
+const { reverseDashboardPresentation, verifyDashboardFiles, reverseDashboardFile } = require("./dashboard-presentation-policy");
+verifyDashboardFiles(file => fs.readFileSync(file));
 let app = fs.readFileSync("schichtplan_mvp.js", "utf8").replace(/\r\n/g, "\n");
+app = reverseDashboardPresentation(app);
+for (const {before, after} of [...require("../tests/qa/learning-integration-patches.json").patches].reverse()) {
+  assert.equal(app.split(after).length - 1, 1, "Learning integration hook must remain exact and unique");
+  app = app.replace(after, before);
+}
+
+for (const {before, after} of [...require("../tests/qa/lifecycle-integration-patches.json").patches].reverse()) {
+  assert.equal(app.split(after).length - 1, 1, "Lifecycle hook must remain exact and unique");
+  app = app.replace(after, before);
+}
+for (const {before, after} of [...require("../tests/qa/quantity-integration-patches.json").patches].reverse()) {
+  assert.equal(app.split(after).length - 1, 1, "Quantity hook must remain exact and unique");
+  app = app.replace(after, before);
+}
+for (const {before, after} of [...require("../tests/qa/setup-integration-patches.json").patches].reverse()) {
+  assert.equal(app.split(after).length - 1, 1, "Setup hook must remain exact and unique");
+  app = app.replace(after, before);
+}
+for (const {before, after} of [...require("../tests/qa/ba-entry-integration-patches.json").patches].reverse()) {
+  assert.equal(app.split(after).length - 1, 1, "BA entry hook must remain exact and unique");
+  app = app.replace(after, before);
+}
 for (const {before, after} of [...require("../tests/qa/forecast-integration-patches.json").patches].reverse().concat([...require("../tests/qa/readiness-integration-patches.json").patches].reverse()).concat([...require("../tests/qa/operations-integration-patches.json").patches].reverse()).concat(require("../tests/qa/article-integration-patches.json").patches)) {
   assert.equal(app.split(after).length - 1, 1, "Article integration hook must remain exact and unique");
   app = app.replace(after, before);
@@ -21,10 +45,31 @@ for (const replacement of protectedFiles.reviewedPresentationReplacements || [])
 assert.equal(hash(appBusiness(app)), protectedFiles.appBusinessSha256, "App business logic changed in a QA-only release");
 for (const [file, expected] of Object.entries(protectedFiles.tests)) {
   let checkedSource = fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n");
+  checkedSource = reverseDashboardFile(file, checkedSource);
   for (const navigation of [require("../tests/qa/legacy-navigation-patch.json"), require("../tests/qa/visual-metadata-patch.json")]) {
     if (file !== navigation.file) continue;
     assert.equal(checkedSource.split(navigation.after).length - 1, 1, "Explicit test fixture patch must remain exact");
     checkedSource = checkedSource.replace(navigation.after, navigation.before);
+  }
+  for (const change of [...require("../tests/qa/initial-responsibility-integration-patches.json").filePatches].reverse()) {
+    if (change.file !== file) continue;
+    assert.equal(checkedSource.split(change.after).length - 1, 1, "Explicit initial responsibility presentation must remain exact and unique");
+    checkedSource = checkedSource.replace(change.after, change.before);
+  }
+  for (const change of [...require("../tests/qa/lifecycle-integration-patches.json").filePatches].reverse()) {
+    if (change.file !== file) continue;
+    assert.equal(checkedSource.split(change.after).length - 1, 1, "Explicit lifecycle adapter must remain exact");
+    checkedSource = checkedSource.replace(change.after, change.before);
+  }
+  for (const change of [...require("../tests/qa/quantity-integration-patches.json").filePatches].reverse()) {
+    if (change.file !== file) continue;
+    assert.equal(checkedSource.split(change.after).length - 1, 1, "Explicit quantity file adapter must remain exact and unique");
+    checkedSource = checkedSource.replace(change.after, change.before);
+  }
+  for (const change of [...(protectedFiles.reviewedTestClockPatches || [])].reverse()) {
+    if (change.file !== file) continue;
+    assert.equal(checkedSource.split(change.after).length - 1, 1, "Reviewed test clock patch must remain exact and unique");
+    checkedSource = checkedSource.replace(change.after, change.before);
   }
   assert.equal(hash(checkedSource), expected, `${file}: protected regression source changed; explicit human review required`);
   assert.deepEqual(sourceViolations(fs.readFileSync(file, "utf8")), [], `${file}: forbidden skip/force/failure annotation`);
@@ -50,4 +95,4 @@ const provenance = JSON.parse(fs.readFileSync(path.join(root, "provenance.json")
 assert.equal(provenance.files.length, 33);
 assert.equal(provenance.image, "mcr.microsoft.com/playwright:v1.62.1-noble");
 for (const ref of provenance.files) assert.equal(hash(fs.readFileSync(path.join(root, ref.file))), ref.sha256, `Unreviewed reference change: ${ref.file}`);
-console.log(`QA integrity passed: ${legacy.length} legacy identities retained, legacy business logic preserved outside explicit article hooks, strict release chain and 33 versioned references verified.`);
+console.log(`QA integrity passed: ${legacy.length} legacy identities retained, legacy business logic preserved outside exact reviewed module/presentation hooks, strict release chain and 33 versioned references verified.`);

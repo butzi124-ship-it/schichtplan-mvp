@@ -1,0 +1,771 @@
+{
+  "baseline": "35a56bb07e58b7c1a12fbc0654af064740dd292e",
+  "sourceInventorySha256": "37c72cf47e3dd4ee84095868ced9ed7f724a8ee0747d7f576e7fd8256e373a9a",
+  "scope": "Reuse Step5/Step4 inventory; affected ten table calls only. Not a replacement 152-call inventory. Extra tasks/special-day/employee/departments and RPC dependencies in report.",
+  "tables": [
+    {
+      "table": "public.planner_absence_replacements",
+      "confirmedOriginal": {
+        "source": "security-step6-original-evidence.json",
+        "rlsEnabled": false,
+        "anonCRUD": true,
+        "authenticatedCRUD": true
+      },
+      "originalDefinitions": "UNVERIFIED (columns/policies/ACL sources/owner/dependencies)",
+      "step28Coverage": {
+        "rls": true,
+        "anonTableAndColumnRevoked": true,
+        "allOldPoliciesReplacedInFixture": true,
+        "authenticatedTablePrivileges": [
+          "SELECT"
+        ],
+        "serverAuthority": "Independent humbel_security registry, real employee binding and expiry; no local profile bootstrap"
+      },
+      "step29Coverage": "No complete workflow adapter",
+      "step6Target": {
+        "authenticatedTablePrivileges": [
+          "SELECT"
+        ],
+        "authenticatedColumnInsert": [],
+        "authenticatedColumnUpdate": [],
+        "physicalDelete": "Denied raw DML; workflow RPC incomplete",
+        "rls": "Bound row + explicit active scope; assignment command and publication separate"
+      },
+      "compatibility": "Raw writes intentionally denied. Complete authorized vacation/sickness/swap/replacement/request workflow BLOCKED pending D2/D3/D5; do not activate",
+      "sourceInventory": "security-step5-access-plan.json (unchanged)",
+      "accesses": [
+        {
+          "id": "A031",
+          "function": "loadPlanningDataFromSupabase",
+          "operation": "select",
+          "baseline_line": 2635,
+          "operationArgumentAtBaseline": "\"*\""
+        },
+        {
+          "id": "A033",
+          "function": "deleteReplacementPlanFromSupabase",
+          "operation": "delete",
+          "baseline_line": 4313,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A040",
+          "function": "deleteReplacementEntriesFromSupabase",
+          "operation": "delete",
+          "baseline_line": 4419,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A041",
+          "function": "saveReplacementPlanToSupabase",
+          "operation": "insert",
+          "baseline_line": 4448,
+          "operationArgumentAtBaseline": "rows"
+        },
+        {
+          "id": "A048",
+          "function": "clearManualShift",
+          "operation": "delete",
+          "baseline_line": 5389,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A112",
+          "function": "resetPlanCurrentFuture",
+          "operation": "delete",
+          "baseline_line": 12110,
+          "operationArgumentAtBaseline": "(no argument)"
+        }
+      ],
+      "requiredNextStep": "Original DDL/ACL/owner/dependencies + hardened full UI/native acceptance; no live activation"
+    },
+    {
+      "table": "public.planner_absences",
+      "confirmedOriginal": {
+        "source": "security-step6-original-evidence.json",
+        "rlsEnabled": false,
+        "anonCRUD": true,
+        "authenticatedCRUD": true
+      },
+      "originalDefinitions": "UNVERIFIED (columns/policies/ACL sources/owner/dependencies)",
+      "step28Coverage": {
+        "rls": true,
+        "anonTableAndColumnRevoked": true,
+        "allOldPoliciesReplacedInFixture": true,
+        "authenticatedTablePrivileges": [
+          "SELECT"
+        ],
+        "serverAuthority": "Independent humbel_security registry, real employee binding and expiry; no local profile bootstrap"
+      },
+      "step29Coverage": "No complete workflow adapter",
+      "step6Target": {
+        "authenticatedTablePrivileges": [
+          "SELECT"
+        ],
+        "authenticatedColumnInsert": [],
+        "authenticatedColumnUpdate": [],
+        "physicalDelete": "Denied raw DML; workflow RPC incomplete",
+        "rls": "Bound row + explicit active scope; assignment command and publication separate"
+      },
+      "compatibility": "Raw writes intentionally denied. Complete authorized vacation/sickness/swap/replacement/request workflow BLOCKED pending D2/D3/D5; do not activate",
+      "sourceInventory": "security-step5-access-plan.json (unchanged)",
+      "accesses": [
+        {
+          "id": "A024",
+          "function": "loadPlanningDataFromSupabase",
+          "operation": "select",
+          "baseline_line": 2607,
+          "operationArgumentAtBaseline": "\"*\""
+        },
+        {
+          "id": "A093",
+          "function": "deleteManualAbsence",
+          "operation": "delete",
+          "baseline_line": 11233,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A097",
+          "function": "deleteVacation",
+          "operation": "delete",
+          "baseline_line": 11847,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A099",
+          "function": "deleteSickLeave",
+          "operation": "delete",
+          "baseline_line": 11896,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A105",
+          "function": "resetPlanCurrentFuture",
+          "operation": "delete",
+          "baseline_line": 12090,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A147",
+          "function": "markAbsent",
+          "operation": "upsert",
+          "baseline_line": 17808,
+          "operationArgumentAtBaseline": "{\n      absence_key: absenceKey,\n      absence_date: date,\n      user_name: userName,\n      absence_type: \"abwesend\",\n      created_by_employee_id: currentEmployeeRecord?.id || null,\n    },\n    { onConflict: \"absence_key\" },"
+        }
+      ],
+      "requiredNextStep": "Original DDL/ACL/owner/dependencies + hardened full UI/native acceptance; no live activation"
+    },
+    {
+      "table": "public.planner_assignments",
+      "confirmedOriginal": {
+        "source": "security-step6-original-evidence.json",
+        "rlsEnabled": false,
+        "anonCRUD": true,
+        "authenticatedCRUD": true
+      },
+      "originalDefinitions": "UNVERIFIED (columns/policies/ACL sources/owner/dependencies)",
+      "step28Coverage": {
+        "rls": true,
+        "anonTableAndColumnRevoked": true,
+        "allOldPoliciesReplacedInFixture": true,
+        "authenticatedTablePrivileges": [
+          "SELECT"
+        ],
+        "serverAuthority": "Independent humbel_security registry, real employee binding and expiry; no local profile bootstrap"
+      },
+      "step29Coverage": "Isolated assignment/publish/read RPC adapter",
+      "step6Target": {
+        "authenticatedTablePrivileges": [
+          "SELECT"
+        ],
+        "authenticatedColumnInsert": [],
+        "authenticatedColumnUpdate": [],
+        "physicalDelete": "Denied raw DML; workflow RPC incomplete",
+        "rls": "Bound row + explicit active scope; assignment command and publication separate"
+      },
+      "compatibility": "Simple assignment/publish minimal read tested; legacy direct UI still NOT_COMPATIBLE",
+      "sourceInventory": "security-step5-access-plan.json (unchanged)",
+      "accesses": [
+        {
+          "id": "A023",
+          "function": "loadPlanningDataFromSupabase",
+          "operation": "select",
+          "baseline_line": 2603,
+          "operationArgumentAtBaseline": "\"*\""
+        },
+        {
+          "id": "A034",
+          "function": "deleteReplacementPlanFromSupabase",
+          "operation": "delete",
+          "baseline_line": 4322,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A037",
+          "function": "persistReplacementShiftEffects",
+          "operation": "delete",
+          "baseline_line": 4387,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A038",
+          "function": "persistReplacementShiftEffects",
+          "operation": "upsert",
+          "baseline_line": 4396,
+          "operationArgumentAtBaseline": "assignmentRows, { onConflict: \"shift_id\" }"
+        },
+        {
+          "id": "A042",
+          "function": "assignShift",
+          "operation": "upsert",
+          "baseline_line": 5295,
+          "operationArgumentAtBaseline": "{\n      shift_id: shiftId,\n      shift_date: shift.date,\n      assigned_user: name,\n      created_by_employee_id: currentEmployeeRecord?.id || null,\n    },\n    { onConflict: \"shift_id\" },"
+        },
+        {
+          "id": "A045",
+          "function": "cancelShift",
+          "operation": "delete",
+          "baseline_line": 5346,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A046",
+          "function": "clearManualShift",
+          "operation": "delete",
+          "baseline_line": 5381,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A104",
+          "function": "resetPlanCurrentFuture",
+          "operation": "delete",
+          "baseline_line": 12087,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A148",
+          "function": "assignOptionalShift",
+          "operation": "upsert",
+          "baseline_line": 17857,
+          "operationArgumentAtBaseline": "{\n      shift_id: shiftId,\n      shift_date: shift.date,\n      assigned_user: name,\n      created_by_employee_id: currentEmployeeRecord?.id || null,\n    },\n    { onConflict: \"shift_id\" },"
+        },
+        {
+          "id": "A149",
+          "function": "assignSuggestedSpringer",
+          "operation": "upsert",
+          "baseline_line": 17900,
+          "operationArgumentAtBaseline": "{\n      shift_id: shiftId,\n      shift_date: shift.date,\n      assigned_user: suggested,\n      created_by_employee_id: currentEmployeeRecord?.id || null,\n    },\n    { onConflict: \"shift_id\" },"
+        },
+        {
+          "id": "A150",
+          "function": "approveSaturdayRequest",
+          "operation": "upsert",
+          "baseline_line": 17931,
+          "operationArgumentAtBaseline": "{\n      shift_id: shiftId,\n      shift_date: shift.date,\n      assigned_user: user,\n      created_by_employee_id: currentEmployeeRecord?.id || null,\n    },\n    { onConflict: \"shift_id\" },"
+        }
+      ],
+      "requiredNextStep": "Original DDL/ACL/owner/dependencies + hardened full UI/native acceptance; no live activation"
+    },
+    {
+      "table": "public.planner_availability",
+      "confirmedOriginal": {
+        "source": "security-step6-original-evidence.json",
+        "rlsEnabled": false,
+        "anonCRUD": true,
+        "authenticatedCRUD": true
+      },
+      "originalDefinitions": "UNVERIFIED (columns/policies/ACL sources/owner/dependencies)",
+      "step28Coverage": {
+        "rls": true,
+        "anonTableAndColumnRevoked": true,
+        "allOldPoliciesReplacedInFixture": true,
+        "authenticatedTablePrivileges": [
+          "SELECT"
+        ],
+        "serverAuthority": "Independent humbel_security registry, real employee binding and expiry; no local profile bootstrap"
+      },
+      "step29Coverage": "No complete workflow adapter",
+      "step6Target": {
+        "authenticatedTablePrivileges": [
+          "SELECT"
+        ],
+        "authenticatedColumnInsert": [],
+        "authenticatedColumnUpdate": [],
+        "physicalDelete": "Denied raw DML; workflow RPC incomplete",
+        "rls": "Bound row + explicit active scope; assignment command and publication separate"
+      },
+      "compatibility": "Raw writes intentionally denied. Complete authorized vacation/sickness/swap/replacement/request workflow BLOCKED pending D2/D3/D5; do not activate",
+      "sourceInventory": "security-step5-access-plan.json (unchanged)",
+      "accesses": [
+        {
+          "id": "A027",
+          "function": "loadPlanningDataFromSupabase",
+          "operation": "select",
+          "baseline_line": 2619,
+          "operationArgumentAtBaseline": "\"*\""
+        },
+        {
+          "id": "A050",
+          "function": "setWeekendAvailability",
+          "operation": "delete",
+          "baseline_line": 5553,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A051",
+          "function": "setWeekendAvailability",
+          "operation": "upsert",
+          "baseline_line": 5570,
+          "operationArgumentAtBaseline": "{\n      availability_key: availabilityKey,\n      shift_id: shiftId,\n      shift_date: date,\n      user_name: userName,\n      status,\n      created_by_employee_id: currentEmployeeRecord?.id || null,\n    },\n    { onConflict: \"availability_key\" },"
+        },
+        {
+          "id": "A052",
+          "function": "loadAvailabilityFromSupabase",
+          "operation": "select",
+          "baseline_line": 5596,
+          "operationArgumentAtBaseline": "\"*\""
+        },
+        {
+          "id": "A108",
+          "function": "resetPlanCurrentFuture",
+          "operation": "delete",
+          "baseline_line": 12094,
+          "operationArgumentAtBaseline": "(no argument)"
+        }
+      ],
+      "requiredNextStep": "Original DDL/ACL/owner/dependencies + hardened full UI/native acceptance; no live activation"
+    },
+    {
+      "table": "public.planner_saturday_requests",
+      "confirmedOriginal": {
+        "source": "security-step6-original-evidence.json",
+        "rlsEnabled": false,
+        "anonCRUD": true,
+        "authenticatedCRUD": true
+      },
+      "originalDefinitions": "UNVERIFIED (columns/policies/ACL sources/owner/dependencies)",
+      "step28Coverage": {
+        "rls": true,
+        "anonTableAndColumnRevoked": true,
+        "allOldPoliciesReplacedInFixture": true,
+        "authenticatedTablePrivileges": [
+          "SELECT"
+        ],
+        "serverAuthority": "Independent humbel_security registry, real employee binding and expiry; no local profile bootstrap"
+      },
+      "step29Coverage": "No complete workflow adapter",
+      "step6Target": {
+        "authenticatedTablePrivileges": [
+          "SELECT"
+        ],
+        "authenticatedColumnInsert": [],
+        "authenticatedColumnUpdate": [],
+        "physicalDelete": "Denied raw DML; workflow RPC incomplete",
+        "rls": "Bound row + explicit active scope; assignment command and publication separate"
+      },
+      "compatibility": "Raw writes intentionally denied. Complete authorized vacation/sickness/swap/replacement/request workflow BLOCKED pending D2/D3/D5; do not activate",
+      "sourceInventory": "security-step5-access-plan.json (unchanged)",
+      "accesses": [
+        {
+          "id": "A030",
+          "function": "loadPlanningDataFromSupabase",
+          "operation": "select",
+          "baseline_line": 2631,
+          "operationArgumentAtBaseline": "\"*\""
+        },
+        {
+          "id": "A049",
+          "function": "requestSaturdayEvening",
+          "operation": "upsert",
+          "baseline_line": 5523,
+          "operationArgumentAtBaseline": "{\n        request_key: requestKey,\n        shift_id: shiftId,\n        shift_date: shift.date,\n        user_name: currentUser.name,\n      },\n      { onConflict: \"request_key\" },"
+        },
+        {
+          "id": "A111",
+          "function": "resetPlanCurrentFuture",
+          "operation": "delete",
+          "baseline_line": 12106,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A151",
+          "function": "approveSaturdayRequest",
+          "operation": "delete",
+          "baseline_line": 17950,
+          "operationArgumentAtBaseline": "(no argument)"
+        }
+      ],
+      "requiredNextStep": "Original DDL/ACL/owner/dependencies + hardened full UI/native acceptance; no live activation"
+    },
+    {
+      "table": "public.planner_shift_cancellations",
+      "confirmedOriginal": {
+        "source": "security-step6-original-evidence.json",
+        "rlsEnabled": false,
+        "anonCRUD": true,
+        "authenticatedCRUD": true
+      },
+      "originalDefinitions": "UNVERIFIED (columns/policies/ACL sources/owner/dependencies)",
+      "step28Coverage": {
+        "rls": true,
+        "anonTableAndColumnRevoked": true,
+        "allOldPoliciesReplacedInFixture": true,
+        "authenticatedTablePrivileges": [
+          "SELECT"
+        ],
+        "serverAuthority": "Independent humbel_security registry, real employee binding and expiry; no local profile bootstrap"
+      },
+      "step29Coverage": "No complete workflow adapter",
+      "step6Target": {
+        "authenticatedTablePrivileges": [
+          "SELECT"
+        ],
+        "authenticatedColumnInsert": [],
+        "authenticatedColumnUpdate": [],
+        "physicalDelete": "Denied raw DML; workflow RPC incomplete",
+        "rls": "Bound row + explicit active scope; assignment command and publication separate"
+      },
+      "compatibility": "Raw writes intentionally denied. Complete authorized vacation/sickness/swap/replacement/request workflow BLOCKED pending D2/D3/D5; do not activate",
+      "sourceInventory": "security-step5-access-plan.json (unchanged)",
+      "accesses": [
+        {
+          "id": "A029",
+          "function": "loadPlanningDataFromSupabase",
+          "operation": "select",
+          "baseline_line": 2627,
+          "operationArgumentAtBaseline": "\"*\""
+        },
+        {
+          "id": "A035",
+          "function": "deleteReplacementPlanFromSupabase",
+          "operation": "delete",
+          "baseline_line": 4328,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A036",
+          "function": "persistReplacementShiftEffects",
+          "operation": "delete",
+          "baseline_line": 4378,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A039",
+          "function": "persistReplacementShiftEffects",
+          "operation": "upsert",
+          "baseline_line": 4404,
+          "operationArgumentAtBaseline": "cancellationRows, { onConflict: \"shift_id\" }"
+        },
+        {
+          "id": "A043",
+          "function": "assignShift",
+          "operation": "delete",
+          "baseline_line": 5312,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A044",
+          "function": "cancelShift",
+          "operation": "upsert",
+          "baseline_line": 5330,
+          "operationArgumentAtBaseline": "{\n        shift_id: shiftId,\n        shift_date: shift.date,\n        created_by_employee_id: currentEmployeeRecord?.id || null,\n      },\n      { onConflict: \"shift_id\" },"
+        },
+        {
+          "id": "A047",
+          "function": "clearManualShift",
+          "operation": "delete",
+          "baseline_line": 5385,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A110",
+          "function": "resetPlanCurrentFuture",
+          "operation": "delete",
+          "baseline_line": 12102,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A152",
+          "function": "approveSaturdayRequest",
+          "operation": "delete",
+          "baseline_line": 17954,
+          "operationArgumentAtBaseline": "(no argument)"
+        }
+      ],
+      "requiredNextStep": "Original DDL/ACL/owner/dependencies + hardened full UI/native acceptance; no live activation"
+    },
+    {
+      "table": "public.planner_sick_leaves",
+      "confirmedOriginal": {
+        "source": "security-step6-original-evidence.json",
+        "rlsEnabled": false,
+        "anonCRUD": true,
+        "authenticatedCRUD": true
+      },
+      "originalDefinitions": "UNVERIFIED (columns/policies/ACL sources/owner/dependencies)",
+      "step28Coverage": {
+        "rls": true,
+        "anonTableAndColumnRevoked": true,
+        "allOldPoliciesReplacedInFixture": true,
+        "authenticatedTablePrivileges": [
+          "SELECT"
+        ],
+        "serverAuthority": "Independent humbel_security registry, real employee binding and expiry; no local profile bootstrap"
+      },
+      "step29Coverage": "No complete workflow adapter",
+      "step6Target": {
+        "authenticatedTablePrivileges": [
+          "SELECT"
+        ],
+        "authenticatedColumnInsert": [],
+        "authenticatedColumnUpdate": [],
+        "physicalDelete": "Denied raw DML; workflow RPC incomplete",
+        "rls": "Bound row + explicit active scope; assignment command and publication separate"
+      },
+      "compatibility": "Raw writes intentionally denied. Complete authorized vacation/sickness/swap/replacement/request workflow BLOCKED pending D2/D3/D5; do not activate",
+      "sourceInventory": "security-step5-access-plan.json (unchanged)",
+      "accesses": [
+        {
+          "id": "A026",
+          "function": "loadPlanningDataFromSupabase",
+          "operation": "select",
+          "baseline_line": 2615,
+          "operationArgumentAtBaseline": "\"*\""
+        },
+        {
+          "id": "A095",
+          "function": "addSickLeave",
+          "operation": "insert",
+          "baseline_line": 11775,
+          "operationArgumentAtBaseline": "payload"
+        },
+        {
+          "id": "A098",
+          "function": "deleteSickLeave",
+          "operation": "delete",
+          "baseline_line": 11883,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A107",
+          "function": "resetPlanCurrentFuture",
+          "operation": "delete",
+          "baseline_line": 12092,
+          "operationArgumentAtBaseline": "(no argument)"
+        }
+      ],
+      "requiredNextStep": "Original DDL/ACL/owner/dependencies + hardened full UI/native acceptance; no live activation"
+    },
+    {
+      "table": "public.planner_swaps",
+      "confirmedOriginal": {
+        "source": "security-step6-original-evidence.json",
+        "rlsEnabled": false,
+        "anonCRUD": true,
+        "authenticatedCRUD": true
+      },
+      "originalDefinitions": "UNVERIFIED (columns/policies/ACL sources/owner/dependencies)",
+      "step28Coverage": {
+        "rls": true,
+        "anonTableAndColumnRevoked": true,
+        "allOldPoliciesReplacedInFixture": true,
+        "authenticatedTablePrivileges": [
+          "SELECT"
+        ],
+        "serverAuthority": "Independent humbel_security registry, real employee binding and expiry; no local profile bootstrap"
+      },
+      "step29Coverage": "No complete workflow adapter",
+      "step6Target": {
+        "authenticatedTablePrivileges": [
+          "SELECT"
+        ],
+        "authenticatedColumnInsert": [],
+        "authenticatedColumnUpdate": [],
+        "physicalDelete": "Denied raw DML; workflow RPC incomplete",
+        "rls": "Bound row + explicit active scope; assignment command and publication separate"
+      },
+      "compatibility": "Raw writes intentionally denied. Complete authorized vacation/sickness/swap/replacement/request workflow BLOCKED pending D2/D3/D5; do not activate",
+      "sourceInventory": "security-step5-access-plan.json (unchanged)",
+      "accesses": [
+        {
+          "id": "A028",
+          "function": "loadPlanningDataFromSupabase",
+          "operation": "select",
+          "baseline_line": 2623,
+          "operationArgumentAtBaseline": "\"*\""
+        },
+        {
+          "id": "A100",
+          "function": "addSwap",
+          "operation": "insert",
+          "baseline_line": 11937,
+          "operationArgumentAtBaseline": "{\n      user_a: userA,\n      user_b: userB,\n      start_date: startDate,\n      end_date: endDate,\n    }"
+        },
+        {
+          "id": "A101",
+          "function": "deleteSwap",
+          "operation": "delete",
+          "baseline_line": 11974,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A102",
+          "function": "resetActiveSwaps",
+          "operation": "delete",
+          "baseline_line": 12015,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A103",
+          "function": "resetActiveSwaps",
+          "operation": "update",
+          "baseline_line": 12020,
+          "operationArgumentAtBaseline": "{ end_date: yesterday }"
+        },
+        {
+          "id": "A109",
+          "function": "resetPlanCurrentFuture",
+          "operation": "delete",
+          "baseline_line": 12098,
+          "operationArgumentAtBaseline": "(no argument)"
+        }
+      ],
+      "requiredNextStep": "Original DDL/ACL/owner/dependencies + hardened full UI/native acceptance; no live activation"
+    },
+    {
+      "table": "public.planner_vacations",
+      "confirmedOriginal": {
+        "source": "security-step6-original-evidence.json",
+        "rlsEnabled": false,
+        "anonCRUD": true,
+        "authenticatedCRUD": true
+      },
+      "originalDefinitions": "UNVERIFIED (columns/policies/ACL sources/owner/dependencies)",
+      "step28Coverage": {
+        "rls": true,
+        "anonTableAndColumnRevoked": true,
+        "allOldPoliciesReplacedInFixture": true,
+        "authenticatedTablePrivileges": [
+          "SELECT"
+        ],
+        "serverAuthority": "Independent humbel_security registry, real employee binding and expiry; no local profile bootstrap"
+      },
+      "step29Coverage": "No complete workflow adapter",
+      "step6Target": {
+        "authenticatedTablePrivileges": [
+          "SELECT"
+        ],
+        "authenticatedColumnInsert": [],
+        "authenticatedColumnUpdate": [],
+        "physicalDelete": "Denied raw DML; workflow RPC incomplete",
+        "rls": "Bound row + explicit active scope; assignment command and publication separate"
+      },
+      "compatibility": "Raw writes intentionally denied. Complete authorized vacation/sickness/swap/replacement/request workflow BLOCKED pending D2/D3/D5; do not activate",
+      "sourceInventory": "security-step5-access-plan.json (unchanged)",
+      "accesses": [
+        {
+          "id": "A025",
+          "function": "loadPlanningDataFromSupabase",
+          "operation": "select",
+          "baseline_line": 2611,
+          "operationArgumentAtBaseline": "\"*\""
+        },
+        {
+          "id": "A094",
+          "function": "addVacation",
+          "operation": "insert",
+          "baseline_line": 11742,
+          "operationArgumentAtBaseline": "payload"
+        },
+        {
+          "id": "A096",
+          "function": "deleteVacation",
+          "operation": "delete",
+          "baseline_line": 11833,
+          "operationArgumentAtBaseline": "(no argument)"
+        },
+        {
+          "id": "A106",
+          "function": "resetPlanCurrentFuture",
+          "operation": "delete",
+          "baseline_line": 12091,
+          "operationArgumentAtBaseline": "(no argument)"
+        }
+      ],
+      "requiredNextStep": "Original DDL/ACL/owner/dependencies + hardened full UI/native acceptance; no live activation"
+    },
+    {
+      "table": "public.tool_materials",
+      "confirmedOriginal": {
+        "source": "security-step6-original-evidence.json",
+        "rlsEnabled": false,
+        "anonCRUD": true,
+        "authenticatedCRUD": true
+      },
+      "originalDefinitions": "UNVERIFIED (columns/policies/ACL sources/owner/dependencies)",
+      "step28Coverage": {
+        "rls": true,
+        "anonTableAndColumnRevoked": true,
+        "allOldPoliciesReplacedInFixture": true,
+        "authenticatedTablePrivileges": [
+          "SELECT",
+          "INSERT",
+          "UPDATE",
+          "DELETE"
+        ],
+        "serverAuthority": "Independent humbel_security registry, real employee binding and expiry; no local profile bootstrap"
+      },
+      "step29Coverage": "Isolated material four-column reader",
+      "step6Target": {
+        "authenticatedTablePrivileges": [
+          "SELECT"
+        ],
+        "authenticatedColumnInsert": [
+          "name",
+          "sort_order",
+          "is_active"
+        ],
+        "authenticatedColumnUpdate": [
+          "name",
+          "is_active",
+          "updated_at"
+        ],
+        "physicalDelete": "Denied to API roles; no existing UI material delete action",
+        "rls": "Verified active staff/scanner read; independent admin writes"
+      },
+      "compatibility": "Material create/rename/deactivate/read SQL payloads tested; full tool/journal/scan/inventory integration NOT_TESTED",
+      "sourceInventory": "security-step5-access-plan.json (unchanged)",
+      "accesses": [
+        {
+          "id": "A022",
+          "function": "loadToolMaterialsFromSupabase",
+          "operation": "select",
+          "baseline_line": 2570,
+          "operationArgumentAtBaseline": "\"*\""
+        },
+        {
+          "id": "A121",
+          "function": "addToolMaterial",
+          "operation": "insert",
+          "baseline_line": 12543,
+          "operationArgumentAtBaseline": "{\n      name: cleanName,\n      sort_order: nextSort,\n      is_active: true,\n    }"
+        },
+        {
+          "id": "A122",
+          "function": "renameToolMaterial",
+          "operation": "update",
+          "baseline_line": 12592,
+          "operationArgumentAtBaseline": "{\n      name: cleanName,\n      updated_at: new Date().toISOString(),\n    }"
+        },
+        {
+          "id": "A123",
+          "function": "deactivateToolMaterial",
+          "operation": "update",
+          "baseline_line": 12637,
+          "operationArgumentAtBaseline": "{\n      is_active: false,\n      updated_at: new Date().toISOString(),\n    }"
+        }
+      ],
+      "requiredNextStep": "Original DDL/ACL/owner/dependencies + hardened full UI/native acceptance; no live activation"
+    }
+  ]
+}

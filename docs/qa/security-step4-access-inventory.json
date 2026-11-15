@@ -1,0 +1,919 @@
+{
+  "baseline": "dd64a8e2e6a5c489cc2c98d0fa7862d59cada340",
+  "source": "schichtplan_mvp.js",
+  "scope": "Literal .from calls; dynamic and RPC call sites separately listed in report",
+  "accesses": [
+    {
+      "table": "employees",
+      "function": "testSupabaseConnection",
+      "operation": "select",
+      "baseline_line": 1476
+    },
+    {
+      "table": "employees",
+      "function": "loadEmployeesFromSupabase",
+      "operation": "select",
+      "baseline_line": 1498
+    },
+    {
+      "table": "shift_definitions",
+      "function": "loadShiftDefinitionsFromSupabase",
+      "operation": "select",
+      "baseline_line": 1606
+    },
+    {
+      "table": "departments",
+      "function": "loadDepartmentsFromSupabase",
+      "operation": "select",
+      "baseline_line": 1653
+    },
+    {
+      "table": "production_machines",
+      "function": "loadProductionMachinesFromSupabase",
+      "operation": "select",
+      "baseline_line": 1691
+    },
+    {
+      "table": "production_counts",
+      "function": "loadProductionCountsFromSupabase",
+      "operation": "select",
+      "baseline_line": 1729
+    },
+    {
+      "table": "production_orders",
+      "function": "loadProductionOrdersFromSupabase",
+      "operation": "select",
+      "baseline_line": 1750
+    },
+    {
+      "table": "production_order_stations",
+      "function": "loadProductionOrderStationsFromSupabase",
+      "operation": "select",
+      "baseline_line": 1771
+    },
+    {
+      "table": "production_order_employees",
+      "function": "loadProductionOrderEmployeesFromSupabase",
+      "operation": "select",
+      "baseline_line": 1792
+    },
+    {
+      "table": "production_station_counts",
+      "function": "loadProductionStationCountsFromSupabase",
+      "operation": "select",
+      "baseline_line": 1813
+    },
+    {
+      "table": "production_station_events",
+      "function": "loadProductionStationEventsFromSupabase",
+      "operation": "select",
+      "baseline_line": 1834
+    },
+    {
+      "table": "production_order_history",
+      "function": "loadProductionOrderHistoryFromSupabase",
+      "operation": "select",
+      "baseline_line": 1855
+    },
+    {
+      "table": "production_qa_causes",
+      "function": "loadProductionQaCausesFromSupabase",
+      "operation": "select",
+      "baseline_line": 1876
+    },
+    {
+      "table": "production_checklist_templates",
+      "function": "loadProductionChecklistTemplatesFromSupabase",
+      "operation": "select",
+      "baseline_line": 1900
+    },
+    {
+      "table": "production_order_checklist",
+      "function": "loadProductionOrderChecklistFromSupabase",
+      "operation": "select",
+      "baseline_line": 1923
+    },
+    {
+      "table": "planner_tasks",
+      "function": "loadTasksFromSupabase",
+      "operation": "select",
+      "baseline_line": 2227
+    },
+    {
+      "table": "tools",
+      "function": "loadToolsFromSupabase",
+      "operation": "select",
+      "baseline_line": 2242
+    },
+    {
+      "table": "tools",
+      "function": "reloadSingleToolFromSupabase",
+      "operation": "select",
+      "baseline_line": 2256
+    },
+    {
+      "table": "tool_journal",
+      "function": "loadToolJournalFromSupabase",
+      "operation": "select",
+      "baseline_line": 2291
+    },
+    {
+      "table": "tool_journal",
+      "function": "addToolJournalEntry",
+      "operation": "insert",
+      "baseline_line": 2337
+    },
+    {
+      "table": "employees",
+      "function": "getCurrentEmployeeRecord",
+      "operation": "select",
+      "baseline_line": 2549
+    },
+    {
+      "table": "tool_materials",
+      "function": "loadToolMaterialsFromSupabase",
+      "operation": "select",
+      "baseline_line": 2570
+    },
+    {
+      "table": "planner_assignments",
+      "function": "loadPlanningDataFromSupabase",
+      "operation": "select",
+      "baseline_line": 2603
+    },
+    {
+      "table": "planner_absences",
+      "function": "loadPlanningDataFromSupabase",
+      "operation": "select",
+      "baseline_line": 2607
+    },
+    {
+      "table": "planner_vacations",
+      "function": "loadPlanningDataFromSupabase",
+      "operation": "select",
+      "baseline_line": 2611
+    },
+    {
+      "table": "planner_sick_leaves",
+      "function": "loadPlanningDataFromSupabase",
+      "operation": "select",
+      "baseline_line": 2615
+    },
+    {
+      "table": "planner_availability",
+      "function": "loadPlanningDataFromSupabase",
+      "operation": "select",
+      "baseline_line": 2619
+    },
+    {
+      "table": "planner_swaps",
+      "function": "loadPlanningDataFromSupabase",
+      "operation": "select",
+      "baseline_line": 2623
+    },
+    {
+      "table": "planner_shift_cancellations",
+      "function": "loadPlanningDataFromSupabase",
+      "operation": "select",
+      "baseline_line": 2627
+    },
+    {
+      "table": "planner_saturday_requests",
+      "function": "loadPlanningDataFromSupabase",
+      "operation": "select",
+      "baseline_line": 2631
+    },
+    {
+      "table": "planner_absence_replacements",
+      "function": "loadPlanningDataFromSupabase",
+      "operation": "select",
+      "baseline_line": 2635
+    },
+    {
+      "table": "planner_special_days",
+      "function": "loadPlanningDataFromSupabase",
+      "operation": "select",
+      "baseline_line": 2708
+    },
+    {
+      "table": "planner_absence_replacements",
+      "function": "deleteReplacementPlanFromSupabase",
+      "operation": "delete",
+      "baseline_line": 4313
+    },
+    {
+      "table": "planner_assignments",
+      "function": "deleteReplacementPlanFromSupabase",
+      "operation": "delete",
+      "baseline_line": 4322
+    },
+    {
+      "table": "planner_shift_cancellations",
+      "function": "deleteReplacementPlanFromSupabase",
+      "operation": "delete",
+      "baseline_line": 4328
+    },
+    {
+      "table": "planner_shift_cancellations",
+      "function": "persistReplacementShiftEffects",
+      "operation": "delete",
+      "baseline_line": 4378
+    },
+    {
+      "table": "planner_assignments",
+      "function": "persistReplacementShiftEffects",
+      "operation": "delete",
+      "baseline_line": 4387
+    },
+    {
+      "table": "planner_assignments",
+      "function": "persistReplacementShiftEffects",
+      "operation": "upsert",
+      "baseline_line": 4396
+    },
+    {
+      "table": "planner_shift_cancellations",
+      "function": "persistReplacementShiftEffects",
+      "operation": "upsert",
+      "baseline_line": 4404
+    },
+    {
+      "table": "planner_absence_replacements",
+      "function": "deleteReplacementEntriesFromSupabase",
+      "operation": "delete",
+      "baseline_line": 4419
+    },
+    {
+      "table": "planner_absence_replacements",
+      "function": "saveReplacementPlanToSupabase",
+      "operation": "insert",
+      "baseline_line": 4448
+    },
+    {
+      "table": "planner_assignments",
+      "function": "assignShift",
+      "operation": "upsert",
+      "baseline_line": 5295
+    },
+    {
+      "table": "planner_shift_cancellations",
+      "function": "assignShift",
+      "operation": "delete",
+      "baseline_line": 5312
+    },
+    {
+      "table": "planner_shift_cancellations",
+      "function": "cancelShift",
+      "operation": "upsert",
+      "baseline_line": 5330
+    },
+    {
+      "table": "planner_assignments",
+      "function": "cancelShift",
+      "operation": "delete",
+      "baseline_line": 5346
+    },
+    {
+      "table": "planner_assignments",
+      "function": "clearManualShift",
+      "operation": "delete",
+      "baseline_line": 5381
+    },
+    {
+      "table": "planner_shift_cancellations",
+      "function": "clearManualShift",
+      "operation": "delete",
+      "baseline_line": 5385
+    },
+    {
+      "table": "planner_absence_replacements",
+      "function": "clearManualShift",
+      "operation": "delete",
+      "baseline_line": 5389
+    },
+    {
+      "table": "planner_saturday_requests",
+      "function": "requestSaturdayEvening",
+      "operation": "upsert",
+      "baseline_line": 5523
+    },
+    {
+      "table": "planner_availability",
+      "function": "setWeekendAvailability",
+      "operation": "delete",
+      "baseline_line": 5553
+    },
+    {
+      "table": "planner_availability",
+      "function": "setWeekendAvailability",
+      "operation": "upsert",
+      "baseline_line": 5570
+    },
+    {
+      "table": "planner_availability",
+      "function": "loadAvailabilityFromSupabase",
+      "operation": "select",
+      "baseline_line": 5596
+    },
+    {
+      "table": "production_order_stations",
+      "function": "ensureProductionOrderStationsForOrder",
+      "operation": "insert",
+      "baseline_line": 6923
+    },
+    {
+      "table": "departments",
+      "function": "findDepartmentByCode",
+      "operation": "select",
+      "baseline_line": 8185
+    },
+    {
+      "table": "production_machines",
+      "function": "findProductionMachineByCode",
+      "operation": "select",
+      "baseline_line": 8198
+    },
+    {
+      "table": "production_order_checklist",
+      "function": "ensureProductionOrderChecklistForOrder",
+      "operation": "insert",
+      "baseline_line": 8296
+    },
+    {
+      "table": "production_order_history",
+      "function": "writeProductionOrderHistory",
+      "operation": "insert",
+      "baseline_line": 8316
+    },
+    {
+      "table": "production_station_events",
+      "function": "writeProductionStationGoodEvent",
+      "operation": "insert",
+      "baseline_line": 8350
+    },
+    {
+      "table": "production_station_events",
+      "function": "writeProductionStationAmountEvent",
+      "operation": "insert",
+      "baseline_line": 8366
+    },
+    {
+      "table": "production_order_stations",
+      "function": "adjustProductionStationAmount",
+      "operation": "update",
+      "baseline_line": 8644
+    },
+    {
+      "table": "production_station_counts",
+      "function": "adjustProductionStationGoodQty",
+      "operation": "update",
+      "baseline_line": 8777
+    },
+    {
+      "table": "production_station_counts",
+      "function": "adjustProductionStationGoodQty",
+      "operation": "insert",
+      "baseline_line": 8782
+    },
+    {
+      "table": "production_order_employees",
+      "function": "setProductionOrderEmployeeActive",
+      "operation": "update",
+      "baseline_line": 8873
+    },
+    {
+      "table": "production_order_employees",
+      "function": "addProductionOrderEmployee",
+      "operation": "insert",
+      "baseline_line": 8941
+    },
+    {
+      "table": "production_order_stations",
+      "function": "createProductionOrderStation",
+      "operation": "insert",
+      "baseline_line": 9003
+    },
+    {
+      "table": "production_order_stations",
+      "function": "saveProductionOrderStation",
+      "operation": "update",
+      "baseline_line": 9065
+    },
+    {
+      "table": "production_order_stations",
+      "function": "deleteProductionOrderStation",
+      "operation": "delete",
+      "baseline_line": 9168
+    },
+    {
+      "table": "departments",
+      "function": "createProductionDepartment",
+      "operation": "insert",
+      "baseline_line": 9245
+    },
+    {
+      "table": "departments",
+      "function": "saveProductionDepartment",
+      "operation": "update",
+      "baseline_line": 9316
+    },
+    {
+      "table": "departments",
+      "function": "setProductionDepartmentActive",
+      "operation": "update",
+      "baseline_line": 9361
+    },
+    {
+      "table": "departments",
+      "function": "deleteProductionDepartment",
+      "operation": "delete",
+      "baseline_line": 9418
+    },
+    {
+      "table": "production_machines",
+      "function": "createProductionMachine",
+      "operation": "insert",
+      "baseline_line": 9488
+    },
+    {
+      "table": "production_machines",
+      "function": "saveProductionMachine",
+      "operation": "update",
+      "baseline_line": 9560
+    },
+    {
+      "table": "production_machines",
+      "function": "setProductionMachineActive",
+      "operation": "update",
+      "baseline_line": 9606
+    },
+    {
+      "table": "production_machines",
+      "function": "deleteProductionMachine",
+      "operation": "delete",
+      "baseline_line": 9663
+    },
+    {
+      "table": "production_orders",
+      "function": "createProductionOrder",
+      "operation": "insert",
+      "baseline_line": 9754
+    },
+    {
+      "table": "production_orders",
+      "function": "updateProductionOrderStatus",
+      "operation": "update",
+      "baseline_line": 9820
+    },
+    {
+      "table": "production_order_checklist",
+      "function": "toggleProductionOrderChecklistItem",
+      "operation": "update",
+      "baseline_line": 9884
+    },
+    {
+      "table": "production_orders",
+      "function": "completeProductionOrderWithChecklist",
+      "operation": "update",
+      "baseline_line": 10058
+    },
+    {
+      "table": "production_counts",
+      "function": "createProductionCount",
+      "operation": "insert",
+      "baseline_line": 10125
+    },
+    {
+      "table": "production_counts",
+      "function": "saveProductionCount",
+      "operation": "update",
+      "baseline_line": 10181
+    },
+    {
+      "table": "production_counts",
+      "function": "completeProductionCount",
+      "operation": "update",
+      "baseline_line": 10241
+    },
+    {
+      "table": "production_counts",
+      "function": "resetProductionCount",
+      "operation": "update",
+      "baseline_line": 10294
+    },
+    {
+      "table": "employees",
+      "function": "findEmployeeByPersonnelNo",
+      "operation": "select",
+      "baseline_line": 10689
+    },
+    {
+      "table": "employees",
+      "function": "createPersonnelEmployee",
+      "operation": "insert",
+      "baseline_line": 10743
+    },
+    {
+      "table": "employees",
+      "function": "savePersonnelEmployee",
+      "operation": "update",
+      "baseline_line": 10817
+    },
+    {
+      "table": "employees",
+      "function": "autosavePersonnelEmployeeDepartment",
+      "operation": "update",
+      "baseline_line": 10866
+    },
+    {
+      "table": "employees",
+      "function": "deactivatePersonnelEmployee",
+      "operation": "update",
+      "baseline_line": 10926
+    },
+    {
+      "table": "employees",
+      "function": "activatePersonnelEmployee",
+      "operation": "update",
+      "baseline_line": 10961
+    },
+    {
+      "table": "employees",
+      "function": "deletePersonnelEmployee",
+      "operation": "delete",
+      "baseline_line": 11026
+    },
+    {
+      "table": "shift_definitions",
+      "function": "saveShiftDefinition",
+      "operation": "update",
+      "baseline_line": 11100
+    },
+    {
+      "table": "shift_definitions",
+      "function": "saveShiftDefinition",
+      "operation": "insert",
+      "baseline_line": 11103
+    },
+    {
+      "table": "planner_absences",
+      "function": "deleteManualAbsence",
+      "operation": "delete",
+      "baseline_line": 11233
+    },
+    {
+      "table": "planner_vacations",
+      "function": "addVacation",
+      "operation": "insert",
+      "baseline_line": 11742
+    },
+    {
+      "table": "planner_sick_leaves",
+      "function": "addSickLeave",
+      "operation": "insert",
+      "baseline_line": 11775
+    },
+    {
+      "table": "planner_vacations",
+      "function": "deleteVacation",
+      "operation": "delete",
+      "baseline_line": 11833
+    },
+    {
+      "table": "planner_absences",
+      "function": "deleteVacation",
+      "operation": "delete",
+      "baseline_line": 11847
+    },
+    {
+      "table": "planner_sick_leaves",
+      "function": "deleteSickLeave",
+      "operation": "delete",
+      "baseline_line": 11883
+    },
+    {
+      "table": "planner_absences",
+      "function": "deleteSickLeave",
+      "operation": "delete",
+      "baseline_line": 11896
+    },
+    {
+      "table": "planner_swaps",
+      "function": "addSwap",
+      "operation": "insert",
+      "baseline_line": 11937
+    },
+    {
+      "table": "planner_swaps",
+      "function": "deleteSwap",
+      "operation": "delete",
+      "baseline_line": 11974
+    },
+    {
+      "table": "planner_swaps",
+      "function": "resetActiveSwaps",
+      "operation": "delete",
+      "baseline_line": 12015
+    },
+    {
+      "table": "planner_swaps",
+      "function": "resetActiveSwaps",
+      "operation": "update",
+      "baseline_line": 12020
+    },
+    {
+      "table": "planner_assignments",
+      "function": "resetPlanCurrentFuture",
+      "operation": "delete",
+      "baseline_line": 12087
+    },
+    {
+      "table": "planner_absences",
+      "function": "resetPlanCurrentFuture",
+      "operation": "delete",
+      "baseline_line": 12090
+    },
+    {
+      "table": "planner_vacations",
+      "function": "resetPlanCurrentFuture",
+      "operation": "delete",
+      "baseline_line": 12091
+    },
+    {
+      "table": "planner_sick_leaves",
+      "function": "resetPlanCurrentFuture",
+      "operation": "delete",
+      "baseline_line": 12092
+    },
+    {
+      "table": "planner_availability",
+      "function": "resetPlanCurrentFuture",
+      "operation": "delete",
+      "baseline_line": 12094
+    },
+    {
+      "table": "planner_swaps",
+      "function": "resetPlanCurrentFuture",
+      "operation": "delete",
+      "baseline_line": 12098
+    },
+    {
+      "table": "planner_shift_cancellations",
+      "function": "resetPlanCurrentFuture",
+      "operation": "delete",
+      "baseline_line": 12102
+    },
+    {
+      "table": "planner_saturday_requests",
+      "function": "resetPlanCurrentFuture",
+      "operation": "delete",
+      "baseline_line": 12106
+    },
+    {
+      "table": "planner_absence_replacements",
+      "function": "resetPlanCurrentFuture",
+      "operation": "delete",
+      "baseline_line": 12110
+    },
+    {
+      "table": "employees",
+      "function": "clearSlotInSupabase",
+      "operation": "update",
+      "baseline_line": 12187
+    },
+    {
+      "table": "employees",
+      "function": "updateSlotAssignment",
+      "operation": "update",
+      "baseline_line": 12214
+    },
+    {
+      "table": "employees",
+      "function": "saveAllPersonnelChanges",
+      "operation": "update",
+      "baseline_line": 12278
+    },
+    {
+      "table": "employees",
+      "function": "saveAllPersonnelChanges",
+      "operation": "update",
+      "baseline_line": 12312
+    },
+    {
+      "table": "employees",
+      "function": "addEmployee",
+      "operation": "insert",
+      "baseline_line": 12364
+    },
+    {
+      "table": "employees",
+      "function": "updateEmployee",
+      "operation": "update",
+      "baseline_line": 12419
+    },
+    {
+      "table": "employees",
+      "function": "deactivateEmployee",
+      "operation": "update",
+      "baseline_line": 12444
+    },
+    {
+      "table": "employees",
+      "function": "activateEmployee",
+      "operation": "update",
+      "baseline_line": 12470
+    },
+    {
+      "table": "tool_materials",
+      "function": "addToolMaterial",
+      "operation": "insert",
+      "baseline_line": 12543
+    },
+    {
+      "table": "tool_materials",
+      "function": "renameToolMaterial",
+      "operation": "update",
+      "baseline_line": 12592
+    },
+    {
+      "table": "tool_materials",
+      "function": "deactivateToolMaterial",
+      "operation": "update",
+      "baseline_line": 12637
+    },
+    {
+      "table": "inventory_sessions",
+      "function": "openInventoryMode",
+      "operation": "insert",
+      "baseline_line": 12954
+    },
+    {
+      "table": "inventory_sessions",
+      "function": "closeInventoryMode",
+      "operation": "update",
+      "baseline_line": 13016
+    },
+    {
+      "table": "inventory_entries",
+      "function": "confirmInventoryResult",
+      "operation": "insert",
+      "baseline_line": 13142
+    },
+    {
+      "table": "tools",
+      "function": "confirmMoveTool",
+      "operation": "update",
+      "baseline_line": 13316
+    },
+    {
+      "table": "tools",
+      "function": "createTool",
+      "operation": "insert",
+      "baseline_line": 13842
+    },
+    {
+      "table": "tools",
+      "function": "confirmQrToolWithdraw",
+      "operation": "update",
+      "baseline_line": 14587
+    },
+    {
+      "table": "tools",
+      "function": "confirmQrToolRestock",
+      "operation": "update",
+      "baseline_line": 14660
+    },
+    {
+      "table": "tools",
+      "function": "openManualToolWithdraw",
+      "operation": "update",
+      "baseline_line": 14811
+    },
+    {
+      "table": "tools",
+      "function": "openManualToolWithdraw",
+      "operation": "select",
+      "baseline_line": 14822
+    },
+    {
+      "table": "tools",
+      "function": "openManualToolRestock",
+      "operation": "update",
+      "baseline_line": 14934
+    },
+    {
+      "table": "tools",
+      "function": "openManualToolRestock",
+      "operation": "select",
+      "baseline_line": 14945
+    },
+    {
+      "table": "tools",
+      "function": "editTool",
+      "operation": "update",
+      "baseline_line": 15156
+    },
+    {
+      "table": "tools",
+      "function": "editTool",
+      "operation": "update",
+      "baseline_line": 15502
+    },
+    {
+      "table": "tools",
+      "function": "openCreateToolModal",
+      "operation": "insert",
+      "baseline_line": 15618
+    },
+    {
+      "table": "tools",
+      "function": "markToolOrdered",
+      "operation": "update",
+      "baseline_line": 15711
+    },
+    {
+      "table": "tools",
+      "function": "restockTool",
+      "operation": "update",
+      "baseline_line": 15761
+    },
+    {
+      "table": "tools",
+      "function": "bookToolChange",
+      "operation": "update",
+      "baseline_line": 15888
+    },
+    {
+      "table": "tools",
+      "function": "deleteTool",
+      "operation": "delete",
+      "baseline_line": 15965
+    },
+    {
+      "table": "tools",
+      "function": "undoToolJournalEntry",
+      "operation": "update",
+      "baseline_line": 15992
+    },
+    {
+      "table": "planner_tasks",
+      "function": "createTask",
+      "operation": "insert",
+      "baseline_line": 17185
+    },
+    {
+      "table": "planner_tasks",
+      "function": "completeTask",
+      "operation": "update",
+      "baseline_line": 17209
+    },
+    {
+      "table": "planner_tasks",
+      "function": "deleteTask",
+      "operation": "delete",
+      "baseline_line": 17234
+    },
+    {
+      "table": "planner_tasks",
+      "function": "saveTaskReassignment",
+      "operation": "update",
+      "baseline_line": 17292
+    },
+    {
+      "table": "planner_absences",
+      "function": "markAbsent",
+      "operation": "upsert",
+      "baseline_line": 17808
+    },
+    {
+      "table": "planner_assignments",
+      "function": "assignOptionalShift",
+      "operation": "upsert",
+      "baseline_line": 17857
+    },
+    {
+      "table": "planner_assignments",
+      "function": "assignSuggestedSpringer",
+      "operation": "upsert",
+      "baseline_line": 17900
+    },
+    {
+      "table": "planner_assignments",
+      "function": "approveSaturdayRequest",
+      "operation": "upsert",
+      "baseline_line": 17931
+    },
+    {
+      "table": "planner_saturday_requests",
+      "function": "approveSaturdayRequest",
+      "operation": "delete",
+      "baseline_line": 17950
+    },
+    {
+      "table": "planner_shift_cancellations",
+      "function": "approveSaturdayRequest",
+      "operation": "delete",
+      "baseline_line": 17954
+    }
+  ]
+}

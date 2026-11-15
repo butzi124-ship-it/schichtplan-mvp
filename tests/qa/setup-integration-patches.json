@@ -1,0 +1,25 @@
+{
+  "reason": "Explicit Phase 3 hooks, reverted before legacy business hash. No quantity/counter changes.",
+  "patches": [
+    {
+      "before": "const machineReadiness = window.HumbelMachineReadiness.create({",
+      "after": "const setupTimes = window.HumbelSetupTimes.create({\n  client: supabaseClient, actor: () => currentSupabaseUser?.id || null,\n  role: () => currentUser?.role || null, redraw: () => { if (currentUser) render(); },\n  changed: () => machineReadiness.refresh(),\n  shiftEnd: () => {\n    if (!currentUser) return null;\n    const now = Date.now();\n    return generateThreeMonths().filter(s => s.assigned === currentUser.name)\n      .map(s => shiftDateRange(s)).filter(s => s.start.getTime() <= now && s.end.getTime() + 12 * 3600000 >= now)\n      .sort((a, b) => b.end - a.end)[0]?.end || null;\n  },\n});\nsetupTimes.bind(document);\nconst machineReadiness = window.HumbelMachineReadiness.create({\n  setup: setupTimes,"
+    },
+    {
+      "before": "async function logoutSupabase() {\n  await supabaseClient.auth.signOut();",
+      "after": "async function logoutSupabase() {\n  if (!(await setupTimes.beforeLogout())) return;\n  await supabaseClient.auth.signOut();\n  setupTimes.reset();"
+    },
+    {
+      "before": "function render() {\n  void machineReadiness.ensureSession();",
+      "after": "function render() {\n  void setupTimes.ensureSession();\n  void machineReadiness.ensureSession();"
+    },
+    {
+      "before": "  tabsEl.classList.remove(\"hidden\");",
+      "after": "  document.getElementById(\"personal-production-times\")?.remove();\n  tabsEl.insertAdjacentHTML(\"afterend\", `<div id=\"personal-production-times\">${setupTimes.renderGeneral()}</div>`);\n  tabsEl.classList.remove(\"hidden\");"
+    },
+    {
+      "before": "  setLoginStatus(\"Supabase-Session gel\u00f6scht.\");",
+      "after": "  document.getElementById(\"personal-production-times\")?.remove();\n  setLoginStatus(\"Supabase-Session gel\u00f6scht.\");"
+    }
+  ]
+}

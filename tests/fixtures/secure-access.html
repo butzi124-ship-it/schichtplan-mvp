@@ -1,0 +1,12 @@
+<!doctype html><html lang="de"><meta charset="utf-8"><title>Isolierter Berechtigungsvertrag</title>
+<h1>Isolierter Berechtigungsvertrag</h1>
+<button id="identity">Identität prüfen</button><button id="schedule">Freigegebene Schichten laden</button>
+<button id="contacts">Eigene Kontakte laden</button><button id="materials">Materialreferenzen laden</button>
+<p role="status" id="status"></p><pre id="output"></pre>
+<script src="../../js/secure-access.js"></script><script>
+const output=document.getElementById('output'),status=document.getElementById('status');
+window.access=HumbelSecureAccess.create({client:window.testSecureClient,enabled:()=>window.__ISOLATED_SECURE_ACCESS__===true,cleared:()=>{output.textContent='';}});
+for(const [id,fn] of [['identity',()=>access.refreshIdentity()],['schedule',()=>access.readSchedule()],['contacts',()=>access.ownContacts()],['materials',()=>access.readMaterials()]]){
+ document.getElementById(id).onclick=async()=>{try{const result=await fn();output.textContent=JSON.stringify(result);status.textContent='Serverzugriff bestätigt.';}catch{output.textContent='';status.textContent='Zugriff abgewiesen.';}};
+}
+</script></html>

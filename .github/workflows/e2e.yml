@@ -19,7 +19,7 @@ jobs:
     name: Functional Browsers
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.62.1-noble
-    timeout-minutes: 20
+    timeout-minutes: 40
     env:
       # GitHub mounts /github/home as pwuser; Firefox rejects it when the container runs as root.
       HOME: /root
@@ -38,6 +38,7 @@ jobs:
           node --check tests/smoke.spec.js
           npm run check:syntax
           git -c safe.directory="$GITHUB_WORKSPACE" show --format= --check HEAD
+      - run: npm run qa:agent-server
       - run: npm run test:agents
       - run: npm run test:e2e
       - name: Preserve version and commit report
@@ -80,9 +81,18 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run test:article-db
+      - run: npm run test:routing
+      - run: npm run test:quantity
+      - run: npm run test:lifecycle
+      - run: npm run test:setup
+      - run: npm run test:ba-entry
       - run: npm run test:operations
       - run: npm run test:readiness
       - run: npm run test:forecast
+      - name: Isolated learning SQL and UI tests
+        timeout-minutes: 5
+        run: npm run test:learning
+      - run: npm run test:integration
       - run: npm run test:ci
       - run: npm run test:qa
       - run: npm run qa:check

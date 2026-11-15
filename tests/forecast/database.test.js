@@ -1,5 +1,10 @@
-const {test,before,after}=require('node:test');const a=require('node:assert/strict');const {randomUUID}=require('node:crypto');const {forecastDatabase,seedForecast,manager,worker,outsider,department,machine,order}=require('../helpers/forecast-db');const {calculate}=require('../../js/production-forecast');
-let api,seed,last;before(async()=>{api=await forecastDatabase();seed=await seedForecast(api);});after(async()=>api?.db.close());
+const {test,before,beforeEach,after,mock}=require('node:test');const a=require('node:assert/strict');const {randomUUID}=require('node:crypto');const {forecastDatabase,seedForecast,manager,worker,outsider,department,machine,order}=require('../helpers/forecast-db');const {calculate}=require('../../js/production-forecast');
+// PGlite's WASM wall clock uses Date too: freeze JS observations and SQL now()/clock_timestamp()
+// together. A morning leaves room for same-day arrivals; real late-night runs must not
+// change the publication/rollback scenarios. Advance between tests for run ordering.
+let api,seed,last;before(async()=>{mock.timers.enable({apis:['Date'],now:new Date(require('../fixtures/forecast-clock.json').instant)});api=await forecastDatabase();seed=await seedForecast(api);});
+beforeEach(()=>mock.timers.tick(1000));
+after(async()=>{try{await api?.db.close();}finally{mock.timers.reset();}});
 const input=()=>api.rpc(manager,'production_forecast_input',{p_department_id:department,p_request_id:randomUUID()});
 async function publish(data=undefined,id=randomUUID()){const source=data||await input();const result=calculate(source);const ack=await api.rpc(null,'production_forecast_publish',{p_department_id:department,p_actor_id:manager,p_run_id:id,p_result:result},'service_role');last={source,result,id};return ack;}
 test('actual catalog adapter reused, isolated roster, three OPs and opaque availability without medical/name data',async()=>{const x=await input();a.equal(x.jobs.length,3);a.equal(x.shifts.length,3);a.equal(x.staff.length,1);a.ok(!JSON.stringify(x).includes('Synthetic Operator'));a.equal(x.jobs[0].tr.unit,'min');a.equal(calculate(x).results[0].color,'green');});

@@ -1,0 +1,234 @@
+{
+  "capturedAt": "2026-11-13T10:42:18.108280+00:00",
+  "baselinePR": 34,
+  "baselineSha": "66795417d3a940bcb1273b46113f7f45b5b3a8e6",
+  "branch": "security/identity-foundation-8b1",
+  "version": "0.17.0",
+  "versionLogBerlin": "2026-11-13 11:10",
+  "productionAccess": false,
+  "productionWrites": false,
+  "productionActivation": false,
+  "defaultGateEnabled": false,
+  "isolatedPositiveFixturesTemporarilyOptIn": true,
+  "authoritativeOriginalRestore": false,
+  "checks": [
+    {
+      "command": "npm ci --ignore-scripts",
+      "status": "PASS",
+      "note": "Dependencies installed without scripts; lockfile unchanged"
+    },
+    {
+      "command": "npm run check:syntax",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": null,
+      "seconds": 70.46,
+      "logSha256": "b1281a5b1384edd0b110d31560168afa6965cfa2be9e8786b6d0db097fdcb390"
+    },
+    {
+      "command": "npm run test:ci",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": 2,
+      "seconds": 2.83,
+      "logSha256": "3bb281ee13ecf5c68dce9f07e7d1bd5849997d4638224c5f6a38e5695a85e47d"
+    },
+    {
+      "command": "npm run test:qa",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": 20,
+      "seconds": 6.64,
+      "logSha256": "2c401c45b12efbb180423d3c8e6d5604c8377bf2ad11c29f551e4a129e44ec71"
+    },
+    {
+      "command": "npm run qa:check",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": null,
+      "seconds": 40.08,
+      "logSha256": "0530fbcfd505ad271f541db9a2409968450e011c9f67a27b134ad37809f780bb"
+    },
+    {
+      "command": "npm run test:integration",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": 5,
+      "seconds": 92.49,
+      "logSha256": "505fba52b59765cf9da5397460f861db45f34497d9cac26de984dcb12838bd5e"
+    },
+    {
+      "command": "npm run test:security",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": 64,
+      "seconds": 661.99,
+      "logSha256": "ed1ceb6c0584f522aac2a084d4e89e34e5901d3c6f310697bab2382b4e8522cc"
+    },
+    {
+      "command": "npm run test:article-db",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": 8,
+      "seconds": 20.69,
+      "logSha256": "abcb24a05b142e3165c0a99f50dfc41dc8f444d29ed40647bd2b06607af912d9"
+    },
+    {
+      "command": "npm run test:operations",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": 15,
+      "seconds": 49.46,
+      "logSha256": "341317f8a45c69d9bc4b21227db7ef60b06e7ac75624d27d35a1b5ce5242f4e5"
+    },
+    {
+      "command": "npm run test:readiness",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": 17,
+      "seconds": 212.52,
+      "logSha256": "2906f8f190db2ca649b871d4c9376291565b777267621b09854886682f96d956"
+    },
+    {
+      "command": "npm run test:forecast",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": 41,
+      "seconds": 91.29,
+      "logSha256": "aa3dfe38b68a36608d54c5e6ab579500e28974da34f72cceca8caa587e3042a7"
+    },
+    {
+      "command": "npm run test:ba-entry",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": 9,
+      "seconds": 16.94,
+      "logSha256": "b63e0cbb9d9395802880f11af9700bff29e27c3c2cb7b077c88874e5636c09f0"
+    },
+    {
+      "command": "npm run test:routing",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": 10,
+      "seconds": 34.55,
+      "logSha256": "30cd528ec7893c59b4a588fab999b5a13cbfe287c414e271b28ad1a98eb0af72"
+    },
+    {
+      "command": "npm run test:setup",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": 17,
+      "seconds": 55.81,
+      "logSha256": "4cfb1ea74d4363c6511a436d7cac9b86743a3925ab6d4ed63b0935bc350ba8b2"
+    },
+    {
+      "command": "npm run test:quantity",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": 14,
+      "seconds": 63.65,
+      "logSha256": "3eb1edd89c9292c42ebc854a7ebab796018f5bf9665e2d628befcec3704e9b02"
+    },
+    {
+      "command": "npm run test:lifecycle",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": 37,
+      "seconds": 194.7,
+      "logSha256": "b9ca3de9a303249ec37c0b70f9fa6b7d7eb72330cb36573538b45a83ea1d71f9"
+    },
+    {
+      "command": "npm run qa:agent-server",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": null,
+      "seconds": 8.92,
+      "logSha256": "f3a365145b195cc178a6765a046d6f07a7495fa87f7093752ce3631662018319"
+    },
+    {
+      "command": "node --test tests/security/permissions-8b1.test.js",
+      "status": "PASS",
+      "tests": 9,
+      "note": "Final run after adding strict Step7 input-hash provenance assertion and its negative test. Prior full suite64 had already passed; all55 existing cases/source unchanged.",
+      "logSha256": "e00a1720179813f67a9f2943fbbbc0af9ff8acd01728ff79e3c21d63a697edf7"
+    },
+    {
+      "command": "npm run test:e2e",
+      "status": "BLOCKED_NOT_TESTED",
+      "exitCode": 130,
+      "expectedCases": 773,
+      "observedStartupFailures": 94,
+      "completed": false,
+      "reason": "Whole suite attempted without filters; interrupted after runtime startup failures and verification that Chromium/Firefox/WebKit executable paths are all missing. No application case passed. Remaining cases NOT TESTED, not reported as773 failed/completed.",
+      "logSha256": "2b056a863692f1d080917d8bc950819af0f7202d80a8a32970e9fd7f21270569"
+    },
+    {
+      "command": "npm run test:agents",
+      "status": "BLOCKED_NOT_TESTED",
+      "exitCode": 1,
+      "reason": "Seed launch failed at missing Playwright executable; no application assertion passed.",
+      "logSha256": "eed3a0f7e72560dcc5a66f9990772828d2c161d5aec10e90e8311aef9a86704a"
+    },
+    {
+      "command": "npm run test:visual",
+      "status": "BLOCKED_NOT_TESTED",
+      "exitCode": 2,
+      "reason": "Pinned Playwright1.62.1-noble container missing; guard exit2, no snapshots altered.",
+      "logSha256": "b6690e8a6ceef9102355e32da6f958e53d985d1634b1f627e2bf25381140435d"
+    },
+    {
+      "command": "npm run test:db:preflight",
+      "status": "BLOCKED_NOT_TESTED",
+      "exitCode": 2,
+      "reason": "Approved loopback native runtime/config, real auth/REST fixtures and independent original restore unavailable.",
+      "logSha256": "e227e6565c945320197589370aeebbc4c53501d8046558895f8762e2bb24ea95"
+    },
+    {
+      "command": "explicit node --check on new review runner, fixture and test",
+      "status": "PASS"
+    },
+    {
+      "command": "SQL syntax/structure/ACL/RLS/rollback/known-repeat checks",
+      "status": "PASS",
+      "note": "Actual new SQL executed through nine synthetic PGlite security groups, including positive/negative calls to real functions. Not native PostgreSQL/GoTrue/JWT/API acceptance."
+    },
+    {
+      "command": "scope, new source manifest, old app business logic and protected files",
+      "status": "PASS",
+      "note": "Main app byte-identical to base after normalizing only new APP_VERSION/log. Existing migrations, JS modules, workflows, QA protections, tests, PNGs and dependencies unchanged."
+    },
+    {
+      "command": "documentation links and git diff --check",
+      "status": "PASS"
+    },
+    {
+      "command": "native PostgreSQL/GoTrue/PostgREST/JWT/RLS/API/concurrent transactions, full original restore and least-privilege owner",
+      "status": "BLOCKED_NOT_TESTED",
+      "reason": "No approved native stack/independent full restore. No production connection or writes. Existing native CI history is not proof of the new8B1 model."
+    },
+    {
+      "command": "organization appointment, lifecycle commands, deputization, business-module cutover, acting-log correction/retention",
+      "status": "BLOCKED_NOT_TESTED",
+      "reason": "Not implemented/activated in this phase; open8A decisions preserved."
+    }
+  ],
+  "domainRegressionTests": 168,
+  "inputsSha256": {
+    "supabase/review/permissions-8b1-isolated.sql": "28a73b4c096e1ddd9711bd19e0372b19b48a2c8601b0eb8224024fe1b2ad9b39",
+    "tests/db-integration/permissions-8b1-review.js": "6cd85122c7ffff0bd8d6dbfdab0fad964d81beaee450d91fa6775dbf3b555a4c",
+    "tests/db-integration/permissions-8b1-package.json": "82f2297dcbc86bded5e481b7ff513d79930f84ee6daab8e466734051a3381b6c",
+    "tests/security/permissions-8b1-fixture.js": "bd7cefb98efbcf946e5cd94222903c03aadc7d1053ff8a211f64b9afbb928dd3",
+    "tests/security/permissions-8b1.test.js": "76d24da991927f3bb19dbd5acea888f453b77f38039cae2ac978f9f9cf52bcb0"
+  },
+  "developmentFindings": [
+    "New SQL guard parentheses fixed; only new source manifest updated, old protected hashes unchanged.",
+    "Synthetic cloned DB needs a fresh connection-only sentinel; fixture fixed without weakening production/isolation guards.",
+    "Failed development attempts not counted as passed. Full64 suite passed, followed by final9 suite after extra provenance hardening."
+  ],
+  "remainingBlockers": [
+    "O01-O18 as documented in8A: enrollment/role scopes/privacy/module profiles/lifecycle/deputy/logs/retention/operations",
+    "Real session revocation/synchronization, epoch and primary-change/handover commands; no stale snapshot resurrection",
+    "Full original restore/native API/role/concurrency tests, minimal definer owner and complete secure module integration",
+    "Existing31-table/CRUD/default/legacy-cache/log/API risks remain; backup/PITR/RPO/RTO/recovery and separate release decisions required"
+  ]
+}

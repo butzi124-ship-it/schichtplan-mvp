@@ -1,0 +1,258 @@
+{
+  "collectedAt": "2026-11-12T12:59:13.116153+00:00",
+  "baseline": "1238bf0c9467f1d6bf5e83dd8e0aa8520ef4b7c7",
+  "scope": "Step7 local regression + separate live metadata evidence; no live writes or production clearance",
+  "results": [
+    {
+      "command": "npm run check:syntax",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "b1281a5b1384edd0b110d31560168afa6965cfa2be9e8786b6d0db097fdcb390"
+    },
+    {
+      "command": "npm run test:ci",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "bd046b1a839dcc372d44a7300a46eee838338bc31c92e16f3148a395ebc9b3a7",
+      "tests": 2,
+      "pass": 2,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "command": "npm run test:qa",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "25a2dcd0d14d4e86fde6a390af3a7183bc0f75d78dfebb70d814e14695a8fdc1",
+      "tests": 20,
+      "pass": 20,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "command": "npm run qa:check",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "0530fbcfd505ad271f541db9a2409968450e011c9f67a27b134ad37809f780bb"
+    },
+    {
+      "command": "npm run test:integration",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "abd3cd0055b825a745a2ed7bef6f4fb1805f8217a07cd378fb68ebba159758c8",
+      "tests": 5,
+      "pass": 5,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "command": "npm run test:security",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "2631efb47b81f6d49200c69446ea3112b4722b872109646aab781bbab4506f88",
+      "tests": 55,
+      "pass": 55,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "command": "npm run qa:agent-server",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "f3a365145b195cc178a6765a046d6f07a7495fa87f7093752ce3631662018319"
+    },
+    {
+      "command": "npm run test:article-db",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "a78c0e788cb71cbd44099fa188cbb7901f3d4b29f73202666c5e7ea5eae61756",
+      "tests": 8,
+      "pass": 8,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "command": "npm run test:operations",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "0d49cdf6741d6a4c2c11617dd82e316a28c8c91264f5548f7530fbb885bcfb4d",
+      "tests": 15,
+      "pass": 15,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "command": "npm run test:readiness",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "1061e0d543d8735e0b46afde08dc529dc06b4823794589ded80de9c23040b789",
+      "tests": 17,
+      "pass": 17,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "command": "npm run test:forecast",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "ea2f44c93eb89fe91871fb1d3839d46851f521badfd5e90aa41c3338743fefe0",
+      "tests": 41,
+      "pass": 41,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "command": "npm run test:ba-entry",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "02e287ae70f87ff7e14c62cc02418242c99e6ffa2bd10723d8dd2e6c3152384a",
+      "tests": 9,
+      "pass": 9,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "command": "npm run test:routing",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "c043dbfb451dd4c2107e9f7220f64fb9821414344ace6c255496736a54bbeea8",
+      "tests": 10,
+      "pass": 10,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "command": "npm run test:setup",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "7d357b7b11fe20a4938a668904cb06f7ba7b4fb548f20b7881e0d9e47780aacb",
+      "tests": 17,
+      "pass": 17,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "command": "npm run test:quantity",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "3aebfbe4d1547b65a55e6f85e7f2961c3b6ae9544ac93e1fd8a02db1514a0a49",
+      "tests": 14,
+      "pass": 14,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "command": "npm run test:lifecycle",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "da36e5493d0e49093b55ec504b52185135cad6fa6c0d6b6298105128ac35fc5f",
+      "tests": 37,
+      "pass": 37,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "command": "node --check tests/db-integration/security-step7-review.js",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "node --check tests/db-integration/security-step7-extension.js",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "node --check tests/db-integration/security-step7-runner.js",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "node --check tests/security/step7-fixture.js",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "node --check tests/security/step7-employee.test.js",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "npm run test:e2e",
+      "exitCode": 1,
+      "status": "BLOCKED_NOT_TESTED",
+      "logSha256": "ef88e7de71908c6c1b514c616719065bd16b1edbab458dc8e198ac079c05c487",
+      "planned": 773,
+      "missingExecutableErrors": 773,
+      "passed": 0,
+      "reason": "Missing executables before page load, runner exit1 is not a pass"
+    },
+    {
+      "command": "npm run test:agents",
+      "exitCode": 1,
+      "status": "BLOCKED_NOT_TESTED",
+      "logSha256": "821dc5955e304fb615e80d1ad28eb9a17a03993ce3db101cd6d3f57f9c02d99e",
+      "reason": "Seed blocked at missing browser executable"
+    },
+    {
+      "command": "npm run test:visual",
+      "exitCode": 2,
+      "status": "BLOCKED_NOT_TESTED",
+      "logSha256": "b6690e8a6ceef9102355e32da6f958e53d985d1634b1f627e2bf25381140435d",
+      "reason": "Pinned Playwright1.62.1 noble container unavailable; references unchanged"
+    },
+    {
+      "command": "npm run test:db:preflight",
+      "exitCode": 2,
+      "status": "BLOCKED_NOT_TESTED",
+      "logSha256": "e227e6565c945320197589370aeebbc4c53501d8046558895f8762e2bb24ea95",
+      "reason": "No approved local native stack; docker/podman/psql unavailable"
+    },
+    {
+      "command": "npm ci --ignore-scripts",
+      "status": "PASS",
+      "exitCode": 0
+    },
+    {
+      "command": "Original catalog READ ONLY queries and independent section count checks",
+      "status": "PASS",
+      "scope": "Metadata only, not actual application-role API data/restore acceptance"
+    },
+    {
+      "command": "Keyless HTTP HEAD employees?select=id&limit=0",
+      "status": "OBSERVED_401",
+      "credentialsUsed": false,
+      "responseBodyRead": false,
+      "scope": "No anon-JWT or authenticated Data API test"
+    },
+    {
+      "command": "Native PostgreSQL/GoTrue/PostgREST/parallel/full original restore, atomic native install and recovery",
+      "status": "BLOCKED_NOT_TESTED",
+      "reason": "Runtime and complete original restore/authorization prerequisites missing"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASS",
+      "exitCode": 0
+    },
+    {
+      "command": "Exact native source assembly, clock/provenance/Step3/Step4/Step6/Step7 runner adapters, runner/seed syntax and manifest",
+      "status": "PASS",
+      "managedInputs": 60,
+      "scope": "No native DB execution; pinned original harness25e9a6914e38fc791d9ecad13d92a45e30d19bb3"
+    },
+    {
+      "command": "npm run test:db:guard (pinned isolated harness)",
+      "status": "PASS",
+      "tests": 2,
+      "pass": 2,
+      "fail": 0,
+      "skipped": 0,
+      "scope": "Original target guards, not DB acceptance"
+    }
+  ]
+}

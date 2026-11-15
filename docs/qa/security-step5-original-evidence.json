@@ -1,0 +1,67 @@
+{
+  "baseline": "2e46d3a63c339389f08f16db67d1a9236216e130",
+  "capturedAt": "2026-11-12T09:35:30.848Z",
+  "authoritativeRestore": false,
+  "productionDataRead": false,
+  "productionChanges": false,
+  "scope": "Read-only connector metadata endpoints only. No execute_sql, data rows, credentials or logs. Errors are not an empty catalog.",
+  "project": {
+    "ref": "itntnpzqzyjfdnjdshvm",
+    "name": "Schichtplan",
+    "region": "eu-west-3",
+    "status": "ACTIVE_HEALTHY",
+    "databaseVersionReported": "17.11.0.003",
+    "postgresEngineReported": "17"
+  },
+  "observations": [
+    {
+      "endpoint": "project",
+      "startedAt": "2026-11-12T09:35:26.941Z",
+      "endedAt": "2026-11-12T09:35:30.848Z",
+      "status": "VERIFIED_ENDPOINT_RESPONSE"
+    },
+    {
+      "endpoint": "tables",
+      "startedAt": "2026-11-12T09:35:26.941Z",
+      "endedAt": "2026-11-12T09:35:31.106Z",
+      "status": "BLOCKED_NOT_TESTED",
+      "errorClass": "28P01 password authentication failed",
+      "schemaStatus": "UNVERIFIED"
+    },
+    {
+      "endpoint": "extensions",
+      "startedAt": "2026-11-12T09:35:26.941Z",
+      "endedAt": "2026-11-12T09:35:31.080Z",
+      "status": "BLOCKED_NOT_TESTED",
+      "errorClass": "28P01 password authentication failed",
+      "schemaStatus": "UNVERIFIED"
+    },
+    {
+      "endpoint": "migrations",
+      "startedAt": "2026-11-12T09:35:26.941Z",
+      "endedAt": "2026-11-12T09:35:31.144Z",
+      "status": "BLOCKED_NOT_TESTED",
+      "errorClass": "28P01 password authentication failed",
+      "schemaStatus": "UNVERIFIED"
+    },
+    {
+      "endpoint": "edge",
+      "startedAt": "2026-11-12T09:35:26.941Z",
+      "endedAt": "2026-11-12T09:35:30.906Z",
+      "status": "VERIFIED_ENDPOINT_RESPONSE",
+      "functionsListed": 0,
+      "limitation": "Listing response only; no functions fetched. Does not verify database RPCs or API/Auth configuration."
+    }
+  ],
+  "notVerifiedCurrent": [
+    "Tables/columns/PK/FK/constraints/indexes",
+    "RLS/FORCE RLS/policy definitions and roles",
+    "Views/materialized views/dependencies",
+    "Functions/RPC signatures/bodies/owners/search_path/EXECUTE",
+    "Triggers/sequences/owners/ACLs/default ACLs",
+    "Roles/memberships/BYPASSRLS/CREATE",
+    "Installed extensions/migration history",
+    "Auth/API exposure, token/revocation settings",
+    "Full schema restore, backup/PITR/restore readiness"
+  ]
+}

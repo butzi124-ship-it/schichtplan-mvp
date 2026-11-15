@@ -1,0 +1,132 @@
+{
+  "capturedAt": "2026-11-13T09:26:53.504975+00:00",
+  "version": "0.16.6",
+  "versionLogBerlin": "2026-11-13 10:23",
+  "startingCommit": "06b3a9ae41f9b096f0af5930c229242edede82c4",
+  "pr": 34,
+  "branch": "docs/modular-permissions-step8a",
+  "scope": "Amend existing documentation only, mandatory version/log",
+  "productionAccess": false,
+  "newAuthorizationActivated": false,
+  "sqlExecuted": false,
+  "deletionImplemented": false,
+  "checks": [
+    {
+      "command": "npm ci --ignore-scripts",
+      "status": "PASS",
+      "note": "12 packages installed, dependency/lock files unchanged"
+    },
+    {
+      "command": "node --check schichtplan_mvp.js; node --check tests/smoke.spec.js",
+      "status": "PASS"
+    },
+    {
+      "command": "npm run check:syntax",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": null,
+      "logSha256": "b1281a5b1384edd0b110d31560168afa6965cfa2be9e8786b6d0db097fdcb390"
+    },
+    {
+      "command": "npm run test:ci",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": 2,
+      "logSha256": "52cb53c1f7b26938ff40180dbfd349d565850e8a7bb1790418c38d1535414ba9"
+    },
+    {
+      "command": "npm run test:qa",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": 20,
+      "logSha256": "d74b50220c71f3c269647f2d125575c1d0f8c8bfc28ecf0f3f082443aec2a8ff"
+    },
+    {
+      "command": "npm run qa:check",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": null,
+      "logSha256": "0530fbcfd505ad271f541db9a2409968450e011c9f67a27b134ad37809f780bb"
+    },
+    {
+      "command": "npm run test:integration",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": 5,
+      "logSha256": "b503fdb883e3d123f34b1869fd01edef0196a03b409ac18727bf2675a81d3ee1"
+    },
+    {
+      "command": "npm run test:security",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": 55,
+      "logSha256": "12ff143b405d3b72df06d126b06426f6d371135a3d1dc5125560f0c154dd4a3c"
+    },
+    {
+      "command": "npm run qa:agent-server",
+      "status": "PASS",
+      "exitCode": 0,
+      "tests": null,
+      "logSha256": "f3a365145b195cc178a6765a046d6f07a7495fa87f7093752ce3631662018319"
+    },
+    {
+      "command": "npm run test:e2e",
+      "status": "BLOCKED_NOT_TESTED",
+      "exitCode": 1,
+      "reason": "773 cases failed before application assertions because Chromium/mobile/tablet, Firefox and WebKit executables are not installed; 0 browser cases passed.",
+      "logSha256": "a68e35cecfa539327b7e92277da858b3cb2353eba88370a83a13d58ed0ee2cf4"
+    },
+    {
+      "command": "npm run test:agents",
+      "status": "BLOCKED_NOT_TESTED",
+      "exitCode": 1,
+      "reason": "Seed failed before application assertions: missing Playwright executable.",
+      "logSha256": "45d057828607b31afa9214697d6aab4df686802afb99a9e456295a73ef57d4c2"
+    },
+    {
+      "command": "npm run test:visual",
+      "status": "BLOCKED_NOT_TESTED",
+      "exitCode": 2,
+      "reason": "Pinned Playwright-1.62.1-noble container unavailable; guard exit2. No image updates.",
+      "logSha256": "b6690e8a6ceef9102355e32da6f958e53d985d1634b1f627e2bf25381140435d"
+    },
+    {
+      "command": "npm run test:db:preflight",
+      "status": "BLOCKED_NOT_TESTED",
+      "exitCode": 2,
+      "reason": "Approved loopback Supabase runtime/configuration and reviewed native auth/REST/restore fixtures unavailable; exit2, no native acceptance.",
+      "logSha256": "e227e6565c945320197589370aeebbc4c53501d8046558895f8762e2bb24ea95"
+    },
+    {
+      "command": "documentation consistency review",
+      "status": "PASS",
+      "note": "All 5 concept documents: appointment/revocation and no-self-escalation contracts; HR global log read vs GL/PL append-only correction vs GL/TA configuration. Links, Markdown table structure, R01-R18/O01-O18/T01-T26 references checked. GL-to-AL is no longer an open decision. Other open questions preserved."
+    },
+    {
+      "command": "business logic and scope comparison",
+      "status": "PASS",
+      "note": "Main app byte-identical to starting commit after removing only new version/log entry. No SQL, modules, tests, assertions, PNG references, dependencies, flags or historical evidence altered."
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASS"
+    },
+    {
+      "command": "new modular permission / correction / retention cases T01-T26",
+      "status": "BLOCKED_NOT_TESTED",
+      "reason": "Documentation-only planned cases; no implementation or authorization activated."
+    },
+    {
+      "command": "native original-restore / GoTrue / PostgREST / concurrent transaction acceptance",
+      "status": "BLOCKED_NOT_TESTED",
+      "reason": "Approved runtime and full independent original restore unavailable. Existing 55 security tests are not native acceptance of new requirements."
+    }
+  ],
+  "historicalEvidence": "permissions-8a-validation.json and permissions-8a-source-state.json preserved; no historical result represented as a new run",
+  "openQuestions": [
+    "O01-O16 preserved; O10 narrowed to exclude decided log visibility/default retention",
+    "O17: manual deletion approver, legal duty matrix, retention clock/policy version and backup rules",
+    "O18: deputy revocation, historic/acting log scopes and conflict-of-interest procedure"
+  ],
+  "first8B": "Isolated trusted identity/actor contract on synthetic fixtures, no role bootstrap/appointments/corrections/deletion"
+}

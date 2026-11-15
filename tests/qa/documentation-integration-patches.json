@@ -1,0 +1,7 @@
+[
+  {
+    "file": "schichtplan_mvp.html",
+    "before": "",
+    "after": "    <script>window.HUMBEL_CONTEXT_HELP_ENABLED = false;</script>\n    <script src=\"./js/help-topics.js\"></script>\n    <script src=\"./js/context-help.js\"></script>\n"
+  }
+]
