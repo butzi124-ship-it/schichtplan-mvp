@@ -120,7 +120,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.20.6";
+const APP_VERSION = "0.20.7";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -135,6 +135,7 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {"version": "0.20.7", "date": "2026-11-15 17:04", "changes": ["Gemeinsame CSS-Designwerte gemäß Designpaket PR #46 zentralisiert: Navy-Navigation, Oberflächen, Primärblau, Abstände, Kartenradien, Schatten und Bedienelemente. Primärtexte kontraststärker gestaltet; Statusfarben, Geschäftslogik, Branding und visuelle Referenzen unverändert."]},
   {"version": "0.20.6", "date": "2026-11-15 15:45", "changes": ["Skip-Link außerhalb des Fokus zusätzlich geclippt, ohne Tab-Erreichbarkeit oder Fokusdarstellung zu entfernen. Tablet-6M-Aufnahmeposition auf den erreichbaren Scrollbereich begrenzt; strikte Positions- und Bildprüfungen unverändert. Dokumentationsfingerabdrücke nach Prüfung aktualisiert; keine Geschäftslogik oder Referenzbilder geändert."]},
   {"version": "0.20.5", "date": "2026-11-15 14:39", "changes": ["Maschinenkarten vertikal und innerhalb ihrer verfügbaren Breite angeordnet; kompakte Bereichsnavigation und mobile Menütexte umbrechbar gemacht. Stationsmetriken und Zählbedienelemente explizit kompakt angeordnet, damit Ausschusskorrekturen keinen vorgeschalteten Scrollsprung benötigen. Geschäftslogik, Barcode- und Abschlusskorrekturen sowie Test-Assertions unverändert."]},
   {"version": "0.20.4", "date": "2026-11-15 13:32", "changes": ["Ausschließlich Barcode-SVGs proportional auf die verfügbare Produktionskartenbreite begrenzt, damit Balkenmuster und Ruhezone auf mobilen Geräten vollständig sichtbar bleiben. Generator, Barcode-Daten, Decoder und Test-Assertions unverändert."]},
