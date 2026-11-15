@@ -57,7 +57,20 @@ async function createPreview({passwords,backend,port=0}={}){
   if(req.method!=='GET')return send(res,405,'Method denied');
   const actor=backend.actors[documentation?'admin':s.account];
   if(url.pathname==='/preview-bootstrap.js'){
-   const rows=JSON.parse(JSON.stringify(demo?demo.rows:rowsByTable));rows.employees[0]={...rows.employees[0],auth_user_id:actor.uid,role:actor.role,display_name:actor.name,first_name:actor.name,last_name:'',department_id:demo?demo.data.departments[0].id:'department-one'};if(!demo)rows.employees[1].display_name=rows.employees[1].first_name='Test Mitarbeiter';
+   const rows=JSON.parse(JSON.stringify(demo?demo.rows:rowsByTable));
+   if(demo){
+    // Authenticate to an actual fictitious employee so the department leader's
+    // existing app-scoped rights resolve to the correct mock department.
+    const leadId=demo.data.departments[0].leader_employee_id;
+    const record=s.account==='admin'?rows.employees[0]:
+      s.account==='leader'?rows.employees.find(x=>x.id===leadId):
+      rows.employees.find(x=>x.department_id===demo.data.departments[0].id&&x.role==='employee');
+    if(!record)throw Error('Synthetic preview actor has no employee record');
+    record.auth_user_id=actor.uid;
+   }else{
+    rows.employees[0]={...rows.employees[0],auth_user_id:actor.uid,role:actor.role,display_name:actor.name,first_name:actor.name,last_name:'',department_id:'department-one'};
+    rows.employees[1].display_name=rows.employees[1].first_name='Test Mitarbeiter';
+   }
    return send(res,200,`(${installSupabaseMock.toString()})(${JSON.stringify(rows)});window.__PREVIEW_ACTOR=${JSON.stringify(actor)};window.__PREVIEW_READONLY=${documentation};window.__PREVIEW_DEMO=${!!demo};window.__PREVIEW_ONLINE=${online};`+fs.readFileSync(path.join(__dirname,'client.js'),'utf8'),'application/javascript');
   }
   if(url.pathname==='/'||url.pathname==='/schichtplan_mvp.html'){
