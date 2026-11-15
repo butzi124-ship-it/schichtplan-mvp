@@ -21,6 +21,12 @@ test.describe('Dashboard home display corrections', () => {
     for (let i = 2; i <= 4; i++) {
       rows.production_order_stations.push({ ...rows.production_order_stations[0], id: 'display-station-' + i, station_no: i, name: 'Spannung ' + i });
     }
+    // Existing first-open checklist initialization is outside this cancellation test.
+    // Match the original visual fixture: a fully initialized synthetic order.
+    rows.production_order_checklist = rows.production_checklist_templates.map(item => ({
+      id: 'display-' + item.id, order_id: 'order-one', item_key: item.item_key,
+      item_label: item.item_label, sort_order: item.sort_order, checked: false,
+    }));
     await page.addInitScript(installSupabaseMock, rows);
     // The loopback documentation preview enables these same presentation modules.
     await page.addInitScript(() => {

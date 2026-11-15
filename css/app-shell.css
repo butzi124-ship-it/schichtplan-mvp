@@ -32,7 +32,7 @@ body.h-app-signed-in #app-shell { margin-left: var(--h-sidebar); }
 .h-app :is(button, input, select, textarea, a):focus-visible { outline: 3px solid var(--h-accent) !important; outline-offset: 3px; }
 #tabs.humbel-main-nav { position: fixed; inset: var(--h-preview-offset, 0px) auto 0 0; width: var(--h-sidebar); z-index: 45; margin: 0; padding: 84px 12px 20px; display: flex; flex-direction: column; flex-wrap: nowrap; gap: 6px; overflow-y: auto; background: linear-gradient(160deg, var(--h-navy), #0b2a4b); border: 0; border-radius: 0; box-shadow: 4px 0 18px #061e351a; }
 #tabs.humbel-main-nav::before { content: 'Humbel-App'; position: absolute; top: 24px; left: 24px; color: white; font-size: 1.25rem; font-weight: 750; }
-#tabs.hidden { display: none; }
+#tabs.hidden { display: none !important; }
 #tabs.humbel-main-nav button { width: 100%; min-height: 48px; padding: 12px 14px; text-align: left; font-size: .9375rem; font-weight: 600; line-height: 1.3; border: 1px solid transparent !important; border-radius: 10px; background: transparent !important; color: #f1f6ff !important; box-shadow: none; overflow-wrap: normal; word-break: normal; hyphens: manual; }
 #tabs.humbel-main-nav button:hover { background: #24415c !important; }
 #tabs.humbel-main-nav .humbel-main-tab-active { background: #095ba6 !important; border-color: #6bb0ee !important; }

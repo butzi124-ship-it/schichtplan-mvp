@@ -1,4 +1,4 @@
-# Design Teil 1 – Korrekturen v0.19.1
+# Design Teil 1 – Korrekturen v0.19.2
 
 Basis: PR #43, Commit 67c3fc33a860a9534ed88ef3218ae4307e2e8bf8. Korrekturbranch `fix/design-part1-display`, Ziel `design/shared-foundation-part1`. Keine Änderung an main, Geschäftslogik, Datenbank, Rechten oder Produktionsflags. Kein Deployment, keine Umbenennung.
 
@@ -25,3 +25,9 @@ PR #43 hatte 760 bestandene und 53 fehlgeschlagene Browserfälle, nicht nur rote
 - Ein zusätzlicher Sammler kopiert ausschließlich die tatsächlich erzeugten Ist-Bilder in `artifacts/visual/reference-proposals/` samt SHA-/Versionsmanifest und ausdrücklichem Freigabehinweis. Keine Datei unter `tests/visual-snapshots` wird ersetzt. Fehlende Vorschläge schlagen fehl, statt Vollständigkeit vorzutäuschen.
 
 Erst nach Sichtprüfung der neuen CI-Bilder und tatsächlicher Bedienungsnachweise kann Abnahmebereitschaft beurteilt werden. Ein grüner Aufnahmelauf ist keine Freigabe. Aktuelle Ergebnisse und konkrete verbleibende Befunde werden im Draft-PR dokumentiert; dieses Dokument behauptet vor Ausführung keine grüne neue CI.
+
+## Korrektur nach erstem CI-Nachweis
+
+Erster Korrekturcommit 52629125: 44/50 fokussierte Browserfälle bestanden. Alle fünf geometrischen Trefferflächen-/Dialogprüfungen erreichten die abschließende Schreibprüfung; deren synthetischer Auftrag war noch nicht initialisiert und löste die bestehende reguläre Checklistenanlage aus. Die neue Fixture wird wie die unveränderte Visual-Fixture vorinitialisiert; die Assertion auf keine Buchung bleibt unverändert. Zusätzlich zeigte der unveränderte mobile Logouttest eine CSS-Spezifitätskollision: der mobile Gridstil überlagerte die hidden-Klasse. #tabs.hidden hat nun Vorrang. Version 0.19.2 enthält diese Korrekturen. Die drei ursprünglichen Fokusfehler und fünf Beschriftungsfehler waren im ersten fokussierten Lauf bereits bestanden.
+
+Beide strikten visuellen Durchläufe werden auch bei Referenzabweichungen ausgeführt (always für die Wiederholung); kein Fehler wird dadurch als bestanden gewertet. Die neuen CI-Ergebnisse sind separat am aktuellen Head zu prüfen.

@@ -119,6 +119,7 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run test:visual
       - name: Repeat strict visual comparison to detect unstable fixtures
+        if: always()
         run: npm run test:visual
         env:
           QA_ARTIFACT_DIR: artifacts/visual-repeat
