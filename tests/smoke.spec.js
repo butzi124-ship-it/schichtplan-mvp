@@ -121,9 +121,11 @@ test.describe("Humbel app smoke", () => {
             if (scene === "good-counter") target = counterArea(page, "good");
             if (scene === "scrap-clarification") target = page.locator(".production-touch-station");
             if (scene === "6m-dialog") {
-              // Preserve the reviewed camera: the tablet baseline trace captured scrollY=308; other viewports were bottom-aligned.
+              // Preserve the requested tablet camera within the reachable scroll range; other viewports stay bottom-aligned.
               await expect.poll(() => page.evaluate(() => pendingScrollRestore === null)).toBe(true);
-              const cameraTop = testInfo.project.use.viewport.width === 1024 ? 308 : null;
+              const cameraTop = testInfo.project.use.viewport.width === 1024
+                ? await page.evaluate(() => Math.min(308, Math.max(0, document.documentElement.scrollHeight - innerHeight)))
+                : null;
               await page.evaluate(top => window.scrollTo({ top: top ?? document.documentElement.scrollHeight, behavior: "instant" }), cameraTop);
               await expect.poll(() => page.evaluate(top => Math.abs(window.scrollY - (top ?? (document.documentElement.scrollHeight - innerHeight))), cameraTop)).toBeLessThan(1);
               await pressCounterButton(page, counterArea(page, "scrap").getByRole("button", { name: "Ausschuss +1", exact: true }));

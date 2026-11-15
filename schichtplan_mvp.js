@@ -120,7 +120,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.19.3";
+const APP_VERSION = "0.20.6";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -135,6 +135,13 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {"version": "0.20.6", "date": "2026-11-15 15:45", "changes": ["Skip-Link außerhalb des Fokus zusätzlich geclippt, ohne Tab-Erreichbarkeit oder Fokusdarstellung zu entfernen. Tablet-6M-Aufnahmeposition auf den erreichbaren Scrollbereich begrenzt; strikte Positions- und Bildprüfungen unverändert. Dokumentationsfingerabdrücke nach Prüfung aktualisiert; keine Geschäftslogik oder Referenzbilder geändert."]},
+  {"version": "0.20.5", "date": "2026-11-15 14:39", "changes": ["Maschinenkarten vertikal und innerhalb ihrer verfügbaren Breite angeordnet; kompakte Bereichsnavigation und mobile Menütexte umbrechbar gemacht. Stationsmetriken und Zählbedienelemente explizit kompakt angeordnet, damit Ausschusskorrekturen keinen vorgeschalteten Scrollsprung benötigen. Geschäftslogik, Barcode- und Abschlusskorrekturen sowie Test-Assertions unverändert."]},
+  {"version": "0.20.4", "date": "2026-11-15 13:32", "changes": ["Ausschließlich Barcode-SVGs proportional auf die verfügbare Produktionskartenbreite begrenzt, damit Balkenmuster und Ruhezone auf mobilen Geräten vollständig sichtbar bleiben. Generator, Barcode-Daten, Decoder und Test-Assertions unverändert."]},
+  {"version": "0.20.3", "date": "2026-11-15 12:32", "changes": ["Ausschließlich 1 px Abstand vor der Abschluss-Schaltfläche ergänzt, um die Firefox-Kantenrundung bei direkt angrenzenden Elementen zu vermeiden. Mindesthöhe 52 px und sämtliche Test-Assertions unverändert."]},
+  {"version": "0.20.2", "date": "2026-11-15 11:38", "changes": ["Ausschließlich CSS-Regression der Abschluss-Schaltfläche korrigiert: bestehende Mindesthöhe von 52 px gegenüber allgemeiner Produktionsbutton-Regel wiederhergestellt. Keine Geschäftslogik- oder Referenzbildänderung."]},
+  {"version": "0.20.1", "date": "2026-11-15 09:04", "changes": ["Erste tatsächliche Bildprüfung: Fertigungsübersicht auch bei aktivierten OP-Modulen direkt sichtbar; mobile Untermenüs und BA-/OP-Formularraster nachgeschärft. Bestehende Aktionen und Referenzen unverändert."]},
+  {"version": "0.20.0", "date": "2026-11-15 08:55", "changes": ["Freigegebenes Referenzdesign, Paket 1: Fertigungsübersicht mit echten BA-Daten, gemeinsamen Karten, Statusanzeigen, Tabellen, BA-/OP-Formularen und Dialoggestaltung. Keine Geschäftslogik-, Rechte-, Datenbank- oder Referenzbildänderung."]},
   { version: "0.19.3", date: "2026-11-15 07:24", changes: ["Bestehenden Stillstand-Timer ohne Funktionsänderung im Kopfbereich angeordnet, damit keine Schicht- oder Tabellenaktion durch schwebende Elemente verdeckt wird. Zusätzliche Bedienungsprüfung; keine Referenzbildänderung."] },
   { version: "0.19.2", date: "2026-11-15 07:17", changes: ["Mobile Navigation nach Abmelden zuverlässig ausgeblendet. Ergänzende Klicktest-Fixture mit vorhandener Auftragscheckliste initialisiert, ohne bestehende Assertions zu ändern. Referenzbilder bleiben unverändert."] },
   { version: "0.19.1", date: "2026-11-15 07:07", changes: ["Darstellungsfehler aus PR #43 behoben: responsive Ausschuss-/Klärfallzähler, kollisionsfreie Hilfe/Versionsinformationen, Vorschaukopf und lesbare Navigation. Statussemantik, Aufgabenbeschriftungen und Fokus nach asynchronem Rendern korrigiert. Keine Geschäftslogikänderung; Referenzbilder unverändert."] },
@@ -6238,16 +6245,16 @@ function getDepartmentLeaderHint(employee) {
 
 function renderProduction() {
   if ((opQuantities.hasAccess() || baLifecycle.hasAccess()) && state.productionSubTab === "counts" && !canAccessProduction()) {
-    return `<div class='bg-white rounded-xl shadow p-4'><h2>Produktion</h2><button onclick="setProductionSubTab('readiness')">OP-Maschinenübersicht</button>${opQuantities.render()}${baLifecycle.render()}${renderProductionQaCauseModal()}</div>`;
+    return `<div class='h-production bg-white rounded-xl shadow p-4'><h2>Produktion</h2><button onclick="setProductionSubTab('readiness')">OP-Maschinenübersicht</button>${opQuantities.render()}${baLifecycle.render()}${renderProductionQaCauseModal()}</div>`;
   }
   if (operations.hasEntryAccess() && !canAccessProduction() && state.productionSubTab === "orders") {
-    return `<div class='bg-white rounded-xl shadow p-4'><h2>Produktion</h2>
+    return `<div class='h-production bg-white rounded-xl shadow p-4'><h2>Produktion</h2>
       <button onclick="setProductionSubTab('articles')">Artikelstamm</button>
       <button onclick="setProductionSubTab('orders')">Aufträge / BA</button>
       ${operations.orderPanel()}</div>`;
   }
   if (machineReadiness.hasAccess() && (state.productionSubTab === "readiness" || (!canAccessProduction() && state.productionSubTab !== "articles"))) {
-    return `<div class='bg-white rounded-xl shadow p-4'><h2>Produktion</h2>
+    return `<div class='h-production bg-white rounded-xl shadow p-4'><h2>Produktion</h2>
       <button onclick="setProductionSubTab('readiness')">OP-Maschinenübersicht</button>
       ${articleMaster.hasAccess() ? `<button onclick="setProductionSubTab('articles')">Artikelstamm</button>` : ""}
       ${canAccessProduction() ? `<button onclick="setProductionSubTab('departments')">Abteilungen</button>` : ""}
@@ -6256,17 +6263,17 @@ function renderProduction() {
       ${machineReadiness.render()}</div>`;
   }
   if (articleMaster.hasAccess() && (!canAccessProduction() || state.productionSubTab === "articles")) {
-    return `<div class='bg-white rounded-xl shadow p-4'><h2>Produktion</h2>
+    return `<div class='h-production bg-white rounded-xl shadow p-4'><h2>Produktion</h2>
       <button class='px-3 py-2 rounded border humbel-subtab-active' onclick="setProductionSubTab('articles')">Artikelstamm</button>
       ${canAccessProduction() ? `<button class='px-3 py-2 rounded border' onclick="setProductionSubTab('departments')">Abteilungen</button>` : ""}
       ${operations.hasEntryAccess() ? `<button onclick="setProductionSubTab('orders')">Aufträge / BA</button>` : ""}
       ${articleMaster.render()}</div>`;
   }
   if (baLifecycle.hasAccess() && !canAccessProduction()) {
-    return `<div class='bg-white rounded-xl shadow p-4'>${baLifecycle.render()}</div>`;
+    return `<div class='h-production bg-white rounded-xl shadow p-4'>${baLifecycle.render()}</div>`;
   }
   if (!canAccessProduction()) {
-    return `<div class='bg-white rounded-xl shadow p-4'>
+    return `<div class='h-production bg-white rounded-xl shadow p-4'>
       <h2 class='text-lg font-semibold'>Produktion</h2>
       <p class='text-sm text-slate-600 mt-2'>Dieser Bereich ist für deine Rolle nicht verfügbar.</p>
     </div>`;
@@ -6305,13 +6312,13 @@ function renderProduction() {
   }
   if (subTab === "settings") content = renderProductionSettingsTab();
 
-  return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>
+  return `<div class='h-production bg-white rounded-xl shadow p-4 space-y-4'>
     ${compactCounts ? `<div class='flex items-center justify-between gap-3'>
       <h2 class='text-lg font-semibold'>Produktion</h2>
       <details><summary class='cursor-pointer py-2 text-sm font-semibold'>Bereiche</summary><div class='flex gap-2 flex-wrap mt-2'>${subTabButtons}</div></details>
     </div>` : `<div>
       <h2 class='text-lg font-semibold'>Produktion</h2>
-      <p class='text-sm text-slate-500 mt-1'>Grundstruktur für Abteilungen und spätere Maschinenverwaltung.</p>
+      <p class='text-sm text-slate-500 mt-1'>Aufträge, Maschinen und bestehende Fertigungsabläufe.</p>
     </div>
     <div class='flex gap-2 flex-wrap'>${subTabButtons}</div>`}
     ${getProductionStatusBanner()}
@@ -7012,7 +7019,7 @@ async function ensureActiveProductionCounterSelection() {
 }
 
 function renderProductionCountsTab() {
-  if (opQuantities.enabled()) return opQuantities.render() + baLifecycle.render() + `<details><summary>Bisherige Aufträge / Zähler</summary>${renderPhase3ProductionCountsTab()}</details>`;
+  if (opQuantities.enabled()) return renderPhase3ProductionCountsTab() + opQuantities.render() + baLifecycle.render();
   return renderPhase3ProductionCountsTab();
 }
 
@@ -7069,30 +7076,20 @@ function renderPhase3ProductionCountsTab() {
     })
     .join("");
 
-  return `<div class='space-y-4'>
-    <div class='border rounded-lg p-4 bg-slate-50'>
-      <h3 class='text-xl font-bold'>Zähler-Dashboard</h3>
-      <p class='text-sm text-slate-600 mt-1'>Zählansicht wird schrittweise aus der alten Zählerapp migriert.</p>
-      <p class='text-xs text-slate-500 mt-2'>Diese Version zeigt Maschinen und aktive Aufträge nur lesend. Keine Zählung, keine Spannungen, keine Buchung.</p>
-    </div>
-    <div class='grid xl:grid-cols-[minmax(0,2fr),minmax(360px,1fr)] gap-4 items-start'>
-      <div class='space-y-5'>
-        <div>
-          <h3 class='font-semibold'>Maschinenübersicht</h3>
-          <p class='text-sm text-slate-500 mt-1'>Maschinen gruppiert nach Abteilung mit laufenden und pausierten Aufträgen.</p>
-        </div>
-        ${departmentSections || "<div class='border rounded-lg bg-white p-4 text-sm text-slate-500'>Keine Maschinen sichtbar.</div>"}
-      </div>
-      <aside class='bg-white border rounded-lg p-4 space-y-3 sticky top-3'>
-        <h3 class='font-semibold'>Maschinenvorschau</h3>
-        ${detailActive}
-      </aside>
-    </div>
-    <details class='border rounded-lg bg-slate-50 p-3 text-sm text-slate-600'>
-      <summary class='font-semibold cursor-pointer'>Alt / einfacher Zähler zurückgestellt</summary>
-      <p class='mt-2'>Der einfache production_counts-Zähler bleibt im Code erhalten, ist aber in dieser Ansicht nicht mehr die primäre Zähleroberfläche.</p>
-    </details>
-  </div>`;
+  return window.HumbelProductionDesign.render({
+    machineCards: machines.map(machine => renderProductionCounterMachineCard(machine)).join(""),
+    orders: machines.flatMap(machine => getActiveProductionOrdersForMachine(machine.id).map(order => ({
+      id: order.id, ba: order.ba_number || "-", article: order.article_number || "-",
+      machine: machine.name || machine.machine_code || "-",
+      department: getProductionOrderDepartmentDisplay(machine.id, machine.department_id),
+      status: order.status, statusLabel: getProductionOrderStatusLabel(order.status),
+      quantity: order.ba_quantity, target: order.target_quantity,
+      good: getProductionOrderCompletedGoodTotal(order.id),
+      scrap: getProductionOrderScrapTotal(order.id), clarify: getProductionOrderClarifyTotal(order.id),
+    }))),
+    machines: machines.map(machine => ({ id: machine.id, name: machine.name || machine.machine_code || "-",
+      department: getProductionOrderDepartmentDisplay(machine.id, machine.department_id) })),
+  });
 }
 
 function renderProductionCounterMachineCard(machine, selectedMachineId = "") {
