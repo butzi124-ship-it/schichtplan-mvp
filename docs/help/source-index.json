@@ -23,9 +23,9 @@
   "css/home-dashboard.css": "fd9d4c62cdfa0997b579028b299c4efa024e47c55baecb479c360e28481430ed",
   "css/learning.css": "bb7e1f07a1bc84b250d27e97f713a8d15ca2d68fabf4d93a3511977f34ffbe35",
   "css/production-design.css": "b5f7daec41a4255aedc09a5b108f06ba5e1cf5e94f75c8f520c94ef01c1e06e3",
-  "scripts/preview/server.js": "497694ab320ab3c4b77ba339c57c36cbc0d8d3c195b8305d7002dc6e57227838",
+  "scripts/preview/server.js": "c7910b125083c42e73ebe65c56c83fe97c15a205e38db54cc990307d9332fbb1",
   "scripts/preview/backend.js": "6197d8ed0cf79d8a9b4d60c1995bb9defab15cb606af65922e2325e983ef2cb1",
   "scripts/preview/client.js": "c49e9065fc9fc2b4f7f31b19b36a0989a19997b2c211896a47d3b5fd2fd5bea0",
-  "scripts/preview/boot.js": "9689f3de06ab948a3d9f4335381d213b5f82e52513a83cd1c1101fc390ca69e2",
+  "scripts/preview/boot.js": "9ebabf56be3b02a169bb79d59fad5b60cbf10edc627000ec8932c55db927ba08",
   "tests/helpers/supabase-mock.js": "26964fab6825325700abba975887d8e1ccbe7b29741fa9c5750a90257970a5eb"
 }
