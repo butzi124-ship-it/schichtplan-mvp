@@ -52,14 +52,18 @@ test('FABOS loads visible departments, staff, machines, orders and tools after l
     if(account==='admin'){
       assert.equal(report.visibleDepartments,8);
       await page.evaluate(()=>{setTab('produktion');setProductionSubTab('departments');});
-      assert.match(await page.locator('#view').innerText(),/Fräserei/);
-      assert.match(await page.locator('#view').innerText(),/Verzahnerei/);
+      const departmentNames=await page.locator('#view input[id^="production-department-name-"]').evaluateAll(es=>es.map(e=>e.value));
+      assert(departmentNames.includes('Fräserei'),JSON.stringify(departmentNames));
+      assert(departmentNames.includes('Verzahnerei'),JSON.stringify(departmentNames));
       await page.evaluate(()=>{setTab('produktion');setProductionSubTab('machines');});
-      assert.match(await page.locator('#view').innerText(),/Hermle C62/);
+      const machineNames=await page.locator('#view input[id^="production-machine-name-"]').evaluateAll(es=>es.map(e=>e.value));
+      assert(machineNames.includes('Hermle C62'),JSON.stringify(machineNames));
       await page.evaluate(()=>{setTab('produktion');setProductionSubTab('orders');});
       assert.match(await page.locator('#view').innerText(),/DEMO-BA-/);
       await page.evaluate(()=>setTab('personalverwaltung'));
-      assert.match(await page.locator('#view').innerText(),/Nina Reuter/);
+      const firstNames=await page.locator('#view input[id^="pm-employee-first-"]').evaluateAll(es=>es.map(e=>e.value));
+      const lastNames=await page.locator('#view input[id^="pm-employee-last-"]').evaluateAll(es=>es.map(e=>e.value));
+      assert(firstNames.includes('Nina')&&lastNames.includes('Reuter'));
       await page.evaluate(()=>setTab('werkzeugverwaltung'));
       assert.match(await page.locator('#view').innerText(),/Schaftfräser/);
       await page.locator('#isolated-preview-banner a[href="/demo-plan"]').click();
