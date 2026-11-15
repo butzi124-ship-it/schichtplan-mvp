@@ -120,7 +120,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.20.2";
+const APP_VERSION = "0.20.3";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -135,6 +135,7 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {"version": "0.20.3", "date": "2026-11-15 12:32", "changes": ["Ausschließlich 1 px Abstand vor der Abschluss-Schaltfläche ergänzt, um die Firefox-Kantenrundung bei direkt angrenzenden Elementen zu vermeiden. Mindesthöhe 52 px und sämtliche Test-Assertions unverändert."]},
   {"version": "0.20.2", "date": "2026-11-15 11:38", "changes": ["Ausschließlich CSS-Regression der Abschluss-Schaltfläche korrigiert: bestehende Mindesthöhe von 52 px gegenüber allgemeiner Produktionsbutton-Regel wiederhergestellt. Keine Geschäftslogik- oder Referenzbildänderung."]},
   {"version": "0.20.1", "date": "2026-11-15 09:04", "changes": ["Erste tatsächliche Bildprüfung: Fertigungsübersicht auch bei aktivierten OP-Modulen direkt sichtbar; mobile Untermenüs und BA-/OP-Formularraster nachgeschärft. Bestehende Aktionen und Referenzen unverändert."]},
   {"version": "0.20.0", "date": "2026-11-15 08:55", "changes": ["Freigegebenes Referenzdesign, Paket 1: Fertigungsübersicht mit echten BA-Daten, gemeinsamen Karten, Statusanzeigen, Tabellen, BA-/OP-Formularen und Dialoggestaltung. Keine Geschäftslogik-, Rechte-, Datenbank- oder Referenzbildänderung."]},
