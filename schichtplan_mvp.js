@@ -120,7 +120,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.20.15";
+const APP_VERSION = "0.20.16";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -135,6 +135,7 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {"version":"0.20.16","date":"2026-11-16 00:32","changes":["Fehlerhafte Online-Demo-Initialisierung korrigiert: synthetische Benutzer eindeutigen Abteilungen zugeordnet, echte asynchrone FABOS-Daten- und Werkzeugladefolge abgewartet, 20 fiktive Produktionswerkzeuge ergänzt und sichtbare Browser-Abnahme für Abteilungen, Mitarbeiter, Maschinen, BA und Werkzeugliste eingeführt. Keine produktiven Datenbank-, Auth- oder Hauptapp-Geschäftslogikänderung."]},
   {"version":"0.20.15","date":"2026-11-15 23:40","changes":["Getrennten, standardmäßig deaktivierten Online-Demomodus für passwortgeschützte HTTPS-Vorschau vorbereitet: feste Domain, Host-/Origin-Prüfung, Secure-Cookies, gesperrte Dokumentationsansicht und Healthcheck. Nur synthetische Daten, keine produktive Datenbank, kein Merge oder Deployment der Hauptanwendung."]},
   {"version":"0.20.14","date":"2026-11-15 22:51","changes":["Isolierten, standardmäßig deaktivierten FABOS-Demodatensatz für acht produktionsnahe Abteilungen, 40 erfundene Personen, 19 Demo-Maschinen, 32 Betriebsaufträge und 176 logisch abhängige OPs ergänzt. Nur lokale Preview-Fixtures und lesbarer Maschinenfolgeplan; keine produktive Datenbank, kein Auth-/Rollen-Rollout oder Deployment."]},
   {"version": "0.20.13", "date": "2026-11-15 21:37", "changes": ["Ausschließlich die ausdrücklich freigegebene mobile Screenshot-Referenz production-overview aus CI 43754470732 / Artefakt 14177977023 übernommen. Beide Quellaufnahmen erneut byte- und pixelidentisch verifiziert; vollständige Herkunft nachgeführt, alle übrigen 32 Referenzen unverändert. Keine Design-, Geschäftslogik-, Test-, Toleranz-, Auth- oder Rollenänderung."]},
