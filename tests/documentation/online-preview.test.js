@@ -2,6 +2,8 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const crypto=require('node:crypto');
+const http=require('node:http');
+function request(address,opts={}){return new Promise((resolve,reject)=>{const u=new URL(address);const req=http.request(u,{method:opts.method||'GET',headers:opts.headers||{}},res=>{const buffers=[];res.on('data',x=>buffers.push(x));res.on('end',()=>{const body=Buffer.concat(buffers).toString('utf8');resolve({status:res.statusCode,headers:{get:k=>res.headers[k.toLowerCase()]||null},text:async()=>body});});});req.on('error',reject);req.end(opts.body||undefined);});}
 const {createPreview}=require('../../scripts/preview/server');
 
 test('external preview is opt-in and fails closed without HTTPS origin and synthetic data',{timeout:20000},async()=>{
@@ -29,18 +31,18 @@ test('online preview restricts host and proxy protocol, authenticates protected 
   preview=await createPreview({backend,passwords:{employee:password}});
   const url='http://127.0.0.1:'+preview.server.address().port;
   const valid={'Host':'fabos.example.test','X-Forwarded-Proto':'https'};
-  let res=await fetch(url+'/healthz');assert.equal(res.status,200);
-  res=await fetch(url+'/demo-plan');assert.equal(res.status,403);
-  res=await fetch(url+'/demo-plan',{headers:valid});assert.equal(res.status,401);
-  res=await fetch(url+'/demo-plan',{headers:{...valid,'X-Forwarded-Proto':'http'}});assert.equal(res.status,403);
-  res=await fetch(url+'/documentation/');assert.equal(res.status,403);
-  res=await fetch(url+'/documentation/',{headers:valid});assert.equal(res.status,404);
-  res=await fetch(url+'/login',{method:'POST',headers:{...valid,'Origin':'https://fabos.example.test','Content-Type':'application/json'},body:JSON.stringify({account:'employee',password})});
+  let res=await request(url+'/healthz');assert.equal(res.status,200);
+  res=await request(url+'/demo-plan');assert.equal(res.status,403);
+  res=await request(url+'/demo-plan',{headers:valid});assert.equal(res.status,401);
+  res=await request(url+'/demo-plan',{headers:{...valid,'X-Forwarded-Proto':'http'}});assert.equal(res.status,403);
+  res=await request(url+'/documentation/');assert.equal(res.status,403);
+  res=await request(url+'/documentation/',{headers:valid});assert.equal(res.status,404);
+  res=await request(url+'/login',{method:'POST',headers:{...valid,'Origin':'https://fabos.example.test','Content-Type':'application/json'},body:JSON.stringify({account:'employee',password})});
   assert.equal(res.status,200);
   const cookie=res.headers.get('set-cookie');assert.match(cookie,/; Secure;/);assert.match(cookie,/HttpOnly/);assert.match(cookie,/SameSite=Strict/);
-  res=await fetch(url+'/demo-plan',{headers:{...valid,Cookie:cookie.split(';')[0]}});
+  res=await request(url+'/demo-plan',{headers:{...valid,Cookie:cookie.split(';')[0]}});
   assert.equal(res.status,200);assert.match(await res.text(),/Nächster Auftrag/);
-  res=await fetch(url+'/logout',{method:'POST',headers:{...valid,Cookie:cookie.split(';')[0],Origin:'https://fabos.example.test','Content-Type':'application/json'},body:'{}'});
+  res=await request(url+'/logout',{method:'POST',headers:{...valid,Cookie:cookie.split(';')[0],Origin:'https://fabos.example.test','Content-Type':'application/json'},body:'{}'});
   assert.equal(res.status,200);assert.match(res.headers.get('set-cookie'),/; Secure;/);
  }finally{
   if(preview)await preview.close();
