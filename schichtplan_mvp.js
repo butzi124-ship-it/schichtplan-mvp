@@ -120,7 +120,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.20.8";
+const APP_VERSION = "0.20.9";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -135,6 +135,7 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {"version": "0.20.9", "date": "2026-11-15 18:30", "changes": ["CSS-Kaskade der Touch-Abschluss-Schaltfläche korrigiert: Die bestehende Mindesthöhe von 52 px hat auf Desktop, Tablet und Smartphone Vorrang vor der allgemeinen Touch-Regel. Keine Geschäftslogik-, Pointer-, Scroll-, Berechtigungs-, Test- oder Referenzbildänderung."]},
   {"version": "0.20.8", "date": "2026-11-15 17:50", "changes": ["Touch-Produktionsbedienung mit vorhandenen Tokens als Kontext- und Zählerkarten harmonisiert; bestehende 60-px-Zählflächen erhalten und Abschlussaktionen auf mindestens 52 px vereinheitlicht. 6M- und Abschlussdialoge mit gemeinsamen Abständen und viewportbegrenzter Scrollfläche gestaltet. Nur CSS und Darstellungsklassen, keine Geschäftslogik-, Statusfarben-, Berechtigungs- oder Referenzbildänderung."]},
   {"version": "0.20.7", "date": "2026-11-15 17:04", "changes": ["Gemeinsame CSS-Designwerte gemäß Designpaket PR #46 zentralisiert: Navy-Navigation, Oberflächen, Primärblau, Abstände, Kartenradien, Schatten und Bedienelemente. Primärtexte kontraststärker gestaltet; Statusfarben, Geschäftslogik, Branding und visuelle Referenzen unverändert."]},
   {"version": "0.20.6", "date": "2026-11-15 15:45", "changes": ["Skip-Link außerhalb des Fokus zusätzlich geclippt, ohne Tab-Erreichbarkeit oder Fokusdarstellung zu entfernen. Tablet-6M-Aufnahmeposition auf den erreichbaren Scrollbereich begrenzt; strikte Positions- und Bildprüfungen unverändert. Dokumentationsfingerabdrücke nach Prüfung aktualisiert; keine Geschäftslogik oder Referenzbilder geändert."]},
