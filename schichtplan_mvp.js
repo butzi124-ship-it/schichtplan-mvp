@@ -120,7 +120,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.19.2";
+const APP_VERSION = "0.19.3";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -135,6 +135,7 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  { version: "0.19.3", date: "2026-11-15 07:24", changes: ["Bestehenden Stillstand-Timer ohne Funktionsänderung im Kopfbereich angeordnet, damit keine Schicht- oder Tabellenaktion durch schwebende Elemente verdeckt wird. Zusätzliche Bedienungsprüfung; keine Referenzbildänderung."] },
   { version: "0.19.2", date: "2026-11-15 07:17", changes: ["Mobile Navigation nach Abmelden zuverlässig ausgeblendet. Ergänzende Klicktest-Fixture mit vorhandener Auftragscheckliste initialisiert, ohne bestehende Assertions zu ändern. Referenzbilder bleiben unverändert."] },
   { version: "0.19.1", date: "2026-11-15 07:07", changes: ["Darstellungsfehler aus PR #43 behoben: responsive Ausschuss-/Klärfallzähler, kollisionsfreie Hilfe/Versionsinformationen, Vorschaukopf und lesbare Navigation. Statussemantik, Aufgabenbeschriftungen und Fokus nach asynchronem Rendern korrigiert. Keine Geschäftslogikänderung; Referenzbilder unverändert."] },
   { version: "0.19.0", date: "2026-11-15 06:21", changes: ["Gemeinsames responsives Humbel-Layout mit dunkelblauer Navigation sowie vereinheitlichte Anmeldung, Startseite, Meine Schichten und Aufgaben. Keine Geschäftsprozess-, Rechte- oder Datenbankänderung; kein Deployment."] },

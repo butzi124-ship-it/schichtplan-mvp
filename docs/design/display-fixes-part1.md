@@ -1,4 +1,4 @@
-# Design Teil 1 – Korrekturen v0.19.2
+# Design Teil 1 – Korrekturen v0.19.3
 
 Basis: PR #43, Commit 67c3fc33a860a9534ed88ef3218ae4307e2e8bf8. Korrekturbranch `fix/design-part1-display`, Ziel `design/shared-foundation-part1`. Keine Änderung an main, Geschäftslogik, Datenbank, Rechten oder Produktionsflags. Kein Deployment, keine Umbenennung.
 
@@ -31,3 +31,7 @@ Erst nach Sichtprüfung der neuen CI-Bilder und tatsächlicher Bedienungsnachwei
 Erster Korrekturcommit 52629125: 44/50 fokussierte Browserfälle bestanden. Alle fünf geometrischen Trefferflächen-/Dialogprüfungen erreichten die abschließende Schreibprüfung; deren synthetischer Auftrag war noch nicht initialisiert und löste die bestehende reguläre Checklistenanlage aus. Die neue Fixture wird wie die unveränderte Visual-Fixture vorinitialisiert; die Assertion auf keine Buchung bleibt unverändert. Zusätzlich zeigte der unveränderte mobile Logouttest eine CSS-Spezifitätskollision: der mobile Gridstil überlagerte die hidden-Klasse. #tabs.hidden hat nun Vorrang. Version 0.19.2 enthält diese Korrekturen. Die drei ursprünglichen Fokusfehler und fünf Beschriftungsfehler waren im ersten fokussierten Lauf bereits bestanden.
 
 Beide strikten visuellen Durchläufe werden auch bei Referenzabweichungen ausgeführt (always für die Wiederholung); kein Fehler wird dadurch als bestanden gewertet. Die neuen CI-Ergebnisse sind separat am aktuellen Head zu prüfen.
+
+## Weiterer vorhandener schwebender Bereich
+
+Die zusätzliche Mitarbeiter-Sichtprüfung zeigte den bestehenden Stillstand-Timer über Schichtaktionen. Er wird mit seinem unveränderten stopDowntimeTimer-Handler in den App-Kopf im normalen Fluss versetzt. Eine zusätzliche Prüfung in allen fünf Projekten sichert Position, Trefferfläche und frei erreichbare Abwesenheitsaktionen. Der vorherige Head ca24e7be bestand bereits alle 50 fokussierten Fälle; der endgültige Head muss die nun 55 Fälle erneut bestehen.

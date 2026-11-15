@@ -112,4 +112,7 @@ body.h-app-signed-in #app-shell { margin-left: var(--h-sidebar); }
 #app-utilities #versionFooter, #app-utilities #context-help-launcher { position: static !important; inset: auto !important; margin: 0; max-width: 100%; }
 #app-utilities #versionFooter[hidden] { display: none !important; }
 #app-utilities button { min-height: 44px; white-space: normal; }
+.h-app-header #downtimeWidget { position: static !important; inset: auto !important; flex-basis: 100%; margin: 0; }
+.h-app-header #downtimeWidget:empty { display: none; }
+.h-app-header #downtimeWidget button { min-height: 44px; max-width: 100%; white-space: normal; }
 @media (max-width: 800px) { #app-utilities { justify-content: flex-start; } }

@@ -122,4 +122,21 @@ test.describe('Dashboard home display corrections', () => {
     await page.locator('#view').screenshot({ path: info.outputPath('tool-actions.png') });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
+
+  test('the existing downtime control stays in the header flow and cannot cover employee shift actions', async ({ page }, info) => {
+    await page.locator('#tabs').getByRole('button', { name: 'Abmelden', exact: true }).click();
+    await page.getByRole('button', { name: 'Lavdrim (A)', exact: true }).click();
+    const timer = page.getByRole('button', { name: 'Stillstand läuft – Stoppen', exact: true });
+    await expect(timer).toBeVisible();
+    await expect(page.locator('.h-app-header #downtimeWidget')).toHaveCSS('position', 'static');
+    await expect(timer).toHaveAttribute('onclick', 'stopDowntimeTimer()');
+    await hitTarget(timer);
+    const h = await page.locator('.h-app-header').boundingBox();
+    const t = await timer.boundingBox();
+    expect(t.y).toBeGreaterThanOrEqual(h.y);
+    expect(t.y + t.height).toBeLessThanOrEqual(h.y + h.height);
+    await page.locator('#view').getByRole('button', { name: 'Meine Schichten', exact: true }).click();
+    await hitTarget(page.getByRole('button', { name: 'Abwesenheit', exact: true }).first());
+    await page.screenshot({ path: info.outputPath('employee-header.png'), fullPage: true });
+  });
 });

@@ -47,6 +47,9 @@
         for (const node of utilityNodes) if (node.parentElement !== dock) dock.appendChild(node);
         dock.hidden = utilityNodes.every(node => node.hidden);
       }
+      const downtime = document.getElementById('downtimeWidget');
+      const header = document.querySelector('.h-app-header');
+      if (downtime && header && downtime.parentElement !== header) header.appendChild(downtime);
       const signedIn = login.classList.contains('hidden') && !nav.classList.contains('hidden');
       document.body.classList.toggle('h-app-signed-in', signedIn);
       if (!signedIn) setMenu(true);
