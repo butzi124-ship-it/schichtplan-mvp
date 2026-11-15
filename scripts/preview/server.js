@@ -1,10 +1,18 @@
 #!/usr/bin/env node
 // Local-only synthetic showcase. HTTPS/SSO and native DB acceptance remain gates.
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
-const {createBackend}=require('./backend');const {installSupabaseMock,rowsByTable}=require('../../tests/helpers/supabase-mock');
+const {installSupabaseMock,rowsByTable}=require('../../tests/helpers/supabase-mock');
 const {buildDemoPreview,renderDemoPlan}=require('./fabos-demo-adapter');
 const ROOT=path.resolve(__dirname,'../..');
 const csp="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'";
+function createOnlineDemoBackend(){
+ const actors={
+  admin:{role:'admin',uid:'00000000-0000-4000-8000-000000000001',name:'Demo Administration'},
+  leader:{role:'department_admin',uid:'00000000-0000-4000-8000-000000000002',name:'Demo Abteilungsleitung'},
+  employee:{role:'employee',uid:'00000000-0000-4000-8000-000000000003',name:'Demo Mitarbeiter'},
+ };
+ return {actors,async rpc(){throw Object.assign(Error('Online demonstration has no persistent RPC backend'),{code:'42501'});},async close(){}};
+}
 async function createPreview({passwords,backend,port=0}={}){
  const online=process.env.HUMBEL_PREVIEW_ONLINE==='1';
  const publicOrigin=online?process.env.HUMBEL_PREVIEW_ORIGIN:'';
@@ -15,7 +23,7 @@ async function createPreview({passwords,backend,port=0}={}){
   if(process.env.HUMBEL_PREVIEW_DEMO!=='1')throw Error('Online preview requires isolated demo dataset');
  }
  if(!passwords||Object.keys(passwords).some(k=>!['admin','leader','employee'].includes(k))||Object.values(passwords).some(x=>typeof x!=='string'||x.length<24)||!passwords.employee)throw Error('Explicit isolated test passwords of at least 24 characters required');
- backend=backend||await createBackend();const sessions=new Map(),attempts=new Map();
+ backend=backend||(online?createOnlineDemoBackend():await require('./backend').createBackend());const sessions=new Map(),attempts=new Map();
  const demo=process.env.HUMBEL_PREVIEW_DEMO==='1'?buildDemoPreview(rowsByTable):null;
  const salt=crypto.randomBytes(32),hash=p=>crypto.scryptSync(p,salt,32),hashes=Object.fromEntries(Object.entries(passwords).map(([u,p])=>[u,hash(p)]));
  function send(res,status,body,type='text/html; charset=utf-8'){res.writeHead(status,{'Content-Type':type,'Content-Security-Policy':csp,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'});res.end(body);}
@@ -50,7 +58,7 @@ async function createPreview({passwords,backend,port=0}={}){
   const actor=backend.actors[documentation?'admin':s.account];
   if(url.pathname==='/preview-bootstrap.js'){
    const rows=JSON.parse(JSON.stringify(demo?demo.rows:rowsByTable));rows.employees[0]={...rows.employees[0],auth_user_id:actor.uid,role:actor.role,display_name:actor.name,first_name:actor.name,last_name:'',department_id:demo?demo.data.departments[0].id:'department-one'};if(!demo)rows.employees[1].display_name=rows.employees[1].first_name='Test Mitarbeiter';
-   return send(res,200,`(${installSupabaseMock.toString()})(${JSON.stringify(rows)});window.__PREVIEW_ACTOR=${JSON.stringify(actor)};window.__PREVIEW_READONLY=${documentation};window.__PREVIEW_DEMO=${!!demo};`+fs.readFileSync(path.join(__dirname,'client.js'),'utf8'),'application/javascript');
+   return send(res,200,`(${installSupabaseMock.toString()})(${JSON.stringify(rows)});window.__PREVIEW_ACTOR=${JSON.stringify(actor)};window.__PREVIEW_READONLY=${documentation};window.__PREVIEW_DEMO=${!!demo};window.__PREVIEW_ONLINE=${online};`+fs.readFileSync(path.join(__dirname,'client.js'),'utf8'),'application/javascript');
   }
   if(url.pathname==='/'||url.pathname==='/schichtplan_mvp.html'){
    let html=fs.readFileSync(path.join(ROOT,'schichtplan_mvp.html'),'utf8');html=html.replace('<script src="https://cdn.tailwindcss.com"></script>','<link rel="stylesheet" href="/tests/fixtures/app-tailwind.css">');
