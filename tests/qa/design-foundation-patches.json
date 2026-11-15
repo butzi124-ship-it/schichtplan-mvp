@@ -1,0 +1,155 @@
+{
+  "baseCommit": "dc6a286add800d782da2bdaf65dd5dd0c19b9bb0",
+  "reason": "Explicit design unification part 1. Exact presentation deltas only; original business, legacy assertions and reference hashes retained.",
+  "patches": [
+    {
+      "file": "schichtplan_mvp.html",
+      "before": "<title>Schichtplan Maschine 50 – 90 Tage Übersicht</title>",
+      "after": "<title>Humbel-App</title>"
+    },
+    {
+      "file": "schichtplan_mvp.html",
+      "before": "    <link rel=\"stylesheet\" href=\"./css/home-dashboard.css\" />",
+      "after": "    <link rel=\"stylesheet\" href=\"./css/home-dashboard.css\" />\n    <link rel=\"stylesheet\" href=\"./css/app-shell.css\" />"
+    },
+    {
+      "file": "schichtplan_mvp.html",
+      "before": "<body class=\"bg-slate-100 text-slate-900 min-h-screen\">",
+      "after": "<body class=\"h-app bg-slate-100 text-slate-900 min-h-screen\">\n    <a href=\"#view\" class=\"h-skip-link\">Zum Inhalt</a>"
+    },
+    {
+      "file": "schichtplan_mvp.html",
+      "before": "<div class=\"max-w-7xl mx-auto p-4 space-y-4\">",
+      "after": "<div id=\"app-shell\" class=\"max-w-7xl mx-auto p-4 space-y-4\">"
+    },
+    {
+      "file": "schichtplan_mvp.html",
+      "before": "class=\"bg-white rounded-xl shadow p-4 flex flex-wrap items-center justify-between gap-3\"",
+      "after": "class=\"h-app-header bg-white rounded-xl shadow p-4 flex flex-wrap items-center justify-between gap-3\""
+    },
+    {
+      "file": "schichtplan_mvp.html",
+      "before": "              Schichtplan Maschine 50 – 90 Tage Übersicht",
+      "after": "              Humbel-App"
+    },
+    {
+      "file": "schichtplan_mvp.html",
+      "before": "<p class=\"text-sm text-slate-500\">90 Tage Übersicht</p>",
+      "after": "<p class=\"text-sm text-slate-500\">Fertigung · Planung · Werkzeuge</p>"
+    },
+    {
+      "file": "schichtplan_mvp.html",
+      "before": "        <div id=\"sessionInfo\" class=\"text-sm font-medium\"></div>",
+      "after": "        <div id=\"sessionInfo\" class=\"text-sm font-medium\" role=\"status\"></div>\n        <button id=\"app-menu-toggle\" class=\"h-menu-toggle\" type=\"button\" aria-controls=\"tabs\" aria-expanded=\"true\">Menü</button>"
+    },
+    {
+      "file": "schichtplan_mvp.html",
+      "before": "<section id=\"loginBox\" class=\"bg-white rounded-xl shadow p-4 space-y-4\">",
+      "after": "<section id=\"loginBox\" class=\"h-login bg-white rounded-xl shadow p-4 space-y-4\" aria-labelledby=\"login-heading\">"
+    },
+    {
+      "file": "schichtplan_mvp.html",
+      "before": "<h2 class=\"font-semibold text-lg\">Anmeldung</h2>",
+      "after": "<h2 id=\"login-heading\" class=\"font-semibold text-lg\">Anmeldung</h2>"
+    },
+    {
+      "file": "schichtplan_mvp.html",
+      "before": "          id=\"loginStatus\"",
+      "after": "          role=\"status\"\n          id=\"loginStatus\""
+    },
+    {
+      "file": "schichtplan_mvp.html",
+      "before": "<div class=\"border-t pt-4\">",
+      "after": "<div class=\"h-login-test border-t pt-4\">"
+    },
+    {
+      "file": "schichtplan_mvp.html",
+      "before": "<nav id=\"tabs\" class=\"hidden gap-2 flex-wrap\"></nav>",
+      "after": "<nav id=\"tabs\" class=\"hidden gap-2 flex-wrap\" aria-label=\"Hauptnavigation\"></nav>"
+    },
+    {
+      "file": "schichtplan_mvp.html",
+      "before": "<section id=\"view\"></section>",
+      "after": "<main id=\"view\" tabindex=\"-1\"></main>"
+    },
+    {
+      "file": "schichtplan_mvp.html",
+      "before": "    <script src=\"./schichtplan_mvp.js\"></script>",
+      "after": "    <script src=\"./schichtplan_mvp.js\"></script>\n    <script src=\"./js/app-shell.js\"></script>"
+    },
+    {
+      "file": "css/home-dashboard.css",
+      "before": "/* Dashboard-only visual design; other modules remain unchanged. */\nbody.humbel-home-mode{background:#f3f6fb;color:#102033}\nbody.humbel-home-mode #tabs{position:fixed;top:0;bottom:0;left:0;width:238px;z-index:45;background:linear-gradient(160deg,#071d35,#0b2a4b);display:flex!important;flex-direction:column;flex-wrap:nowrap;gap:7px;padding:85px 10px 22px;overflow-y:auto;box-shadow:4px 0 18px #061e351a}\nbody.humbel-home-mode #tabs:before{content:\"⚙  Humbel-App\";position:absolute;top:20px;left:18px;color:white;font-size:21px;font-weight:800}\nbody.humbel-home-mode #tabs button{width:100%;text-align:left;color:#f1f6ff;background:transparent;border:0;border-radius:10px;min-height:48px;padding:12px 14px;font-weight:600}\nbody.humbel-home-mode #tabs button:hover,body.humbel-home-mode #tabs .humbel-main-tab-active{background:#095ba6;color:white}\nbody.humbel-home-mode #tabs button:last-child{margin-top:auto;background:#24415c}\nbody.humbel-home-mode #tabs + #personal-production-times{margin-left:238px}\nbody.humbel-home-mode #view{margin-left:238px}\nbody.humbel-home-mode #view>div{max-width:none}\n",
+      "after": "/* Dashboard components. Shared shell and navigation: app-shell.css. */\n"
+    },
+    {
+      "file": "css/home-dashboard.css",
+      "before": "@media(max-width:800px){body.humbel-home-mode #tabs{position:relative;top:auto;bottom:auto;width:auto;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;padding:10px;gap:6px}body.humbel-home-mode #tabs:before{display:none}body.humbel-home-mode #tabs button{width:auto;min-width:max-content;min-height:44px}body.humbel-home-mode #tabs button:last-child{margin-top:0}body.humbel-home-mode #view,body.humbel-home-mode #tabs + #personal-production-times{margin-left:0}.h-home-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.h-home-hero{padding:24px 18px}}",
+      "after": "@media(max-width:800px){.h-home-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.h-home-hero{padding:24px 18px}}"
+    },
+    {
+      "file": "schichtplan_mvp.js",
+      "before": "    .humbel-main-nav {\n      background: rgba(255, 255, 255, 0.78);\n      border: 1px solid var(--humbel-border);\n      border-radius: 12px;\n      padding: 8px;\n      box-shadow: 0 10px 26px rgba(13, 70, 130, 0.06);\n    }\n\n    .humbel-main-tab,\n    .humbel-subtab {\n      background: #ffffff !important;\n      color: var(--humbel-blue-dark) !important;\n      border-color: var(--humbel-border) !important;\n      font-weight: 600;\n      box-shadow: 0 1px 2px rgba(16, 32, 51, 0.04);\n    }\n\n    .humbel-main-tab:hover,\n    .humbel-subtab:hover {\n      background: #eef5fb !important;\n      border-color: rgba(13, 70, 130, 0.34) !important;\n    }\n\n    .humbel-main-tab-active,\n    .humbel-subtab-active {\n      background: var(--humbel-blue) !important;\n      color: #ffffff !important;\n      border-color: var(--humbel-blue) !important;\n      box-shadow: 0 8px 20px rgba(13, 70, 130, 0.22);\n    }\n\n    .humbel-tab-attention {\n      border-color: #fb7185 !important;\n    }\n\n",
+      "after": "    /* Shared navigation styles live in css/app-shell.css. */\n\n"
+    },
+    {
+      "file": "schichtplan_mvp.js",
+      "before": "return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>\n    <div>\n      <h2 class='text-lg font-semibold mb-3'>Meine Schichten (90 Tage)</h2>",
+      "after": "return `<div class='h-page h-card'>\n    <div>\n      <h2 class='h-page-title mb-3'>Meine Schichten (90 Tage)</h2>\n      <p class='h-page-description mb-3'>Deine eingeplanten Schichten und Verfügbarkeiten im Überblick.</p>"
+    },
+    {
+      "file": "schichtplan_mvp.js",
+      "before": "      <div class='overflow-auto border rounded-lg'>\n        <table class='w-full text-sm'>\n          <thead class='bg-slate-100'>\n            <tr>\n              <th class='p-2 text-left'>Datum</th>\n              <th class='p-2 text-left'>Schicht</th>\n              <th class='p-2 text-left'>Zeit</th>\n              <th class='p-2 text-left'>Status</th>",
+      "after": "      <div class='h-table-scroll overflow-auto border rounded-lg' data-table-label='Meine Schichten'>\n        <table class='w-full text-sm'>\n          <thead class='bg-slate-100'>\n            <tr>\n              <th class='p-2 text-left'>Datum</th>\n              <th class='p-2 text-left'>Schicht</th>\n              <th class='p-2 text-left'>Zeit</th>\n              <th class='p-2 text-left'>Status</th>"
+    },
+    {
+      "file": "schichtplan_mvp.js",
+      "before": "<h3 class='text-lg font-semibold mb-3'>Wochenend-Verfügbarkeit</h3>\n            <div class='overflow-auto border rounded-lg'>",
+      "after": "<h3 class='text-lg font-semibold mb-3'>Wochenend-Verfügbarkeit</h3>\n            <div class='h-table-scroll overflow-auto border rounded-lg' data-table-label='Wochenend-Verfügbarkeit'>"
+    },
+    {
+      "file": "schichtplan_mvp.js",
+      "before": "<select class='border rounded p-1' onchange=\"setWeekendAvailability(",
+      "after": "<select aria-label='Wochenend-Verfügbarkeit am ${s.date}' class='border rounded p-1' onchange=\"setWeekendAvailability("
+    },
+    {
+      "file": "schichtplan_mvp.js",
+      "before": "return `<div class='bg-white rounded-xl shadow p-4'>\n    <h2 class='text-lg font-semibold mb-3'>To-Do</h2>",
+      "after": "return `<div class='h-page h-card'>\n    <div><h2 class='h-page-title'>To-Do</h2><p class='h-page-description'>Meine Aufgaben · Offene und erledigte Aufgaben im Überblick.</p></div>"
+    },
+    {
+      "file": "schichtplan_mvp.js",
+      "before": "<div class='overflow-auto max-h-[45vh] border rounded-lg'>",
+      "after": "<div class='h-table-scroll overflow-auto max-h-[45vh] border rounded-lg' data-table-label='Offene Aufgaben'>"
+    },
+    {
+      "file": "schichtplan_mvp.js",
+      "before": "<div class='overflow-auto max-h-[25vh] border rounded-lg'>",
+      "after": "<div class='h-table-scroll overflow-auto max-h-[25vh] border rounded-lg' data-table-label='Erledigte Aufgaben'>"
+    },
+    {
+      "file": "schichtplan_mvp.js",
+      "before": "return `<div class='border rounded-lg p-3 bg-slate-50 mb-3'>\n    <h3 class='font-semibold mb-2'>Neue Aufgabe erstellen</h3>",
+      "after": "return `<div class='h-field-panel mb-3'>\n    <h3 class='font-semibold mb-2'>Neue Aufgabe erstellen</h3>"
+    },
+    {
+      "file": "schichtplan_mvp.js",
+      "before": "      <input id='taskTitle' class='border rounded p-2' placeholder='Aufgabe'/>\n      <select id='taskAssignee' class='border rounded p-2'>${options}</select>\n      <input id='taskDeadline' type='date' class='border rounded p-2'/>",
+      "after": "      <label class='h-field-label' for='taskTitle'>Aufgabe<input id='taskTitle' class='border rounded p-2' placeholder='Aufgabe'/></label>\n      <label class='h-field-label' for='taskAssignee'>Mitarbeiter<select id='taskAssignee' class='border rounded p-2'>${options}</select></label>\n      <label class='h-field-label' for='taskDeadline'>Frist<input id='taskDeadline' type='date' class='border rounded p-2'/></label>"
+    },
+    {
+      "file": "schichtplan_mvp.js",
+      "before": "  return `<div class='bg-white rounded-xl shadow p-4 space-y-4'>\n    <div>\n      <h2 class='text-lg font-semibold'>Start / Dashboard</h2>\n      <p class='text-sm text-slate-500 mt-1'>Modulstruktur der Humbel Schichtplan- und Werkzeug-App.</p>",
+      "after": "  return `<div class='h-dashboard-subpage'>\n    <div class='h-page-header'>\n      <h2 class='h-page-title'>Start / Dashboard</h2>\n      <p class='h-page-description'>Schichten, Aufgaben und Arbeitsbereiche.</p>"
+    }
+  ],
+  "files": {
+    "css/app-shell.css": "8c52c34ff196fd057e9d82203e783cc5d9bd4a89e3bc1a686cd33e9fd1dfdf0c",
+    "js/app-shell.js": "489cf03c116690abf4fc972853b320837a409222e922a9bd390935542306d070"
+  },
+  "baseFilesSha256": {
+    "schichtplan_mvp.html": "88a58f139b1008a2251497df66e29bacd7bfeeaec46bc8e92af5321837167381",
+    "css/home-dashboard.css": "36ff2ef1deeffb9bc1abda9541b606c263e33132b6d458b09bb1a96fc9b3daaf",
+    "schichtplan_mvp.js": "43c40c4cca943e7ad6e4d50c05af8470fac84e3388fc40069720295b6f2eaecb"
+  }
+}
