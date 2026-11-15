@@ -25,10 +25,16 @@
       "file": "schichtplan_mvp.js",
       "before": "  if (opQuantities.enabled()) return opQuantities.render() + baLifecycle.render() + `<details><summary>Bisherige Aufträge / Zähler</summary>${renderPhase3ProductionCountsTab()}</details>`;",
       "after": "  if (opQuantities.enabled()) return renderPhase3ProductionCountsTab() + opQuantities.render() + baLifecycle.render();"
+    },
+    {
+      "file": "tests/smoke.spec.js",
+      "before": "              // Preserve the reviewed camera: the tablet baseline trace captured scrollY=308; other viewports were bottom-aligned.\n              await expect.poll(() => page.evaluate(() => pendingScrollRestore === null)).toBe(true);\n              const cameraTop = testInfo.project.use.viewport.width === 1024 ? 308 : null;",
+      "after": "              // Preserve the requested tablet camera within the reachable scroll range; other viewports stay bottom-aligned.\n              await expect.poll(() => page.evaluate(() => pendingScrollRestore === null)).toBe(true);\n              const cameraTop = testInfo.project.use.viewport.width === 1024\n                ? await page.evaluate(() => Math.min(308, Math.max(0, document.documentElement.scrollHeight - innerHeight)))\n                : null;"
     }
   ],
   "baseHashes": {
     "schichtplan_mvp.html": "1bbc18bd61e9df61b49093f0444153847e4033e1a7834dc1908e08247c4578e3",
-    "schichtplan_mvp.js": "eb249bc28fecc2339b3ae74760e59f9d6d43dea0f47cf3bc4db47597c4c90582"
+    "schichtplan_mvp.js": "eb249bc28fecc2339b3ae74760e59f9d6d43dea0f47cf3bc4db47597c4c90582",
+    "tests/smoke.spec.js": "54c3a164a036c7cb1dbd7f98be42b83a6a4b3eb8a1c6b722b57565b16a13fbea"
   }
 }

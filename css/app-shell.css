@@ -27,8 +27,8 @@ body.h-app-signed-in #app-shell { margin-left: var(--h-sidebar); }
 .h-app-header h1 { font-size: clamp(1.25rem, 2vw, 1.75rem); font-weight: 750; line-height: 1.2; }
 .h-app-header img { max-width: 120px; height: 44px; }
 .h-app-header #sessionInfo { color: var(--h-muted); overflow-wrap: anywhere; }
-.h-app .h-skip-link { position: fixed; top: .5rem; left: 1rem; z-index: 100; transform: translateY(-200%); background: white; color: var(--h-blue); padding: .75rem 1rem; border-radius: .5rem; }
-.h-app .h-skip-link:focus { transform: none; }
+.h-app .h-skip-link { position: fixed; top: .5rem; left: 1rem; z-index: 100; transform: translateY(-200%); clip-path: inset(50%); background: white; color: var(--h-blue); padding: .75rem 1rem; border-radius: .5rem; }
+.h-app .h-skip-link:focus { transform: none; clip-path: none; }
 .h-app :is(button, input, select, textarea, a):focus-visible { outline: 3px solid var(--h-accent) !important; outline-offset: 3px; }
 #tabs.humbel-main-nav { position: fixed; inset: var(--h-preview-offset, 0px) auto 0 0; width: var(--h-sidebar); z-index: 45; margin: 0; padding: 84px 12px 20px; display: flex; flex-direction: column; flex-wrap: nowrap; gap: 6px; overflow-y: auto; background: linear-gradient(160deg, var(--h-navy), #0b2a4b); border: 0; border-radius: 0; box-shadow: 4px 0 18px #061e351a; }
 #tabs.humbel-main-nav::before { content: 'Humbel-App'; position: absolute; top: 24px; left: 24px; color: white; font-size: 1.25rem; font-weight: 750; }
