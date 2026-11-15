@@ -120,7 +120,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.20.13";
+const APP_VERSION = "0.20.14";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -135,6 +135,7 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {"version":"0.20.14","date":"2026-11-15 22:51","changes":["Isolierten, standardmäßig deaktivierten FABOS-Demodatensatz für acht produktionsnahe Abteilungen, 40 erfundene Personen, 19 Demo-Maschinen, 32 Betriebsaufträge und 176 logisch abhängige OPs ergänzt. Nur lokale Preview-Fixtures und lesbarer Maschinenfolgeplan; keine produktive Datenbank, kein Auth-/Rollen-Rollout oder Deployment."]},
   {"version": "0.20.13", "date": "2026-11-15 21:37", "changes": ["Ausschließlich die ausdrücklich freigegebene mobile Screenshot-Referenz production-overview aus CI 43754470732 / Artefakt 14177977023 übernommen. Beide Quellaufnahmen erneut byte- und pixelidentisch verifiziert; vollständige Herkunft nachgeführt, alle übrigen 32 Referenzen unverändert. Keine Design-, Geschäftslogik-, Test-, Toleranz-, Auth- oder Rollenänderung."]},
   {"version": "0.20.12", "date": "2026-11-15 20:47", "changes": ["Produktionsübersicht: Tabellen-Scrollcontainer als Positionierungsbezug für den absolut positionierten Screenreader-Tabellenkopf begrenzt. Nur position:relative ergänzt; interner Tabellen-Scroll, KPI, Desktop/Tablet und Geschäftslogik unverändert. DOM-/CSS-Geometrie und rückgängig gemachte Test-Gegenprobe dokumentieren den Überlauf. Keine Referenz-, Toleranz- oder Assertionänderung."]},
   {"version": "0.20.11", "date": "2026-11-15 20:06", "changes": ["Ausschließlich die 33 ausdrücklich freigegebenen, doppelt pixelidentischen Screenshot-Referenzen aus CI 43744801271 / Artefakt 14174051024 übernommen und Herkunft/Hashes dokumentiert. Erfolgreiche visuelle Vergleiche erhalten aktuelle Nachweisaufnahmen; keine Geschäftslogik-, Design-, Rollen-, Toleranz- oder Szenenänderung."]},
