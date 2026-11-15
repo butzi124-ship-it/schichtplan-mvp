@@ -20,6 +20,11 @@
       "file": "schichtplan_mvp.html",
       "before": "    <script src=\"./js/dashboard-home.js\"></script>",
       "after": "    <script src=\"./js/production-design.js\"></script>\n    <script src=\"./js/dashboard-home.js\"></script>"
+    },
+    {
+      "file": "schichtplan_mvp.js",
+      "before": "  if (opQuantities.enabled()) return opQuantities.render() + baLifecycle.render() + `<details><summary>Bisherige Aufträge / Zähler</summary>${renderPhase3ProductionCountsTab()}</details>`;",
+      "after": "  if (opQuantities.enabled()) return renderPhase3ProductionCountsTab() + opQuantities.render() + baLifecycle.render();"
     }
   ],
   "baseHashes": {

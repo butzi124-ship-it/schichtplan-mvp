@@ -36,7 +36,7 @@
     });
     scope.querySelector('[data-filter-empty]').hidden=visible>0;
     const selected=scope.querySelector('[data-preview-index][aria-pressed=true]');
-    if(selected?.closest('tr').hidden)scope.querySelector('.h-reference-detail').innerHTML='<p class="h-empty">Bitte einen sichtbaren Auftrag für die Vorschau auswählen.</p>';
+    if(selected)scope.querySelector('.h-reference-detail').innerHTML=selected.closest('tr').hidden?'<p class="h-empty">Bitte einen sichtbaren Auftrag für die Vorschau auswählen.</p>':detail(currentOrders[Number(selected.dataset.previewIndex)]);
   }
   document.addEventListener('input', e=>{if(e.target.matches('[data-production-filter]')){if(e.target.dataset.productionFilter==='search')document.querySelectorAll('[data-production-filter=search]').forEach(x=>{if(x!==e.target)x.value=e.target.value;});filter();}});
   document.addEventListener('change', e=>{if(e.target.matches('[data-production-filter]'))filter();});
@@ -49,7 +49,7 @@
     const nav=document.getElementById('tabs');if(!nav)return;
     if(!nav.querySelector('.h-nav-brand')){const brand=document.createElement('div');brand.className='h-nav-brand';brand.innerHTML=icon('gear')+'<span>HUMBEL GEARS<small>Humbel-App</small></span>';nav.prepend(brand);}
     const map=[[/Dashboard/,'home'],[/Schicht/,'calendar'],[/To-Do|Aufgaben/,'check'],[/Produktion/,'factory'],[/Werkzeug/,'tool'],[/Mitarbeiter|Personal/,'users'],[/Verwaltung/,'gear']];
-    nav.querySelectorAll('button').forEach(b=>{if(b.querySelector('svg'))return;const name=map.find(([r])=>r.test(b.textContent))?.[1]||'layers';b.insertAdjacentHTML('afterbegin',icon(name));});
+    nav.querySelectorAll('button').forEach(b=>{if(b.querySelector('svg'))return;const name=map.find(([r])=>r.test(b.textContent))?.[1]||'layers';const label=document.createElement('span');while(b.firstChild)label.appendChild(b.firstChild);b.appendChild(label);b.insertAdjacentHTML('afterbegin',icon(name));});
   }
   function workspace() {
     const view=document.getElementById('view'),nav=document.getElementById('tabs'),header=document.querySelector('.h-app-header');
@@ -67,5 +67,5 @@
     for(const button of available){const action=button.getAttribute('onclick');const a=document.createElement('a');a.href='#view';a.textContent=action.includes("'counts'")?'Produktionsübersicht':action.includes("'orders'")?'BA / OP':button.textContent;a.className=button.classList.contains('humbel-subtab-active')?'h-subnav-active':'';a.addEventListener('click',e=>{e.preventDefault();[...view.querySelectorAll('button[onclick]')].find(b=>b.getAttribute('onclick')===action)?.click();});sub.appendChild(a);}
     const productionButton=[...nav.querySelectorAll('button')].find(b=>b.getAttribute('onclick')?.includes("'produktion'"));productionButton?.after(sub);
   }
-  document.addEventListener('DOMContentLoaded',()=>{decorate();workspace();new MutationObserver(decorate).observe(document.getElementById('tabs'),{childList:true});new MutationObserver(workspace).observe(document.getElementById('view'),{childList:true,subtree:true});});
+  document.addEventListener('DOMContentLoaded',()=>{decorate();workspace();new MutationObserver(decorate).observe(document.getElementById('tabs'),{childList:true,subtree:true});new MutationObserver(workspace).observe(document.getElementById('view'),{childList:true,subtree:true});});
 })(window);

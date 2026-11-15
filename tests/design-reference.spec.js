@@ -26,7 +26,8 @@ test.describe('Dashboard home approved production reference',()=>{
     const search=page.getByRole('searchbox',{name:'Fertigung durchsuchen',exact:true});await search.fill('NO MATCH');
     await expect(page.locator('[data-filter-empty]')).toBeVisible();await search.fill('BA-100');
     await expect(preview).toBeVisible();await search.fill('');
-    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    const overflow=await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&(r.right>innerWidth+1||r.left< -1)&&getComputedStyle(e).position!=='fixed'&&!e.closest('.h-table-scroll');}).map(e=>({tag:e.tagName,id:e.id,class:e.className?.baseVal??e.className,right:e.getBoundingClientRect().right})).slice(0,15));
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),JSON.stringify(overflow)).toBe(true);
     expect(await page.evaluate(()=>window.__SUPABASE_WRITE_LOG)).toEqual([]);
     if(await page.evaluate(()=>innerWidth<=800))await page.getByRole('button',{name:'Menü',exact:true}).click();
     await page.screenshot({path:info.outputPath('reference-production-overview.png'),fullPage:true});
