@@ -120,7 +120,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.20.11";
+const APP_VERSION = "0.20.12";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -135,6 +135,7 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {"version": "0.20.12", "date": "2026-11-15 20:42", "changes": ["Mobile Produktionsübersicht: rein lesende DOM-/CSS-Geometrienachweise für die gezielte Korrektur des Dokumentüberlaufs ergänzt. Referenzen, Assertions, Toleranzen, Geschäftslogik und Statusfarben unverändert."]},
   {"version": "0.20.11", "date": "2026-11-15 20:06", "changes": ["Ausschließlich die 33 ausdrücklich freigegebenen, doppelt pixelidentischen Screenshot-Referenzen aus CI 43744801271 / Artefakt 14174051024 übernommen und Herkunft/Hashes dokumentiert. Erfolgreiche visuelle Vergleiche erhalten aktuelle Nachweisaufnahmen; keine Geschäftslogik-, Design-, Rollen-, Toleranz- oder Szenenänderung."]},
   {"version": "0.20.10", "date": "2026-11-15 19:02", "changes": ["Visuelle Szene production-overview der tatsächlichen Fertigungsübersicht mit fünf KPI-Karten zugeordnet. Beide unveränderten CI-Aufnahmeläufe werden separat für Stabilitätsprüfung und Bildvergleich bewahrt. Keine Geschäftslogik-, UI-, Berechtigungs- oder Screenshot-Referenzänderung."]},
   {"version": "0.20.9", "date": "2026-11-15 18:30", "changes": ["CSS-Kaskade der Touch-Abschluss-Schaltfläche korrigiert: Die bestehende Mindesthöhe von 52 px hat auf Desktop, Tablet und Smartphone Vorrang vor der allgemeinen Touch-Regel. Keine Geschäftslogik-, Pointer-, Scroll-, Berechtigungs-, Test- oder Referenzbildänderung."]},

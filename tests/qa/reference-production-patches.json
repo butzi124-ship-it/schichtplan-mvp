@@ -70,6 +70,11 @@
       "file": "tests/smoke.spec.js",
       "before": "        else await expect(target).toHaveScreenshot(`${scene}.png`);\n        expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);",
       "after": "        else await expect(target).toHaveScreenshot(`${scene}.png`);\n        // Playwright writes -actual only on a mismatch. Preserve a real capture on success too.\n        await target.screenshot({ path: testInfo.outputPath(`${scene}-actual.png`),\n          animations: \"disabled\", caret: \"hide\", scale: \"css\", ...(target === page ? { fullPage: true } : {}) });\n        expect(await page.evaluate(() => window.__SUPABASE_WRITE_LOG)).toEqual([]);"
+    },
+    {
+      "file": "tests/smoke.spec.js",
+      "before": "        await page.evaluate(() => document.fonts.ready);\n        if (target === page) await expect(page).toHaveScreenshot",
+      "after": "        await page.evaluate(() => document.fonts.ready);\n        if (scene === \"production-overview\") {\n          const { productionOverviewGeometry } = require(\"./helpers/production-overview-geometry\");\n          const geometry = await page.evaluate(productionOverviewGeometry);\n          console.log(\"PRODUCTION_OVERVIEW_GEOMETRY \" + testInfo.project.name + \" \" + JSON.stringify(geometry));\n          await testInfo.attach(\"production-overview-geometry\", { body: JSON.stringify(geometry, null, 2), contentType: \"application/json\" });\n        }\n        if (target === page) await expect(page).toHaveScreenshot"
     }
   ],
   "baseHashes": {

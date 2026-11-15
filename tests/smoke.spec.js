@@ -167,6 +167,12 @@ test.describe("Humbel app smoke", () => {
           await versionButton.evaluate(button => { button.textContent = "Versionslog · v0.5.17"; });
         }
         await page.evaluate(() => document.fonts.ready);
+        if (scene === "production-overview") {
+          const { productionOverviewGeometry } = require("./helpers/production-overview-geometry");
+          const geometry = await page.evaluate(productionOverviewGeometry);
+          console.log("PRODUCTION_OVERVIEW_GEOMETRY " + testInfo.project.name + " " + JSON.stringify(geometry));
+          await testInfo.attach("production-overview-geometry", { body: JSON.stringify(geometry, null, 2), contentType: "application/json" });
+        }
         if (target === page) await expect(page).toHaveScreenshot(`${scene}.png`, { fullPage: true });
         else await expect(target).toHaveScreenshot(`${scene}.png`);
         // Playwright writes -actual only on a mismatch. Preserve a real capture on success too.
