@@ -3,7 +3,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const crypto=require('node:crypto');
 const http=require('node:http');
-function request(address,opts={}){return new Promise((resolve,reject)=>{const u=new URL(address);const req=http.request(u,{method:opts.method||'GET',headers:opts.headers||{}},res=>{const buffers=[];res.on('data',x=>buffers.push(x));res.on('end',()=>{const body=Buffer.concat(buffers).toString('utf8');resolve({status:res.statusCode,headers:{get:k=>res.headers[k.toLowerCase()]||null},text:async()=>body});});});req.on('error',reject);req.end(opts.body||undefined);});}
+function request(address,opts={}){return new Promise((resolve,reject)=>{const u=new URL(address);const req=http.request(u,{method:opts.method||'GET',headers:opts.headers||{}},res=>{const buffers=[];res.on('data',x=>buffers.push(x));res.on('end',()=>{const body=Buffer.concat(buffers).toString('utf8');resolve({status:res.statusCode,headers:{get:k=>{const v=res.headers[k.toLowerCase()];return Array.isArray(v)?v.join('; '):v||null;}},text:async()=>body});});});req.on('error',reject);req.end(opts.body||undefined);});}
 const {createPreview}=require('../../scripts/preview/server');
 
 test('external preview is opt-in and fails closed without HTTPS origin and synthetic data',{timeout:20000},async()=>{
