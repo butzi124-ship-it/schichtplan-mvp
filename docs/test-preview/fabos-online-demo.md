@@ -11,6 +11,7 @@ Die bestehende lokale Vorschau aus Issue #40 und die synthetischen Fertigungsdat
 - `/documentation/` wird im Online-Modus blockiert, damit kein zusätzlicher anonym erreichbarer Dokumentationszugang besteht.
 - `/demo-plan` bleibt passwortgeschützt. Demo-Daten sind fiktiv und statisch zum Bezugszeitpunkt 16.11.2026 09:00 MEZ; Maschinenbelegungen werden nicht automatisch fortgeschrieben.
 - Kein echtes Mehrbenutzersystem, kein produktiver SSO-Ersatz, keine produktive RLS-/Auth-Abnahme, keine sichere Kollaboration über Legacy-Browser-Fixtures. Pilotzugang nur mit ausdrücklich akzeptierten Einschränkungen.
+- Auf kleinen Railway-Instanzen startet der Online-Modus bewusst **ohne PGlite**: HTML-Maschinenfolgeplan und lokale synthetische Browser-Daten sind benutzbar, aber alle serverseitigen Produktions-/Lern-RPCs verweigern Schreib- und Leseaufrufe mit `42501`. Der Banner kennzeichnet dieses **nicht persistente Simulationsniveau** ausdrücklich. Die lokale Entwickler-Vorschau mit PGlite bleibt unverändert.
 
 ## Getrennte Bereitstellung
 
