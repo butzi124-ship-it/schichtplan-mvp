@@ -71,3 +71,15 @@ test('online demo starts without heavyweight PGlite and exposes only synthetic r
   for(const [key,val] of Object.entries(old)){const env={online:'HUMBEL_PREVIEW_ONLINE',origin:'HUMBEL_PREVIEW_ORIGIN',demo:'HUMBEL_PREVIEW_DEMO'}[key];if(val===undefined)delete process.env[env];else process.env[env]=val;}
  }
 });
+
+test('clean online FABOS view shows machine queues without developer notices while local view remains unchanged',()=>{
+ const {makeDemoData}=require('../../scripts/preview/fabos-demo-data');
+ const {renderDemoPlan}=require('../../scripts/preview/fabos-demo-adapter');
+ const data=makeDemoData(),local=renderDemoPlan(data),online=renderDemoPlan(data,{clean:true});
+ assert.match(local,/Synthetische Maschinenbelegung/);
+ assert.match(local,/nur Demo/);
+ assert.match(online,/Maschinenbelegung/);
+ assert.match(online,/Nächster Auftrag/);
+ assert.match(online,/Rüst/);
+ assert.doesNotMatch(online,/Synthetische Maschinenbelegung|nur Demo|Zur Testanwendung|DEMO-BA-|keine echte PlanOS/);
+});
