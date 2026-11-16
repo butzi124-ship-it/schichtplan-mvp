@@ -1,5 +1,5 @@
 {
-  "schichtplan_mvp.js": "292ec0ed622e2c7d5982f6bc3a9eb1f6eb757c9bf788f5af9725a230d448a334",
+  "schichtplan_mvp.js": "af9cc43b51622e5e22203e461b6a6d3112ce4255603db055764a6fcdd7fc79df",
   "schichtplan_mvp.html": "84d434f997b9b349ceb9b85f06d453d1e908bcc778a6cd88d9a8545110386f57",
   "js/app-shell.js": "0b82bccaec5a938ad7e8363da012097507e9f3e232c59960f98f23ff62ba0e76",
   "js/article-master.js": "db5e1bfcd4130dd8ee19bb9402455069f1af50b73c573aa0f965a1d20af742b7",
@@ -23,9 +23,9 @@
   "css/home-dashboard.css": "fd9d4c62cdfa0997b579028b299c4efa024e47c55baecb479c360e28481430ed",
   "css/learning.css": "bb7e1f07a1bc84b250d27e97f713a8d15ca2d68fabf4d93a3511977f34ffbe35",
   "css/production-design.css": "b5f7daec41a4255aedc09a5b108f06ba5e1cf5e94f75c8f520c94ef01c1e06e3",
-  "scripts/preview/server.js": "c7910b125083c42e73ebe65c56c83fe97c15a205e38db54cc990307d9332fbb1",
+  "scripts/preview/server.js": "81a28365fcdd6acfd83b33b4e6f7f64af321c25b5bb86752cde105f7291bbd71",
   "scripts/preview/backend.js": "6197d8ed0cf79d8a9b4d60c1995bb9defab15cb606af65922e2325e983ef2cb1",
   "scripts/preview/client.js": "c49e9065fc9fc2b4f7f31b19b36a0989a19997b2c211896a47d3b5fd2fd5bea0",
-  "scripts/preview/boot.js": "9ebabf56be3b02a169bb79d59fad5b60cbf10edc627000ec8932c55db927ba08",
+  "scripts/preview/boot.js": "2eee5284a10e5988891123885ca42e78e77ef1e01492756e46ed878d8bcc3978",
   "tests/helpers/supabase-mock.js": "26964fab6825325700abba975887d8e1ccbe7b29741fa9c5750a90257970a5eb"
 }
