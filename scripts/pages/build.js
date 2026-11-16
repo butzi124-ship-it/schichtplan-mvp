@@ -30,15 +30,25 @@ function build(){
  app=hideInternalNames(app);
  fs.writeFileSync(path.join(DIST,'schichtplan_mvp.js'),app);
  const {data,rows}=buildDemoPreview(rowsByTable);
- const actor={role:'admin',uid:'00000000-0000-4000-8000-000000000001',name:'FABOS Administration'};
+ const actors={
+  admin:{role:'admin',uid:'00000000-0000-4000-8000-000000000001',name:'FABOS Administration'},
+  lead:{role:'department_admin',uid:'00000000-0000-4000-8000-000000000002',name:data.employees[5].display_name},
+  employee:{role:'employee',uid:'00000000-0000-4000-8000-000000000003',name:data.employees[6].display_name}
+ };
+ const actor=actors.admin;
  rows.employees[0]={...rows.employees[0],auth_user_id:actor.uid,role:actor.role,employee_type:'admin',display_name:actor.name,first_name:'FABOS',last_name:'Administration',department_id:data.departments[0].id};
+ for(const [key,employeeIndex] of [['lead',5],['employee',6]]){
+  const target=rows.employees.find(e=>e.id===data.employees[employeeIndex].id);
+  if(!target)throw Error('Demo persona missing: '+key);
+  target.auth_user_id=actors[key].uid;
+ }
  for(const machine of rows.production_machines)machine.name=visibleName(machine.name);
  for(const order of rows.production_orders)order.ba_number=visibleName(order.ba_number);
  for(const tool of rows.tools){tool.t_number=visibleName(tool.t_number);tool.article_no=visibleName(tool.article_no);}
  for(const machine of data.machines)machine.name=visibleName(machine.name);
  for(const order of data.orders)order.ba_number=visibleName(order.ba_number);
  for(const op of data.operations)op.machine=visibleName(op.machine);
- const mock=`(${installSupabaseMock.toString()})(${JSON.stringify(rows)});window.__PREVIEW_ACTOR=${JSON.stringify(actor)};window.__PREVIEW_DEMO=true;window.__PREVIEW_ONLINE=true;const _make=window.supabase.createClient;window.supabase.createClient=(...args)=>({..._make(...args),rpc:async()=>({data:null,error:{code:'42501',message:'No shared database in this browser-only preview'}})});`;
+ const mock=`(${installSupabaseMock.toString()})(${JSON.stringify(rows)});window.__PREVIEW_ACTORS=${JSON.stringify(actors)};window.__PREVIEW_ACTOR=${JSON.stringify(actor)};window.__PREVIEW_DEMO=true;window.__PREVIEW_ONLINE=true;const _make=window.supabase.createClient;window.supabase.createClient=(...args)=>({..._make(...args),rpc:async()=>({data:null,error:{code:'42501',message:'No shared database in this browser-only preview'}})});`;
  fs.writeFileSync(path.join(DIST,'pages-bootstrap.js'),mock);
  let html=fs.readFileSync(path.join(ROOT,'schichtplan_mvp.html'),'utf8');
  const replaced = [
@@ -53,7 +63,11 @@ function build(){
  html=html.replace('<section id="loginBox"','<section style="display:none!important" id="loginBox"');
  html=hideInternalNames(html);
  html=html.replace('</body>','<script src="./pages-boot.js"></script></body>');
- fs.writeFileSync(path.join(DIST,'index.html'),html);
+ fs.writeFileSync(path.join(DIST,'app.html'),html);
+ fs.copyFileSync(path.join(ROOT,'scripts/pages/role-login.html'),path.join(DIST,'index.html'));
+ fs.copyFileSync(path.join(ROOT,'scripts/pages/fertigung.html'),path.join(DIST,'fertigung.html'));
+ fs.copyFileSync(path.join(ROOT,'scripts/pages/demo-ui-client.js'),path.join(DIST,'demo-ui-client.js'));
+ fs.writeFileSync(path.join(DIST,'demo-dataset.js'),'window.__FABOS_DEMO_DATA='+JSON.stringify(data)+';');
  fs.copyFileSync(path.join(ROOT,'scripts/pages/browser-boot.js'),path.join(DIST,'pages-boot.js'));
  let plan=renderDemoPlan(data);
  plan=plan.replace(/<aside>[\s\S]*?<\/aside>/,'');
@@ -62,11 +76,11 @@ function build(){
  fs.writeFileSync(path.join(DIST,'maschinenbelegung.html'),plan);
  fs.writeFileSync(path.join(DIST,'.nojekyll'),'');
  // Public Pages must not ship real Supabase configuration, user passwords or live personal names.
- for(const name of ['index.html','schichtplan_mvp.js','pages-bootstrap.js','pages-boot.js']){
+ for(const name of ['index.html','app.html','fertigung.html','demo-dataset.js','demo-ui-client.js','schichtplan_mvp.js','pages-bootstrap.js','pages-boot.js']){
   const data=fs.readFileSync(path.join(DIST,name),'utf8');
   if(/supabase\\.co|sb_publishable_|HUMBEL_PREVIEW_PASSWORDS|Lavdrim|Dashmir|Ardian/.test(data))throw Error('Forbidden production reference in published '+name);
  }
- console.log('PAGES_READY',JSON.stringify({departments:rows.departments.length,employees:rows.employees.length,machines:rows.production_machines.length,orders:rows.production_orders.length,tools:rows.tools.length,operations:data.operations.length,files:['index.html','maschinenbelegung.html','pages-bootstrap.js']}));
+ console.log('PAGES_READY',JSON.stringify({departments:rows.departments.length,employees:rows.employees.length,machines:rows.production_machines.length,orders:rows.production_orders.length,tools:rows.tools.length,operations:data.operations.length,files:['index.html','app.html','fertigung.html','maschinenbelegung.html','pages-bootstrap.js']}));
  return{DIST,data,rows};
 }
 if(require.main===module)build();
