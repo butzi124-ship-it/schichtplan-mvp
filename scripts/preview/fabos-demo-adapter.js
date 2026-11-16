@@ -56,7 +56,7 @@ function buildDemoPreview(baseRows) {
   return { data, rows };
 }
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function renderDemoPlan(data){
+function renderDemoPlan(data,{clean=false}={}){
   const orderById=new Map(data.orders.map(x=>[x.id,x]));
   const opsById=new Map(data.operations.map(x=>[x.id,x]));
   const nameByDept=new Map(data.departments.map(x=>[x.id,x.name]));
@@ -73,6 +73,15 @@ function renderDemoPlan(data){
     const detail=ops.map(op=>'<tr><td>'+esc(op.op_number)+'</td><td>'+esc(op.department)+'</td><td>'+esc(op.machine)+'</td><td>'+esc(op.description)+'</td><td>'+esc(op.setup_minutes)+' min</td><td>'+esc(op.cycle_seconds)+' s</td><td>'+esc(displayDate(op.planned_start))+'</td><td>'+esc(displayDate(op.planned_end))+'</td><td>'+esc(status[op.state])+'</td></tr>').join('');
     return '<details><summary><strong>'+esc(o.ba_number)+'</strong> · '+esc(o.article_name)+' · '+esc(o.material)+' · '+esc(o.ba_quantity)+' Stk. · '+esc(status[o.status])+'</summary><div class="scroll"><table><thead><tr><th>OP</th><th>Abteilung</th><th>Maschine</th><th>Arbeitsanweisung</th><th>Rüsten</th><th>Zyklus</th><th>Start</th><th>Ende</th><th>Status</th></tr></thead><tbody>'+detail+'</tbody></table></div></details>';
   }).join('');
-  return '<!doctype html><html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>FABOS · Synthetische Maschinenbelegung</title><style>body{font:15px system-ui;background:#f3f7fc;color:#14304a;margin:2rem}h1{color:#091e37}a{color:#0871dc}table{width:100%;border-collapse:collapse;background:white}th,td{border-bottom:1px solid #dce5f1;padding:10px;text-align:left;vertical-align:top}th{background:#eaf1fa}details{background:white;margin:14px 0;border:1px solid #dce5f1;border-radius:8px;padding:14px}summary{cursor:pointer}summary:focus-visible{outline:3px solid #0871dc}.scroll{overflow-x:auto}aside{background:#fff2c8;padding:12px;border-radius:8px}</style><h1>FABOS – Maschinenbelegung und OP-Vorschau (nur Demo)</h1><aside>Alle Personen, Aufträge und Zeitbuchungen sind synthetisch. Keine Original-Firmendaten. Diese Übersicht ist ein lesbarer Demo-Plan, keine echte PlanOS-/RPC-Maschinenplanung. Die Fertigungszähler der Testvorschau verwenden eine lokale Browserfixture und werden nicht gemeinsam auf einem Server gespeichert.</aside><p><a href="/">Zur Testanwendung</a> · Bezugszeit: '+esc(displayDate(data.as_of))+' · 8 Abteilungen · 40 fiktive Personen · 32 BA · '+data.operations.length+' OP</p><h2>Maschinen: aktueller und nächster Auftrag</h2><div class="scroll"><table><thead><tr><th>Abteilung</th><th>Maschine</th><th>Jetzt laufend</th><th>Nächster Auftrag</th></tr></thead><tbody>'+machineRows+'</tbody></table></div><h2>Alle Betriebsaufträge mit OP-Folge, Rüst- und Stückzeit</h2>'+orderRows+'</html>';
+  let html='<!doctype html><html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>FABOS · Synthetische Maschinenbelegung</title><style>body{font:15px system-ui;background:#f3f7fc;color:#14304a;margin:2rem}h1{color:#091e37}a{color:#0871dc}table{width:100%;border-collapse:collapse;background:white}th,td{border-bottom:1px solid #dce5f1;padding:10px;text-align:left;vertical-align:top}th{background:#eaf1fa}details{background:white;margin:14px 0;border:1px solid #dce5f1;border-radius:8px;padding:14px}summary{cursor:pointer}summary:focus-visible{outline:3px solid #0871dc}.scroll{overflow-x:auto}aside{background:#fff2c8;padding:12px;border-radius:8px}</style><h1>FABOS – Maschinenbelegung und OP-Vorschau (nur Demo)</h1><aside>Alle Personen, Aufträge und Zeitbuchungen sind synthetisch. Keine Original-Firmendaten. Diese Übersicht ist ein lesbarer Demo-Plan, keine echte PlanOS-/RPC-Maschinenplanung. Die Fertigungszähler der Testvorschau verwenden eine lokale Browserfixture und werden nicht gemeinsam auf einem Server gespeichert.</aside><p><a href="/">Zur Testanwendung</a> · Bezugszeit: '+esc(displayDate(data.as_of))+' · 8 Abteilungen · 40 fiktive Personen · 32 BA · '+data.operations.length+' OP</p><h2>Maschinen: aktueller und nächster Auftrag</h2><div class="scroll"><table><thead><tr><th>Abteilung</th><th>Maschine</th><th>Jetzt laufend</th><th>Nächster Auftrag</th></tr></thead><tbody>'+machineRows+'</tbody></table></div><h2>Alle Betriebsaufträge mit OP-Folge, Rüst- und Stückzeit</h2>'+orderRows+'</html>';
+  if(clean)html=html
+    .replace('FABOS · Synthetische Maschinenbelegung','FABOS · Maschinenbelegung')
+    .replace('FABOS – Maschinenbelegung und OP-Vorschau (nur Demo)','FABOS – Maschinenbelegung und OP-Vorschau')
+    .replace(/<aside>[\s\S]*?<\/aside>/,'')
+    .replace('Zur Testanwendung','Zur Anwendung')
+    .replace('40 fiktive Personen','40 Mitarbeitende')
+    .replace(/DEMO-BA-/g,'BA-')
+    .replace(/\bDEMO\b[\s:–-]*/g,'');
+  return html;
 }
 module.exports={buildDemoPreview,renderDemoPlan};
