@@ -1,0 +1,51 @@
+name: FABOS GitHub Pages Testversion
+on:
+  push:
+    branches:
+      - feature/fabos-github-pages-v0.20.17
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: fabos-github-pages-test
+  cancel-in-progress: true
+jobs:
+  build-and-browser-test:
+    name: Build and real browser acceptance
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
+      env:
+        HOME: /root
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --include=dev --ignore-scripts
+      - name: Build isolated GitHub Pages site
+        run: node scripts/pages/build.js
+      - name: Verify fully rendered desktop and smartphone screens
+        run: node --test tests/pages/pages-demo.test.js
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist-pages
+  publish:
+    name: Deploy to GitHub Pages
+    needs: build-and-browser-test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy tested static artifacts
+        id: deployment
+        uses: actions/deploy-pages@v4
