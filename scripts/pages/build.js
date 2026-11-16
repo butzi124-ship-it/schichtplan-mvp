@@ -20,7 +20,7 @@ function hideInternalNames(text){
  }
  return text;
 }
-function visibleName(s){return String(s||'').replace(/\\bDEMO[ -]?/gi,'').trim();}
+function visibleName(s){return String(s||'').replace(/\bDEMO[ -]?/gi,'').trim();}
 function build(){
  fs.rmSync(DIST,{force:true,recursive:true});fs.mkdirSync(DIST,{recursive:true});
  for(const directory of ['js','css','img'])copyDir(directory);
@@ -47,18 +47,18 @@ function build(){
  ];
  for(const [before,after] of replaced){if(!html.includes(before))throw Error('Expected HTML dependency not found');html=html.replace(before,after);}
  html=html.replace(/window.SUPABASE_URL = "[^"]+";/,'window.SUPABASE_URL = "https://invalid.example";');
- html=html.replace(/window.SUPABASE_PUBLISHABLE_KEY =\\s*"[^"]+";/,'window.SUPABASE_PUBLISHABLE_KEY = "browser-only";');
+ html=html.replace(/window.SUPABASE_PUBLISHABLE_KEY =\s*"[^"]+";/,'window.SUPABASE_PUBLISHABLE_KEY = "browser-only";');
  html=html.replace(/(window.HUMBEL_(?:ARTICLE_MASTER|OPERATIONS|BA_ENTRY|MACHINE_READINESS|OP_ROUTING|SETUP_TIMES|OP_QUANTITIES|BA_LIFECYCLE|LEARNING_UI|CONTEXT_HELP)_ENABLED = )false/g,'$1true');
- html=html.replace('<title>Humbel-App</title>','<title>FABOS</title>').replace(/(<h1 class="text-2xl font-bold">\\s*)Humbel-App/,'$1FABOS');
+ html=html.replace('<title>Humbel-App</title>','<title>FABOS</title>').replace(/(<h1 class="text-2xl font-bold">\s*)Humbel-App/,'$1FABOS');
  html=html.replace('<section id="loginBox"','<section style="display:none!important" id="loginBox"');
  html=hideInternalNames(html);
  html=html.replace('</body>','<script src="./pages-boot.js"></script></body>');
  fs.writeFileSync(path.join(DIST,'index.html'),html);
  fs.copyFileSync(path.join(ROOT,'scripts/pages/browser-boot.js'),path.join(DIST,'pages-boot.js'));
  let plan=renderDemoPlan(data);
- plan=plan.replace(/<aside>[\\s\\S]*?<\\/aside>/,'');
- plan=plan.replace(/Synthetische Maschinenbelegung/g,'Maschinenbelegung').replace(/\\(nur Demo\\)/g,'').replace(/\\(Demodaten\\)/g,'').replace(/fiktive Personen/g,'Mitarbeiter');
- plan=plan.replace(/href="\\/"/g,'href="./index.html"').replace(/Keine Original-Firmendaten\\./g,'');
+ plan=plan.replace(/<aside>[\s\S]*?<\/aside>/,'');
+ plan=plan.replace(/Synthetische Maschinenbelegung/g,'Maschinenbelegung').replace(/\(nur Demo\)/g,'').replace(/\(Demodaten\)/g,'').replace(/fiktive Personen/g,'Mitarbeiter');
+ plan=plan.replace(/href="\/"/g,'href="./index.html"').replace(/Keine Original-Firmendaten\./g,'');
  fs.writeFileSync(path.join(DIST,'maschinenbelegung.html'),plan);
  fs.writeFileSync(path.join(DIST,'.nojekyll'),'');
  // Public Pages must not ship real Supabase configuration, user passwords or live personal names.
