@@ -34,7 +34,7 @@ test('GitHub Pages release uses full FABOS UI, coherent synthetic data and no de
    const page=await browser.newPage({viewport,locale:'de-DE',timezoneId:'Europe/Berlin'});
    const errors=[];page.on('pageerror',e=>errors.push(e.message));
    try{
-    await page.goto('http://127.0.0.1:'+server.address().port+'/',{waitUntil:'domcontentloaded'});
+    await page.goto('http://127.0.0.1:'+server.address().port+'/app.html?role=admin',{waitUntil:'domcontentloaded'});
     await page.waitForFunction(()=>window.__FABOS_PAGES_READY===true||Boolean(window.__FABOS_PAGES_ERROR),{timeout:20000});
     const result=await page.evaluate(()=>({
       ready:window.__FABOS_PAGES_READY===true,error:window.__FABOS_PAGES_ERROR||null,
@@ -67,8 +67,31 @@ test('GitHub Pages release uses full FABOS UI, coherent synthetic data and no de
     await page.evaluate(()=>setTab('werkzeugverwaltung'));
     assert.match(await page.locator('#view').innerText(),/Schaftfräser/);
     await page.getByRole('link',{name:'Maschinenbelegung & OP-Plan'}).click();
-    assert.match(await page.locator('body').innerText(),/Nächster Auftrag/);
+    await page.waitForFunction(()=>window.__FABOS_COCKPIT_READY===true);
+    assert.match(await page.locator('body').innerText(),/Maschinenübersicht/);
+    assert((await page.locator('[data-machine]').count())>0);
+    await page.getByRole('button',{name:'Betriebsaufträge'}).click();
     assert.match(await page.locator('body').innerText(),/BA-810001/);
+    await page.goto('http://127.0.0.1:'+server.address().port+'/fertigung.html?role=lead');
+    await page.waitForFunction(()=>window.__FABOS_COCKPIT_READY===true);
+    assert.match(await page.locator('#roleLabel').innerText(),/Jonas Lindner/);
+    assert.equal(await page.locator('#approvalView').isVisible(),true);
+    assert((await page.locator('[data-approve]').count())>0);
+    await page.locator('[data-approve]').first().click();
+    assert.match(await page.locator('#approvalCards').innerText(),/Freigegeben/);
+    await page.getByRole('button',{name:'Maschinenübersicht'}).click();
+    await page.locator('[data-machine]').first().click();
+    assert.match(await page.locator('#machineDetail').innerText(),/Arbeitsgang|Arbeitsanweisung/);
+    await page.goto('http://127.0.0.1:'+server.address().port+'/fertigung.html?role=employee');
+    await page.waitForFunction(()=>window.__FABOS_COCKPIT_READY===true);
+    assert.match(await page.locator('#roleLabel').innerText(),/Mila Fischer/);
+    assert.equal(await page.locator('#approvalNav').isVisible(),false);
+    assert((await page.locator('[data-machine]').count())>0);
+    await page.locator('[data-machine]').first().click();
+    assert.match(await page.locator('#machineDetail').innerText(),/BA-|Arbeitsgang|Belegung/);
+    await page.goto('http://127.0.0.1:'+server.address().port+'/');
+    assert.equal(await page.getByRole('link',{name:/Abteilungsleiter/}).count(),1);
+    assert.equal(await page.getByRole('link',{name:/Mitarbeiter/}).count(),1);
     assert(!/keine echte PlanOS|Demo-Plan|Synthetisch|fiktive Personen/i.test(await page.locator('body').innerText()));
     console.log('PAGES_BROWSER_PASS',JSON.stringify({viewport,departments:result.departments,employees:result.employees,machines:result.machines,orders:result.orders,tools:result.tools}));
    }finally{await page.close();}
