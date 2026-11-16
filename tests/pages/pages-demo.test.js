@@ -9,6 +9,7 @@ const {build}=require('../../scripts/pages/build');
 
 test('GitHub Pages release uses full FABOS UI, coherent synthetic data and no demo banners', {timeout:100000},async()=>{
  const {DIST,data,rows}=build();
+ const evidenceDir=path.join(__dirname,'../../artifacts/fabos-demo');fs.mkdirSync(evidenceDir,{recursive:true});
  assert.equal(data.operations.length,176);
  assert.equal(rows.departments.length,8);
  assert.equal(rows.employees.length,41);
@@ -59,6 +60,7 @@ test('GitHub Pages release uses full FABOS UI, coherent synthetic data and no de
     await page.evaluate(()=>{setTab('produktion');setProductionSubTab('machines');});
     const machineNames=await page.locator('#view input[id^="production-machine-name-"]').evaluateAll(es=>es.map(e=>e.value));
     assert(machineNames.includes('Hermle C62'),JSON.stringify(machineNames));
+    await page.screenshot({path:path.join(evidenceDir,viewport.width+'-admin-stammdaten.png')});
     await page.evaluate(()=>{setTab('produktion');setProductionSubTab('orders');});
     assert.match(await page.locator('#view').innerText(),/BA-8100/);
     await page.evaluate(()=>setTab('personalverwaltung'));
@@ -76,12 +78,14 @@ test('GitHub Pages release uses full FABOS UI, coherent synthetic data and no de
     await page.waitForFunction(()=>window.__FABOS_COCKPIT_READY===true);
     assert.match(await page.locator('#roleLabel').innerText(),/Jonas Lindner/);
     assert.equal(await page.locator('#approvalView').isVisible(),true);
+    await page.screenshot({path:path.join(evidenceDir,viewport.width+'-leitung-freigaben.png')});
     assert((await page.locator('[data-approve]').count())>0);
     await page.locator('[data-approve]').first().click();
     assert.match(await page.locator('#approvalCards').innerText(),/Freigegeben/);
     await page.getByRole('button',{name:'Maschinenübersicht'}).click();
     await page.locator('[data-machine]').first().click();
     assert.match(await page.locator('#machineDetail').innerText(),/Arbeitsgang|Arbeitsanweisung/);
+    await page.screenshot({path:path.join(evidenceDir,viewport.width+'-leitung-maschine.png')});
     await page.goto('http://127.0.0.1:'+server.address().port+'/fertigung.html?role=employee');
     await page.waitForFunction(()=>window.__FABOS_COCKPIT_READY===true);
     assert.match(await page.locator('#roleLabel').innerText(),/Mila Fischer/);
@@ -89,9 +93,11 @@ test('GitHub Pages release uses full FABOS UI, coherent synthetic data and no de
     assert((await page.locator('[data-machine]').count())>0);
     await page.locator('[data-machine]').first().click();
     assert.match(await page.locator('#machineDetail').innerText(),/BA-|Arbeitsgang|Belegung/);
+    await page.screenshot({path:path.join(evidenceDir,viewport.width+'-mitarbeiter-maschine.png')});
     await page.goto('http://127.0.0.1:'+server.address().port+'/');
     assert.equal(await page.getByRole('link',{name:/Abteilungsleiter/}).count(),1);
     assert.equal(await page.getByRole('link',{name:/Mitarbeiter/}).count(),1);
+    await page.screenshot({path:path.join(evidenceDir,viewport.width+'-rollenwahl.png')});
     assert(!/keine echte PlanOS|Demo-Plan|Synthetisch|fiktive Personen/i.test(await page.locator('body').innerText()));
     console.log('PAGES_BROWSER_PASS',JSON.stringify({viewport,departments:result.departments,employees:result.employees,machines:result.machines,orders:result.orders,tools:result.tools}));
    }finally{await page.close();}
