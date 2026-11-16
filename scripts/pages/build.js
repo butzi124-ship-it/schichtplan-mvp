@@ -65,6 +65,7 @@ function build(){
  html=html.replace('</body>','<script src="./pages-boot.js"></script></body>');
  fs.writeFileSync(path.join(DIST,'app.html'),html);
  fs.copyFileSync(path.join(ROOT,'scripts/pages/role-login.html'),path.join(DIST,'index.html'));
+ fs.writeFileSync(path.join(DIST,'schichtplan_mvp.html'),'<!doctype html><html lang="de"><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=./index.html"><title>FABOS</title><p>FABOS-Testanmeldung: <a href="./index.html">Weiter zur Rollenwahl</a></p></html>');
  fs.copyFileSync(path.join(ROOT,'scripts/pages/fertigung.html'),path.join(DIST,'fertigung.html'));
  fs.copyFileSync(path.join(ROOT,'scripts/pages/demo-ui-client.js'),path.join(DIST,'demo-ui-client.js'));
  fs.writeFileSync(path.join(DIST,'demo-dataset.js'),'window.__FABOS_DEMO_DATA='+JSON.stringify(data)+';');
@@ -76,7 +77,7 @@ function build(){
  fs.writeFileSync(path.join(DIST,'maschinenbelegung.html'),plan);
  fs.writeFileSync(path.join(DIST,'.nojekyll'),'');
  // Public Pages must not ship real Supabase configuration, user passwords or live personal names.
- for(const name of ['index.html','app.html','fertigung.html','demo-dataset.js','demo-ui-client.js','schichtplan_mvp.js','pages-bootstrap.js','pages-boot.js']){
+ for(const name of ['index.html','schichtplan_mvp.html','app.html','fertigung.html','demo-dataset.js','demo-ui-client.js','schichtplan_mvp.js','pages-bootstrap.js','pages-boot.js']){
   const data=fs.readFileSync(path.join(DIST,name),'utf8');
   if(/supabase\\.co|sb_publishable_|HUMBEL_PREVIEW_PASSWORDS|Lavdrim|Dashmir|Ardian/.test(data))throw Error('Forbidden production reference in published '+name);
  }
