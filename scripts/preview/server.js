@@ -43,8 +43,18 @@ async function createPreview({passwords,backend,port=0}={}){
   }
   if(online&&documentation)return send(res,404,'Not found');
   if(documentation)url.pathname=url.pathname.slice('/documentation'.length);
-  if(!s&&!documentation){if(req.method==='GET'&&url.pathname==='/')return send(res,200,fs.readFileSync(path.join(__dirname,'login.html')));return send(res,401,'Test sign-in required');}
-  if(demo&&url.pathname==='/demo-plan'&&req.method==='GET')return send(res,200,renderDemoPlan(demo.data));
+  if(!s&&!documentation){if(req.method==='GET'&&url.pathname==='/'){
+    let login=fs.readFileSync(path.join(__dirname,'login.html'),'utf8');
+    if(online)login=login
+     .replace('Humbel isolierter Testzugang','FABOS · Anmeldung')
+     .replace('Humbel Testversion','FABOS')
+     .replace('<p>Nur synthetische Daten. Keine Produktionsverbindung. Testdaten werden beim Neustart zurückgesetzt.</p>','')
+     .replace('Testkonto','Benutzerrolle')
+     .replace('Testpasswort','Passwort')
+     .replace('Testzugang prüfen.','Zugangsdaten prüfen.');
+    return send(res,200,login);
+   }return send(res,401,'Test sign-in required');}
+  if(demo&&url.pathname==='/demo-plan'&&req.method==='GET')return send(res,200,renderDemoPlan(demo.data,{clean:online}));
   if(url.pathname==='/logout'&&req.method==='POST'){sessions.delete(sid);res.setHeader('Set-Cookie',`humbel_preview=; HttpOnly; SameSite=Strict; ${online?'Secure; ':''}Path=/; Max-Age=0`);return send(res,200,'{}','application/json');}
   if(url.pathname==='/rpc'&&req.method==='POST'){
    const readKeys={article_master_capabilities:[],article_master_list:['p_query'],article_master_get:['p_revision_id'],operation_plan:['p_revision_id'],operation_order_read:['p_order_id'],machine_readiness_view:[],op_routing_view:[],setup_time_view:[],op_quantity_view:[],ba_lifecycle_view:[],learning_view:[],learning_admin_view:['p_department']};
@@ -57,7 +67,12 @@ async function createPreview({passwords,backend,port=0}={}){
   if(req.method!=='GET')return send(res,405,'Method denied');
   const actor=backend.actors[documentation?'admin':s.account];
   if(url.pathname==='/preview-bootstrap.js'){
-   const rows=JSON.parse(JSON.stringify(demo?demo.rows:rowsByTable));rows.employees[0]={...rows.employees[0],auth_user_id:actor.uid,role:actor.role,display_name:actor.name,first_name:actor.name,last_name:'',department_id:demo?demo.data.departments[0].id:'department-one'};if(!demo)rows.employees[1].display_name=rows.employees[1].first_name='Test Mitarbeiter';
+   const rows=JSON.parse(JSON.stringify(demo?demo.rows:rowsByTable));
+   if(online&&demo){
+     for(const machine of rows.production_machines)machine.name=machine.name.replace(/\bDEMO\b[\s:–-]*/g,'').trim();
+     for(const order of rows.production_orders)order.ba_number=order.ba_number.replace(/^DEMO-/,'');
+   }
+   rows.employees[0]={...rows.employees[0],auth_user_id:actor.uid,role:actor.role,display_name:actor.name,first_name:actor.name,last_name:'',department_id:demo?demo.data.departments[0].id:'department-one'};if(!demo)rows.employees[1].display_name=rows.employees[1].first_name='Test Mitarbeiter';
    return send(res,200,`(${installSupabaseMock.toString()})(${JSON.stringify(rows)});window.__PREVIEW_ACTOR=${JSON.stringify(actor)};window.__PREVIEW_READONLY=${documentation};window.__PREVIEW_DEMO=${!!demo};window.__PREVIEW_ONLINE=${online};`+fs.readFileSync(path.join(__dirname,'client.js'),'utf8'),'application/javascript');
   }
   if(url.pathname==='/'||url.pathname==='/schichtplan_mvp.html'){
