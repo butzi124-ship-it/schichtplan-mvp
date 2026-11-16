@@ -97,6 +97,9 @@ test('GitHub Pages release uses full FABOS UI, coherent synthetic data and no de
     await page.goto('http://127.0.0.1:'+server.address().port+'/');
     assert.equal(await page.getByRole('link',{name:/Abteilungsleiter/}).count(),1);
     assert.equal(await page.getByRole('link',{name:/Mitarbeiter/}).count(),1);
+    await page.goto('http://127.0.0.1:'+server.address().port+'/schichtplan_mvp.html');
+    await page.waitForURL('**/index.html');
+    assert.equal(await page.getByRole('link',{name:/Abteilungsleiter/}).count(),1);
     await page.screenshot({path:path.join(evidenceDir,viewport.width+'-rollenwahl.png')});
     assert(!/keine echte PlanOS|Demo-Plan|Synthetisch|fiktive Personen/i.test(await page.locator('body').innerText()));
     console.log('PAGES_BROWSER_PASS',JSON.stringify({viewport,departments:result.departments,employees:result.employees,machines:result.machines,orders:result.orders,tools:result.tools}));
