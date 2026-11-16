@@ -32,3 +32,23 @@ Der Build erstellt `dist-pages/` mit sämtlichen benötigten Komponenten, einer 
 GitHub Actions Workflow: `.github/workflows/fabos-pages.yml`. Dieser Workflow läuft ausschließlich auf dem dedizierten Test-Branch oder nach manuellem Aufruf. Er lädt nur den fertig geprüften statischen Build als GitHub Pages-Artefakt hoch und veröffentlicht ihn mit `actions/deploy-pages@v4`, sofern **Settings → Pages → Build and deployment → Source: GitHub Actions** für das Repository eingestellt ist.
 
 Die Website gehört zu einem öffentlichen GitHub-Repository. Kein Upload echter Personal-, Firmen-, Produktions- oder Zugangsdaten. Keine Freigabe anderer Github Actions, kein automatischer Merge nach main, kein Railway-Änderungsauftrag und kein Zugriff auf die echte Supabase-Instanz.
+
+## Erweiterung v0.20.18 – Rollen- und Maschinenablauf (#58)
+
+Startseite `index.html` ist eine Rollenwahl für drei **ausdrücklich fiktive** Testpersonen. Sie simuliert die Navigation und Rechteansicht, ist aber **keine echte Anmeldung**; jeder öffentliche Besucher kann die Rolle wechseln. Es werden weder Passwörter noch reale Auth-Nutzer erzeugt.
+
+| Rolle | Person (fiktiv) | Start und Vorführumfang |
+| --- | --- | --- |
+| Administration | FABOS Administration | `app.html?role=admin`: volle alte FABOS-Testoberfläche; Link zur Maschinenbelegung |
+| Abteilungsleiter Fräserei | Jonas Lindner | `fertigung.html?role=lead`: eigene Fräsmaschinen, Betriebsaufträge, **Freigabebereich**; über „Weitere Module“ `app.html?role=lead` mit simuliertem `department_admin`-Datensatz |
+| Mitarbeiter Fräserei | Mila Fischer | `fertigung.html?role=employee`: zugeordnete Fräsmaschinen und OP-Details, ohne Freigabebereich |
+
+Die zwei Personen stammen bereits aus dem Fantasiemitarbeiterbestand (40 Namen) und erhalten jetzt eine eindeutig gebundene fiktive Browser-Identität. Keine zusätzlichen produktiven Mitarbeiterkonten.
+
+Die Maschinenübersicht zeigt 19 vorhandene fiktiv belegte Maschinen, wenn „Alle Abteilungen“ gewählt ist (als Mitarbeiter/Leitung nur Fräserei). Eine Maschine öffnet den laufenden oder nächsten geplanten Arbeitsgang mit BA-Nummer, Artikel, Stückzahl, Person, Rüst- und Zykluszeit, Anweisung, Fertigungsstand sowie nächstem Auftrag. Die aus v0.20.17 stammenden **32 Test-BA und 176 OP** sind in der Auftragsfolge erkennbar. Es werden keine neuen echten Aufträge angelegt.
+
+Im Freigabebereich werden offene Erststück-/Rüstfreigaben aus offenen Fräserei-OP abgeleitet. „Freigeben (Simulation)“ ändert nur den lokalen Zustand der geöffneten Seite – keine gemeinsamen/persistenten Freigaben und keine echte Autorisierung. Der Mitarbeiter sieht die Freigabe-Navigation nicht. Diese Präsentationsgrenze darf nicht mit tatsächlicher serverseitiger Berechtigung verwechselt werden.
+
+Die neue Ansicht verwendet eine eigene responsive Demo-Stylesheet-Datei `css/pages-demo.css`; sie ändert die 33 historisch freigegebenen Produktions-Screenshotreferenzen nicht. Abnahme: `node --test tests/pages/pages-demo.test.js` (Admin plus Leiter/Mitarbeiter, Desktop und 390-px-Smartphone). Kein Merge oder Deployment mit diesem Auftrag.
+
+Der bisherige öffentliche Link `schichtplan_mvp.html` wird im Pages-Build als einfache HTML-Weiterleitung auf `index.html` mit der Rollenwahl erhalten (ohne automatische Anmeldung).
