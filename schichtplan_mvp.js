@@ -120,7 +120,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.20.17";
+const APP_VERSION = "0.20.18";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -135,6 +135,7 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {"version":"0.20.18","date":"2026-11-16 13:37","changes":["Synthetische Online-Rollenwahl mit Administration, Abteilungsleiter Fräserei und Testmitarbeiter ergänzt; öffentliche Rollenwahl ist keine Authentifizierung.","Neue responsive Maschinenübersicht mit direkt wählbaren Maschinen, laufenden und geplanten BA-/OP-Details sowie simuliertem abteilungsbezogenem Freigabebereich; kein produktiver Datenbankzugriff.","32 bestehende Demo-Betriebsaufträge mit 176 Maschinenarbeitsgängen für die Vorführung erschlossen; keine Änderungen an Originalgeschäftslogik, produktiven Rollen oder Freigabe-Snapshots."]},
   {"version":"0.20.17","date":"2026-11-16 01:22","changes":["GitHub-Pages-Testveröffentlichung des vollständigen FABOS-Oberflächenstands auf separatem Entwicklungsbranch vorbereitet. Statischer Browser-Datenadapter mit acht Abteilungen, 40 Fantasiemitarbeitern, 19 Maschinen, 32 BA, 176 OP und 20 Werkzeugen, ohne Demo-Banner; reproduzierbarer Build, Browserprüfung und separater Pages-Workflow. Keine produktive Datenbank-, Geschäftslogik- oder Authentifizierungsänderung."]},
   {"version":"0.20.16","date":"2026-11-16 00:32","changes":["Fehlerhafte Online-Demo-Initialisierung korrigiert: synthetische Benutzer eindeutigen Abteilungen zugeordnet, echte asynchrone FABOS-Daten- und Werkzeugladefolge abgewartet, 20 fiktive Produktionswerkzeuge ergänzt und sichtbare Browser-Abnahme für Abteilungen, Mitarbeiter, Maschinen, BA und Werkzeugliste eingeführt. Keine produktiven Datenbank-, Auth- oder Hauptapp-Geschäftslogikänderung."]},
   {"version":"0.20.15","date":"2026-11-15 23:40","changes":["Getrennten, standardmäßig deaktivierten Online-Demomodus für passwortgeschützte HTTPS-Vorschau vorbereitet: feste Domain, Host-/Origin-Prüfung, Secure-Cookies, gesperrte Dokumentationsansicht und Healthcheck. Nur synthetische Daten, keine produktive Datenbank, kein Merge oder Deployment der Hauptanwendung."]},
