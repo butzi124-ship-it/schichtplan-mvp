@@ -50,3 +50,5 @@ Die Maschinenübersicht zeigt 19 vorhandene fiktiv belegte Maschinen, wenn „Al
 Im Freigabebereich werden offene Erststück-/Rüstfreigaben aus offenen Fräserei-OP abgeleitet. „Freigeben (Simulation)“ ändert nur den lokalen Zustand der geöffneten Seite – keine gemeinsamen/persistenten Freigaben und keine echte Autorisierung. Der Mitarbeiter sieht die Freigabe-Navigation nicht. Diese Präsentationsgrenze darf nicht mit tatsächlicher serverseitiger Berechtigung verwechselt werden.
 
 Die neue Ansicht verwendet eine eigene responsive Demo-Stylesheet-Datei `css/pages-demo.css`; sie ändert die 33 historisch freigegebenen Produktions-Screenshotreferenzen nicht. Abnahme: `node --test tests/pages/pages-demo.test.js` (Admin plus Leiter/Mitarbeiter, Desktop und 390-px-Smartphone). Kein Merge oder Deployment mit diesem Auftrag.
+
+Der bisherige öffentliche Link `schichtplan_mvp.html` wird im Pages-Build als einfache HTML-Weiterleitung auf `index.html` mit der Rollenwahl erhalten (ohne automatische Anmeldung).
