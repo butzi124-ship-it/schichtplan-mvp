@@ -1,6 +1,8 @@
 // Bootstrap the isolated GitHub Pages edition with browser-local test data.
 (async()=>{
- const a=window.__PREVIEW_ACTOR;
+ const requestedRole=new URLSearchParams(location.search).get('role')||'admin';
+ const a=window.__PREVIEW_ACTORS?.[requestedRole]||window.__PREVIEW_ACTORS?.admin;
+ if(!a)throw Error('Keine Testrolle vorhanden');
  const login=document.getElementById('loginBox');
  if(login){login.hidden=true;login.classList.add('hidden');}
  try{
@@ -16,18 +18,25 @@
   state.ui.supabaseReady=true;
   state.ui.toolsInitialLoaded=true;
   currentTab='produktion';
-  state.productionSubTab='departments';
+  state.productionSubTab='machines';
   render();
   const header=document.querySelector('.h-app-header');
   if(header){
    const link=document.createElement('a');
-   link.href='./maschinenbelegung.html';
+   link.href='./fertigung.html?role='+encodeURIComponent(requestedRole);
    link.textContent='Maschinenbelegung & OP-Plan';
    link.className='px-3 py-2 rounded bg-blue-700 text-white font-semibold';
    header.appendChild(link);
+   if(requestedRole==='lead'){
+    const approval=document.createElement('a');
+    approval.href='./fertigung.html?role=lead#freigaben';
+    approval.textContent='Freigabebereich Fräserei';
+    approval.className='px-3 py-2 rounded bg-emerald-700 text-white font-semibold';
+    header.appendChild(approval);
+   }
   }
   // A static release has no backend session to sign out of. Reload resets the browser fixture.
-  if(typeof window.logout==='function')window.logout=()=>location.reload();
+  if(typeof window.logout==='function')window.logout=()=>location.href='./index.html';
   window.__FABOS_PAGES_READY=true;
  }catch(e){
   console.error('FABOS initialization error',e);
