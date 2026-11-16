@@ -1,0 +1,39 @@
+name: FABOS Demo v0.20.18 – isolated role and machine acceptance
+on:
+  push:
+    branches:
+      - feature/fabos-actionable-role-demo-v0.20.18
+  pull_request:
+    paths:
+      - 'scripts/pages/**'
+      - 'css/pages-demo.css'
+      - 'tests/pages/**'
+      - 'schichtplan_mvp.js'
+      - '.github/workflows/fabos-role-demo-check.yml'
+permissions:
+  contents: read
+jobs:
+  demo-browser:
+    name: Isolated desktop and mobile role acceptance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
+      env:
+        HOME: /root
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --include=dev --ignore-scripts
+      - run: node --check schichtplan_mvp.js
+      - run: node --check scripts/pages/build.js
+      - run: node --check scripts/pages/browser-boot.js
+      - run: node --check scripts/pages/demo-ui-client.js
+      - run: node --check tests/pages/pages-demo.test.js
+      - run: node scripts/pages/build.js
+      - run: node --test tests/pages/pages-demo.test.js
