@@ -102,6 +102,21 @@ test('GitHub Pages release uses full FABOS UI, coherent synthetic data and no de
     assert.equal(await page.locator('[data-machine]').count(),48);
     assert.equal(await page.locator('#departmentFilter option').count(),9);
     assert.equal(await page.locator('#resetDemo').isVisible(),true);
+    // A real employee-style quantity booking mutates only the synthetic browser session.
+    const running=await page.evaluate(()=>{
+      const d=window.__FABOS_DEMO_DATA;
+      return d.operations.find(op=>op.state==='running'&&op.good_qty<d.orders.find(o=>o.id===op.order_id).ba_quantity);
+    });
+    assert(running,'seed must contain an editable running operation');
+    await page.locator('[data-machine="'+running.machine_id+'"]').click();
+    assert.equal(await page.locator('#machineDetail [data-book]').count(),1);
+    await page.locator('#bookQty').fill('1');
+    await page.locator('#machineDetail [data-book]').click();
+    const storedCount=await page.evaluate(id=>{
+      const state=JSON.parse(sessionStorage.getItem('fabos-fictitious-workspace-v02019'));
+      return state.data.operations.find(o=>o.id===id).good_qty;
+    },running.id);
+    assert.equal(storedCount,running.good_qty+1);
     await page.locator('#departmentFilter').selectOption({label:'Fräserei'});
     assert.equal(await page.locator('[data-machine]').count(),6);
     await page.locator('#departmentFilter').selectOption('all');
