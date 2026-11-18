@@ -6,7 +6,7 @@
 
 Die Anwendung wird aus derselben `schichtplan_mvp.html` und denselben CSS-/JS-Modulen gebaut. Auf dem veröffentlichten GitHub-Pages-Auftritt erscheinen weder der bisherige gelbe Entwicklungs-/Demo-Banner noch ergänzende technische Hinweiskarten. Beim Öffnen werden automatisch die fiktiven Produktionsdaten geladen, damit die eigentliche FABOS-Oberfläche direkt sichtbar ist.
 
-Daten: acht Produktionsabteilungen, 40 Fantasiemitarbeiter sowie ein fiktiver Administrator, 19 Maschinen, 32 Betriebsaufträge mit 176 logisch verketteten OP, 20 Werkzeuge. Die gesonderte Seite `maschinenbelegung.html` enthält Maschinenfolge und OP-Anweisungen. Ein normaler Menülink im FABOS-Kopf führt dorthin.
+Daten: acht Produktionsabteilungen, 50 Fantasiemitarbeiter sowie ein fiktiver Administrator, 48 Maschinen (sechs je Abteilung), 50 Betriebsaufträge mit mehr als 250 logisch verketteten OP, 20 Werkzeuge. Die gesonderte Seite `maschinenbelegung.html` enthält Maschinenfolge und OP-Anweisungen. Ein normaler Menülink im FABOS-Kopf führt dorthin.
 
 **Die App ist für eine geschlossene fachliche Vorstellung geeignet, aber diese statische Ausgabe ist kein funktionsgleiches Produktionssystem:**
 
@@ -35,7 +35,7 @@ Die Website gehört zu einem öffentlichen GitHub-Repository. Kein Upload echter
 
 ## Erweiterung v0.20.18 – Rollen- und Maschinenablauf (#58)
 
-Startseite `index.html` ist eine Rollenwahl für drei **ausdrücklich fiktive** Testpersonen. Sie simuliert die Navigation und Rechteansicht, ist aber **keine echte Anmeldung**; jeder öffentliche Besucher kann die Rolle wechseln. Es werden weder Passwörter noch reale Auth-Nutzer erzeugt.
+Startseite `index.html` ist eine Rollenwahl für ausdrücklich fiktive Testpersonen und eine Master-Demoperspektive. Sie simuliert die Navigation und Rechteansicht, ist aber **keine echte Anmeldung**; jeder öffentliche Besucher kann die Rolle wechseln. Es werden weder Passwörter noch reale Auth-Nutzer erzeugt.
 
 | Rolle | Person (fiktiv) | Start und Vorführumfang |
 | --- | --- | --- |
@@ -52,3 +52,15 @@ Im Freigabebereich werden offene Erststück-/Rüstfreigaben aus offenen Fräsere
 Die neue Ansicht verwendet eine eigene responsive Demo-Stylesheet-Datei `css/pages-demo.css`; sie ändert die 33 historisch freigegebenen Produktions-Screenshotreferenzen nicht. Abnahme: `node --test tests/pages/pages-demo.test.js` (Admin plus Leiter/Mitarbeiter, Desktop und 390-px-Smartphone). Kein Merge oder Deployment mit diesem Auftrag.
 
 Der bisherige öffentliche Link `schichtplan_mvp.html` wird im Pages-Build als einfache HTML-Weiterleitung auf `index.html` mit der Rollenwahl erhalten (ohne automatische Anmeldung).
+
+## Erweiterung v0.20.19 – benutzbarer synthetischer Arbeitsraum (#60)
+
+Die acht vorhandenen Abteilungen **Dreherei, Fräserei, Verzahnerei, Entgraterei, Härterei, Schleiferei, Qualitätssicherung und Montage** bleiben bestehen. Zu jeder Abteilung gehören **genau sechs Maschinen (48 insgesamt)**; alle Maschinen besitzen mindestens einen fiktiven, zugeordneten Arbeitsgang. Die Testbasis enthält **50 Fantasiemitarbeiter (plus einen getrennten Demo-Administrator)**, **50 initiale BA** mit mehr als 250 verketteten OP, zugeordneten Maschinen, Mitarbeitern, Artikelbezeichnungen, Material, Arbeitsanweisung, Rüst- und Zykluszeiten.
+
+**Master-Demoperspektive:** Auf der öffentlichen Rollenwahl „Master-Zugang“ öffnen. URL `fertigung.html?role=master`. Der Master sieht sämtliche acht Abteilungen und kann filtern, Maschinen-/BA-Details aufrufen, alle Freigaben simulieren, fiktive Mitarbeiter abteilungsweise anzeigen, neu anlegen und (mit Ausnahme bestehender Abteilungsleiter) umteilen. Die fiktiven Abteilungsleitungen jeder Abteilung und jeder Testmitarbeiter können ebenfalls über Dropdowns auf der Rollenwahl geöffnet werden.
+
+**Benutzbare Abläufe im Produktionscockpit:** Betriebsauftrag mit Artikel, Material, Stückzahl, Maschine, Person und Arbeitsanweisung anlegen; eine passende Maschine öffnen; Arbeitsgang starten, wenn Vorgänger-OP abgeschlossen und die Maschine nicht bereits belegt ist; Gutteile buchen bis zur Sollmenge; Arbeitsgang abschließen; Mitarbeitende für offene OP umteilen; Erststück-/Rüstfreigabe simulieren. Das Auftragsverzeichnis verlinkt die zugeordneten Maschinen. Die Testdatensätze sind wiederholt reproduzierbar.
+
+**Speicherung:** Die Bedienaktionen werden nur für diese Browsertab-Testsitzung im `sessionStorage` des Browsers behalten, auch nach Seiten-Neuladen. Beim „Testdaten zurücksetzen“ werden sie verworfen. Andere Tabs, Personen, Geräte und die vollständige ältere `app.html`-Ansicht haben **keine synchronisierten Änderungen**; die ursprünglichen 50 BA sind dort als Fixture enthalten, neu im Cockpit erzeugte BA nicht. **Kein echtes Benutzerkonto, kein passwortgeschützter Master, keine gemeinsame Datenbank und keine echte Freigabeberechtigung.** Öffentliche Rollenwahl/URL-Parameter erlauben jeder Person den Master-Blick auf erfundene Daten. Ein echter sicherer Masterzugang und zentral persistente, vollständig integrierte FABOS-Geschäftsprozesse setzen ein separates Backend und fachliche Abnahme voraus.
+
+**Sicherheitsgrenzen:** Keine Produktionsdaten, keine produktive Supabase-Auth/RLS/DB-Veränderung, kein direkter main-Push, keine Änderung der freigegebenen Snapshotbilder. Entwicklungsbranch und Draft-PR; der neue isolierte QA-Workflow ist nicht deployend und legt geprüfte Screenshots sowie ein statisches Build als herunterladbares Artefakt ab. Live-Veröffentlichung benötigt gesonderte Entscheidung und ggf. Administrationskonfiguration der GitHub Pages-Umgebung.
