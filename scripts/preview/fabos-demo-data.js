@@ -75,7 +75,7 @@ function makeDemoData(){
  const asOf=Date.parse(BASE);
  const departments=depSpec.map(([code,name],i)=>({id:uid('a',i+1),code,name,active:true,leader_employee_id:uid('b',i*5+1)}));
  const byDept=Object.fromEntries(departments.map(x=>[x.code,x]));
- const employees=nameBank.map(([first_name,last_name],i)=>({id:uid('b',i+1),auth_user_id:null,first_name,last_name,display_name:`${first_name} ${last_name}`,personnel_no:`DEMO-${String(i+1).padStart(3,'0')}`,department_id:departments[i<40?Math.floor(i/5):(i-40)%8].id,department:departments[i<40?Math.floor(i/5):(i-40)%8].name,employee_type:'core',role:i%5===0?'department_admin':'employee',is_active:true,color_key:['blue','green','amber','slate','purple'][i%5],created_at:BASE,updated_at:BASE}));
+ const employees=nameBank.map(([first_name,last_name],i)=>({id:uid('b',i+1),auth_user_id:null,first_name,last_name,display_name:`${first_name} ${last_name}`,personnel_no:`DEMO-${String(i+1).padStart(3,'0')}`,department_id:departments[i<40?Math.floor(i/5):(i-40)%8].id,department:departments[i<40?Math.floor(i/5):(i-40)%8].name,employee_type:'core',role:i<40&&i%5===0?'department_admin':'employee',is_active:true,color_key:['blue','green','amber','slate','purple'][i%5],created_at:BASE,updated_at:BASE}));
  const machines=machinesSpec.map(([dept,code,name,origin],i)=>({id:uid('c',i+1),machine_code:code,name,department_id:byDept[dept].id,active:true,origin}));
  const machinesByDept=Object.fromEntries(departments.map(d=>[d.code,machines.filter(m=>m.department_id===d.id)]));
  const machineReady=new Map(machines.map(m=>[m.id,Date.parse('2026-11-09T05:00:00.000Z')]));
