@@ -4,8 +4,17 @@
 <main class="fab-login-shell"><div class="fab-brand"><span class="fab-mark">F</span><div><strong>FABOS</strong><small>Fertigungssteuerung · Testumgebung</small></div></div>
 <div class="fab-login-panel"><span class="fab-eyebrow">Online-Testversion</span><h1>Mit welcher Rolle möchtest du arbeiten?</h1><p>Wähle einen fiktiven Testzugang. So kannst du die Fertigung aus den unterschiedlichen Perspektiven prüfen.</p>
 <div class="fab-roles">
+<a class="fab-role" href="./fertigung.html?role=master"><span class="fab-role-icon">★</span><span><strong>Master-Zugang · gesamte Testumgebung</strong><small>Alle 8 Abteilungen, 50 Mitarbeiter, 48 Maschinen, 50 Aufträge, Freigaben und Testbuchungen</small></span><span aria-hidden="true">›</span></a>
 <a class="fab-role" href="./app.html?role=admin"><span class="fab-role-icon">A</span><span><strong>Administration</strong><small>Alle Module und Stammdaten öffnen</small></span><span aria-hidden="true">›</span></a>
 <a class="fab-role" href="./fertigung.html?role=lead"><span class="fab-role-icon">L</span><span><strong>Abteilungsleiter · Fräserei</strong><small>Jonas Lindner · Maschinen, Aufträge und Freigaben</small></span><span aria-hidden="true">›</span></a>
 <a class="fab-role" href="./fertigung.html?role=employee"><span class="fab-role-icon">M</span><span><strong>Mitarbeiter · Fräserei</strong><small>Mila Fischer · Meine Maschine und Arbeitsgang</small></span><span aria-hidden="true">›</span></a>
-</div><p class="fab-login-note">Öffentliche Simulation mit ausschließlich erfundenen Daten. Die Rollenwahl ist kein passwortgeschützter Login und erteilt keine produktiven Berechtigungen.</p>
-</div></main></body></html>
+</div><div class="fab-login-choose"><form id="employeeChooser"><label>Als beliebiger Testmitarbeiter starten <select id="employeeChoice" required></select></label><button type="submit">Mitarbeiteransicht öffnen</button></form><form id="leadChooser"><label>Abteilungsleitung testen <select id="leadChoice" required></select></label><button type="submit">Freigabebereich öffnen</button></form></div><p class="fab-login-note">Öffentliche Simulation mit ausschließlich erfundenen Daten. Die Rollenwahl ist kein passwortgeschützter Login und erteilt keine produktiven Berechtigungen.</p>
+</div></main><script src="./demo-dataset.js"></script><script>
+(()=>{let d=window.__FABOS_DEMO_DATA;try{const raw=sessionStorage.getItem('fabos-fictitious-workspace-v02019');if(raw){const saved=JSON.parse(raw);if(saved.data?.employees?.length>=50&&saved.data?.departments?.length===8)d=saved.data;}}catch(e){}const e=document.getElementById('employeeChoice'),l=document.getElementById('leadChoice');if(!d)return;
+ const esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ e.innerHTML=d.employees.filter(x=>x.role==='employee').map(x=>'<option value="'+esc(x.id)+'">'+esc(x.display_name)+' · '+esc(x.department)+'</option>').join('');
+ l.innerHTML=d.departments.map(x=>'<option value="'+esc(x.code)+'">'+esc(x.name)+'</option>').join('');l.value='FR';
+ document.getElementById('employeeChooser').addEventListener('submit',event=>{event.preventDefault();location.href='./fertigung.html?role=employee&employee='+encodeURIComponent(e.value)});
+ document.getElementById('leadChooser').addEventListener('submit',event=>{event.preventDefault();location.href='./fertigung.html?role=lead&department='+encodeURIComponent(l.value)});
+})();
+</script></body></html>

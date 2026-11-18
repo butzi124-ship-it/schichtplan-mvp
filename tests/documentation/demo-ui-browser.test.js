@@ -43,9 +43,9 @@ test('FABOS loads visible departments, staff, machines, orders and tools after l
     }));
     assert(!report.banner.includes('NICHT GELADEN'),JSON.stringify({report,errors}));
     assert.equal(report.departments,8,JSON.stringify({report,errors}));
-    assert.equal(report.employees,41);
-    assert.equal(report.machines,19);
-    assert(report.orders>0);
+    assert.equal(report.employees,51);
+    assert.equal(report.machines,48);
+    assert.equal(report.orders,50);
     assert.equal(report.tools,20);
     assert(report.actor);
     assert.equal(report.role,actors[account].role);

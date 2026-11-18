@@ -1,7 +1,8 @@
 // Bootstrap the isolated GitHub Pages edition with browser-local test data.
 (async()=>{
  const requestedRole=new URLSearchParams(location.search).get('role')||'admin';
- const a=window.__PREVIEW_ACTORS?.[requestedRole]||window.__PREVIEW_ACTORS?.admin;
+ const fixtureRole=requestedRole==='master'?'admin':requestedRole;
+ const a=window.__PREVIEW_ACTORS?.[fixtureRole]||window.__PREVIEW_ACTORS?.admin;
  if(!a)throw Error('Keine Testrolle vorhanden');
  const login=document.getElementById('loginBox');
  if(login){login.hidden=true;login.classList.add('hidden');}
@@ -11,7 +12,7 @@
   await bootSupabase();
   currentEmployeeRecord=(state.employeesList||[]).find(x=>x.auth_user_id===a.uid&&x.is_active!==false)||null;
   if(!currentEmployeeRecord)throw Error('Der Benutzer konnte nicht zugeordnet werden.');
-  if(state.departments.length!==8||state.employeesList.length!==41||state.productionMachines.length!==19||!state.productionOrders.length)throw Error('Die Fertigungsdaten wurden nicht vollständig geladen.');
+  if(state.departments.length!==8||state.employeesList.length!==51||state.productionMachines.length!==48||state.productionOrders.length!==50)throw Error('Die Fertigungsdaten wurden nicht vollständig geladen.');
   await loadToolPageData();
   if(!state.tools||state.tools.length!==20)throw Error('Die Werkzeugdaten wurden nicht vollständig geladen.');
   state.ui=state.ui||{};

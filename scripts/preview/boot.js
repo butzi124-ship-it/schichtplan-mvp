@@ -12,8 +12,8 @@
   if(!currentEmployeeRecord)throw Error('Kein zugeordneter synthetischer Mitarbeiter gefunden');
   if(window.__PREVIEW_DEMO){
    const data=window.__SUPABASE_MOCK_ROWS;
-   if(!data||data.departments.length!==8||data.employees.length!==41||data.production_machines.length!==19||!data.production_orders.length)throw Error('Demo-Datensatz unvollständig');
-   if(state.departments.length!==8||state.employeesList.length!==41||state.productionMachines.length!==19||!state.productionOrders.length)throw Error('Demo-Datensatz wurde nicht in FABOS geladen');
+   if(!data||data.departments.length!==8||data.employees.length!==51||data.production_machines.length!==48||data.production_orders.length!==50)throw Error('Demo-Datensatz unvollständig');
+   if(state.departments.length!==8||state.employeesList.length!==51||state.productionMachines.length!==48||state.productionOrders.length!==50)throw Error('Demo-Datensatz wurde nicht in FABOS geladen');
   }
   await loadToolPageData();
   if(window.__PREVIEW_DEMO&&(!state.tools||state.tools.length<10))throw Error('Demo-Werkzeugbestand wurde nicht in FABOS geladen');
@@ -46,7 +46,7 @@
  if(ready&&window.__PREVIEW_DEMO){
   const data=window.__SUPABASE_MOCK_ROWS;
   const summary=document.createElement('span');
-  summary.textContent=' · '+data.departments.length+' Abteilungen · 40 Fantasiemitarbeiter · '+data.production_machines.length+' Maschinen · '+data.production_orders.length+' aktive/abgeschlossene BA · '+state.tools.length+' Werkzeuge';
+  summary.textContent=' · '+data.departments.length+' Abteilungen · 50 Fantasiemitarbeiter · '+data.production_machines.length+' Maschinen · '+data.production_orders.length+' BA einschließlich geplanter · '+state.tools.length+' Werkzeuge';
   banner.append(summary);
  }
  const login=document.getElementById('loginBox');if(login){login.hidden=true;login.classList.add('hidden');}
