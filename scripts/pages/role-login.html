@@ -10,7 +10,7 @@
 <a class="fab-role" href="./fertigung.html?role=employee"><span class="fab-role-icon">M</span><span><strong>Mitarbeiter · Fräserei</strong><small>Mila Fischer · Meine Maschine und Arbeitsgang</small></span><span aria-hidden="true">›</span></a>
 </div><div class="fab-login-choose"><form id="employeeChooser"><label>Als beliebiger Testmitarbeiter starten <select id="employeeChoice" required></select></label><button type="submit">Mitarbeiteransicht öffnen</button></form><form id="leadChooser"><label>Abteilungsleitung testen <select id="leadChoice" required></select></label><button type="submit">Freigabebereich öffnen</button></form></div><p class="fab-login-note">Öffentliche Simulation mit ausschließlich erfundenen Daten. Die Rollenwahl ist kein passwortgeschützter Login und erteilt keine produktiven Berechtigungen.</p>
 </div></main><script src="./demo-dataset.js"></script><script>
-(()=>{const d=window.__FABOS_DEMO_DATA, e=document.getElementById('employeeChoice'),l=document.getElementById('leadChoice');if(!d)return;
+(()=>{let d=window.__FABOS_DEMO_DATA;try{const raw=sessionStorage.getItem('fabos-fictitious-workspace-v02019');if(raw){const saved=JSON.parse(raw);if(saved.data?.employees?.length>=50&&saved.data?.departments?.length===8)d=saved.data;}}catch(e){}const e=document.getElementById('employeeChoice'),l=document.getElementById('leadChoice');if(!d)return;
  const esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  e.innerHTML=d.employees.filter(x=>x.role==='employee').map(x=>'<option value="'+esc(x.id)+'">'+esc(x.display_name)+' · '+esc(x.department)+'</option>').join('');
  l.innerHTML=d.departments.map(x=>'<option value="'+esc(x.code)+'">'+esc(x.name)+'</option>').join('');l.value='FR';
