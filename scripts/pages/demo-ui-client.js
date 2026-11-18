@@ -121,6 +121,87 @@
   $('pageTitle').textContent={machines:'Maschinenübersicht',orders:'Betriebsaufträge',people:'Personalübersicht',approvals:'Freigabebereich'}[tab];
   $('pageIntro').textContent={machines:'Was läuft an meiner Maschine – und was kommt als Nächstes?',orders:'Alle '+data.orders.length+' Testaufträge und ihre geplanten Maschinen-Arbeitsgänge.',people:'Mitarbeiter und Abteilungszuordnung verwalten.',approvals:'Anstehende Freigaben der gewählten Abteilung.'}[tab];
  }
+
+ function options(items,sel){return items.map(x=>'<option value="'+esc(x.id)+'" '+(x.id===sel?'selected':'')+'>'+esc(x.name||x.display_name)+'</option>').join('');}
+ function renderPeople(){
+  if(!master)return;
+  $('peopleCards').innerHTML=data.departments.map(d=>'<article class="fab-order"><h3>'+esc(d.name)+' · '+data.employees.filter(e=>e.department_id===d.id).length+' Mitarbeiter</h3>'+
+   data.employees.filter(e=>e.department_id===d.id).map(e=>'<div class="fab-staff-row"><div><div class="fab-staff-name">'+esc(e.display_name)+'</div><div class="fab-staff-meta">'+esc(e.personnel_no)+'</div></div>'+
+   '<label>Abteilung <select data-person-dept="'+esc(e.id)+'" aria-label="Abteilung für '+esc(e.display_name)+'">'+options(data.departments,e.department_id)+'</select></label>'+
+   '<span class="fab-staff-meta">'+(e.role==='department_admin'?'Abteilungsleitung':'Mitarbeiter')+'</span></div>').join('')+'</article>').join('');
+ }
+ function operationActions(op,m){
+  if(!op)return '';
+  const order=byOrder.get(op.order_id),pred=op.predecessor_op_id&&data.operations.find(x=>x.id===op.predecessor_op_id);
+  const canStart=op.state==='queued'&&(!pred||pred.state==='completed')&&!current(m);
+  return '<div class="fab-action-row">'+
+   (op.state==='queued'?'<button type="button" class="fab-approve" data-start="'+esc(op.id)+'" '+(canStart?'':'disabled title="Vorgänger-OP offen oder Maschine belegt"')+'>Arbeitsgang starten</button>':'')+
+   (op.state==='running'?'<label>Gutteile <input id="bookQty" class="fab-count-input" type="number" min="1" max="'+Math.max(1,order.ba_quantity-op.good_qty)+'" value="1"></label><button type="button" class="fab-approve" data-book="'+esc(op.id)+'">Menge buchen</button><button type="button" class="fab-second" data-finish="'+esc(op.id)+'" '+(op.good_qty<order.ba_quantity?'disabled':'')+'>Arbeitsgang abschließen</button>':'')+'</div>'+
+   (role!=='employee'&&op.state!=='completed'?'<label>Mitarbeiter umteilen <select data-assign-op="'+esc(op.id)+'">'+options(data.employees.filter(e=>e.department_id===op.department_id&&e.is_active),op.assigned_employee_id)+'</select></label>':'');
+ }
+ function changed(){persistDemo();render();switchTab(state.tab);}
+ function fillOrderOptions(){
+  const ds=$('newOrderDepartment'),ms=$('newOrderMachine'),es=$('newOrderEmployee'),previous=ds.value;
+  const allowed=data.departments.filter(d=>master||d.id===actor.department_id);
+  ds.innerHTML=options(allowed,previous);const dept=allowed.find(d=>d.id===previous)||allowed[0];ds.value=dept.id;
+  ms.innerHTML=options(data.machines.filter(m=>m.department_id===dept.id),ms.value);
+  es.innerHTML=options(data.employees.filter(e=>e.department_id===dept.id&&e.is_active),es.value);
+  $('newEmployeeDepartment').innerHTML=options(data.departments,$('newEmployeeDepartment').value);
+ }
+ $('newOrderDepartment').addEventListener('change',fillOrderOptions);
+ $('newOrderForm').addEventListener('submit',event=>{
+  event.preventDefault();if(role==='employee')return;
+  const v=new FormData(event.currentTarget),qty=Number(v.get('qty'));
+  const dept=byDept.get(v.get('department')),machine=data.machines.find(m=>m.id===v.get('machine')),person=byEmp.get(v.get('employee'));
+  if(!dept||!machine||!person||dept.id!==machine.department_id||dept.id!==person.department_id||!Number.isSafeInteger(qty)||qty<1||qty>100000)return;
+  const n=900001+data.orders.filter(o=>o.ba_number.startsWith('BA-9')).length,number='BA-'+n,id='test-order-'+n,opid='test-op-'+n;
+  if(data.orders.some(o=>o.ba_number===number))return;
+  const start=new Date(Math.max(Date.now(),Date.parse(data.as_of))).toISOString(),duration=45+qty*3;
+  const order={id,ba_number:number,article_number:String(v.get('article_no')).trim(),article_name:String(v.get('article')).trim(),material:String(v.get('material')).trim(),ba_quantity:qty,release_at:start,operations:[opid],status:'queued',next_operation:opid,promised_date:new Date(Date.parse(start)+86400000).toISOString()};
+  const op={id:opid,order_id:id,op_number:'010',sequence:1,department_id:dept.id,department:dept.name,machine_id:machine.id,machine:machine.name,machine_code:machine.machine_code,description:String(v.get('instruction')).trim(),setup_minutes:45,cycle_seconds:180,planned_minutes:duration,planned_start:start,planned_end:new Date(Date.parse(start)+duration*60000).toISOString(),state:'queued',good_qty:0,scrap_qty:0,assigned_employee_id:person.id,predecessor_op_id:null};
+  data.orders.push(order);data.operations.push(op);byOrder.set(id,order);$('newOrderStatus').textContent=number+' an '+machine.name+' zugeteilt.';changed();
+ });
+ $('newEmployeeForm').addEventListener('submit',event=>{
+  event.preventDefault();if(!master)return;
+  const v=new FormData(event.currentTarget),dept=byDept.get(v.get('department')),first=String(v.get('first')||'').trim(),last=String(v.get('last')||'').trim();
+  if(!dept||!first||!last)return;const n=data.employees.length+1;
+  const e={id:'test-worker-'+n,first_name:first,last_name:last,display_name:first+' '+last,personnel_no:'TEST-'+n,department_id:dept.id,department:dept.name,employee_type:'core',role:'employee',is_active:true,auth_user_id:null};
+  data.employees.push(e);byEmp.set(e.id,e);event.currentTarget.reset();changed();
+ });
+ $('peopleCards').addEventListener('change',event=>{
+  const el=event.target.closest('[data-person-dept]');if(!el||!master)return;
+  const emp=byEmp.get(el.dataset.personDept),d=byDept.get(el.value);if(!emp||!d)return;
+  if(emp.role==='department_admin'){alert('Abteilungsleitung kann hier nicht umgeteilt werden.');renderPeople();return;}
+  emp.department_id=d.id;emp.department=d.name;changed();
+ });
+ $('machineDetail').addEventListener('click',event=>{
+  const b=event.target.closest('button');if(!b)return;const id=b.dataset.start||b.dataset.book||b.dataset.finish,op=data.operations.find(x=>x.id===id);
+  if(!op)return;const o=byOrder.get(op.order_id),m=data.machines.find(x=>x.id===op.machine_id);
+  if(role==='employee'&&op.department_id!==actor.department_id)return;
+  if(b.dataset.start&&op.state==='queued'&&!current(m)&&(!op.predecessor_op_id||data.operations.find(x=>x.id===op.predecessor_op_id)?.state==='completed')){
+   op.state='running';o.status='running';changed();
+  }else if(b.dataset.book&&op.state==='running'){
+   const qty=Number($('bookQty')?.value);if(!Number.isSafeInteger(qty)||qty<1||op.good_qty+qty>o.ba_quantity){alert('Ungültige Menge.');return;}
+   op.good_qty+=qty;changed();
+  }else if(b.dataset.finish&&op.state==='running'&&op.good_qty===o.ba_quantity){
+   op.state='completed';o.status=data.operations.filter(x=>x.order_id===o.id).every(x=>x.state==='completed')?'completed':'queued';
+   o.next_operation=data.operations.find(x=>x.order_id===o.id&&x.state!=='completed')?.id||null;changed();
+  }
+ });
+ $('machineDetail').addEventListener('change',event=>{
+  const el=event.target.closest('[data-assign-op]');if(!el||role==='employee')return;
+  const op=data.operations.find(x=>x.id===el.dataset.assignOp),emp=byEmp.get(el.value);
+  if(!op||!emp||op.department_id!==emp.department_id||(role==='lead'&&op.department_id!==actor.department_id))return;
+  op.assigned_employee_id=emp.id;changed();
+ });
+ $('orderCards').addEventListener('click',event=>{
+  const btn=event.target.closest('[data-open-machine]');if(!btn)return;
+  state.search='';$('machineSearch').value='';state.machine=btn.dataset.openMachine;switchTab('machines');renderMachines();
+ });
+ $('resetDemo').addEventListener('click',()=>{if(master&&confirm('Alle Änderungen in dieser Test-Sitzung zurücksetzen?')){sessionStorage.removeItem(STORAGE_KEY);location.reload();}});
+ if(role==='employee')$('newOrderPanel').hidden=true;
+ fillOrderOptions();
+
  document.querySelectorAll('.fab-nav[data-tab]').forEach(el=>el.addEventListener('click',()=>switchTab(el.dataset.tab)));
  departmentFilter.addEventListener('change',e=>{state.dept=e.target.value;state.machine=null;render();});
  $('machineSearch').addEventListener('input',e=>{state.search=e.target.value.trim().toLocaleLowerCase('de-DE');renderMachines();});
