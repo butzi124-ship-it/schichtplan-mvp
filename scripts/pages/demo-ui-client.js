@@ -1,28 +1,38 @@
 'use strict';
 // Public synthetic production cockpit. Role choice is presentation-only, NOT authentication.
 (()=>{
- const data=window.__FABOS_DEMO_DATA;
+ let data=window.__FABOS_DEMO_DATA;
+  const STORAGE_KEY='fabos-fictitious-workspace-v02019';
+  let restored=null;
+  try{const raw=sessionStorage.getItem(STORAGE_KEY);if(raw){const saved=JSON.parse(raw);if(saved.data?.departments?.length===8&&saved.data?.orders?.length>=50&&saved.data?.employees?.length>=50&&saved.data?.machines?.length>=48){restored=saved;data=saved.data;}}}catch(e){console.warn('Teststand nicht wiederherstellbar',e);}
+
  if(!data||!Array.isArray(data.operations))throw Error('Demo-Datensatz fehlt');
  const params=new URLSearchParams(location.search);
- const role=['admin','lead','employee'].includes(params.get('role'))?params.get('role'):'employee';
+ const role=['master','admin','lead','employee'].includes(params.get('role'))?params.get('role'):'employee';
+  const master=role==='master'||role==='admin';
  const fr=data.departments.find(d=>d.code==='FR');
- const lead=data.employees.find(e=>e.id===fr.leader_employee_id);
- const worker=data.employees.find(e=>e.department_id===fr.id&&e.role==='employee');
- const actor=role==='admin'?{name:'FABOS Administration',role:'Administrator'}:role==='lead'?{name:lead.display_name,role:'Abteilungsleiter Fräserei'}:{name:worker.display_name,role:'Mitarbeiter Fräserei'};
+ const requestedDept=data.departments.find(d=>d.code===params.get('department'))||fr;
+  const lead=data.employees.find(e=>e.id===requestedDept.leader_employee_id);
+ const worker=data.employees.find(e=>e.id===params.get('employee')&&e.role==='employee')||data.employees.find(e=>e.department_id===fr.id&&e.role==='employee');
+ const actor=master?{name:role==='master'?'FABOS Master':'FABOS Administration',role:'Master-Zugang',department_id:null,employee_id:null}:role==='lead'?{name:lead.display_name,role:'Abteilungsleitung '+requestedDept.name,department_id:requestedDept.id,employee_id:lead.id}:{name:worker.display_name,role:'Mitarbeiter '+worker.department,department_id:worker.department_id,employee_id:worker.id};
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
  const byOrder=new Map(data.orders.map(o=>[o.id,o]));
  const byEmp=new Map(data.employees.map(e=>[e.id,e]));
  const byDept=new Map(data.departments.map(d=>[d.id,d]));
  const fmt=s=>new Date(s).toLocaleString('de-DE',{timeZone:'Europe/Berlin',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
  const status={running:'Läuft',queued:'Geplant',completed:'Fertig',idle:'Frei'};
- const state={dept:role==='admin'?'all':fr.id,search:'',machine:null,tab:'machines',approved:new Set()};
+ const state={dept:master?'all':actor.department_id,search:'',machine:null,tab:'machines',approved:new Set(restored?.approved||[])};
+  function persistDemo(){try{sessionStorage.setItem(STORAGE_KEY,JSON.stringify({data,approved:[...state.approved]}));}catch(e){console.warn('Teststand nicht speicherbar',e);}}
+  function redraw(){render();switchTab(state.tab);}
  const $=id=>document.getElementById(id);
  $('roleLabel').textContent=actor.name+' · '+actor.role;
- $('appLink').href='./app.html?role='+role;
+ $('appLink').href='./app.html?role='+(master?'admin':role);
  $('asof').textContent='Planungsstand: '+fmt(data.as_of);
  if(role==='employee'){$('approvalNav').hidden=true;$('appLink').hidden=true;}
+  if(!master)$('peopleNav').hidden=true;
+  $('resetDemo').hidden=!master;
  const departmentFilter=$('departmentFilter');
- departmentFilter.innerHTML=(role==='admin'?'<option value="all">Alle Abteilungen</option>':'')+data.departments.filter(d=>role==='admin'||d.id===fr.id).map(d=>'<option value="'+esc(d.id)+'">'+esc(d.name)+'</option>').join('');
+ departmentFilter.innerHTML=(master?'<option value="all">Alle Abteilungen</option>':'')+data.departments.filter(d=>master||d.id===actor.department_id).map(d=>'<option value="'+esc(d.id)+'">'+esc(d.name)+'</option>').join('');
  departmentFilter.value=state.dept;
  const readable=op=>op?status[op.state]||op.state:'Frei';
  const current=m=>data.operations.find(o=>o.machine_id===m.id&&o.state==='running');
@@ -41,7 +51,7 @@
  }
  function renderMachines(){
   const machines=visibleMachines();
-  if(!machines.some(m=>m.id===state.machine))state.machine=(machines.find(m=>primary(m)&&primary(m).assigned_employee_id===worker.id)||machines.find(m=>current(m))||machines[0])?.id||null;
+  if(!machines.some(m=>m.id===state.machine))state.machine=(machines.find(m=>primary(m)&&primary(m).assigned_employee_id===actor.employee_id)||machines.find(m=>current(m))||machines[0])?.id||null;
   $('machineCount').textContent='('+machines.length+')';
   $('machineCards').innerHTML=machines.map(m=>{
    const op=primary(m),order=op?byOrder.get(op.order_id):null,active=current(m),next=queued(m).find(q=>q.id!==op?.id);
@@ -78,7 +88,7 @@
   $('machineDetail').innerHTML='<div class="fab-eyebrow">MASCHINENDETAIL</div><h2>'+esc(m.name)+'</h2><p class="fab-muted">'+esc(byDept.get(m.department_id)?.name||'')+' · '+esc(m.machine_code)+'</p>'+
     (main?opDetails(main,running?'Aktueller Arbeitsgang':'Nächster eingeplanter Arbeitsgang'):'<div class="fab-empty">An dieser Maschine ist zur Demo-Bezugszeit kein Arbeitsgang offen.</div>')+
     '<hr class="fab-divider"><h3>Maschinenfolge</h3>'+(next?'<div class="fab-order-detail"><strong>Danach:</strong> '+esc(byOrder.get(next.order_id).ba_number)+' · OP '+esc(next.op_number)+' · '+esc(byOrder.get(next.order_id).article_name)+'<br>Start '+fmt(next.planned_start)+'</div>':'<p class="fab-muted">Kein weiterer Auftrag eingeplant.</p>')+
-    (past?'<div class="fab-order-detail fab-muted">Zuletzt abgeschlossen: '+esc(byOrder.get(past.order_id).ba_number)+' · OP '+esc(past.op_number)+'</div>':'');
+    (past?'<div class="fab-order-detail fab-muted">Zuletzt abgeschlossen: '+esc(byOrder.get(past.order_id).ba_number)+' · OP '+esc(past.op_number)+'</div>':'')+operationActions(main,m);
  }
  function visibleOrders(){
   const allowed=new Set(visibleOps().map(o=>o.order_id));
@@ -87,14 +97,14 @@
  function renderOrders(){
   $('orderCards').innerHTML=visibleOrders().map(o=>{
    const ops=data.operations.filter(op=>op.order_id===o.id&&(state.dept==='all'||op.department_id===state.dept));
-   const rows=ops.map(op=>'<div class="fab-order-detail">OP '+esc(op.op_number)+' · <strong>'+esc(op.machine)+'</strong> · '+esc(op.department)+' · '+fmt(op.planned_start)+' · <span class="fab-status '+op.state+'">'+readable(op)+'</span></div>').join('');
+   const rows=ops.map(op=>'<div class="fab-order-detail">OP '+esc(op.op_number)+' · <button type="button" class="fab-second" data-open-machine="'+esc(op.machine_id)+'">'+esc(op.machine)+'</button> · '+esc(op.department)+' · '+fmt(op.planned_start)+' · <span class="fab-status '+op.state+'">'+readable(op)+'</span></div>').join('');
    return '<article class="fab-order"><div class="fab-order-head"><div><h3>'+esc(o.ba_number)+' · '+esc(o.article_name)+'</h3><p>'+esc(o.article_number)+' · '+esc(o.material)+' · '+o.ba_quantity+' Stk.</p></div><span class="fab-status '+o.status+'">'+readable(o)+'</span></div>'+rows+'</article>';
   }).join('')||'<p class="fab-empty">Keine Betriebsaufträge zugeordnet.</p>';
  }
  function approvalOps(){
   if(role==='employee')return [];
-  const dept=state.dept==='all'?fr.id:state.dept;
-  return data.operations.filter(op=>op.department_id===dept&&(op.state==='running'||op.state==='queued')).sort((a,b)=>a.planned_start.localeCompare(b.planned_start)).slice(0,8);
+  const dept=state.dept;
+  return data.operations.filter(op=>(dept==='all'||op.department_id===dept)&&(op.state==='running'||op.state==='queued')).sort((a,b)=>a.planned_start.localeCompare(b.planned_start));
  }
  function renderApprovals(){
   const ops=approvalOps();
@@ -104,19 +114,19 @@
   }).join('')||'<div class="fab-empty">In dieser Abteilung sind keine offenen Freigaben simuliert.</div>';
  }
  function switchTab(tab){
-  if(tab==='approvals'&&role==='employee')return;
+  if((tab==='approvals'&&role==='employee')||(tab==='people'&&!master))return;
   state.tab=tab;
   document.querySelectorAll('.fab-nav[data-tab]').forEach(el=>el.classList.toggle('active',el.dataset.tab===tab));
-  $('machineView').hidden=tab!=='machines';$('ordersView').hidden=tab!=='orders';$('approvalView').hidden=tab!=='approvals';
-  $('pageTitle').textContent={machines:'Maschinenübersicht',orders:'Betriebsaufträge',approvals:'Freigabebereich'}[tab];
-  $('pageIntro').textContent={machines:'Was läuft an meiner Maschine – und was kommt als Nächstes?',orders:'Alle 32 Testaufträge und ihre geplanten Maschinen-Arbeitsgänge.',approvals:'Anstehende Freigaben meiner Abteilung.'}[tab];
+  $('machineView').hidden=tab!=='machines';$('ordersView').hidden=tab!=='orders';$('approvalView').hidden=tab!=='approvals';$('peopleView').hidden=tab!=='people';
+  $('pageTitle').textContent={machines:'Maschinenübersicht',orders:'Betriebsaufträge',people:'Personalübersicht',approvals:'Freigabebereich'}[tab];
+  $('pageIntro').textContent={machines:'Was läuft an meiner Maschine – und was kommt als Nächstes?',orders:'Alle '+data.orders.length+' Testaufträge und ihre geplanten Maschinen-Arbeitsgänge.',people:'Mitarbeiter und Abteilungszuordnung verwalten.',approvals:'Anstehende Freigaben der gewählten Abteilung.'}[tab];
  }
  document.querySelectorAll('.fab-nav[data-tab]').forEach(el=>el.addEventListener('click',()=>switchTab(el.dataset.tab)));
  departmentFilter.addEventListener('change',e=>{state.dept=e.target.value;state.machine=null;render();});
  $('machineSearch').addEventListener('input',e=>{state.search=e.target.value.trim().toLocaleLowerCase('de-DE');renderMachines();});
  $('machineCards').addEventListener('click',e=>{const btn=e.target.closest('[data-machine]');if(!btn)return;state.machine=btn.dataset.machine;renderMachines();});
- $('approvalCards').addEventListener('click',e=>{const btn=e.target.closest('[data-approve]');if(!btn)return;state.approved.add(btn.dataset.approve);renderMetrics();renderApprovals();});
- function render(){renderMetrics();renderMachines();renderOrders();renderApprovals();}
+ $('approvalCards').addEventListener('click',e=>{const btn=e.target.closest('[data-approve]');if(!btn)return;state.approved.add(btn.dataset.approve);persistDemo();renderMetrics();renderApprovals();});
+ function render(){renderMetrics();renderMachines();renderOrders();renderApprovals();renderPeople();}
  render();switchTab(role==='lead'?'approvals':'machines');
  window.__FABOS_COCKPIT_READY=true;
 })();
