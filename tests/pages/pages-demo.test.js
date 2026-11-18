@@ -134,7 +134,7 @@ test('GitHub Pages release uses full FABOS UI, coherent synthetic data and no de
     await page.screenshot({path:path.join(evidenceDir,viewport.width+'-master-50-orders.png')});
     await page.goto('http://127.0.0.1:'+server.address().port+'/');
     assert.equal(await page.getByRole('link',{name:/Abteilungsleiter/}).count(),1);
-    assert.equal(await page.getByRole('link',{name:/Mitarbeiter/}).count(),1);
+    assert.equal(await page.getByRole('link',{name:/Mitarbeiter · Fräserei/}).count(),1);
     await page.goto('http://127.0.0.1:'+server.address().port+'/schichtplan_mvp.html');
     await page.waitForURL('**/index.html');
     assert.equal(await page.getByRole('link',{name:/Abteilungsleiter/}).count(),1);
