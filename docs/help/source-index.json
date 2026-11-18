@@ -26,7 +26,7 @@
   "scripts/preview/server.js": "cafb34e88553192fae1cdcd7a0c0a7cc57d679e505e253fe32d46e27e480139d",
   "scripts/preview/backend.js": "6197d8ed0cf79d8a9b4d60c1995bb9defab15cb606af65922e2325e983ef2cb1",
   "scripts/preview/client.js": "c49e9065fc9fc2b4f7f31b19b36a0989a19997b2c211896a47d3b5fd2fd5bea0",
-  "scripts/preview/boot.js": "fd2fd371e25da62102025ff5857606a89acc0658aee26940c4f674a815240851",
+  "scripts/preview/boot.js": "10e79d5e89d8e8e0bc52c216fa9fd8878e72aaad4c76470412564c458d153fe7",
   "tests/helpers/supabase-mock.js": "26964fab6825325700abba975887d8e1ccbe7b29741fa9c5750a90257970a5eb",
   "css/pages-demo.css": "d42cd1579439568287df54b234e0f283f2b8e4e92b90d5cd070c4a6595050a3c"
 }
