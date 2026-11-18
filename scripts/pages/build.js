@@ -30,6 +30,7 @@ function build(){
  app=hideInternalNames(app);
  fs.writeFileSync(path.join(DIST,'schichtplan_mvp.js'),app);
  const {data,rows}=buildDemoPreview(rowsByTable);
+  if(data.departments.length!==8||data.employees.length!==50||data.machines.length!==48||data.orders.length!==50||rows.production_orders.length!==50)throw Error('Incomplete FABOS seeded test environment');
  const actors={
   admin:{role:'admin',uid:'00000000-0000-4000-8000-000000000001',name:'FABOS Administration'},
   lead:{role:'department_admin',uid:'00000000-0000-4000-8000-000000000002',name:data.employees[5].display_name},
