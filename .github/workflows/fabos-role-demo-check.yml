@@ -4,6 +4,7 @@ on:
     branches:
       - feature/fabos-actionable-role-demo-v0.20.18
       - feature/fabos-complete-synthetic-workspace-v0.20.19
+      - feature/fabos-github-only-pages-v0.20.22
   pull_request:
     paths:
       - 'scripts/pages/**'
@@ -37,18 +38,31 @@ jobs:
       - run: node --check scripts/pages/build.js
       - run: node --check scripts/pages/browser-boot.js
       - run: node --check scripts/pages/demo-ui-client.js
+      - run: node --check scripts/pages/browser-workspace.js
+      - run: node --check tests/pages/browser-workspace.test.js
+      - run: node --check tests/pages/github-only-browser.test.js
       - run: node --check scripts/preview/fabos-demo-data.js
       - run: node --check scripts/preview/fabos-demo-adapter.js
       - run: node --check tests/pages/pages-demo.test.js
       - run: node scripts/pages/build.js
       - run: node --test tests/pages/demo-seed.test.js
       - run: node --test tests/pages/pages-demo.test.js
+      - run: node --test tests/pages/browser-workspace.test.js
+      - run: node --test tests/pages/github-only-browser.test.js
       - name: Downloadable complete static test workspace (no deploy)
         uses: actions/upload-artifact@v4
         with:
           name: fabos-50-staff-48-machines-50-orders-${{ github.sha }}
           path: dist-pages
           retention-days: 14
+      - name: Upload GitHub-only persistency and recovery screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fabos-github-only-browser-${{ github.sha }}
+          path: artifacts/fabos-github-only
+          retention-days: 14
+          if-no-files-found: warn
       - name: Upload role and machine preview images (not approved reference snapshots)
         if: always()
         uses: actions/upload-artifact@v4
