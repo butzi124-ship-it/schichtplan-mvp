@@ -1,10 +1,11 @@
 'use strict';
 // Public synthetic production cockpit. Role choice is presentation-only, NOT authentication.
 (()=>{
+ const workspace=window.FABOS_BROWSER_WORKSPACE;
+ if(!workspace)throw Error('Browser-Testdatenspeicher nicht geladen');
  let data=window.__FABOS_DEMO_DATA;
-  const STORAGE_KEY='fabos-fictitious-workspace-v02019';
-  let restored=null;
-  try{const raw=sessionStorage.getItem(STORAGE_KEY);if(raw){const saved=JSON.parse(raw);if(saved.data?.departments?.length===8&&saved.data?.orders?.length>=50&&saved.data?.employees?.length>=50&&saved.data?.machines?.length>=48){restored=saved;data=saved.data;}}}catch(e){console.warn('Teststand nicht wiederherstellbar',e);}
+ const restored=workspace.load();
+ if(restored)data=restored.data;
 
  if(!data||!Array.isArray(data.operations))throw Error('Demo-Datensatz fehlt');
  const params=new URLSearchParams(location.search);
@@ -22,7 +23,15 @@
  const fmt=s=>new Date(s).toLocaleString('de-DE',{timeZone:'Europe/Berlin',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
  const status={running:'Läuft',queued:'Geplant',completed:'Fertig',idle:'Frei'};
  const state={dept:master?'all':actor.department_id,search:'',machine:null,tab:'machines',approved:new Set(restored?.approved||[])};
-  function persistDemo(){try{sessionStorage.setItem(STORAGE_KEY,JSON.stringify({data,approved:[...state.approved]}));}catch(e){console.warn('Teststand nicht speicherbar',e);}}
+ function persistDemo(){
+  try{
+   const permanent=workspace.save({data,approved:[...state.approved]});
+   document.getElementById('storageStatus').textContent=permanent?'Im Browser dauerhaft gespeichert':'Nur diese Sitzung · bitte Testdaten sichern';
+  }catch(err){
+   document.getElementById('storageStatus').textContent='Speicherfehler · Testdaten sichern';
+   console.error('Fiktiver Teststand konnte nicht gespeichert werden',err);
+  }
+ }
   function redraw(){render();switchTab(state.tab);}
  const $=id=>document.getElementById(id);
  $('roleLabel').textContent=actor.name+' · '+actor.role;
@@ -31,6 +40,9 @@
  if(role==='employee'){$('approvalNav').hidden=true;$('appLink').hidden=true;}
   if(!master)$('peopleNav').hidden=true;
   $('resetDemo').hidden=!master;
+ $('exportDemo').hidden=!master;
+ $('importDemoLabel').hidden=!master;
+ $('storageStatus').textContent=restored?'Fiktiver Browserstand wiederhergestellt':'Nur lokal · keine Cloud';
  const departmentFilter=$('departmentFilter');
  departmentFilter.innerHTML=(master?'<option value="all">Alle Abteilungen</option>':'')+data.departments.filter(d=>master||d.id===actor.department_id).map(d=>'<option value="'+esc(d.id)+'">'+esc(d.name)+'</option>').join('');
  departmentFilter.value=state.dept;
@@ -172,6 +184,10 @@
   const el=event.target.closest('[data-person-dept]');if(!el||!master)return;
   const emp=byEmp.get(el.dataset.personDept),d=byDept.get(el.value);if(!emp||!d)return;
   if(emp.role==='department_admin'){alert('Abteilungsleitung kann hier nicht umgeteilt werden.');renderPeople();return;}
+  if(data.operations.some(op=>op.assigned_employee_id===emp.id&&op.state!=='completed'&&op.department_id!==d.id)){
+   alert('Diesem Mitarbeiter sind noch offene Arbeitsgänge in seiner bisherigen Abteilung zugeteilt. Bitte diese zuerst umteilen.');
+   renderPeople();return;
+  }
   emp.department_id=d.id;emp.department=d.name;changed();
  });
  $('machineDetail').addEventListener('click',event=>{
@@ -198,7 +214,31 @@
   const btn=event.target.closest('[data-open-machine]');if(!btn)return;
   state.search='';$('machineSearch').value='';state.machine=btn.dataset.openMachine;switchTab('machines');renderMachines();
  });
- $('resetDemo').addEventListener('click',()=>{if(master&&confirm('Alle Änderungen in dieser Test-Sitzung zurücksetzen?')){sessionStorage.removeItem(STORAGE_KEY);location.reload();}});
+ $('resetDemo').addEventListener('click',()=>{
+  if(master&&confirm('Alle fiktiven Änderungen aus diesem Browser entfernen und 50 Testaufträge wiederherstellen?')){
+   workspace.reset();location.reload();
+  }
+ });
+ $('exportDemo').addEventListener('click',()=>{
+  if(!master)return;
+  try{workspace.download({data,approved:[...state.approved]});}
+  catch(err){alert('Sicherung nicht möglich: '+err.message);}
+ });
+ $('importDemo').addEventListener('change',async event=>{
+  if(!master)return;
+  const input=event.currentTarget,file=input.files?.[0];
+  if(!file)return;
+  if(file.size>3*1024*1024){alert('Sicherung darf höchstens 3 MB groß sein.');input.value='';return;}
+  try{
+   const contents=await file.text();
+   const snapshot=workspace.decode(contents);
+   if(!confirm('Fiktiven Teststand dieses Browsers durch die gewählte Sicherung ersetzen?'))return;
+   const permanent=workspace.save(snapshot);
+   if(!permanent)alert('Browser-Dauerspeicher nicht verfügbar. Import gilt nur für diese Sitzung.');
+   location.reload();
+  }catch(err){alert('Testdatei wurde nicht geladen: '+err.message);}
+  finally{input.value='';}
+ });
  if(role==='employee')$('newOrderPanel').hidden=true;
  fillOrderOptions();
 
