@@ -85,7 +85,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.9.0";
+const APP_VERSION = "0.9.1";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -100,6 +100,7 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {"version":"0.9.1","date":"2026-11-24 12:25","changes":["Nur Release-Infrastruktur: einmalig freigegebene GitHub-Pages-Veröffentlichung der vollständig geprüften, ausschließlich fiktiven FABOS-Testversion v0.20.22 (Commit 4d13693652c3e27c12ce1f71a62aa4c01094e274) über geschütztes main vorbereitet.","Der Produktiv-Code und seine vorhandenen Geschäftsprozesse bleiben funktional unverändert; keine neuen Echtdaten, Datenbank-, Auth-, RLS-, Feature-Flag- oder externen Hostingänderungen."]},
   {
     "version": "0.9.0",
     "date": "2026-11-06 11:36",
