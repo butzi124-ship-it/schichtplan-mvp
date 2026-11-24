@@ -1,0 +1,65 @@
+name: FABOS explicit one-time online publication #68
+on:
+  push:
+    branches:
+      - release/fabos-online-once-20261124
+permissions:
+  contents: read
+concurrency:
+  group: fabos-one-time-online-publish-20261124
+  cancel-in-progress: false
+jobs:
+  verify:
+    name: Reverify exact released source before publishing
+    if: ${{ github.event.head_commit.message == 'RELEASE: publish authorized FABOS GitHub Pages preview once (#68)' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
+      env:
+        HOME: /root
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Require immutable previously green source; release adds only this workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = '4d13693652c3e27c12ce1f71a62aa4c01094e274'
+          test "$(git diff --name-only HEAD^ HEAD)" = '.github/workflows/fabos-online-once.yml'
+          git diff --check
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --include=dev --ignore-scripts
+      - name: Build isolated and synthetic-only GitHub Pages website
+        run: node scripts/pages/build.js
+      - name: Verify browser-local data and safe backup imports
+        run: node --test tests/pages/browser-workspace.test.js
+      - name: Verify original production application in real desktop/mobile browser
+        run: node --test tests/pages/pages-demo.test.js
+      - name: Verify persistent browser data, import, export and reset
+        run: node --test tests/pages/github-only-browser.test.js
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist-pages
+  publish:
+    name: Publish authorized FABOS site via existing GitHub Pages environment
+    needs: verify
+    if: ${{ needs.verify.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      pages: write
+      id-token: write
+      contents: read
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish checked static website
+        id: deployment
+        uses: actions/deploy-pages@v4
