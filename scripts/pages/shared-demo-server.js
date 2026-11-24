@@ -69,7 +69,8 @@ async function createSharedDemoServer({passwords,filePath,port=0,online=process.
     const sid=crypto.randomBytes(32).toString('hex');
     sessions.set(sid,{account:body.account,expires:Date.now()+3600000});
     if(token)sessions.delete(token);
-    return json(res,200,{ok:true,account:body.account},res.setHeader('Set-Cookie','fabos_demo_session='+sid+'; HttpOnly; SameSite=Strict; '+(online?'Secure; ':'')+'Path=/; Max-Age=3600'));
+    res.setHeader('Set-Cookie','fabos_demo_session='+sid+'; HttpOnly; SameSite=Strict; '+(online?'Secure; ':'')+'Path=/; Max-Age=3600');
+    return json(res,200,{ok:true,account:body.account});
    }
    if(req.method==='GET'&&(url.pathname==='/'||url.pathname==='/index.html')){
     if(!signed)return send(res,200,fs.readFileSync(LOGIN));
@@ -99,6 +100,7 @@ async function createSharedDemoServer({passwords,filePath,port=0,online=process.
     let html=fs.readFileSync(path.join(DIST,'fertigung.html'),'utf8');
     const role=store.actor(session.account).role;
     html=html.replace('</head>','<script>window.__FABOS_SERVER_ROLE='+JSON.stringify(role)+';</script></head>');
+    html=html.replace('<a class="fab-top-link" href="./index.html">Rolle wechseln</a>','<a class="fab-top-link" id="sharedDemoLogout" href="/">Abmelden</a>');
     return send(res,200,html);
    }
    if(session.account!=='admin'&&['/app.html','/pages-bootstrap.js','/pages-boot.js','/schichtplan_mvp.js'].includes(url.pathname))return send(res,403,'Master-only legacy preview');
