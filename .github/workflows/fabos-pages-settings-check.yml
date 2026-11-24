@@ -23,7 +23,13 @@ jobs:
             "https://api.github.com/repos/${{ github.repository }}/pages")
           echo "Pages API HTTP status: $status"
           if [ "$status" = 200 ]; then
-            jq '{url, status, build_type, source, public, cname}' /tmp/fabos-pages.json
+            jq '{html_url, status, build_type, source, public, cname}' /tmp/fabos-pages.json
+            site_url=$(jq -r '.html_url // empty' /tmp/fabos-pages.json)
+            if [ -n "$site_url" ]; then
+              status_site=$(curl -L -sS -o /tmp/fabos-site.html -w '%{http_code}' --max-time 15 "$site_url" || true)
+              echo "Live website HTTP status: $status_site"
+              grep -oEi '<title>[^<]+' /tmp/fabos-site.html | head -1 || true
+            fi
           else
             jq '{message, documentation_url}' /tmp/fabos-pages.json
           fi
@@ -42,3 +48,14 @@ jobs:
           else
             jq '{message}' /tmp/fabos-env.json
           fi
+
+      - name: Read actual Pages branch allowlist when permitted
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          result=$(curl -sS -o /tmp/pages-branches.json -w '%{http_code}' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${{ github.repository }}/environments/github-pages/deployment-branch-policies")
+          echo "Pages deployment-branch policy HTTP status: $result"
+          if [ "$result" = 200 ]; then jq '[.branch_policies[] | {name, type}]' /tmp/pages-branches.json; else jq '{message}' /tmp/pages-branches.json; fi
