@@ -120,7 +120,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.20.19";
+const APP_VERSION = "0.20.20";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -135,6 +135,8 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {"version":"0.20.20","date":"2026-11-24 06:36","changes":["Schichtende-Pflichtcheckliste nichtblockierend am unteren rechten Bildschirmrand dargestellt, damit die Mitarbeiter-Navigation und Schichtaktionen auch während des Erinnerungsfensters klickbar bleiben.","Mehrfache Checklisten-Dialoge bei wiederholtem Rendern verhindert; Prüfpunkte, Speichern, Abbrechen und ursprüngliche Zeitregel bleiben unverändert.","Spezifische Desktop-/Smartphone-/Browser-Regression ergänzt; keine Änderungen an RLS/Auth, Produktivdaten oder den 33 freigegebenen Referenzbildern."]},
+
   {"version":"0.20.19","date":"2026-11-18 10:26","changes":["Isolierte FABOS-Testdaten auf 50 frei erfundene Beschäftigte, acht bestehende Abteilungen mit jeweils sechs Maschinen (48) und 50 geroutete BA erweitert.","Öffentlichen Master-Demoeinstieg, Mitarbeiter-/Abteilungswahl, OP-Mengenbuchungen, Auftragsanlage, Personalzuordnung und Freigaben in der Browser-Testsitzung ergänzt; keine echte Authentifizierung oder gemeinsame Produktionsdaten.","Keine Änderungen an produktiver Supabase-/Auth-/RLS-Struktur, originären 33 Referenzbildern oder geschützten Geschäftsprozessen; Veröffentlichung separat."]},
 
   {"version":"0.20.18","date":"2026-11-16 13:37","changes":["Synthetische Online-Rollenwahl mit Administration, Abteilungsleiter Fräserei und Testmitarbeiter ergänzt; öffentliche Rollenwahl ist keine Authentifizierung.","Neue responsive Maschinenübersicht mit direkt wählbaren Maschinen, laufenden und geplanten BA-/OP-Details sowie simuliertem abteilungsbezogenem Freigabebereich; kein produktiver Datenbankzugriff.","32 bestehende Demo-Betriebsaufträge mit 176 Maschinenarbeitsgängen für die Vorführung erschlossen; keine Änderungen an Originalgeschäftslogik, produktiven Rollen oder Freigabe-Snapshots."]},
@@ -17630,6 +17632,8 @@ function renderClosure() {
 }
 
 function openChecklist(shiftId) {
+  // A checklist already on screen must not be duplicated by a dashboard re-render.
+  if (document.getElementById("humbel-shift-end-checklist")) return;
   const hourOptions = Array.from(
     { length: 24 },
     (_, i) => `<option>${String(i).padStart(2, "0")}</option>`,
@@ -17640,8 +17644,14 @@ function openChecklist(shiftId) {
   ).join("");
 
   const wrapper = document.createElement("div");
-  wrapper.className =
-    "fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50";
+  wrapper.id = "humbel-shift-end-checklist";
+  wrapper.setAttribute("role", "dialog");
+  wrapper.setAttribute("aria-label", "Pflicht-Checkliste zum Schichtende");
+  // The mandatory checklist remains actionable, but may not intercept the
+  // employee's dashboard navigation or other shift actions.
+  wrapper.className = "fixed bottom-4 right-4 z-50";
+  wrapper.style.cssText =
+    "width:100%;max-width:min(32rem,calc(100vw - 2rem));box-shadow:0 12px 32px rgba(15,23,42,.25)";
   wrapper.innerHTML = `<div class='bg-white rounded-xl p-4 max-w-lg w-full space-y-3'>
     <h3 class='text-lg font-semibold'>Pflicht-Checkliste</h3>
     ${checkbox("c1", "Arbeitsplatz ordentlich")}
