@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FABOS · Geschützter Testzugang</title><style>
+:root{font-family:system-ui,sans-serif;color:#17314f}body{margin:0;min-height:100vh;background:linear-gradient(135deg,#081b33,#164779);display:grid;place-items:center;padding:20px;box-sizing:border-box}
+main{max-width:520px;width:100%;background:white;border-radius:18px;padding:clamp(24px,4vw,44px);box-shadow:0 22px 70px #06162966;box-sizing:border-box}
+h1{margin:0 0 8px;font-size:28px}p{line-height:1.5;color:#51657b}label{display:block;font-weight:700;margin:20px 0 8px}
+input,select,button{width:100%;min-height:48px;padding:12px;border-radius:9px;box-sizing:border-box;font:inherit}
+input,select{border:1px solid #a5b8ca}button{border:0;background:#126cb9;color:white;font-weight:800;cursor:pointer}
+small{display:block;margin-top:22px;color:#607287} [role=alert]{color:#9b2424;min-height:22px}
+</style></head><body><main><h1>FABOS</h1><p>Geschützter Arbeitsraum mit ausschließlich erfundenen Produktions- und Personendaten.</p>
+<form id="login"><label for="account">Testzugang</label><select id="account" name="account"><option value="admin">Master · alle Abteilungen</option><option value="leader">Abteilungsleitung · Fräserei</option><option value="employee">Mitarbeiter · Fräserei</option></select>
+<label for="password">Passwort</label><input id="password" name="password" type="password" autocomplete="current-password" required>
+<p role="alert" id="error"></p><button type="submit">Anmelden</button></form>
+<small>Keine produktive FABOS-Anmeldung. Alle Zugriffe und Buchungen beziehen sich auf isolierte Testdaten.</small></main>
+<script>document.getElementById('login').addEventListener('submit',async function(e){e.preventDefault();const b=this.querySelector('button');b.disabled=true;try{const f=new FormData(this);const r=await fetch('/login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(f))});if(r.ok)location.href='/fertigung.html';else document.getElementById('error').textContent='Anmeldung nicht möglich. Zugangsdaten prüfen.';}catch{document.getElementById('error').textContent='Verbindung fehlgeschlagen.';}finally{b.disabled=false;}});</script></body></html>
