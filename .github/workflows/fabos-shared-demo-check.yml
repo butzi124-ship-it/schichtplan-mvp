@@ -1,0 +1,48 @@
+name: FABOS isolated shared demo - authentication, persistence and browser acceptance
+on:
+  push:
+    branches:
+      - feature/fabos-shared-secure-demo-v0.20.21
+  pull_request:
+    paths:
+      - 'scripts/pages/**'
+      - 'scripts/preview/fabos-demo-*.js'
+      - 'tests/pages/shared-demo*.test.js'
+      - '.github/workflows/fabos-shared-demo-check.yml'
+permissions:
+  contents: read
+jobs:
+  secure-shared-demo:
+    name: Protected shared workspace acceptance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
+      env:
+        HOME: /root
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: node --check scripts/pages/shared-demo-store.js
+      - run: node --check scripts/pages/shared-demo-server.js
+      - run: node --check scripts/pages/demo-ui-client.js
+      - run: node --check tests/pages/shared-demo.test.js
+      - run: node --check tests/pages/shared-demo-browser.test.js
+      - run: node scripts/pages/build.js
+      - run: node --test tests/pages/shared-demo.test.js
+      - run: node --test tests/pages/shared-demo-browser.test.js
+      - run: node --test tests/pages/pages-demo.test.js
+      - name: Upload browser acceptance captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fabos-shared-demo-screens-${{ github.sha }}
+          path: artifacts/fabos-shared
+          retention-days: 14
+          if-no-files-found: warn
