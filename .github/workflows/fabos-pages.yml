@@ -3,7 +3,14 @@ on:
   push:
     branches:
       - feature/fabos-github-pages-v0.20.17
+      - feature/fabos-github-only-pages-v0.20.22
   workflow_dispatch:
+    inputs:
+      deploy_approved:
+        description: 'After reviewed green CI and verified Pages environment: publish this fictional GitHub-only test version'
+        type: boolean
+        required: true
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -29,14 +36,19 @@ jobs:
       - run: npm ci --include=dev --ignore-scripts
       - name: Build isolated GitHub Pages site
         run: node scripts/pages/build.js
+      - name: Verify browser-only data validity and backup recovery
+        run: node --test tests/pages/browser-workspace.test.js
       - name: Verify fully rendered desktop and smartphone screens
         run: node --test tests/pages/pages-demo.test.js
+      - name: Verify durable local fictional workflow in real Chromium
+        run: node --test tests/pages/github-only-browser.test.js
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist-pages
   publish:
     name: Deploy to GitHub Pages
     needs: build-and-browser-test
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_approved == true }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment:
