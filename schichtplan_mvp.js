@@ -120,7 +120,7 @@ const DEFAULT_TOOL_LABELS = [
 const DEFAULT_TOOL_MANUFACTURERS = ["SixSigma", "SFS", "THAA"];
 const DEFAULT_TOOL_HOLDERS = ["HSK 100", "HSK 63"];
 
-const APP_VERSION = "0.20.20";
+const APP_VERSION = "0.20.21";
 const PRODUCTION_COUNTER_VIEW_KEY = "humbel.productionCounterView";
 let productionCounterViewPreference = "";
 const INVENTORY_MODE_ENABLED = false;
@@ -135,6 +135,7 @@ const HUMBEL_COLORS = Object.freeze({
   border: "#d8e2ee",
 });
 const VERSION_LOG = [
+  {"version":"0.20.21","date":"2026-11-24 06:44","changes":["Isolierte und durch serverseitige Passwort-Sitzungen geschützte FABOS-Demoversion vorbereitet: Master, Fräserei-Abteilungsleitung, zugeordneter Fertigungsmitarbeiter.","Gemeinsam nutzbare synthetische Fertigungsdaten mit 50 Personen, 48 Maschinen, 50 BA/277 OP, Freigaben und Mengenbuchungen über autorisierte Server-API und atomare Dateispeicherung; Onlinebetrieb nur mit getrenntem persistentem Datenträger.","Bestehende produktive Supabase-/Auth-/RLS-/Geschäftsdaten nicht verändert. Neues Deployment ausschließlich nach CI, fachlicher Freigabe und getrenntem Railway-Volume."]},
   {"version":"0.20.20","date":"2026-11-24 06:36","changes":["Schichtende-Pflichtcheckliste nichtblockierend am unteren rechten Bildschirmrand dargestellt, damit die Mitarbeiter-Navigation und Schichtaktionen auch während des Erinnerungsfensters klickbar bleiben.","Mehrfache Checklisten-Dialoge bei wiederholtem Rendern verhindert; Prüfpunkte, Speichern, Abbrechen und ursprüngliche Zeitregel bleiben unverändert.","Spezifische Desktop-/Smartphone-/Browser-Regression ergänzt; keine Änderungen an RLS/Auth, Produktivdaten oder den 33 freigegebenen Referenzbildern."]},
 
   {"version":"0.20.19","date":"2026-11-18 10:26","changes":["Isolierte FABOS-Testdaten auf 50 frei erfundene Beschäftigte, acht bestehende Abteilungen mit jeweils sechs Maschinen (48) und 50 geroutete BA erweitert.","Öffentlichen Master-Demoeinstieg, Mitarbeiter-/Abteilungswahl, OP-Mengenbuchungen, Auftragsanlage, Personalzuordnung und Freigaben in der Browser-Testsitzung ergänzt; keine echte Authentifizierung oder gemeinsame Produktionsdaten.","Keine Änderungen an produktiver Supabase-/Auth-/RLS-Struktur, originären 33 Referenzbildern oder geschützten Geschäftsprozessen; Veröffentlichung separat."]},
