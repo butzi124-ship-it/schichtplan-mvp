@@ -35,7 +35,7 @@ test('real Chromium desktop/mobile sign-in, master CRUD, shared persistence, sco
    await page.locator('#newOrderForm [name="article"]').fill('Chromium-Testwelle');
    await page.locator('#newOrderForm [name="article_no"]').fill('CHROMIUM-'+viewport.width);
    await page.locator('#newOrderForm button[type="submit"]').click();
-   await page.waitForFunction(expected=>document.querySelectorAll('#orderCards article').length===expected,{timeout:20000},viewport.width===1280?51:52);
+   await page.waitForFunction(expected=>document.querySelectorAll('#orderCards article').length===expected,viewport.width===1280?51:52,{timeout:20000});
    await page.reload();
    await page.waitForFunction(()=>window.__FABOS_COCKPIT_READY===true);
    await page.getByRole('button',{name:'Betriebsaufträge'}).click();
