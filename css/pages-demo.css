@@ -22,3 +22,11 @@
 .fab-staff-row select{padding:9px;min-height:40px;max-width:100%;border:1px solid #c7d5e4;border-radius:8px;background:white}
 .fab-staff-name{font-weight:700}.fab-staff-meta{color:#687e93;font-size:12px}
 @media(max-width:750px){.fab-form,.fab-login-choose{grid-template-columns:1fr}.fab-staff-row{grid-template-columns:1fr;gap:5px}.fab-staff-row select{width:100%}}
+
+/* GitHub-only: portable browser-local fiction state, never a secure account. */
+.fab-status-label{display:inline-flex;align-items:center;min-height:36px;padding:7px 10px;border:1px solid #c7d7e7;border-radius:9px;background:#f5f9ff;color:#294d72;font-size:12px;font-weight:650}
+.fab-import-control{display:inline-flex;align-items:center;justify-content:center;min-height:38px;border:1px solid #c3d6e9;border-radius:9px;padding:8px 11px;background:white;color:#165b97;cursor:pointer;font-weight:700;font-size:13px}
+.fab-import-control:focus-within{outline:3px solid #6aafe7;outline-offset:2px}
+.fab-import-control input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+.fab-import-control[hidden],.fab-top-link[hidden],.fab-status-label[hidden]{display:none!important}
+@media(max-width:650px){.fab-top-actions{flex-wrap:wrap;row-gap:8px}.fab-status-label{order:9;width:100%;justify-content:center}.fab-import-control{min-height:44px}}
