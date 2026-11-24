@@ -1,0 +1,22 @@
+/* FABOS: mandatory shift-end checklist stays visible and usable without
+   intercepting employee dashboard / navigation. Presentation-only override:
+   original checklist items, saving and time logic are unchanged. */
+body > .fixed.inset-0:has(#cancelBtn):has(#saveBtn):has(#uh):has(#um) {
+  inset: auto 1rem 1rem auto !important;
+  top: auto !important;
+  left: auto !important;
+  right: 1rem !important;
+  bottom: 1rem !important;
+  width: min(32rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  padding: 0 !important;
+  overflow: auto;
+  display: block !important;
+  background: transparent !important;
+  pointer-events: none;
+}
+body > .fixed.inset-0:has(#cancelBtn):has(#saveBtn):has(#uh):has(#um) > div {
+  pointer-events: auto;
+  border: 1px solid #c5d6e8;
+  box-shadow: 0 18px 42px #09244345;
+}
