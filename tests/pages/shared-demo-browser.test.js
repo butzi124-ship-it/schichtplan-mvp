@@ -30,7 +30,7 @@ test('real Chromium desktop/mobile sign-in, master CRUD, shared persistence, sco
    await page.getByRole('button',{name:'Mitarbeiterverwaltung'}).click();
    assert.equal(await page.locator('[data-person-dept]').count(),50);
    await page.getByRole('button',{name:'Betriebsaufträge'}).click();
-   assert.equal(await page.locator('#orderCards article').count(),50);
+   assert.equal(await page.locator('#orderCards article').count(),viewport.width===1280?50:51);
    await page.locator('#newOrderPanel summary').click();
    await page.locator('#newOrderForm [name="article"]').fill('Chromium-Testwelle');
    await page.locator('#newOrderForm [name="article_no"]').fill('CHROMIUM-'+viewport.width);
