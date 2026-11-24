@@ -7,9 +7,10 @@ test('mandatory shift-end checklist remains accessible without covering employee
  await page.goto(appUrl);
  await page.getByRole('button',{name:'Lavdrim (A)',exact:true}).click();
  await page.evaluate(()=>openChecklist('synthetic-navigation-check'));
- const checklist=page.locator('#humbel-shift-end-checklist');
+ const checklist=page.locator('body > .fixed.inset-0').filter({has:page.locator('#cancelBtn')});
  await expect(checklist).toBeVisible();
- await expect(checklist).toHaveAttribute('role','dialog');
+ await expect(checklist).toHaveCSS('pointer-events','none');
+ await expect(checklist.locator('#cancelBtn')).toHaveCSS('pointer-events','auto');
  await expect(checklist.getByRole('heading',{name:'Pflicht-Checkliste'})).toBeVisible();
  // An actual user click is required; no forced clicks or reduced hit-test assertions.
  await page.locator('#view').getByRole('button',{name:'Meine Schichten',exact:true}).click();
