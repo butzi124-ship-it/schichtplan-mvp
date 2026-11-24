@@ -30,6 +30,7 @@
     "test:learning": "node --test tests/learning/*.test.js",
     "dev": "node scripts/preview/server.js",
     "preview:test": "node scripts/preview/server.js",
+    "preview:shared": "node scripts/pages/shared-demo-server.js",
     "docs:capture": "node scripts/documentation/capture.js",
     "docs:check": "node scripts/documentation/check.js",
     "docs:build": "node scripts/documentation/build.js",
