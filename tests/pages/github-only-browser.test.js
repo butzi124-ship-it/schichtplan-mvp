@@ -57,7 +57,9 @@ test('GitHub Pages fiction state survives browser tabs, saves and imports backup
    await second.getByRole('button',{name:'Betriebsaufträge'}).click();
    assert.equal(await second.locator('#orderCards article').count(),50);
    second.once('dialog',dialog=>dialog.accept());
+   const importedPage=second.waitForEvent('load');
    await second.locator('#importDemo').setInputFiles({name:'fabos-backup.json',mimeType:'application/json',buffer:Buffer.from(backup)});
+   await importedPage;
    await second.waitForFunction(()=>window.__FABOS_COCKPIT_READY===true);
    await second.getByRole('button',{name:'Betriebsaufträge'}).click();
    assert.equal(await second.locator('#orderCards article').count(),51);
