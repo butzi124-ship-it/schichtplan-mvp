@@ -1,34 +1,45 @@
 'use strict';
 // Public synthetic production cockpit. Role choice is presentation-only, NOT authentication.
-(()=>{
- let data=window.__FABOS_DEMO_DATA;
+(async()=>{
+ const serverMode=window.__FABOS_SERVER_ROLE!==undefined;
+ let remote=null;
+ if(serverMode){
+  try{
+   const response=await fetch('/api/state',{credentials:'same-origin',cache:'no-store'});
+   if(!response.ok){location.href='/';return;}
+   remote=await response.json();
+  }catch(err){document.body.textContent='FABOS-Testserver derzeit nicht erreichbar.';console.error(err);return;}
+ }
+ let data=serverMode?remote.data:window.__FABOS_DEMO_DATA;
   const STORAGE_KEY='fabos-fictitious-workspace-v02019';
   let restored=null;
-  try{const raw=sessionStorage.getItem(STORAGE_KEY);if(raw){const saved=JSON.parse(raw);if(saved.data?.departments?.length===8&&saved.data?.orders?.length>=50&&saved.data?.employees?.length>=50&&saved.data?.machines?.length>=48){restored=saved;data=saved.data;}}}catch(e){console.warn('Teststand nicht wiederherstellbar',e);}
+  try{const raw=serverMode?null:sessionStorage.getItem(STORAGE_KEY);if(raw){const saved=JSON.parse(raw);if(saved.data?.departments?.length===8&&saved.data?.orders?.length>=50&&saved.data?.employees?.length>=50&&saved.data?.machines?.length>=48){restored=saved;data=saved.data;}}}catch(e){console.warn('Teststand nicht wiederherstellbar',e);}
 
  if(!data||!Array.isArray(data.operations))throw Error('Demo-Datensatz fehlt');
  const params=new URLSearchParams(location.search);
- const role=['master','admin','lead','employee'].includes(params.get('role'))?params.get('role'):'employee';
+ const role=serverMode?remote.actor.role: (['master','admin','lead','employee'].includes(params.get('role'))?params.get('role'):'employee');
   const master=role==='master'||role==='admin';
  const fr=data.departments.find(d=>d.code==='FR');
  const requestedDept=data.departments.find(d=>d.code===params.get('department'))||fr;
   const lead=data.employees.find(e=>e.id===requestedDept.leader_employee_id);
  const worker=data.employees.find(e=>e.id===params.get('employee')&&e.role==='employee')||data.employees.find(e=>e.department_id===fr.id&&e.role==='employee');
- const actor=master?{name:role==='master'?'FABOS Master':'FABOS Administration',role:'Master-Zugang',department_id:null,employee_id:null}:role==='lead'?{name:lead.display_name,role:'Abteilungsleitung '+requestedDept.name,department_id:requestedDept.id,employee_id:lead.id}:{name:worker.display_name,role:'Mitarbeiter '+worker.department,department_id:worker.department_id,employee_id:worker.id};
+ const actor=serverMode?{name:remote.actor.display_name,role:remote.actor.role,department_id:remote.actor.department_id,employee_id:remote.actor.employee_id}:(master?{name:role==='master'?'FABOS Master':'FABOS Administration',role:'Master-Zugang',department_id:null,employee_id:null}:role==='lead'?{name:lead.display_name,role:'Abteilungsleitung '+requestedDept.name,department_id:requestedDept.id,employee_id:lead.id}:{name:worker.display_name,role:'Mitarbeiter '+worker.department,department_id:worker.department_id,employee_id:worker.id});
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
  const byOrder=new Map(data.orders.map(o=>[o.id,o]));
  const byEmp=new Map(data.employees.map(e=>[e.id,e]));
  const byDept=new Map(data.departments.map(d=>[d.id,d]));
  const fmt=s=>new Date(s).toLocaleString('de-DE',{timeZone:'Europe/Berlin',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
  const status={running:'Läuft',queued:'Geplant',completed:'Fertig',idle:'Frei'};
- const state={dept:master?'all':actor.department_id,search:'',machine:null,tab:'machines',approved:new Set(restored?.approved||[])};
-  function persistDemo(){try{sessionStorage.setItem(STORAGE_KEY,JSON.stringify({data,approved:[...state.approved]}));}catch(e){console.warn('Teststand nicht speicherbar',e);}}
+ const state={dept:master?'all':actor.department_id,search:'',machine:null,tab:'machines',approved:new Set(serverMode?remote.approved:(restored?.approved||[]))};
+  function persistDemo(){if(serverMode)return;try{sessionStorage.setItem(STORAGE_KEY,JSON.stringify({data,approved:[...state.approved]}));}catch(e){console.warn('Teststand nicht speicherbar',e);}}
   function redraw(){render();switchTab(state.tab);}
  const $=id=>document.getElementById(id);
  $('roleLabel').textContent=actor.name+' · '+actor.role;
  $('appLink').href='./app.html?role='+(master?'admin':role);
  $('asof').textContent='Planungsstand: '+fmt(data.as_of);
  if(role==='employee'){$('approvalNav').hidden=true;$('appLink').hidden=true;}
+ if(serverMode&&role!=='master')$('appLink').hidden=true;
+ if(serverMode&&master)$('appLink').textContent='Weitere Module (separate Vorschau)';
   if(!master)$('peopleNav').hidden=true;
   $('resetDemo').hidden=!master;
  const departmentFilter=$('departmentFilter');
@@ -201,6 +212,87 @@
  $('resetDemo').addEventListener('click',()=>{if(master&&confirm('Alle Änderungen in dieser Test-Sitzung zurücksetzen?')){sessionStorage.removeItem(STORAGE_KEY);location.reload();}});
  if(role==='employee')$('newOrderPanel').hidden=true;
  fillOrderOptions();
+
+
+ // Server-side demo mode: intercept all state-changing controls before the
+ // legacy local-only listeners. Only the authenticated server may commit a change.
+ async function sharedAction(action,payload){
+  let response;
+  try{
+   response=await fetch('/api/action',{method:'POST',credentials:'same-origin',cache:'no-store',
+    headers:{'Content-Type':'application/json'},body:JSON.stringify({action,payload})});
+   if(!response.ok){
+    const issue=await response.json().catch(()=>({error:'Testaktion fehlgeschlagen'}));
+    alert(issue.error||'Testaktion abgelehnt');
+    return false;
+   }
+   const next=await response.json();
+   data=next.data;
+   state.approved=new Set(next.approved);
+   byOrder.clear();for(const o of data.orders)byOrder.set(o.id,o);
+   byEmp.clear();for(const e of data.employees)byEmp.set(e.id,e);
+   byDept.clear();for(const d of data.departments)byDept.set(d.id,d);
+   if(!data.machines.some(m=>m.id===state.machine))state.machine=null;
+   render();fillOrderOptions();switchTab(state.tab);
+   return true;
+  }catch(error){alert('Der Testserver ist derzeit nicht erreichbar. Es wurde nichts lokal verbucht.');console.error(error);return false;}
+ }
+ if(serverMode){
+  document.addEventListener('click',async event=>{
+   const logout=event.target.closest('#sharedDemoLogout');
+   if(logout){
+    event.preventDefault();event.stopImmediatePropagation();
+    await fetch('/logout',{method:'POST',credentials:'same-origin'}).catch(()=>{});
+    location.href='/';return;
+   }
+   const reset=event.target.closest('#resetDemo');
+   if(reset){
+    event.preventDefault();event.stopImmediatePropagation();
+    if(master&&confirm('Sämtliche gemeinsamen Teständerungen aller Benutzer zurücksetzen?'))await sharedAction('reset',{});
+    return;
+   }
+   const approval=event.target.closest('[data-approve]');
+   if(approval){event.preventDefault();event.stopImmediatePropagation();await sharedAction('approve',{op_id:approval.dataset.approve});return;}
+   const control=event.target.closest('[data-start],[data-book],[data-finish]');
+   if(control){
+    event.preventDefault();event.stopImmediatePropagation();
+    if(control.dataset.start)await sharedAction('start_op',{op_id:control.dataset.start});
+    else if(control.dataset.book)await sharedAction('book_qty',{op_id:control.dataset.book,qty:Number($('bookQty')?.value)});
+    else if(control.dataset.finish)await sharedAction('finish_op',{op_id:control.dataset.finish});
+   }
+  },true);
+  document.addEventListener('change',async event=>{
+   const staff=event.target.closest('[data-person-dept]');
+   if(staff){
+    event.stopImmediatePropagation();
+    if(!await sharedAction('move_employee',{employee_id:staff.dataset.personDept,department_id:staff.value}))renderPeople();
+    return;
+   }
+   const assign=event.target.closest('[data-assign-op]');
+   if(assign){
+    event.stopImmediatePropagation();
+    if(!await sharedAction('assign_op',{op_id:assign.dataset.assignOp,employee_id:assign.value}))renderMachineDetail();
+   }
+  },true);
+  document.addEventListener('submit',async event=>{
+   const form=event.target;
+   if(form.id==='newOrderForm'){
+    event.preventDefault();event.stopImmediatePropagation();
+    const values=new FormData(form);
+    const result=await sharedAction('create_order',{
+     department_id:values.get('department'),machine_id:values.get('machine'),
+     employee_id:values.get('employee'),article:values.get('article'),
+     article_no:values.get('article_no'),material:values.get('material'),
+     instruction:values.get('instruction'),qty:Number(values.get('qty'))});
+    if(result)$('newOrderStatus').textContent='Der Testauftrag wurde für alle Benutzer gespeichert.';
+   }else if(form.id==='newEmployeeForm'){
+    event.preventDefault();event.stopImmediatePropagation();
+    const values=new FormData(form);
+    if(await sharedAction('create_employee',{first:values.get('first'),last:values.get('last'),department_id:values.get('department')}))form.reset();
+   }
+  },true);
+  window.__FABOS_SHARED_READY=true;
+ }
 
  document.querySelectorAll('.fab-nav[data-tab]').forEach(el=>el.addEventListener('click',()=>switchTab(el.dataset.tab)));
  departmentFilter.addEventListener('change',e=>{state.dept=e.target.value;state.machine=null;render();});
