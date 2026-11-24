@@ -1,0 +1,62 @@
+name: FABOS manually approved one-time public preview
+on:
+  push:
+    branches:
+      - main
+permissions:
+  contents: read
+concurrency:
+  group: fabos-explicit-main-preview-release-20261124
+  cancel-in-progress: false
+jobs:
+  build:
+    name: Reverify pinned synthetic FABOS site
+    if: ${{ startsWith(github.event.head_commit.message, 'FABOS_LIVE_PREVIEW_APPROVED_20261124') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
+      env:
+        HOME: /root
+    steps:
+      - name: Checkout audited, completely synthetic FABOS release
+        uses: actions/checkout@v4
+        with:
+          ref: 4d13693652c3e27c12ce1f71a62aa4c01094e274
+          persist-credentials: false
+      - name: Protect the exact audited website source
+        run: test "$GITHUB_SHA" != "4d13693652c3e27c12ce1f71a62aa4c01094e274" && node --check scripts/pages/build.js && node --check scripts/pages/browser-workspace.js
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --include=dev --ignore-scripts
+      - name: Build verified Pages website with no production credentials
+        run: node scripts/pages/build.js
+      - name: Test browser-local state and JSON backups
+        run: node --test tests/pages/browser-workspace.test.js
+      - name: Test FABOS original modules in desktop and mobile browser
+        run: node --test tests/pages/pages-demo.test.js
+      - name: Test preserved state, simulated booking, export/import in desktop and mobile
+        run: node --test tests/pages/github-only-browser.test.js
+      - name: Upload exact checked site for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist-pages
+  publish:
+    name: Publish protected-main GitHub Pages preview
+    needs: build
+    if: ${{ needs.build.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy publicly accessible FABOS
+        id: deployment
+        uses: actions/deploy-pages@v4
