@@ -25,7 +25,7 @@ test('Github-only seeded data and local persistence are fictional and structural
  assert.equal(second.load().data.machines.length,48);
  assert.equal(second.load().data.orders.length,50);
  assert.equal(second.load().data.operations.length,277);
- const running=d.operations.find(o=>o.state==='running');
+ const running=d.operations.find(o=>o.state==='running'&&o.good_qty<d.orders.find(order=>order.id===o.order_id).ba_quantity);
  assert(running);
  snapshot.data.operations.find(o=>o.id===running.id).good_qty+=1;
  snapshot.approved.push(running.id);
