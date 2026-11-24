@@ -64,3 +64,27 @@ Die acht vorhandenen Abteilungen **Dreherei, Fräserei, Verzahnerei, Entgraterei
 **Speicherung:** Die Bedienaktionen werden nur für diese Browsertab-Testsitzung im `sessionStorage` des Browsers behalten, auch nach Seiten-Neuladen. Beim „Testdaten zurücksetzen“ werden sie verworfen. Andere Tabs, Personen, Geräte und die vollständige ältere `app.html`-Ansicht haben **keine synchronisierten Änderungen**; die ursprünglichen 50 BA sind dort als Fixture enthalten, neu im Cockpit erzeugte BA nicht. **Kein echtes Benutzerkonto, kein passwortgeschützter Master, keine gemeinsame Datenbank und keine echte Freigabeberechtigung.** Öffentliche Rollenwahl/URL-Parameter erlauben jeder Person den Master-Blick auf erfundene Daten. Ein echter sicherer Masterzugang und zentral persistente, vollständig integrierte FABOS-Geschäftsprozesse setzen ein separates Backend und fachliche Abnahme voraus.
 
 **Sicherheitsgrenzen:** Keine Produktionsdaten, keine produktive Supabase-Auth/RLS/DB-Veränderung, kein direkter main-Push, keine Änderung der freigegebenen Snapshotbilder. Entwicklungsbranch und Draft-PR; der neue isolierte QA-Workflow ist nicht deployend und legt geprüfte Screenshots sowie ein statisches Build als herunterladbares Artefakt ab. Live-Veröffentlichung benötigt gesonderte Entscheidung und ggf. Administrationskonfiguration der GitHub Pages-Umgebung.
+
+## GitHub-only-Fassung v0.20.22 – ohne Railway und ohne Supabase-Verbindung (#66)
+
+**Bereitstellung und Entwicklung ausschließlich auf GitHub:** Quellcode, Issues, Draft-PR, Testläufe, Builds und (nach separater Freigabe) die Website unter GitHub Pages. Das neue Testpaket basiert auf den bestehenden acht Abteilungen mit jeweils sechs Maschinen, den 50 ausschließlich erfundenen Mitarbeitern sowie 50 BA/277 OP. Es übernimmt bewusst **nicht** das unfertige serverbasierte Railway-Konzept aus PR #65.
+
+**Dauerhafter fiktiver Teststand auf einem Gerät:** Im Fertigungscockpit speichert der Browser jede Änderung (Gutteile, Freigaben, neue Aufträge, Mitarbeiterzuordnung) in seinem eigenen `localStorage`. Ein Speicherversagen wird angezeigt, die Sitzung kann als Fallback im `sessionStorage` weitergehen. Der Stand lässt sich über „Testdaten sichern“ als JSON-Datei exportieren, über „Testdaten laden“ wiederherstellen und über „Testdaten zurücksetzen“ auf 50 initiale Aufträge zurücksetzen. Import akzeptiert ausschließlich das streng validierte FABOS-Fantasiedaten-Format und keine beliebigen JSON-Fremddaten. Mehrere Tabs desselben Browsers erhalten die gespeicherten Änderungen; andere Browser, Computer und Mobilgeräte benötigen eine manuelle Sicherungsdatei. Es werden **keine** Passwörter oder echten Unternehmensdaten für die Cloud synchronisiert.
+
+**Kein echter Master-Login:** Der Master-Button ist eine frei wählbare **Demo-Perspektive ohne Passwort**. Jeder Besucher der öffentlichen Seite kann sämtliche fiktiven Inhalte einschließlich der Master-Funktionen öffnen. Weder GitHub Pages noch die Rollenwahl kontrollieren produktive Zugriffsrechte. GitHub Pages kann keine Serverprozesse, sicheren Mitarbeitersitzungen, zentralen Datenbanktransaktionen oder Echtzeit-Synchronisation bereitstellen. Diese Einschränkung ist sichtbar, dokumentiert und kein Implementierungsfehler, der durch ein GitHub-Token im JavaScript gelöst werden darf.
+
+**Veröffentlichungsregel:** `.github/workflows/fabos-pages.yml` baut und prüft den statischen Stand auf dem Entwicklungsbranch. Eine Pages-Veröffentlichung erfolgt **nicht automatisch** bei einem Branch-Push oder Pull Request. Der Publish-Job wird nur per ausdrücklich genehmigtem `workflow_dispatch` mit `deploy_approved=true` freigegeben. Vorher müssen aktuelle Gesamt-QA/e2e, Desktop-/Mobil-Browserprüfungen sowie die Konfiguration unter `Settings → Pages → Build and deployment → Source: GitHub Actions` und `Settings → Environments → github-pages` nachweislich stimmen. Der öffentliche Betrieb und eine sichere Unternehmensfreigabe sind zwei unterschiedliche Entscheidungen. Alle 33 bestätigten Screenshot-Referenzen bleiben unverändert.
+
+**Getrennte historische Module:** Die aus dem unveränderten FABOS-MVP abgeleitete Oberfläche `app.html` bleibt eine isolierte zusätzliche Browser-Fixture, jedoch **nicht** live mit den örtlichen Buchungen aus `fertigung.html` verbunden. Sie darf nicht als vollständig produktive ERP-Integration präsentiert werden.
+
+**Prüfpfade:**
+
+```sh
+npm ci --ignore-scripts
+node scripts/pages/build.js
+node --test tests/pages/browser-workspace.test.js
+node --test tests/pages/pages-demo.test.js
+node --test tests/pages/github-only-browser.test.js
+```
+
+Wenn künftig **50 gleichzeitig arbeitende Personen mit echten, gemeinsamen Daten und einem geschützten Masterzugang** benötigt werden, ist ein separat bereitgestelltes und abgesichertes Backend zwingend nötig. Dafür reichen ausschließlich GitHub-Repositories und GitHub Pages nicht aus.
