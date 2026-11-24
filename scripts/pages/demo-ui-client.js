@@ -143,6 +143,7 @@
  }
  function operationActions(op,m){
   if(!op)return '';
+  if(serverMode&&role==='employee'&&op.assigned_employee_id!==actor.employee_id)return '<p class="fab-muted">Dieser Arbeitsgang ist einem anderen Mitarbeiter zugeordnet.</p>';
   const order=byOrder.get(op.order_id),pred=op.predecessor_op_id&&data.operations.find(x=>x.id===op.predecessor_op_id);
   const canStart=op.state==='queued'&&(!pred||pred.state==='completed')&&!current(m);
   return '<div class="fab-action-row">'+
